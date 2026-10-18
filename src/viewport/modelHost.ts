@@ -1,4 +1,4 @@
-import { Box3, type Scene } from 'three';
+import { Box3, type Material, type Object3D, type Scene } from 'three';
 import type { CameraRig } from './cameraRig';
 import { loadModelAsset, type ModelAsset } from './loadModelAsset';
 import { createMapAdjustUniforms, setMapAdjust } from './mapAdjustUniforms';
@@ -19,8 +19,11 @@ export interface ModelHost {
   load(glb: ArrayBuffer): Promise<ViewportResult<ModelAsset>>;
   unload(): void;
   setShadingMode(mode: ShadingMode): void;
+  setProjectionMaterial(material: Material | null): void; // replaces the look while set; the shading mode is kept and comes back on clearing
+  setFlashMaterial(material: Material | null): void; // like the projection material but on top of it, for a moment
   setSettings(patch: Partial<ViewportSettings>): void;
   settings(): ViewportSettings;
+  root(): Object3D | undefined; // the shown model, for picking
   dispose(): void;
 }
 
@@ -31,6 +34,17 @@ export function createModelHost({ scene, rig, invalidate, onFramed, settings: in
   const adjust = createMapAdjustUniforms(settings.mapAdjust);
   const modes = createShadingModes(adjust);
   let current: { asset: ModelAsset; overlay: WireframeOverlay } | undefined;
+  let projectionMaterial: Material | null = null;
+  let flashMaterial: Material | null = null;
+
+  // What the model shows: a flash over everything, else the projection material, else the chosen shading mode.
+  const showLook = (): void => {
+    if (!current) return;
+    const replacement = flashMaterial ?? projectionMaterial;
+    if (replacement) modes.applyMaterial(current.asset.root, replacement);
+    else modes.apply(current.asset.root, mode);
+    invalidate();
+  };
 
   const unload = (): void => {
     if (!current) return;
@@ -53,7 +67,7 @@ export function createModelHost({ scene, rig, invalidate, onFramed, settings: in
       current = { asset, overlay };
       scene.add(asset.root);
       overlay.setVisible(settings.wireframe);
-      modes.apply(asset.root, mode);
+      showLook();
       rig.frameBounds(new Box3().setFromObject(asset.root));
       onFramed();
       invalidate();
@@ -62,9 +76,20 @@ export function createModelHost({ scene, rig, invalidate, onFramed, settings: in
     unload,
     setShadingMode(next) {
       mode = next;
-      if (current) modes.apply(current.asset.root, mode);
+      showLook();
       invalidate();
     },
+    setProjectionMaterial(material) {
+      projectionMaterial = material;
+      showLook();
+      invalidate();
+    },
+    setFlashMaterial(material) {
+      flashMaterial = material;
+      showLook();
+      invalidate();
+    },
+    root: () => current?.asset.root,
     setSettings(patch) {
       settings = clampViewportSettings({ ...settings, ...patch, mapAdjust: { ...settings.mapAdjust, ...patch.mapAdjust } });
       setMapAdjust(adjust, settings.mapAdjust);

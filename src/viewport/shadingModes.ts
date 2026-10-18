@@ -6,6 +6,7 @@ export type ShadingMode = 'lit' | 'albedo' | 'normal' | 'rough' | 'metal';
 
 export interface ShadingModes {
   apply(root: Object3D, mode: ShadingMode): void;
+  applyMaterial(root: Object3D, material: Material): void; // one material over the whole model; apply() puts the looks back
   derivedMaterialCount(): number;
   dispose(root: Object3D): void; // puts the original materials back and frees the derived ones
 }
@@ -45,8 +46,18 @@ export function createShadingModes(adjust: MapAdjustUniforms): ShadingModes {
     });
   };
 
+  const applyMaterial = (root: Object3D, material: Material): void => {
+    root.traverse((object) => {
+      if (!isModelMesh(object)) return;
+      if (!originals.has(object)) originals.set(object, object.material);
+      const original = originals.get(object)!;
+      object.material = Array.isArray(original) ? original.map(() => material) : material;
+    });
+  };
+
   return {
     apply,
+    applyMaterial,
     derivedMaterialCount: () => [...derived.values()].reduce((total, looks) => total + looks.size, 0),
     dispose(root) {
       apply(root, 'lit');

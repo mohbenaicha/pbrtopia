@@ -1,4 +1,8 @@
-import { NeutralToneMapping, Quaternion, Scene, WebGLRenderer, type OrthographicCamera, type PerspectiveCamera } from 'three';
+import { NeutralToneMapping, Quaternion, Scene, WebGLRenderer, type Material, type OrthographicCamera, type PerspectiveCamera } from 'three';
+import { captureThumbnail, type ThumbnailSpec } from './captureThumbnail';
+import { createMaterialFlash } from './materialFlash';
+import { createSurfacePicker } from './pickSurface';
+import { createViewportHandle, type ViewportHandle } from './viewportHandle';
 import { createCameraRig, viewDirectionForAxis, type CameraRig, type Projection, type ViewAxis } from './cameraRig';
 import { runCameraTransition } from './cameraTransition';
 import { watchContextLoss } from './contextLoss';
@@ -20,9 +24,13 @@ export interface Viewport {
   scene: Scene;
   readonly camera: PerspectiveCamera | OrthographicCamera; // whichever projection is active
   cameraRig: CameraRig; // target, radius and both cameras; read-only for features
+  readonly handle: ViewportHandle; // what projection mode uses: picking, pixel and world sizes, camera changes
   loadModelAsset(glb: ArrayBuffer): Promise<ViewportResult<ModelAsset>>; // replaces the shown model; on failure the old one stays
   unloadModel(): void;
-  setShadingMode(mode: ShadingMode): void;
+  setShadingMode(mode: ShadingMode): void; // remembered while a projection material is set
+  setProjectionMaterial(material: Material | null): void; // replaces the model's look until cleared; the caller owns and disposes the material
+  flashMaterial(material: Material): Promise<void>; // shows the material over the model three times, then the normal look; resolves when done
+  captureThumbnail(spec?: ThumbnailSpec): Promise<Blob>; // the current view cropped to the thumbnail shape
   setSettings(patch: Partial<ViewportSettings>): void;
   invalidate(): void;
   resetView(): void;
@@ -109,6 +117,14 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     },
   });
 
+  const handle = createViewportHandle({
+    canvas,
+    camera: () => rig.active,
+    pick: createSurfacePicker({ canvas, camera: () => rig.active, model: models.root }),
+    events,
+  });
+  const flash = createMaterialFlash({ show: models.setFlashMaterial });
+
   const environment = createEnvironment({
     scene,
     loader: createEnvironmentLoader(renderer),
@@ -135,9 +151,13 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
       return rig.active;
     },
     cameraRig: rig,
+    handle,
     loadModelAsset: models.load,
     unloadModel: models.unload,
     setShadingMode: models.setShadingMode,
+    setProjectionMaterial: models.setProjectionMaterial,
+    flashMaterial: flash.start,
+    captureThumbnail: (spec) => captureThumbnail(() => renderer.render(scene, rig.active), canvas, spec),
     setSettings: applySettings,
     invalidate: scheduler.invalidate,
     resetView() {
@@ -168,6 +188,8 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     on: events.on,
     dispose() {
       cancelTransition();
+      flash.dispose();
+      handle.dispose();
       environment.dispose();
       models.dispose();
       orbit.dispose();

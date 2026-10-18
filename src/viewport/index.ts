@@ -10,3 +10,6 @@ export { ViewportCanvas, type ViewportCanvasProps } from './ui/ViewportCanvas';
 export { ViewportCorner, type ViewportCornerProps } from './ui/ViewportCorner';
 export { ViewportSettingsPanel, type ViewportSettingsPanelProps } from './ui/ViewportSettingsPanel';
 export { HDRI_CHOICES, type HdriChoice } from './hdriCatalog';
+export type { ViewportHandle } from './viewportHandle';
+export type { SurfaceHit } from './pickSurface';
+export type { ThumbnailSpec } from './captureThumbnail';

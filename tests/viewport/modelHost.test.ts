@@ -1,4 +1,4 @@
-import { Scene, type Mesh, type ShaderMaterial } from 'three';
+import { Scene, ShaderMaterial, type Mesh } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { createCameraRig } from '../../src/viewport/cameraRig';
 import { createModelHost } from '../../src/viewport/modelHost';
@@ -74,6 +74,65 @@ describe('model host', () => {
     expect(((meshesIn(scene)[0]!.material) as ShaderMaterial).isShaderMaterial).toBe(true);
     host.setShadingMode('lit');
     expect(((meshesIn(scene)[0]!.material) as ShaderMaterial).isShaderMaterial).toBeUndefined();
+  });
+
+  it('R17 a projection material replaces the look of the model, the shading mode is remembered but not shown, and clearing it restores the mode', async () => {
+    const { scene, host, invalidate } = setup();
+    await host.load(buildTriangleGlb());
+    host.setShadingMode('rough');
+    const roughLook = meshesIn(scene)[0]!.material;
+    const projection = new ShaderMaterial();
+    invalidate.mockClear();
+    host.setProjectionMaterial(projection);
+    expect(meshesIn(scene)[0]!.material).toBe(projection);
+    expect(invalidate).toHaveBeenCalled();
+    host.setShadingMode('metal');
+    expect(meshesIn(scene)[0]!.material).toBe(projection);
+    host.setProjectionMaterial(null);
+    expect((meshesIn(scene)[0]!.material as ShaderMaterial).isShaderMaterial).toBe(true);
+    expect(meshesIn(scene)[0]!.material).not.toBe(roughLook); // metal, the last mode chosen
+    host.setShadingMode('lit');
+    expect(((meshesIn(scene)[0]!.material) as ShaderMaterial).isShaderMaterial).toBeUndefined();
+  });
+
+  it('R17 a model loaded while a projection material is set shows it, and the wireframe overlay keeps its own material', async () => {
+    const { scene, host } = setup();
+    const projection = new ShaderMaterial();
+    host.setSettings({ wireframe: true });
+    host.setProjectionMaterial(projection);
+    await host.load(buildTriangleGlb());
+    expect(meshesIn(scene)[0]!.material).toBe(projection);
+    const overlayMaterials: unknown[] = [];
+    scene.traverse((object) => {
+      if (object.userData['isWireframeOverlay'] === true) overlayMaterials.push((object as Mesh).material);
+    });
+    expect(overlayMaterials).toHaveLength(1);
+    expect(overlayMaterials[0]).not.toBe(projection);
+  });
+
+  it('R17 a flash material shows on top of the projection material and taking it away shows the projection material again', async () => {
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    const projection = new ShaderMaterial();
+    const flash = new ShaderMaterial();
+    host.setProjectionMaterial(projection);
+    host.setFlashMaterial(flash);
+    expect(meshesIn(scene)[0]!.material).toBe(flash);
+    host.setFlashMaterial(null);
+    expect(meshesIn(scene)[0]!.material).toBe(projection);
+    host.setProjectionMaterial(null);
+    host.setFlashMaterial(flash);
+    host.setFlashMaterial(null);
+    expect(((meshesIn(scene)[0]!.material) as ShaderMaterial).isShaderMaterial).toBeUndefined();
+  });
+
+  it('R17 the model root is reported while a model is shown and not after it is removed', async () => {
+    const { host } = setup();
+    expect(host.root()).toBeUndefined();
+    await host.load(buildTriangleGlb());
+    expect(host.root()).toBeDefined();
+    host.unload();
+    expect(host.root()).toBeUndefined();
   });
 
   it('R14 the wireframe setting adds and removes the overlay, including on a model loaded after it was set', async () => {

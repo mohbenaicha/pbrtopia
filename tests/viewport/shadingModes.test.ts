@@ -19,6 +19,33 @@ function sceneWithTwoMaterials() {
 const materialOf = (mesh: Mesh): Material => mesh.material as Material;
 
 describe('shading modes', () => {
+  it('R17 applying one material to the whole model replaces every look and the original materials come back with any mode', () => {
+    const { root, shared, other, first, third } = sceneWithTwoMaterials();
+    const modes = createShadingModes(createMapAdjustUniforms());
+    const replacement = new MeshBasicMaterial();
+    modes.applyMaterial(root, replacement); // before any mode was ever applied
+    expect(materialOf(first)).toBe(replacement);
+    expect(materialOf(third)).toBe(replacement);
+    modes.apply(root, 'lit');
+    expect(materialOf(first)).toBe(shared);
+    expect(materialOf(third)).toBe(other);
+    modes.applyMaterial(root, replacement);
+    modes.apply(root, 'albedo');
+    expect((materialOf(first) as MeshBasicMaterial).isMeshBasicMaterial).toBe(true);
+    expect(materialOf(first)).not.toBe(replacement);
+  });
+
+  it('R17 applying one material leaves the wireframe overlay with its own material', () => {
+    const { root, first } = sceneWithTwoMaterials();
+    const overlay = createWireframeOverlay(root);
+    overlay.setVisible(true);
+    const replacement = new MeshBasicMaterial();
+    createShadingModes(createMapAdjustUniforms()).applyMaterial(root, replacement);
+    const overlayMesh = first.children[0] as Mesh;
+    expect(overlayMesh.userData['isWireframeOverlay']).toBe(true);
+    expect(overlayMesh.material).not.toBe(replacement);
+  });
+
   it('R15 lit keeps each mesh on its own material, and the other four modes each give a different look', () => {
     const { root, shared, first } = sceneWithTwoMaterials();
     const modes = createShadingModes(createMapAdjustUniforms());
