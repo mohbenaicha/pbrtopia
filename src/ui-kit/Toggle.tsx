@@ -1,0 +1,20 @@
+import './Toggle.css';
+
+export interface ToggleProps {
+  label: string; // shown beside the switch and used as its accessible name
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+  hint?: string | undefined; // tooltip, e.g. why the switch is unavailable
+}
+
+// An on/off switch. The whole row is clickable; the real checkbox stays in place so the keyboard and screen readers work.
+export function Toggle({ label, checked, onChange, disabled = false, hint }: ToggleProps): React.JSX.Element {
+  return (
+    <label className="ui-toggle" data-disabled={disabled ? '' : undefined} title={hint}>
+      <span className="ui-toggle__label">{label}</span>
+      <input type="checkbox" role="switch" aria-label={label} aria-checked={checked} checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />
+      <span className="ui-toggle__track" aria-hidden="true" />
+    </label>
+  );
+}

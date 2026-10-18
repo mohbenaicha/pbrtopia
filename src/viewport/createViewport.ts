@@ -1,8 +1,10 @@
-import { Quaternion, Scene, WebGLRenderer, type OrthographicCamera, type PerspectiveCamera } from 'three';
+import { NeutralToneMapping, Quaternion, Scene, WebGLRenderer, type OrthographicCamera, type PerspectiveCamera } from 'three';
 import { createCameraRig, viewDirectionForAxis, type CameraRig, type Projection, type ViewAxis } from './cameraRig';
 import { runCameraTransition } from './cameraTransition';
 import { watchContextLoss } from './contextLoss';
 import type { ModelAsset } from './loadModelAsset';
+import { createEnvironment } from './environment';
+import { createEnvironmentLoader } from './environmentLoader';
 import { createModelHost } from './modelHost';
 import { createOrbitControls } from './orbitControlsSetup';
 import { watchPixelRatio } from './pixelRatio';
@@ -33,6 +35,7 @@ export interface Viewport {
 // Puts a WebGL canvas in `container`, keeps it the container's size at the display's pixel ratio, and draws only on invalidate.
 export function createViewport(container: HTMLElement, options: { settings?: ViewportSettings } = {}): Viewport {
   const renderer = new WebGLRenderer({ antialias: true });
+  renderer.toneMapping = NeutralToneMapping; // keeps albedo colours true under the HDRI light
   const scene = new Scene();
   const rig = createCameraRig(1);
   rig.resetView();
@@ -106,6 +109,23 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     },
   });
 
+  const environment = createEnvironment({
+    scene,
+    loader: createEnvironmentLoader(renderer),
+    invalidate: scheduler.invalidate,
+    onRotationSettled: (degrees) => {
+      models.setSettings({ environmentRotationDeg: degrees });
+      events.emit('settings-changed', models.settings());
+    },
+  });
+  const applySettings = (patch: Partial<ViewportSettings>): void => {
+    models.setSettings(patch);
+    const settings = models.settings();
+    setProjection(settings.projection);
+    environment.applySettings(settings);
+  };
+  applySettings({});
+
   scheduler.invalidate();
 
   const viewport: Viewport = {
@@ -118,7 +138,7 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     loadModelAsset: models.load,
     unloadModel: models.unload,
     setShadingMode: models.setShadingMode,
-    setSettings: models.setSettings,
+    setSettings: applySettings,
     invalidate: scheduler.invalidate,
     resetView() {
       cancelTransition();
@@ -148,6 +168,7 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     on: events.on,
     dispose() {
       cancelTransition();
+      environment.dispose();
       models.dispose();
       orbit.dispose();
       observer.disconnect();

@@ -12,3 +12,4 @@ export { Select, type SelectProps, type SelectOption } from './Select';
 export { Slider, type SliderProps } from './Slider';
 export { Spinner } from './Spinner';
 export { TextInput, type TextInputProps } from './TextInput';
+export { Toggle, type ToggleProps } from './Toggle';

@@ -1,8 +1,11 @@
+import type { ViewportSettings } from './viewportSettings';
+
 export interface ViewportEventPayloads {
   'context-lost': undefined;
   'context-restored': undefined;
   'camera-change': undefined;
   'projection-changed': 'perspective' | 'orthographic';
+  'settings-changed': ViewportSettings; // the viewport changed a setting by itself, e.g. where auto-rotate stopped
 }
 
 export type ViewportEventName = keyof ViewportEventPayloads;

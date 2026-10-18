@@ -8,3 +8,5 @@ export type { ViewportError, ViewportErrorCode, ViewportResult } from './viewpor
 export { DEFAULT_VIEWPORT_SETTINGS, clampViewportSettings, type MapAdjust, type ViewportSettings } from './viewportSettings';
 export { ViewportCanvas, type ViewportCanvasProps } from './ui/ViewportCanvas';
 export { ViewportCorner, type ViewportCornerProps } from './ui/ViewportCorner';
+export { ViewportSettingsPanel, type ViewportSettingsPanelProps } from './ui/ViewportSettingsPanel';
+export { HDRI_CHOICES, type HdriChoice } from './hdriCatalog';
