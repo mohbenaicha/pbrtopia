@@ -15,7 +15,11 @@ const generationForbidden = [
 ];
 
 const projectsForbidden = [
-  { group: ['**/projection/**', '**/generation', '**/generation/**', '**/keys', '**/keys/**', '**/viewport', '**/viewport/**', '**/app', '**/app/**'], ...message('Projects holds record types and storage only.') },
+  { group: ['**/generation', '**/generation/**', '**/keys', '**/keys/**', '**/viewport', '**/viewport/**', '**/app', '**/app/**'], ...message('Projects holds record types and storage only.') },
+];
+// Projects may name the engine's record types (`import type`) but never import engine code.
+const projectsEngineTypesOnly = [
+  { group: ['**/projection/**'], allowTypeImports: true, ...message('Projects may import engine record types only (import type).') },
 ];
 
 const keysForbidden = [
@@ -51,6 +55,10 @@ export default tseslint.config(
   restrict(['src/projection/engine/**/*.ts'], engineForbidden),
   restrict(['src/generation/**/*.ts', 'src/generation/**/*.tsx'], generationForbidden),
   restrict(['src/projects/**/*.ts', 'src/projects/**/*.tsx'], projectsForbidden),
+  {
+    files: ['src/projects/**/*.ts', 'src/projects/**/*.tsx'],
+    rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: projectsEngineTypesOnly }] },
+  },
   restrict(['src/keys/**/*.ts', 'src/keys/**/*.tsx'], keysForbidden),
   restrict(['src/app/**/*.ts', 'src/app/**/*.tsx'], []),
   {

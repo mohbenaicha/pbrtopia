@@ -41,8 +41,15 @@ describe('import boundaries (specs/architecture.md)', () => {
   it('T0 rejects a projects import of the engine and of generation', async () => {
     const engineRules = await lintImport('src/projects/projectStore.ts', "import * as e from '../projection/engine/index';");
     const generationRules = await lintImport('src/projects/projectStore.ts', "import * as g from '../generation/index';");
-    expect(engineRules).toContain('no-restricted-imports');
+    expect(engineRules).toContain('@typescript-eslint/no-restricted-imports');
     expect(generationRules).toContain('no-restricted-imports');
+  });
+
+  it('P0 allows a projects import of engine record types only, never engine code', async () => {
+    const typeRules = await lintImport('src/projects/records/projectRecords.ts', "import type { MeshRecord } from '../../projection/engine';");
+    const valueRules = await lintImport('src/projects/records/projectRecords.ts', "import { createProjectionSession } from '../../projection/engine';");
+    expect(typeRules).not.toContain('@typescript-eslint/no-restricted-imports');
+    expect(valueRules).toContain('@typescript-eslint/no-restricted-imports');
   });
 
   it('T0 rejects deep engine imports from mode and viewport (only index.ts is public)', async () => {
