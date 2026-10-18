@@ -1,15 +1,22 @@
-import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { Quaternion, Scene, WebGLRenderer, type OrthographicCamera, type PerspectiveCamera } from 'three';
+import { createCameraRig, viewDirectionForAxis, type CameraRig, type Projection, type ViewAxis } from './cameraRig';
+import { runCameraTransition } from './cameraTransition';
 import { watchContextLoss } from './contextLoss';
+import { createOrbitControls } from './orbitControlsSetup';
 import { watchPixelRatio } from './pixelRatio';
 import { createRenderScheduler } from './renderScheduler';
 import { createViewportEvents, type ViewportEvents } from './viewportEvents';
 
-// The part of the contract in specs/app/viewport-layout/contracts.md that exists so far; later tasks add the camera rig, model, looks and slots.
+// The part of the contract in specs/app/viewport-layout/contracts.md that exists so far; later tasks add the model, looks and slots.
 export interface Viewport {
   renderer: WebGLRenderer;
   scene: Scene;
-  camera: PerspectiveCamera;
+  readonly camera: PerspectiveCamera | OrthographicCamera; // whichever projection is active
+  cameraRig: CameraRig; // target, radius and both cameras; read-only for features
   invalidate(): void;
+  resetView(): void;
+  snapToAxis(axis: ViewAxis): void;
+  setProjection(projection: Projection): void;
   on: ViewportEvents['on'];
   dispose(): void;
 }
@@ -18,10 +25,10 @@ export interface Viewport {
 export function createViewport(container: HTMLElement): Viewport {
   const renderer = new WebGLRenderer({ antialias: true });
   const scene = new Scene();
-  const camera = new PerspectiveCamera(40, 1, 0.05, 1000);
-  camera.position.set(0, 0, 3);
+  const rig = createCameraRig(1);
+  rig.resetView();
   const events = createViewportEvents();
-  const scheduler = createRenderScheduler(() => renderer.render(scene, camera));
+  const scheduler = createRenderScheduler(() => renderer.render(scene, rig.active));
 
   const canvas = renderer.domElement;
   canvas.style.display = 'block';
@@ -38,8 +45,7 @@ export function createViewport(container: HTMLElement): Viewport {
     renderer.setSize(width, height, false);
     canvas.style.width = '100%';
     canvas.style.height = '100%';
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
+    rig.setAspect(width / height);
     scheduler.invalidate();
   };
 
@@ -63,15 +69,61 @@ export function createViewport(container: HTMLElement): Viewport {
     },
   });
 
+  const onCameraMoved = (): void => {
+    rig.syncOrthographic();
+    events.emit('camera-change');
+    scheduler.invalidate();
+  };
+  let cancelTransition = (): void => undefined;
+  const orbit = createOrbitControls(rig, canvas, () => viewport.resetView());
+  orbit.controls.addEventListener('change', onCameraMoved);
+  orbit.controls.addEventListener('start', () => cancelTransition());
+
+  const setProjection = (projection: Projection): void => {
+    if (!rig.setProjection(projection)) return;
+    events.emit('projection-changed', projection);
+    scheduler.invalidate();
+  };
+
   scheduler.invalidate();
 
-  return {
+  const viewport: Viewport = {
     renderer,
     scene,
-    camera,
+    get camera() {
+      return rig.active;
+    },
+    cameraRig: rig,
     invalidate: scheduler.invalidate,
+    resetView() {
+      cancelTransition();
+      rig.resetView();
+      orbit.controls.update();
+      onCameraMoved();
+    },
+    snapToAxis(axis) {
+      cancelTransition();
+      setProjection('orthographic');
+      const fromDirection = rig.perspective.position.clone().sub(rig.target).normalize();
+      const fromTarget = rig.target.clone();
+      const fromDistance = rig.distance();
+      const toDirection = viewDirectionForAxis(axis);
+      const toTarget = rig.homeCenter();
+      const toDistance = rig.homeDistance();
+      const turn = new Quaternion().setFromUnitVectors(fromDirection, toDirection);
+      cancelTransition = runCameraTransition((progress) => {
+        rig.target.lerpVectors(fromTarget, toTarget, progress);
+        const direction = progress === 1 ? toDirection : fromDirection.clone().applyQuaternion(new Quaternion().slerp(turn, progress));
+        rig.placeCamera(direction, fromDistance + (toDistance - fromDistance) * progress);
+        orbit.controls.update();
+        onCameraMoved();
+      });
+    },
+    setProjection,
     on: events.on,
     dispose() {
+      cancelTransition();
+      orbit.dispose();
       observer.disconnect();
       stopWatchingPixelRatio();
       stopWatchingContext();
@@ -82,4 +134,5 @@ export function createViewport(container: HTMLElement): Viewport {
       canvas.remove();
     },
   };
+  return viewport;
 }
