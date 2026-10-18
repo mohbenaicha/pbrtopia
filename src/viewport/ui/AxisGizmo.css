@@ -1,0 +1,49 @@
+.axis-gizmo {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  pointer-events: none; /* only the discs take the mouse, so the canvas behind keeps orbit and zoom */
+}
+
+.axis-gizmo__disc {
+  position: absolute;
+  left: calc(50% + var(--disc-x));
+  top: calc(50% + var(--disc-y));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--disc-colour);
+  color: var(--bg-page);
+  font: 700 12px/1 var(--font);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+.axis-gizmo__disc[data-axis$='x'] { --disc-colour: var(--axis-x); }
+.axis-gizmo__disc[data-axis$='y'] { --disc-colour: var(--axis-y); }
+.axis-gizmo__disc[data-axis$='z'] { --disc-colour: var(--axis-z); }
+
+.axis-gizmo__disc:not([data-positive]) {
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  opacity: 0.55;
+}
+
+.axis-gizmo__disc:hover {
+  transform: scale(1.18);
+  opacity: 1;
+}
+
+.axis-gizmo__disc:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+  opacity: 1;
+}

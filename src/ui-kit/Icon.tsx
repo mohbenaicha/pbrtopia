@@ -5,7 +5,7 @@ import perspectiveUrl from './icons/perspective.png';
 import { LINE_ICON_PATHS, type LineIconName } from './lineIcons';
 import './Icon.css';
 
-// Icons the user supplied as images (R3). They are drawn as a mask so the token colour tints them and hover and disabled states apply.
+// Icons the user supplied as images (R3). They are drawn as they are, dimmed until the button is hovered or pressed.
 const IMAGE_ICON_URLS = {
   perspective: perspectiveUrl,
   orthographic: orthographicUrl,
