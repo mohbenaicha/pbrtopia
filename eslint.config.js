@@ -32,18 +32,31 @@ const modeForbidden = [
   { group: ['**/projects', '**/projects/**', '**/keys', '**/keys/**', '**/generation', '**/generation/**', '**/app', '**/app/**'], ...message('Mode imports the engine, viewport and ui-kit only.') },
 ];
 
+// Everything outside ui-kit reaches it through its index only (R21).
+const uiKitInternals = { group: ['**/ui-kit/*'], ...message('Import the shared UI from ui-kit, not from a file inside it.') };
+
+// ui-kit is the bottom layer: it imports no other src folder.
+const uiKitForbidden = [
+  { group: ['**/projection', '**/projection/**', '**/generation', '**/generation/**', '**/projects', '**/projects/**', '**/keys', '**/keys/**', '**/viewport', '**/viewport/**', '**/app', '**/app/**'], ...message('ui-kit imports nothing from other src folders.') },
+];
+
 const restrict = (files, patterns) => ({
   files,
-  rules: { 'no-restricted-imports': ['error', { patterns }] },
+  rules: { 'no-restricted-imports': ['error', { patterns: [...patterns, uiKitInternals] }] },
 });
 
 export default tseslint.config(
   { ignores: ['node_modules', 'dist', 'research', 'specs', 'ui-demo', 'icons'] },
   ...tseslint.configs.recommended,
   restrict(['src/projection/engine/**/*.ts'], engineForbidden),
-  restrict(['src/generation/**/*.ts'], generationForbidden),
-  restrict(['src/projects/**/*.ts'], projectsForbidden),
-  restrict(['src/keys/**/*.ts'], keysForbidden),
+  restrict(['src/generation/**/*.ts', 'src/generation/**/*.tsx'], generationForbidden),
+  restrict(['src/projects/**/*.ts', 'src/projects/**/*.tsx'], projectsForbidden),
+  restrict(['src/keys/**/*.ts', 'src/keys/**/*.tsx'], keysForbidden),
+  restrict(['src/app/**/*.ts', 'src/app/**/*.tsx'], []),
+  {
+    files: ['src/ui-kit/**/*.ts', 'src/ui-kit/**/*.tsx'],
+    rules: { 'no-restricted-imports': ['error', { patterns: uiKitForbidden }] },
+  },
   restrict(['src/viewport/**/*.ts', 'src/viewport/**/*.tsx'], viewportForbidden),
   restrict(['src/projection/mode/**/*.ts', 'src/projection/mode/**/*.tsx'], modeForbidden),
 );

@@ -51,4 +51,21 @@ describe('import boundaries (specs/architecture.md)', () => {
     expect(modeRules).toContain('no-restricted-imports');
     expect(viewportRules).toContain('no-restricted-imports');
   });
+
+  it('R21 rejects a feature import of a ui-kit file, and allows the ui-kit entry point', async () => {
+    const features = ['src/viewport/Corner.tsx', 'src/app/Shell.tsx', 'src/keys/KeyForm.tsx', 'src/generation/Panel.tsx', 'src/projects/List.tsx', 'src/projection/mode/Panel.tsx'];
+    for (const file of features) {
+      const depth = file.split('/').length - 1;
+      const up = '../'.repeat(depth);
+      expect(await lintImport(file, `import { Button } from '${up}ui-kit/Button';`), file).toContain('no-restricted-imports');
+      expect(await lintImport(file, `import { Button } from '${up}ui-kit';`), file).not.toContain('no-restricted-imports');
+    }
+  });
+
+  it('R21 rejects a ui-kit import of any other src folder', async () => {
+    for (const target of ['viewport', 'app', 'keys', 'generation', 'projects', 'projection/engine']) {
+      const rules = await lintImport('src/ui-kit/Button.tsx', `import * as x from '../${target}/index';`);
+      expect(rules, target).toContain('no-restricted-imports');
+    }
+  });
 });

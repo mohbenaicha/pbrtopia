@@ -1,0 +1,48 @@
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ui-field__label {
+  color: var(--text-dim);
+}
+
+.ui-text-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+  color: var(--text);
+  font: inherit;
+  transition: background var(--transition-fast);
+}
+
+.ui-text-input::placeholder {
+  color: var(--text-hint);
+}
+
+.ui-text-input:hover:not(:disabled):not(:read-only) {
+  background: var(--bg-button);
+}
+
+.ui-text-input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.ui-text-input[data-error] {
+  box-shadow: inset 3px 0 0 var(--error);
+}
+
+.ui-text-input:read-only {
+  color: var(--text-dim);
+}
+
+.ui-text-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

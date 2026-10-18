@@ -1,0 +1,22 @@
+.ui-icon {
+  display: inline-block;
+  flex: none;
+  width: var(--icon-size, 18px);
+  height: var(--icon-size, 18px);
+  color: inherit;
+}
+
+.ui-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* A supplied image: its alpha is the shape, the colour comes from the surrounding text colour. */
+.ui-icon--image {
+  background-color: currentColor;
+  mask-image: var(--icon-url);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}

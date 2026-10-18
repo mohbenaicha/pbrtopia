@@ -1,0 +1,16 @@
+.ui-spinner {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 25%, currentColor 100%);
+  mask-image: radial-gradient(circle, transparent 0 55%, currentColor 56%);
+  animation: ui-spin 800ms linear infinite;
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

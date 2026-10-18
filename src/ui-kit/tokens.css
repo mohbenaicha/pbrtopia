@@ -1,0 +1,39 @@
+/* Design tokens (specs/app/viewport-layout R2). The only file that may hold colour literals (R21). */
+:root {
+  --bg-page: #0a0a0b;
+  --bg-panel: #101012;
+  --bg-input: #17171a;
+  --bg-button: #212125;
+  --bg-hover: #2b2b30;
+
+  --text: #ece8e1;
+  --text-dim: #96928a;
+  --text-hint: #5f5c56;
+
+  --accent: #f08a24;
+  --accent-hover: #ffa443;
+  --accent-text: #1b1005;
+  --number: #d9a82e;
+  --error: #ff7a66;
+
+  --radius-control: 8px;
+  --radius-group: 11px;
+  --radius-dialog: 14px;
+  --radius-panel: 0;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  --control-height: 38px;
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-size: 13.5px;
+  --line-height: 1.35;
+
+  --focus-ring: 2px solid var(--accent);
+  --backdrop: rgba(0, 0, 0, 0.6);
+  --shadow-overlay: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --transition-fast: 120ms ease;
+}

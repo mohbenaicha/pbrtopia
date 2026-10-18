@@ -1,0 +1,16 @@
+.ui-popover {
+  position: relative;
+  display: inline-block;
+}
+
+.ui-popover__panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 10;
+  min-width: 240px;
+  padding: var(--space-4);
+  border-radius: var(--radius-group);
+  background: var(--bg-panel);
+  box-shadow: var(--shadow-overlay);
+}
