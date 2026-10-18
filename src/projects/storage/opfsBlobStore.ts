@@ -1,0 +1,105 @@
+import { storeFailure, type StoreResult } from '../storeError';
+import { checkBlobAddress, checkProjectId, isSafeProjectId, storeOk, type BlobStore } from './BlobStore';
+
+const isNamed = (error: unknown, ...names: string[]): boolean => error instanceof DOMException && names.includes(error.name);
+
+function writeFailure(error: unknown): StoreResult<void> {
+  if (isNamed(error, 'QuotaExceededError')) return storeFailure('quota-exceeded', 'There is no room left to save this file. Free up space or export your projects.');
+  return storeFailure('storage-unavailable', 'The browser would not save this file.');
+}
+
+// Folder handle for the app's blobs inside the browser's private file system (OPFS).
+export async function openOpfsRoot(): Promise<FileSystemDirectoryHandle> {
+  const origin = await navigator.storage.getDirectory();
+  return origin.getDirectoryHandle('projects', { create: true });
+}
+
+// BlobStore over OPFS: `<root>/<projectId>/<key>`, with the key's folders created as needed.
+export function createOpfsBlobStore(root: FileSystemDirectoryHandle): BlobStore {
+  async function findFolder(projectId: string, folders: string[], create: boolean): Promise<FileSystemDirectoryHandle | null> {
+    try {
+      let folder = await root.getDirectoryHandle(projectId, { create });
+      for (const name of folders) folder = await folder.getDirectoryHandle(name, { create });
+      return folder;
+    } catch (error) {
+      if (isNamed(error, 'NotFoundError', 'TypeMismatchError')) return null;
+      throw error;
+    }
+  }
+
+  async function collectKeys(folder: FileSystemDirectoryHandle, path: string, into: string[]): Promise<void> {
+    for await (const [name, entry] of folder.entries()) {
+      if (entry.kind === 'directory') await collectKeys(entry as FileSystemDirectoryHandle, `${path}${name}/`, into);
+      else into.push(`${path}${name}`);
+    }
+  }
+
+  return {
+    async put(projectId, key, blob) {
+      const bad = checkBlobAddress(projectId, key);
+      if (!bad.ok) return bad;
+      const parts = key.split('/');
+      const fileName = parts.pop() as string;
+      try {
+        const folder = await findFolder(projectId, parts, true);
+        if (!folder) return storeFailure('storage-unavailable', 'The browser would not save this file.');
+        const file = await folder.getFileHandle(fileName, { create: true });
+        const writable = await file.createWritable();
+        try {
+          await writable.write(blob);
+          await writable.close(); // the old contents are replaced only here, so a failed write keeps them
+        } catch (error) {
+          await writable.abort().catch(() => undefined);
+          throw error;
+        }
+        return storeOk;
+      } catch (error) {
+        return writeFailure(error);
+      }
+    },
+    async get(projectId, key) {
+      if (!checkBlobAddress(projectId, key).ok) return null;
+      const parts = key.split('/');
+      const fileName = parts.pop() as string;
+      try {
+        const folder = await findFolder(projectId, parts, false);
+        if (!folder) return null;
+        return await (await folder.getFileHandle(fileName)).getFile();
+      } catch (error) {
+        if (isNamed(error, 'NotFoundError', 'TypeMismatchError')) return null;
+        throw error;
+      }
+    },
+    async delete(projectId, key) {
+      const bad = checkBlobAddress(projectId, key);
+      if (!bad.ok) return bad;
+      const parts = key.split('/');
+      const fileName = parts.pop() as string;
+      try {
+        const folder = await findFolder(projectId, parts, false);
+        await folder?.removeEntry(fileName);
+        return storeOk;
+      } catch (error) {
+        return isNamed(error, 'NotFoundError', 'TypeMismatchError') ? storeOk : writeFailure(error);
+      }
+    },
+    async deleteProject(projectId) {
+      const bad = checkProjectId(projectId);
+      if (!bad.ok) return bad;
+      try {
+        await root.removeEntry(projectId, { recursive: true });
+        return storeOk;
+      } catch (error) {
+        return isNamed(error, 'NotFoundError') ? storeOk : writeFailure(error);
+      }
+    },
+    async list(projectId, prefix = '') {
+      if (!isSafeProjectId(projectId)) return [];
+      const folder = await findFolder(projectId, [], false);
+      if (!folder) return [];
+      const keys: string[] = [];
+      await collectKeys(folder, '', keys);
+      return keys.filter((key) => key.startsWith(prefix)).sort();
+    },
+  };
+}
