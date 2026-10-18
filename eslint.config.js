@@ -1,0 +1,49 @@
+import tseslint from 'typescript-eslint';
+
+// Import boundaries from specs/architecture.md. Only `index.ts` of each folder is public.
+const message = (text) => ({ message: text });
+
+const engineForbidden = [
+  { group: ['react', 'react-dom', 'react/*', 'react-dom/*', 'zustand', 'zustand/*'], ...message('The engine is framework-free.') },
+  { group: ['**/projects', '**/projects/**', '**/keys', '**/keys/**', '**/generation', '**/generation/**'], ...message('The engine knows nothing of storage, keys or providers.') },
+  { group: ['**/viewport', '**/viewport/**', '**/app', '**/app/**', '**/ui-kit', '**/ui-kit/**', '**/projection/mode', '**/projection/mode/**'], ...message('The engine does not import UI or app code.') },
+];
+
+const generationForbidden = [
+  { group: ['**/projection/**'], ...message('Generation takes atlas bytes from the caller and never imports the engine or mode.') },
+  { group: ['**/projects', '**/projects/**', '**/viewport', '**/viewport/**', '**/app', '**/app/**'], ...message('Generation may import keys and ui-kit only.') },
+];
+
+const projectsForbidden = [
+  { group: ['**/projection/**', '**/generation', '**/generation/**', '**/keys', '**/keys/**', '**/viewport', '**/viewport/**', '**/app', '**/app/**'], ...message('Projects holds record types and storage only.') },
+];
+
+const keysForbidden = [
+  { group: ['**/projection/**', '**/generation', '**/generation/**', '**/projects', '**/projects/**', '**/viewport', '**/viewport/**', '**/app', '**/app/**'], ...message('Keys depends on nothing but ui-kit.') },
+];
+
+const viewportForbidden = [
+  { group: ['**/projection/**', '**/generation', '**/generation/**', '**/projects', '**/projects/**', '**/keys', '**/keys/**', '**/app', '**/app/**'], ...message('The viewport imports three and ui-kit only.') },
+];
+
+// Mode may use the engine's public entry only (not its internal folders).
+const modeForbidden = [
+  { group: ['**/engine/*/**', '**/projection/engine/*/**'], ...message('Import the engine through its index only.') },
+  { group: ['**/projects', '**/projects/**', '**/keys', '**/keys/**', '**/generation', '**/generation/**', '**/app', '**/app/**'], ...message('Mode imports the engine, viewport and ui-kit only.') },
+];
+
+const restrict = (files, patterns) => ({
+  files,
+  rules: { 'no-restricted-imports': ['error', { patterns }] },
+});
+
+export default tseslint.config(
+  { ignores: ['node_modules', 'dist', 'research', 'specs', 'ui-demo', 'icons'] },
+  ...tseslint.configs.recommended,
+  restrict(['src/projection/engine/**/*.ts'], engineForbidden),
+  restrict(['src/generation/**/*.ts'], generationForbidden),
+  restrict(['src/projects/**/*.ts'], projectsForbidden),
+  restrict(['src/keys/**/*.ts'], keysForbidden),
+  restrict(['src/viewport/**/*.ts', 'src/viewport/**/*.tsx'], viewportForbidden),
+  restrict(['src/projection/mode/**/*.ts', 'src/projection/mode/**/*.tsx'], modeForbidden),
+);
