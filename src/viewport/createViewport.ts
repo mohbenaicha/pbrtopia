@@ -2,17 +2,26 @@ import { Quaternion, Scene, WebGLRenderer, type OrthographicCamera, type Perspec
 import { createCameraRig, viewDirectionForAxis, type CameraRig, type Projection, type ViewAxis } from './cameraRig';
 import { runCameraTransition } from './cameraTransition';
 import { watchContextLoss } from './contextLoss';
+import type { ModelAsset } from './loadModelAsset';
+import { createModelHost } from './modelHost';
 import { createOrbitControls } from './orbitControlsSetup';
 import { watchPixelRatio } from './pixelRatio';
 import { createRenderScheduler } from './renderScheduler';
+import type { ShadingMode } from './shadingModes';
+import type { ViewportResult } from './viewportError';
 import { createViewportEvents, type ViewportEvents } from './viewportEvents';
+import { DEFAULT_VIEWPORT_SETTINGS, type ViewportSettings } from './viewportSettings';
 
-// The part of the contract in specs/app/viewport-layout/contracts.md that exists so far; later tasks add the model, looks and slots.
+// The part of the contract in specs/app/viewport-layout/contracts.md that exists so far; later tasks add the environment, picking and slots.
 export interface Viewport {
   renderer: WebGLRenderer;
   scene: Scene;
   readonly camera: PerspectiveCamera | OrthographicCamera; // whichever projection is active
   cameraRig: CameraRig; // target, radius and both cameras; read-only for features
+  loadModelAsset(glb: ArrayBuffer): Promise<ViewportResult<ModelAsset>>; // replaces the shown model; on failure the old one stays
+  unloadModel(): void;
+  setShadingMode(mode: ShadingMode): void;
+  setSettings(patch: Partial<ViewportSettings>): void;
   invalidate(): void;
   resetView(): void;
   snapToAxis(axis: ViewAxis): void;
@@ -22,7 +31,7 @@ export interface Viewport {
 }
 
 // Puts a WebGL canvas in `container`, keeps it the container's size at the display's pixel ratio, and draws only on invalidate.
-export function createViewport(container: HTMLElement): Viewport {
+export function createViewport(container: HTMLElement, options: { settings?: ViewportSettings } = {}): Viewport {
   const renderer = new WebGLRenderer({ antialias: true });
   const scene = new Scene();
   const rig = createCameraRig(1);
@@ -85,6 +94,18 @@ export function createViewport(container: HTMLElement): Viewport {
     scheduler.invalidate();
   };
 
+  const models = createModelHost({
+    scene,
+    rig,
+    invalidate: scheduler.invalidate,
+    settings: options.settings ?? DEFAULT_VIEWPORT_SETTINGS,
+    onFramed: () => {
+      orbit.applyDistanceLimits();
+      orbit.controls.update();
+      onCameraMoved();
+    },
+  });
+
   scheduler.invalidate();
 
   const viewport: Viewport = {
@@ -94,6 +115,10 @@ export function createViewport(container: HTMLElement): Viewport {
       return rig.active;
     },
     cameraRig: rig,
+    loadModelAsset: models.load,
+    unloadModel: models.unload,
+    setShadingMode: models.setShadingMode,
+    setSettings: models.setSettings,
     invalidate: scheduler.invalidate,
     resetView() {
       cancelTransition();
@@ -123,6 +148,7 @@ export function createViewport(container: HTMLElement): Viewport {
     on: events.on,
     dispose() {
       cancelTransition();
+      models.dispose();
       orbit.dispose();
       observer.disconnect();
       stopWatchingPixelRatio();
