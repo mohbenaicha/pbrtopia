@@ -1,0 +1,47 @@
+export interface FrameClock {
+  requestAnimationFrame(callback: () => void): number;
+  cancelAnimationFrame(handle: number): void;
+}
+
+export interface RenderScheduler {
+  invalidate(): void; // ask for a draw on the next animation frame
+  pause(): void; // draw nothing until resume (context lost)
+  resume(): void; // draw once now, then only on invalidate
+  dispose(): void;
+}
+
+// Draws only when asked: any number of invalidate calls before a frame give one draw, and an idle viewport costs no frames.
+export function createRenderScheduler(draw: () => void, clock: FrameClock = window): RenderScheduler {
+  let handle: number | null = null;
+  let paused = false;
+  let disposed = false;
+
+  const schedule = (): void => {
+    if (handle !== null || paused || disposed) return;
+    handle = clock.requestAnimationFrame(() => {
+      handle = null;
+      draw();
+    });
+  };
+
+  const cancel = (): void => {
+    if (handle !== null) clock.cancelAnimationFrame(handle);
+    handle = null;
+  };
+
+  return {
+    invalidate: schedule,
+    pause() {
+      paused = true;
+      cancel();
+    },
+    resume() {
+      paused = false;
+      schedule();
+    },
+    dispose() {
+      disposed = true;
+      cancel();
+    },
+  };
+}
