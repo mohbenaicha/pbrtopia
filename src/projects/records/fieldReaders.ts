@@ -41,6 +41,11 @@ export function readDuration(value: unknown, path: string): number {
   return value;
 }
 
+export function readNumber(value: unknown, path: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new FieldProblem(path);
+  return value;
+}
+
 export function readChoice<T extends string | number>(value: unknown, path: string, allowed: readonly T[]): T {
   const found = allowed.find((option) => option === value);
   if (found === undefined) throw new FieldProblem(path);
