@@ -18,12 +18,12 @@ export function applyMigrationSteps(raw: unknown, currentVersion: number, steps:
   if (found > currentVersion) {
     return storeFailure('schema-too-new', `This project was saved by a newer version of the app (data version ${found}; this app reads up to ${currentVersion}). Update the app to open it.`);
   }
-  let record: RawRecord = { ...raw };
+  let record: RawRecord = structuredClone(raw); // deep, so a step that changes a nested value never changes the caller's record
   for (let version = found; version < currentVersion; version += 1) {
     const step = steps[version];
     if (!step) return storeFailure('corrupt', `The saved project is at data version ${found} and cannot be upgraded (no step from ${version}).`);
     try {
-      record = { ...step({ ...record }), schemaVersion: version + 1 };
+      record = { ...step(structuredClone(record)), schemaVersion: version + 1 };
     } catch {
       return storeFailure('corrupt', `The saved project could not be upgraded from data version ${version}.`);
     }

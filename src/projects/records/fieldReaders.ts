@@ -59,7 +59,9 @@ export function readBlobKey(value: unknown, path: string): string {
 
 export function readList<T>(value: unknown, path: string, readItem: (item: unknown, itemPath: string) => T): T[] {
   if (!Array.isArray(value)) throw new FieldProblem(path);
-  return value.map((item, index) => readItem(item, `${path}[${index}]`));
+  const items: T[] = [];
+  for (let index = 0; index < value.length; index += 1) items.push(readItem(value[index], `${path}[${index}]`)); // not map(): it skips the holes of a sparse array
+  return items;
 }
 
 // An optional field is absent or undefined; null is not accepted (records are written without it).

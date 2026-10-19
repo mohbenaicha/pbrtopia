@@ -1,6 +1,6 @@
 import type { MeshRecord, UnwrapReport } from '../../projection/engine';
-import { readBlobKey, readChoice, readCount, readDuration, readList, readNonEmptyText, readObject, readOptional, readText, readTimestamp, type RawRecord } from './fieldReaders';
-import { CURRENT_SCHEMA_VERSION, type GenerateSettingsRecord, type ProjectRecord, type ReferenceImageRecord, type TextureRecord } from './projectRecords';
+import { FieldProblem, readBlobKey, readChoice, readCount, readDuration, readList, readNonEmptyText, readObject, readOptional, readText, readTimestamp, type RawRecord } from './fieldReaders';
+import { CURRENT_SCHEMA_VERSION, normalizeProjectName, type GenerateSettingsRecord, type ProjectRecord, type ReferenceImageRecord, type TextureRecord } from './projectRecords';
 
 function readUnwrap(value: unknown, path: string): UnwrapReport {
   const raw = readObject(value, path);
@@ -69,12 +69,19 @@ function readGenerateSettings(value: unknown, path: string): GenerateSettingsRec
   };
 }
 
+// The stored name follows the same rule as a new one: trimmed, 1 to 120 characters.
+function readProjectName(value: unknown): string {
+  const name = normalizeProjectName(readText(value, 'name'));
+  if (name === null) throw new FieldProblem('name');
+  return name;
+}
+
 // Reads a version-1 project from stored JSON. Unknown fields are dropped; a wrong or missing value throws a FieldProblem naming it.
 export function readProjectRecord(raw: RawRecord): ProjectRecord {
   const record: ProjectRecord = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     id: readNonEmptyText(raw['id'], 'id'),
-    name: readText(raw['name'], 'name'),
+    name: readProjectName(raw['name']),
     createdAt: readTimestamp(raw['createdAt'], 'createdAt'),
     updatedAt: readTimestamp(raw['updatedAt'], 'updatedAt'),
     mesh: readMesh(raw['mesh'], 'mesh'),

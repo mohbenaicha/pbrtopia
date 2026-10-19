@@ -43,13 +43,26 @@ export function createOpfsBlobStore(root: FileSystemDirectoryHandle): BlobStore 
       try {
         const folder = await findFolder(projectId, parts, true);
         if (!folder) return storeFailure('storage-unavailable', 'The browser would not save this file.');
-        const file = await folder.getFileHandle(fileName, { create: true });
-        const writable = await file.createWritable();
+        let created = false;
+        let file: FileSystemFileHandle;
         try {
-          await writable.write(blob);
-          await writable.close(); // the old contents are replaced only here, so a failed write keeps them
+          file = await folder.getFileHandle(fileName);
         } catch (error) {
-          await writable.abort().catch(() => undefined);
+          if (!isNamed(error, 'NotFoundError')) throw error;
+          file = await folder.getFileHandle(fileName, { create: true });
+          created = true;
+        }
+        try {
+          const writable = await file.createWritable();
+          try {
+            await writable.write(blob);
+            await writable.close(); // the old contents are replaced only here, so a failed write keeps them
+          } catch (error) {
+            await writable.abort().catch(() => undefined);
+            throw error;
+          }
+        } catch (error) {
+          if (created) await folder.removeEntry(fileName).catch(() => undefined); // a failed put to a new key leaves no empty file
           throw error;
         }
         return storeOk;

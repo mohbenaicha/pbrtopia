@@ -16,5 +16,9 @@ export function textureBlobKey(materialName: string, channel: TextureChannel, ta
 }
 
 export const returnedImageBlobKey = (setId: string): string => `sets/${setId}/returned.png`;
-export const bakeBlobKey = (setId: string): string => `sets/${setId}/bake.png`;
+/** A bake file has a fresh `bakeId` per save, so a new bake never overwrites the one the records still point at. */
+export const bakeBlobKey = (setId: string, bakeId: string): string => `sets/${setId}/bake-${bakeId}.png`;
 export const setBlobPrefix = (setId: string): string => `sets/${setId}/`;
+
+/** Letters, digits, ".", "_" and "-" only, and not "." or "..": a set id that can never reach into another set's file prefix. */
+export const isPlainSetId = (setId: string): boolean => /^[A-Za-z0-9._-]+$/.test(setId) && setId !== '.' && setId !== '..';
