@@ -1,0 +1,37 @@
+.ui-tabs {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.ui-tabs__tab {
+  flex: 1 1 0;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.ui-tabs__tab:hover:not(:disabled):not([data-selected]) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.ui-tabs__tab:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.ui-tabs__tab[data-selected] {
+  background: var(--bg-button);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ui-tabs__tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

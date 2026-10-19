@@ -11,5 +11,6 @@ export { SegmentedControl, type SegmentedControlProps, type SegmentOption } from
 export { Select, type SelectProps, type SelectOption } from './Select';
 export { Slider, type SliderProps } from './Slider';
 export { Spinner } from './Spinner';
+export { Tabs, type TabsProps, type TabOption } from './Tabs';
 export { TextInput, type TextInputProps } from './TextInput';
 export { Toggle, type ToggleProps } from './Toggle';
