@@ -3,31 +3,40 @@ import { Button } from '../../ui-kit';
 import type { KeyVault } from '../KeyVault';
 import { PROVIDERS, type Provider } from '../vaultTypes';
 import { KeyRow } from './KeyRow';
+import { ResetSavedKeys } from './ResetSavedKeys';
+import { useDeleteSavedKeys } from './useDeleteSavedKeys';
+import type { PasswordPrompt } from './usePasswordPrompt';
 import { useVaultVersion } from './useVaultVersion';
 import './keysUi.css';
 
 export interface KeySettingsSectionProps {
   vault: KeyVault;
+  prompt: PasswordPrompt; // the password question the vault asks through; Reset cancels it before deleting
   rejectedKeys?: Partial<Record<Provider, string>> | undefined; // R11: providers whose stored key was refused, with the message to show
 }
 
 const LABELS: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
 
 // R1, R3, R6, R7, R9, R12: the "API keys" part of Settings. It reads the stored vault when it opens and follows its status after that.
-export function KeySettingsSection({ vault, rejectedKeys }: KeySettingsSectionProps): React.JSX.Element {
+export function KeySettingsSection({ vault, prompt, rejectedKeys }: KeySettingsSectionProps): React.JSX.Element {
   useVaultVersion(vault);
   const [messages, setMessages] = useState<Partial<Record<Provider, string>>>({});
+  const deletion = useDeleteSavedKeys(vault, prompt);
   const status = vault.status();
+  const problem = vault.loadProblem();
   const [seenStatus, setSeenStatus] = useState(status);
+  const [seenProblem, setSeenProblem] = useState(problem);
 
   useEffect(() => {
     void vault.refresh();
   }, [vault]);
 
-  // Deleting the saved keys (Forgot password) leaves old failure messages meaningless, so they go with it.
-  if (status !== seenStatus) {
+  // Deleting the saved keys (Forgot password, Reset) leaves old failure messages meaningless, so they go with it. A reset starts and
+  // ends with no vault, so it is seen by the unreadable-vault message going away.
+  if (status !== seenStatus || problem !== seenProblem) {
     setSeenStatus(status);
-    if (status === 'none') setMessages({});
+    setSeenProblem(problem);
+    if (status === 'none' && (status !== seenStatus || (seenProblem !== null && problem === null))) setMessages({});
   }
 
   return (
@@ -37,6 +46,7 @@ export function KeySettingsSection({ vault, rejectedKeys }: KeySettingsSectionPr
         {status === 'unlocked' && <Button variant="secondary" onClick={() => vault.lock()}>Lock</Button>}
       </div>
       <p className="key-settings__note">Keys are encrypted with your password and stay in this browser.</p>
+      {(problem !== null || deletion.deleting || deletion.failure !== null) && <ResetSavedKeys problem={problem} deletion={deletion} />}
       {PROVIDERS.map((provider) => (
         <KeyRow
           key={provider}

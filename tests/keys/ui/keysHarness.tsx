@@ -23,7 +23,7 @@ export function renderKeys(options: { storage?: Storage; rejectedKeys?: Partial<
     vault = useMemo(() => new KeyVault({ storage, requestPassword: prompt.requestPassword, kdfIterations: 1000, channel: null }), [prompt.requestPassword]);
     return (
       <>
-        <KeySettingsSection vault={vault} {...(options.rejectedKeys ? { rejectedKeys: options.rejectedKeys } : {})} />
+        <KeySettingsSection vault={vault} prompt={prompt} {...(options.rejectedKeys ? { rejectedKeys: options.rejectedKeys } : {})} />
         <KeyPasswordPrompts vault={vault} prompt={prompt} />
       </>
     );

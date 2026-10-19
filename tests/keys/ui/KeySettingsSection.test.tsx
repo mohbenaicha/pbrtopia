@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
 import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createMemoryVaultStorage } from '../memoryVaultStorage';
 import { GEMINI, OPENAI, PASSWORD, renderKeys } from './keysHarness';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 const row = (name: 'Gemini' | 'OpenAI') => within(screen.getByRole('group', { name }));
 const inputValues = (): string => Array.from(document.querySelectorAll('input')).map((input) => input.value).join('|');
@@ -202,6 +206,102 @@ describe('KeySettingsSection', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(getVault().status()).toBe('none');
     expect((await queued).ok).toBe(false);
+  });
+
+  it('R6 a stored vault that cannot be read is reported with Reset saved keys, which asks first, wipes it and allows a new key', async () => {
+    const storage = createMemoryVaultStorage();
+    const load = vi.spyOn(storage, 'load').mockRejectedValue(new Error('The key vault could not be read.'));
+    const clear = vi.spyOn(storage, 'clear');
+    const { user } = renderKeys({ storage });
+    await waitFor(() => expect(screen.getByText(/could not be read or saved/)).toBeTruthy());
+    await user.click(screen.getByRole('button', { name: 'Reset saved keys' }));
+    expect(screen.getByRole('dialog', { name: 'Reset saved keys?' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(clear).not.toHaveBeenCalled();
+    load.mockRestore();
+    await user.click(screen.getByRole('button', { name: 'Reset saved keys' }));
+    await user.click(screen.getByRole('button', { name: 'Delete saved keys' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(clear).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/could not be read or saved/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reset saved keys' })).toBeNull();
+    await createVaultWithGemini(user);
+  });
+
+  it('R6 a failed delete shows its message in the Reset dialog and the vault stays as it was, so the reset can be tried again', async () => {
+    const storage = createMemoryVaultStorage();
+    vi.spyOn(storage, 'load').mockRejectedValue(new Error('x'));
+    const clear = vi.spyOn(storage, 'clear').mockRejectedValueOnce(new Error('The key vault could not be deleted.'));
+    const { user, getVault } = renderKeys({ storage });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reset saved keys' })).toBeTruthy());
+    await user.click(screen.getByRole('button', { name: 'Reset saved keys' }));
+    await user.click(screen.getByRole('button', { name: 'Delete saved keys' }));
+    await waitFor(() => expect(within(screen.getByRole('dialog', { name: 'Reset saved keys?' })).getByText('The key vault could not be deleted.')).toBeTruthy());
+    expect(getVault().loadProblem()).not.toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Delete saved keys' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(clear).toHaveBeenCalledTimes(2);
+    expect(getVault().loadProblem()).toBeNull();
+  });
+
+  it('R6 a delete that fails while the vault becomes readable again still shows its message', async () => {
+    const storage = createMemoryVaultStorage();
+    const load = vi.spyOn(storage, 'load').mockRejectedValue(new Error('x'));
+    let fail!: () => void;
+    vi.spyOn(storage, 'clear').mockImplementationOnce(() => new Promise<void>((_resolve, reject) => (fail = () => reject(new Error('The key vault could not be deleted.')))));
+    const { user, getVault } = renderKeys({ storage });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reset saved keys' })).toBeTruthy());
+    await user.click(screen.getByRole('button', { name: 'Reset saved keys' }));
+    await user.click(screen.getByRole('button', { name: 'Delete saved keys' }));
+    load.mockRestore(); // the storage recovers while the delete is still running
+    await act(async () => {
+      await getVault().refresh();
+    });
+    expect(getVault().loadProblem()).toBeNull();
+    await act(async () => fail());
+    await waitFor(() => expect(screen.getByText('The key vault could not be deleted.')).toBeTruthy());
+  });
+
+  it('R6 Reset cancels a password question that is still open, so the keys that question was about are not saved and then deleted', async () => {
+    const { user, storage, getVault } = renderKeys();
+    await createVaultWithGemini(user);
+    await user.click(screen.getByRole('button', { name: 'Lock' }));
+    let queued!: Promise<{ ok: boolean }>;
+    act(() => {
+      queued = getVault().setKey('openai', OPENAI); // asks for the password
+    });
+    await waitFor(() => expect(screen.getByLabelText('Password')).toBeTruthy());
+    // Another tab damages the vault: the next read fails, and Reset appears under the open password question.
+    vi.spyOn(storage, 'load').mockRejectedValue(new Error('x'));
+    await act(async () => {
+      await getVault().refresh();
+    });
+    // The password dialog sits over the Reset dialog, so the clicks are sent to the buttons directly.
+    act(() => screen.getByRole('button', { name: 'Reset saved keys', hidden: true }).click());
+    act(() => screen.getByRole('button', { name: 'Delete saved keys', hidden: true }).click());
+    await waitFor(() => expect(storage.peek()).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect((await queued).ok).toBe(false);
+    expect(getVault().status()).toBe('none');
+  });
+
+  it('R6 the failure message of an earlier Save goes away when Reset recovers the vault', async () => {
+    const storage = createMemoryVaultStorage();
+    const load = vi.spyOn(storage, 'load').mockRejectedValue(new Error('x'));
+    const { user } = renderKeys({ storage });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reset saved keys' })).toBeTruthy());
+    await addKey(user, 'Gemini', GEMINI);
+    await waitFor(() => expect(row('Gemini').getByText(/could not be read or saved/)).toBeTruthy());
+    load.mockRestore();
+    await user.click(screen.getByRole('button', { name: 'Reset saved keys' }));
+    await user.click(screen.getByRole('button', { name: 'Delete saved keys' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.queryByText(/could not be read or saved/)).toBeNull();
+  });
+
+  it('R6 there is no Reset saved keys button while the vault reads fine', () => {
+    renderKeys();
+    expect(screen.queryByRole('button', { name: 'Reset saved keys' })).toBeNull();
   });
 
   it('R11 a key the provider rejected is flagged on its row with the message given, and the key stays', async () => {

@@ -40,6 +40,8 @@ export class KeyVault {
   private readonly channel: VaultChannel | null;
   private record: VaultRecord | null = null;
   private loaded = false;
+  private unreadable: string | null = null; // why the last read of the stored vault failed
+  private wipes = 0; // counts the steps of a wipe; a read that started before one ended is out of date
   private session: UnlockedSession | null = null;
   private unlocking: Promise<KeyResult<void>> | undefined;
   private queue: Promise<unknown> = Promise.resolve();
@@ -65,6 +67,11 @@ export class KeyVault {
   // The last 4 characters of the stored key, readable while locked.
   hint(provider: Provider): string | null {
     return this.record?.keys[provider]?.hint ?? null;
+  }
+
+  // R6: the fixed message when the stored vault could not be read (so the UI can offer a reset), otherwise null.
+  loadProblem(): string | null {
+    return this.unreadable;
   }
 
   getKey(provider: Provider): string | null {
@@ -133,9 +140,12 @@ export class KeyVault {
   // R6: deletes the stored vault (the caller has asked the user first). Rejects with the storage's fixed message if it cannot be deleted.
   wipe(): Promise<void> {
     return this.enqueue(async () => {
+      this.wipes += 1;
       await this.storage.clear();
+      this.wipes += 1;
       this.record = null;
       this.loaded = true;
+      this.unreadable = null;
       this.session = null;
       this.channel?.postChanged();
       this.fire();
@@ -162,13 +172,19 @@ export class KeyVault {
   }
 
   // Reads the stored record. Keys in memory are dropped when the stored vault is no longer the one they came from.
+  // A read that was running when a wipe happened describes the vault as it was, so its answer is dropped.
   private async loadRecord(): Promise<KeyResult<void>> {
+    const wipesBefore = this.wipes;
     let stored: VaultRecord | null;
     try {
       stored = await this.storage.load();
     } catch {
+      if (this.wipes !== wipesBefore) return KEY_OK;
+      this.unreadable = keyFailure('storage-failed').error.message;
       return keyFailure('storage-failed');
     }
+    if (this.wipes !== wipesBefore) return KEY_OK;
+    this.unreadable = null;
     const session = this.session;
     if (session && (stored === null || stored.revision !== session.revision || !sameBytes(stored.kdf.salt, session.salt))) this.session = null;
     this.record = stored;

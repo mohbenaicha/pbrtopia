@@ -463,6 +463,65 @@ describe('KeyVault: two tabs (R10)', () => {
   });
 });
 
+describe('KeyVault: a stored vault that cannot be read (R6)', () => {
+  it('R6 loadProblem is null at first, the fixed message after a failed read, and null again after a good read or a wipe', async () => {
+    const { vault, storage } = setup();
+    expect(vault.loadProblem()).toBeNull();
+    const load = vi.spyOn(storage, 'load').mockRejectedValue(new Error('The key vault could not be read.'));
+    expect(failureCode(await vault.refresh())).toBe('storage-failed');
+    expect(vault.loadProblem()).toBe('The keys could not be read or saved by this browser.');
+    expect(vault.status()).toBe('none');
+    load.mockRestore();
+    expect((await vault.refresh()).ok).toBe(true);
+    expect(vault.loadProblem()).toBeNull();
+    vi.spyOn(storage, 'load').mockRejectedValue(new Error('x'));
+    await vault.refresh();
+    await vault.wipe();
+    expect(vault.loadProblem()).toBeNull();
+  });
+
+  it('R6 after wipe the vault takes a new key and password even though the old record could not be read', async () => {
+    const { vault, storage } = setup();
+    vi.spyOn(storage, 'load').mockRejectedValueOnce(new Error('x'));
+    await vault.refresh();
+    await vault.wipe();
+    expect((await vault.setKey('gemini', GEMINI)).ok).toBe(true);
+    expect(vault.getKey('gemini')).toBe(GEMINI);
+  });
+
+  it('R6 a read that was already running when the vault was wiped does not bring back the old record', async () => {
+    const { vault, storage } = await vaultWith('gemini');
+    vault.lock();
+    const realLoad = storage.load.bind(storage);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    vi.spyOn(storage, 'load').mockImplementationOnce(async () => {
+      const old = await realLoad(); // reads the vault as it was before the wipe
+      await gate;
+      return old;
+    });
+    const reading = vault.refresh();
+    await vault.wipe();
+    release();
+    await reading;
+    expect(vault.status()).toBe('none');
+    expect(vault.hasKey('gemini')).toBe(false);
+  });
+
+  it('R6 a read that was already running and then failed does not bring back the problem after the wipe', async () => {
+    const { vault, storage } = await vaultWith('gemini');
+    let fail!: () => void;
+    const gate = new Promise<void>((_resolve, reject) => (fail = () => reject(new Error('x'))));
+    vi.spyOn(storage, 'load').mockImplementationOnce(() => gate as Promise<never>);
+    const reading = vault.refresh();
+    await vault.wipe();
+    fail();
+    await reading;
+    expect(vault.loadProblem()).toBeNull();
+    expect(vault.status()).toBe('none');
+  });
+});
+
 describe('KeyVault: default key derivation (R2)', () => {
   it('R2 a vault created without a chosen iteration count stores at least 600,000 PBKDF2 iterations', async () => {
     const storage = createMemoryVaultStorage();
