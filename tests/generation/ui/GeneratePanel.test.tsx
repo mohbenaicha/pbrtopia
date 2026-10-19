@@ -157,18 +157,30 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     expect(combo('Model').textContent).toMatch(/key/i);
   });
 
-  it('G6 warns about table rows older than 90 days once on mount in a development build, not again on re-render', () => {
+  it('G6 warns once about table rows older than 90 days on mount in a development build, and not again on re-render', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     try {
       const store = createGenerateStore();
       const panel = <GeneratePanel store={store} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onDebugProjection={vi.fn()} />;
       const { rerender } = render(panel);
-      const afterMount = warn.mock.calls.length;
-      expect(afterMount).toBeGreaterThan(0);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]?.[0])).toMatch(/Known models last checked/);
       act(() => store.getState().setPrompt('x'));
       rerender(panel);
-      expect(warn.mock.calls.length).toBe(afterMount);
+      expect(warn).toHaveBeenCalledTimes(1);
     } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('G6 does not warn in a production build', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.stubEnv('DEV', false);
+    try {
+      render(<GeneratePanel store={createGenerateStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onDebugProjection={vi.fn()} />);
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
       warn.mockRestore();
     }
   });
@@ -204,6 +216,49 @@ describe('GeneratePanel: references (R2)', () => {
     await addFiles(Array.from({ length: 15 }, (_, i) => file(`r${i}.png`, i + 1)));
     await waitFor(() => expect(store.getState().references).toHaveLength(13));
     expect(screen.getByRole('status').textContent).toMatch(/at most 14 images in total and one is the atlas, so up to 13 references/);
+  });
+
+  it('R2 the refusal sentence follows the model chosen when the files finish reading, not when they were picked', async () => {
+    const { store, readImageFile } = setup((s) => {
+      s.getState().setHasKey('openai', true);
+      s.getState().selectModel('openai', 'gpt-image-2.5-sunburst'); // no cap in the table
+    });
+    let finish: (images: ReferenceImage[]) => void = () => undefined;
+    const reads = new Promise<ReferenceImage[]>((resolve) => {
+      finish = resolve;
+    });
+    readImageFile.mockImplementation(async (picked: File) => (await reads).find((image) => image.name === picked.name) as ReferenceImage);
+    const files = Array.from({ length: 15 }, (_, i) => file(`r${i}.png`, i + 1));
+    fireEvent.change(screen.getByLabelText('Add reference images'), { target: { files } });
+    act(() => store.getState().selectModel('gemini', 'gemini-nano-banana-2.1')); // now 14 in total
+    finish(files.map((f) => ({ id: f.name, name: f.name, width: 8, height: 8, blob: f })));
+    await waitFor(() => expect(store.getState().references).toHaveLength(13));
+    expect(screen.getByRole('status').textContent).toMatch(/at most 14 images in total.*up to 13 references/);
+  });
+
+  it('R2 files that finish reading after the panel is gone are dropped', async () => {
+    const { store, readImageFile, unmount } = setup();
+    let finish: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    readImageFile.mockImplementation(async (picked: File) => {
+      await gate;
+      return { id: picked.name, name: picked.name, width: 8, height: 8, blob: picked };
+    });
+    fireEvent.change(screen.getByLabelText('Add reference images'), { target: { files: [file('late.png')] } });
+    unmount();
+    finish();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(store.getState().references).toHaveLength(0);
+  });
+
+  it('R2 the refusal notice goes away when the model changes', async () => {
+    const { store } = setup();
+    await addFiles(Array.from({ length: 15 }, (_, i) => file(`r${i}.png`, i + 1)));
+    await waitFor(() => expect(screen.getByRole('status')).toBeTruthy());
+    act(() => store.getState().selectModel('gemini', 'gemini-3-pro-image'));
+    expect(screen.queryByRole('status')).toBeNull();
   });
 
   it('R2 a file that cannot be read as an image is skipped with a message and the others are kept', async () => {
@@ -246,12 +301,31 @@ describe('GeneratePanel: Generate button (R6, R15)', () => {
     expect(screen.getByText(/already running/)).toBeTruthy();
   });
 
-  it('R15 a model with no UVs shows Generate UV instead of Generate, and Generate UV calls onGenerateUv', () => {
+  it('R15 a model with no UVs shows Generate UV instead of Generate; the click opens the options dialog and calls nothing yet', () => {
     const { props } = setup((store) => store.getState().setSceneState({ hasModel: true, hasUvs: false }));
     expect(screen.queryByRole('button', { name: 'Generate' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Generate UV' }));
-    expect(props.onGenerateUv).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(props.onGenerateUv).not.toHaveBeenCalled();
     expect(props.onGenerate).not.toHaveBeenCalled();
+  });
+
+  it('R15 confirming the dialog calls onGenerateUv once with the chosen options and closes it', () => {
+    const { props } = setup((store) => store.getState().setSceneState({ hasModel: true, hasUvs: false }));
+    fireEvent.click(screen.getByRole('button', { name: 'Generate UV' }));
+    fireEvent.change(screen.getByLabelText('Padding (texels)'), { target: { value: '6' } });
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Generate UV' }));
+    expect(props.onGenerateUv).toHaveBeenCalledTimes(1);
+    expect(props.onGenerateUv).toHaveBeenCalledWith({ resolution: 2048, paddingTexels: 6 });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('R15 cancelling the dialog calls nothing', () => {
+    const { props } = setup((store) => store.getState().setSceneState({ hasModel: true, hasUvs: false }));
+    fireEvent.click(screen.getByRole('button', { name: 'Generate UV' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(props.onGenerateUv).not.toHaveBeenCalled();
   });
 
   it('R15 the other fields stay editable while the model has no UVs', () => {

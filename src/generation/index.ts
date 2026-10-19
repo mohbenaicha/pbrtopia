@@ -1,4 +1,6 @@
 export { GeneratePanel, type GeneratePanelProps } from './ui/GeneratePanel';
+export type { UvOptions } from './ui/UvOptionsDialog';
+export { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
 export { describeGenerateAvailability, pickEnhancerModel, type GenerateAvailability } from './generateAvailability';
 export {
   createGenerateStore,

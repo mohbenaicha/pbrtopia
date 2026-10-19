@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore, type StoreApi } from 'zustand';
 import { Button } from '../../ui-kit';
 import { optionsForModel } from '../catalog/optionsForModel';
@@ -11,11 +11,12 @@ import { QualitySelect } from './QualitySelect';
 import { readImageFile } from './readImageFile';
 import { ReferenceStrip } from './ReferenceStrip';
 import { ResolutionSelect } from './ResolutionSelect';
+import { UvOptionsDialog, type UvOptions } from './UvOptionsDialog';
 import './GeneratePanel.css';
 
 export interface GeneratePanelProps {
   onGenerate: () => void;
-  onGenerateUv: () => void;
+  onGenerateUv: (options: UvOptions) => void;
   onDebugProjection: () => void;
   debugDisabled?: boolean;
   store?: StoreApi<GenerateState>;
@@ -28,11 +29,23 @@ export interface GeneratePanelProps {
 export function GeneratePanel({ onGenerate, onGenerateUv, onDebugProjection, debugDisabled = false, store = generateStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
   const state = useStore(store);
   const [notice, setNotice] = useState<string | null>(null);
+  const [uvDialogOpen, setUvDialogOpen] = useState(false);
+  const mounted = useRef(true);
   const model = findCatalogModel(state.catalog, state.provider, state.modelId);
   const options = model === null ? { resolutions: [], qualityLevels: [] } : optionsForModel(model, state.maxTextureSize);
 
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  // A refusal belongs to the model it was made under.
+  useEffect(() => setNotice(null), [state.provider, state.modelId]);
+
   const addFiles = async (files: File[]): Promise<void> => {
     const settled = await Promise.allSettled(files.map((file) => readFile(file)));
+    if (!mounted.current) return;
     const images: ReferenceImage[] = [];
     const unreadable: string[] = [];
     settled.forEach((result, index) => {
@@ -40,7 +53,8 @@ export function GeneratePanel({ onGenerate, onGenerateUv, onDebugProjection, deb
       else unreadable.push(files[index]?.name ?? 'a file');
     });
     const { refused } = store.getState().addReferences(images);
-    const total = model?.maxReferenceImages;
+    const now = store.getState();
+    const total = findCatalogModel(now.catalog, now.provider, now.modelId)?.maxReferenceImages; // the model chosen now, as the store used
     const messages = [
       unreadable.length > 0 ? `Could not read as an image: ${unreadable.join(', ')}.` : '',
       refused > 0 && total !== undefined ? `This model takes at most ${total} images in total and one is the atlas, so up to ${total - 1} references.` : '',
@@ -60,9 +74,17 @@ export function GeneratePanel({ onGenerate, onGenerateUv, onDebugProjection, deb
       <ResolutionSelect options={options.resolutions} experimental={model?.experimentalResolutions ?? []} value={state.resolutionKey} onChange={state.setResolution} />
       <QualitySelect levels={options.qualityLevels} value={state.quality} onChange={state.setQuality} />
       <div className="generate-panel__actions">
-        <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={onGenerateUv} />
+        <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />
         <Button variant="ghost" disabled={debugDisabled} onClick={onDebugProjection}>Debug projection</Button>
       </div>
+      <UvOptionsDialog
+        open={uvDialogOpen}
+        onCancel={() => setUvDialogOpen(false)}
+        onConfirm={(uvOptions) => {
+          setUvDialogOpen(false);
+          onGenerateUv(uvOptions);
+        }}
+      />
     </section>
   );
 }

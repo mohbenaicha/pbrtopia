@@ -141,11 +141,14 @@ describe('generateStore: references (R2)', () => {
     expect(store.getState().addReferences([image('a')])).toEqual({ added: 0, refused: 0 });
   });
 
-  it('R2 switching to a model with a lower cap keeps the references already added', () => {
+  it('R2 switching to a model with a lower cap keeps the references already added, and adds no more', () => {
     const store = setup();
-    store.getState().addReferences(Array.from({ length: 5 }, (_, i) => image(`r${i}`)));
-    store.getState().selectModel('gemini', 'gemini-3.1-flash-lite-image');
-    expect(store.getState().references).toHaveLength(5);
+    store.getState().selectModel('openai', 'gpt-image-2.5-sunburst'); // no cap
+    store.getState().addReferences(Array.from({ length: 20 }, (_, i) => image(`r${i}`)));
+    store.getState().selectModel('gemini', 'gemini-nano-banana-2.1'); // cap 13
+    expect(store.getState().references).toHaveLength(20);
+    expect(store.getState().addReferences([image('more')])).toEqual({ added: 0, refused: 1 });
+    expect(store.getState().references).toHaveLength(20);
   });
 });
 

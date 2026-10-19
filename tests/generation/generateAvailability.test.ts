@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { findKnownModel } from '../../src/generation/catalog/knownModels';
 import type { ModelInfo } from '../../src/generation/catalog/modelTypes';
-import { describeGenerateAvailability } from '../../src/generation/generateAvailability';
+import { describeGenerateAvailability, pickEnhancerModel } from '../../src/generation/generateAvailability';
 import { createGenerateStore } from '../../src/generation/generateStore';
 
 const known = (provider: 'gemini' | 'openai', id: string): ModelInfo => {
@@ -80,6 +80,16 @@ describe('describeGenerateAvailability (R6, R15)', () => {
     const store = readyStore();
     store.getState().setEnhancer(null);
     expect(describeNow(store)).toEqual({ action: 'generate', enabled: true, reason: null });
+    expect(pickEnhancerModel(store.getState())).toEqual({ provider: 'gemini', modelId: 'gemini-3.8-flash' });
+  });
+
+  it('R6 a chosen enhancer wins over the fallback, and an image model is never the fallback', () => {
+    const store = readyStore();
+    store.getState().setEnhancer({ provider: 'openai', modelId: 'gpt-6-astra' });
+    expect(pickEnhancerModel(store.getState())).toEqual({ provider: 'openai', modelId: 'gpt-6-astra' });
+    store.getState().setEnhancer(null);
+    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1')], openai: [] });
+    expect(pickEnhancerModel(store.getState())).toBeNull();
   });
 
   it('R6 no key for the enhancer provider', () => {
@@ -115,7 +125,16 @@ describe('describeGenerateAvailability (R6, R15)', () => {
     const busy = readyStore();
     busy.getState().beginRun();
     reasons.add(describeNow(busy).reason);
-    expect(reasons.size).toBe(5);
+    const unverifiedModel = readyStore();
+    unverifiedModel.getState().setHasKey('openai', true);
+    unverifiedModel.getState().selectModel('openai', 'gpt-image-9-mystery');
+    reasons.add(describeNow(unverifiedModel).reason);
+    const noEnhancer = readyStore();
+    noEnhancer.getState().setEnhancer(null);
+    noEnhancer.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1')], openai: [] });
+    noEnhancer.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
+    reasons.add(describeNow(noEnhancer).reason);
+    expect(reasons.size).toBe(7);
     expect(reasons.has(null)).toBe(false);
   });
 
