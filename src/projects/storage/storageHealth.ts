@@ -20,12 +20,14 @@ export interface StorageHealthOperations {
 
 /** The browser's persistent-storage request and usage estimate; a browser without them, or a call that throws, gives false and null. */
 export function createStorageOperations(storage: StorageManagerLike | undefined): StorageHealthOperations {
+  let answer: boolean | undefined; // the browser's first answer; asking again could prompt the user twice
   return {
     async requestPersistence() {
+      if (answer !== undefined) return answer;
       try {
         if (storage?.persist === undefined) return false;
-        if (storage.persisted !== undefined && (await storage.persisted())) return true;
-        return await storage.persist();
+        if (storage.persisted !== undefined && (await storage.persisted())) return (answer = true);
+        return (answer = await storage.persist());
       } catch {
         return false;
       }

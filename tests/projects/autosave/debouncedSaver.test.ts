@@ -55,6 +55,25 @@ describe('debounced saver', () => {
     expect(write).toHaveBeenCalledTimes(4); // 6 s of edits
   });
 
+  it('R4 a slow write is not followed at once by another: the next one starts 1.5 s after it ends', async () => {
+    const starts: number[] = [];
+    const ends: number[] = [];
+    const write = vi.fn(async (): Promise<StoreResult<void>> => {
+      starts.push(Date.now());
+      await new Promise((resolve) => setTimeout(resolve, 3500));
+      ends.push(Date.now());
+      return ok;
+    });
+    const saver = createDebouncedSaver<unknown>({ write });
+    for (let i = 0; i < 30; i += 1) {
+      saver.queue('project', { n: i });
+      await vi.advanceTimersByTimeAsync(500);
+    }
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(starts.length).toBeGreaterThan(2);
+    for (let i = 1; i < starts.length; i += 1) expect(starts[i]! - ends[i - 1]!).toBeGreaterThanOrEqual(1500);
+  });
+
   it('R4 keys are written together in the order they were first queued', async () => {
     const { saver, writes } = setup();
     saver.queue('set:s1', 1);

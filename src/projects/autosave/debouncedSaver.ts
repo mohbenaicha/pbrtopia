@@ -47,6 +47,8 @@ export function createDebouncedSaver<T>(options: DebouncedSaverOptions<T>): Debo
   let timer: ReturnType<typeof setTimeout> | undefined;
   let running: Promise<StoreResult<void>> = Promise.resolve({ ok: true, value: undefined });
   let disposed = false;
+  let active = 0; // flushes asked for and not finished
+  let lastEndedAt = -Infinity; // when the last write finished
 
   const stopTimer = (): void => {
     if (timer !== undefined) clearTimeout(timer);
@@ -78,9 +80,26 @@ export function createDebouncedSaver<T>(options: DebouncedSaverOptions<T>): Debo
     return result;
   };
 
+  const startTimer = (ms = delayMs): void => {
+    // A timer that fires while a write is running is dropped (the write's end starts the next one), and one that fires too soon after a write waits the rest, so two writes are never closer than `delayMs`.
+    timer = setTimeout(() => {
+      timer = undefined;
+      if (active > 0) return;
+      const rest = lastEndedAt + delayMs - Date.now();
+      if (rest > 0) startTimer(rest);
+      else void flush();
+    }, ms);
+  };
+
   const flush = (): Promise<StoreResult<void>> => {
     stopTimer();
-    running = running.then(writeWaiting, writeWaiting);
+    active += 1;
+    running = running.then(writeWaiting, writeWaiting).then((result) => {
+      active -= 1;
+      lastEndedAt = Date.now();
+      if (result.ok && active === 0 && waiting.size > 0 && timer === undefined && !disposed) startTimer();
+      return result;
+    });
     return running;
   };
 
@@ -88,7 +107,7 @@ export function createDebouncedSaver<T>(options: DebouncedSaverOptions<T>): Debo
     queue(key, value) {
       if (disposed) return;
       waiting.set(key, value);
-      if (timer === undefined) timer = setTimeout(() => void flush(), delayMs);
+      if (timer === undefined) startTimer();
     },
     flush,
     hasPending: () => waiting.size > 0,
