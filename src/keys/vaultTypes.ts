@@ -20,6 +20,13 @@ export interface VaultRecord {
   keys: Partial<Record<Provider, SealedKey>>;
 }
 
+// What the password dialog hands back; `confirm` is the confirmation field, asked for only when a vault is created. null = cancelled.
+export interface PasswordAnswer {
+  password: string;
+  confirm?: string;
+}
+export type PasswordRequest = (purpose: 'unlock' | 'create') => Promise<PasswordAnswer | null>;
+
 // Where the vault record lives. `save` is one transaction: 'conflict' (nothing written) when the stored revision or salt differs from
 // what the caller based its change on; `basedOnRevision` null means the caller expects no vault yet.
 export interface VaultStorage {
