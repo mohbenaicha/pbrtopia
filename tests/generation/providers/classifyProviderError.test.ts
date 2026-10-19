@@ -68,6 +68,25 @@ describe('classifyProviderError: body codes refine, never override the status', 
     expect(classifyProviderError('openai', 503, body({ code: 'moderation_blocked' })).category).toBe('server');
   });
 
+  it('R9 a Gemini 400 whose details name API_KEY_INVALID is auth, with the message in details', () => {
+    const invalid = { code: 400, message: 'API key not valid. Please pass a valid API key.', status: 'INVALID_ARGUMENT', details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_INVALID' }] };
+    expect(classifyProviderError('gemini', 400, body(invalid))).toMatchObject({ category: 'auth', retryable: false, status: 400, details: 'API key not valid. Please pass a valid API key.' });
+  });
+
+  it('R9 the same error arriving as a JSON array is read from its first element', () => {
+    const invalid = { code: 400, message: 'API key not valid.', details: [{ reason: 'API_KEY_INVALID' }] };
+    expect(classifyProviderError('gemini', 400, [body(invalid)]).category).toBe('auth');
+  });
+
+  it('R9 a Gemini 400 without that reason stays bad-request, and so does an unrelated detail reason', () => {
+    expect(classifyProviderError('gemini', 400, body({ code: 'invalid_request', message: 'bad mime type' })).category).toBe('bad-request');
+    expect(classifyProviderError('gemini', 400, body({ details: [{ reason: 'SOMETHING_ELSE' }, 'odd', null] })).category).toBe('bad-request');
+  });
+
+  it('R9 an array body with a quota error is refined like an object body', () => {
+    expect(classifyProviderError('gemini', 429, [body({ status: 'quota_exceeded' })]).category).toBe('quota');
+  });
+
   it('R9 a body that is not an object, or has no error, adds nothing', () => {
     for (const odd of ['text', 12, [], { other: 1 }, { error: 'string' }, undefined]) {
       expect(classifyProviderError('gemini', 400, odd).category).toBe('bad-request');

@@ -32,10 +32,14 @@ export function makeProviderError(category: ProviderErrorCategory, extra: Pick<P
 
 const asRecord = (value: unknown): Record<string, unknown> | null => (typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null);
 
-// The `error` object of a provider body, or null.
-const errorObjectOf = (body: unknown): Record<string, unknown> | null => asRecord(asRecord(body)?.error);
+// The `error` object of a provider body, or null. Gemini sometimes wraps the body in a one-element array.
+const errorObjectOf = (body: unknown): Record<string, unknown> | null => asRecord(asRecord(Array.isArray(body) ? body[0] : body)?.error);
 
-const detailsOf = (text: unknown): string | undefined => (typeof text === 'string' && text.length > 0 ? text.slice(0, MAX_DETAILS_LENGTH) : undefined);
+// Gemini names a wrong key with a 400 whose `details[]` has `reason: "API_KEY_INVALID"`.
+const hasInvalidKeyReason = (error: Record<string, unknown> | null): boolean =>
+  Array.isArray(error?.details) && error.details.some((detail) => asRecord(detail)?.reason === 'API_KEY_INVALID');
+
+export const detailsOf = (text: unknown): string | undefined => (typeof text === 'string' && text.length > 0 ? text.slice(0, MAX_DETAILS_LENGTH) : undefined);
 
 function codesOf(error: Record<string, unknown> | null): string[] {
   if (error === null) return [];
@@ -57,7 +61,7 @@ function parseRetryAfterMs(header: string | null | undefined, now: number): numb
 function categoryOf(provider: Provider, status: number, error: Record<string, unknown> | null): ProviderErrorCategory {
   const codes = codesOf(error);
   const isQuota = codes.some((code) => QUOTA_CODES.has(code)) || QUOTA_MESSAGE.test(typeof error?.message === 'string' ? error.message : '');
-  if (status === 401) return 'auth';
+  if (status === 401 || (status === 400 && hasInvalidKeyReason(error))) return 'auth';
   if (status === 403) return provider === 'openai' ? 'region' : 'auth';
   if (status === 404) return 'not-found';
   if (status === 408) return 'timeout';
