@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Spinner } from './Spinner';
 import './Button.css';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 export interface ButtonProps {
   variant?: ButtonVariant; // primary is the one orange action; the default is secondary

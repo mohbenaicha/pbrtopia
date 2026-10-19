@@ -1,0 +1,130 @@
+.project-list {
+  min-height: 100%;
+  padding: var(--space-5);
+  background: var(--bg-page);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+}
+
+.project-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.project-list__header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.project-list__notice,
+.project-list__error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
+}
+
+.project-list__error {
+  color: var(--error);
+}
+
+.project-list__message {
+  color: var(--text-dim);
+}
+
+.project-list__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.project-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text);
+}
+
+.project-list__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-radius: var(--radius-group);
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+
+.project-card[data-selected] {
+  background: var(--bg-input);
+}
+
+.project-card__thumbnail {
+  aspect-ratio: 4 / 3;
+  background: var(--bg-input);
+}
+
+.project-card__thumbnail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.project-card__select {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+}
+
+.project-card__name {
+  margin: 0;
+  padding: 0 var(--space-3);
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.project-card__meta {
+  margin: 0;
+  padding: 0 var(--space-3);
+  color: var(--text-dim);
+}
+
+.project-card__actions,
+.project-rename__actions {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+}
+
+.project-rename {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+}
+
+.project-rename .project-rename__actions {
+  padding: 0;
+}

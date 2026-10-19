@@ -46,6 +46,16 @@
   color: var(--text);
 }
 
+.ui-button[data-variant='danger'] {
+  background: var(--error);
+  color: var(--accent-text);
+}
+
+.ui-button[data-variant='danger']:hover:not(:disabled) {
+  background: var(--error);
+  filter: brightness(1.12);
+}
+
 .ui-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;

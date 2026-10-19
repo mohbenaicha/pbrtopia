@@ -3,6 +3,7 @@ import './tokens.css';
 import './base.css';
 
 export { Button, type ButtonProps } from './Button';
+export { Checkbox, type CheckboxProps } from './Checkbox';
 export { Dialog, type DialogProps } from './Dialog';
 export { Icon, type IconName } from './Icon';
 export { IconButton, type IconButtonProps } from './IconButton';
