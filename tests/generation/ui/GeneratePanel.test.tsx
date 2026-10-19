@@ -31,7 +31,7 @@ function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void 
   s.setSceneState({ hasModel: true, hasUvs: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
   prepare(store);
-  const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(), onDebugProjection: vi.fn() };
+  const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(), onDebugProjection: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn() };
   const readImageFile = vi.fn(async (file: File): Promise<ReferenceImage> => ({ id: `${file.name}:${file.size}`, name: file.name, width: 8, height: 8, blob: file }));
   const view = render(<GeneratePanel store={store} readImageFile={readImageFile} today="2026-10-19" {...props} {...extra} />);
   const combo = (name: string): HTMLElement => screen.getByRole('combobox', { name });
@@ -161,7 +161,7 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     try {
       const store = createGenerateStore();
-      const panel = <GeneratePanel store={store} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onDebugProjection={vi.fn()} />;
+      const panel = <GeneratePanel store={store} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onDebugProjection={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />;
       const { rerender } = render(panel);
       expect(warn).toHaveBeenCalledTimes(1);
       expect(String(warn.mock.calls[0]?.[0])).toMatch(/Known models last checked/);
@@ -177,7 +177,7 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.stubEnv('DEV', false);
     try {
-      render(<GeneratePanel store={createGenerateStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onDebugProjection={vi.fn()} />);
+      render(<GeneratePanel store={createGenerateStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onDebugProjection={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />);
       expect(warn).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllEnvs();
@@ -295,8 +295,8 @@ describe('GeneratePanel: Generate button (R6, R15)', () => {
     expect(screen.queryByText(/Add a Gemini key/)).toBeNull();
   });
 
-  it('R6 while a request is in flight the button is disabled with its reason', () => {
-    setup((store) => store.getState().beginRun());
+  it('R6 while a request is in flight with no step list (the unwrap) the button is disabled with its reason', () => {
+    setup((store) => store.setState({ status: 'running' }));
     expect((screen.getByRole('button', { name: 'Generate' }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText(/already running/)).toBeTruthy();
   });

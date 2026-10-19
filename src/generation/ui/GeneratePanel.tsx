@@ -5,12 +5,15 @@ import { optionsForModel } from '../catalog/optionsForModel';
 import { describeGenerateAvailability } from '../generateAvailability';
 import { findCatalogModel, generateStore, type GenerateState, type ReferenceImage } from '../generateStore';
 import { ChannelToggle } from './ChannelToggle';
+import { EnhancedPromptBlock } from './EnhancedPromptBlock';
 import { GenerateButton } from './GenerateButton';
 import { ModelSelect } from './ModelSelect';
+import { ProgressSteps } from './ProgressSteps';
 import { QualitySelect } from './QualitySelect';
 import { readImageFile } from './readImageFile';
 import { ReferenceStrip } from './ReferenceStrip';
 import { ResolutionSelect } from './ResolutionSelect';
+import { RunErrorBlock } from './RunErrorBlock';
 import { UvOptionsDialog, type UvOptions } from './UvOptionsDialog';
 import './GeneratePanel.css';
 
@@ -18,6 +21,8 @@ export interface GeneratePanelProps {
   onGenerate: () => void;
   onGenerateUv: (options: UvOptions) => void;
   onDebugProjection: () => void;
+  onCancel: () => void; // Cancel in the step list (R10)
+  onRetry: () => void; // Retry in the error block (R9)
   debugDisabled?: boolean;
   store?: StoreApi<GenerateState>;
   readImageFile?: (file: File) => Promise<ReferenceImage>;
@@ -26,7 +31,7 @@ export interface GeneratePanelProps {
 
 // R1: the Generate panel: prompt, references, channel, model, resolution, quality, Generate and the debug-projection button.
 // The handlers run the flows (G9, G10); this panel only shows state and reports clicks.
-export function GeneratePanel({ onGenerate, onGenerateUv, onDebugProjection, debugDisabled = false, store = generateStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
+export function GeneratePanel({ onGenerate, onGenerateUv, onDebugProjection, onCancel, onRetry, debugDisabled = false, store = generateStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
   const state = useStore(store);
   const [notice, setNotice] = useState<string | null>(null);
   const [uvDialogOpen, setUvDialogOpen] = useState(false);
@@ -73,10 +78,13 @@ export function GeneratePanel({ onGenerate, onGenerateUv, onDebugProjection, deb
       <ModelSelect catalog={state.catalog} hasKey={state.hasKey} provider={state.provider} modelId={state.modelId} today={today} onSelect={state.selectModel} />
       <ResolutionSelect options={options.resolutions} experimental={model?.experimentalResolutions ?? []} value={state.resolutionKey} onChange={state.setResolution} />
       <QualitySelect levels={options.qualityLevels} value={state.quality} onChange={state.setQuality} />
+      {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} onCancel={onCancel} />}
+      {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} />}
       <div className="generate-panel__actions">
-        <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />
+        {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />}
         <Button variant="ghost" disabled={debugDisabled} onClick={onDebugProjection}>Debug projection</Button>
       </div>
+      <EnhancedPromptBlock text={state.enhancedPrompt} />
       <UvOptionsDialog
         open={uvDialogOpen}
         onCancel={() => setUvDialogOpen(false)}

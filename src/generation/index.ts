@@ -10,6 +10,7 @@ export {
   type GenerateState,
   type ModelCatalog,
   type ReferenceImage,
+  type RunError,
   type RunStep,
 } from './generateStore';
 export { discoverModels } from './catalog/discoverModels';

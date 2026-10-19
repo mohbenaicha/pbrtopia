@@ -2,7 +2,7 @@ import { createStore, useStore } from 'zustand';
 import type { Provider } from '../keys';
 import { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
 import type { ModelInfo, ResolutionKey } from './catalog/modelTypes';
-import type { ProviderError } from './providers/providerTypes';
+import type { ProviderErrorCategory } from './providers/providerTypes';
 
 export interface ReferenceImage {
   id: string;
@@ -14,6 +14,14 @@ export interface ReferenceImage {
 
 export type RunStep = 'capture' | 'enhance' | 'generate' | 'validate';
 export type RunStatus = 'idle' | 'running' | 'failed';
+// What the panel shows for a failed run: any ProviderError fits; the flow adds the categories of the steps that are not provider calls.
+export interface RunError {
+  category: ProviderErrorCategory | 'validation' | 'storage-failed' | 'engine';
+  retryable: boolean;
+  message: string;
+  details?: string;
+  retryAfterMs?: number;
+}
 export type ModelCatalog = Record<Provider, ModelInfo[]>;
 export interface EnhancerChoice {
   provider: Provider;
@@ -39,7 +47,7 @@ export interface GenerateState {
   status: RunStatus;
   step: RunStep | null;
   fraction: number;
-  error: ProviderError | null;
+  error: RunError | null;
   enhancedPrompt: string | null;
   setPrompt: (prompt: string) => void;
   addReferences: (images: ReferenceImage[]) => { added: number; refused: number };
@@ -55,7 +63,7 @@ export interface GenerateState {
   beginRun: () => void;
   setStep: (step: RunStep, fraction: number) => void;
   setEnhancedPrompt: (text: string | null) => void;
-  failRun: (error: ProviderError) => void;
+  failRun: (error: RunError) => void;
   clearRun: () => void;
 }
 
