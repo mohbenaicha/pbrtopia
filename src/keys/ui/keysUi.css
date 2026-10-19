@@ -1,0 +1,89 @@
+.key-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.key-settings__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.key-settings__title {
+  margin: 0;
+  font-size: var(--font-size-heading);
+  font-weight: 600;
+}
+
+.key-settings__note {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.key-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
+}
+
+.key-row__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.key-row__name {
+  min-width: 64px;
+  font-weight: 600;
+}
+
+.key-row__value {
+  font-variant-numeric: tabular-nums;
+}
+
+.key-row__status {
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.key-row__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.key-row__edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.key-row__problem {
+  margin: 0;
+  color: var(--error);
+  font-size: var(--font-size-small);
+}
+
+.key-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 280px;
+}
+
+.key-dialog__text {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.key-dialog__error {
+  margin: 0;
+  color: var(--error);
+}
