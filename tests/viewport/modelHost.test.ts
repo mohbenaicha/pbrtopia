@@ -23,6 +23,81 @@ const meshesIn = (scene: Scene): Mesh[] => {
   return found;
 };
 
+describe('model host: flat and smooth shading', () => {
+  const materialOf = (scene: Scene): { flatShading: boolean } => meshesIn(scene)[0]!.material as unknown as { flatShading: boolean };
+
+  it('R14 Flat sets flat shading on the model\'s materials, Smooth takes it off, and a model loaded later gets the current choice', async () => {
+    vi.useFakeTimers();
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb()); // the test model has no normals, so the loader leaves it flat
+    expect(materialOf(scene).flatShading).toBe(true);
+    host.setSettings({ smoothAngleDeg: 30 }); // normals are built, so Smooth now shows smooth
+    vi.advanceTimersByTime(250);
+    expect(materialOf(scene).flatShading).toBe(false);
+    host.setSettings({ flatShading: true });
+    expect(materialOf(scene).flatShading).toBe(true);
+    host.setSettings({ flatShading: false });
+    expect(materialOf(scene).flatShading).toBe(false);
+    host.setSettings({ flatShading: true, smoothAngleDeg: 180 });
+    vi.advanceTimersByTime(250);
+    await host.load(buildTriangleGlb());
+    expect(materialOf(scene).flatShading).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it('R14 a model without normals stays flat under Smooth until the angle builds some', async () => {
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    host.setSettings({ flatShading: false, smoothAngleDeg: 180 });
+    expect(materialOf(scene).flatShading).toBe(true);
+  });
+
+  it('R14 an angle below 180 rebuilds the normals after the throttle, and 180 puts the model\'s own geometry back', async () => {
+    vi.useFakeTimers();
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    const [mesh] = meshesIn(scene);
+    const original = mesh!.geometry;
+    host.setSettings({ smoothAngleDeg: 30 });
+    expect(mesh!.geometry).toBe(original); // waits for the throttle
+    vi.advanceTimersByTime(250);
+    expect(mesh!.geometry).not.toBe(original);
+    host.setSettings({ smoothAngleDeg: 180 });
+    vi.advanceTimersByTime(250);
+    expect(mesh!.geometry).toBe(original);
+    vi.useRealTimers();
+  });
+
+  it('R14 a model loaded when the angle is already below 180 is smoothed at once', async () => {
+    const scene = new Scene();
+    const rig = createCameraRig(1);
+    rig.resetView();
+    const host = createModelHost({ scene, rig, invalidate: vi.fn(), onFramed: vi.fn(), settings: { ...DEFAULT_VIEWPORT_SETTINGS, smoothAngleDeg: 30 } });
+    await host.load(buildTriangleGlb());
+    expect(meshesIn(scene)[0]!.geometry.getAttribute('normal')).toBeDefined(); // the test model has none of its own
+    host.dispose();
+    const plain = setup();
+    await plain.host.load(buildTriangleGlb());
+    expect(meshesIn(plain.scene)[0]!.geometry.getAttribute('normal')).toBeUndefined();
+  });
+
+  it('R14 the wireframe follows the rebuilt geometry, and unloading cancels a waiting rebuild', async () => {
+    vi.useFakeTimers();
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    host.setSettings({ wireframe: true });
+    const [mesh] = meshesIn(scene);
+    host.setSettings({ smoothAngleDeg: 30 });
+    vi.advanceTimersByTime(250);
+    const wire = mesh!.children.find((child) => child.userData['isWireframeOverlay'] === true) as Mesh;
+    expect(wire.geometry).toBe(mesh!.geometry);
+    host.setSettings({ smoothAngleDeg: 90 });
+    host.unload();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+});
+
 describe('model host', () => {
   it('R9 a loaded model is added to the scene, the camera is framed on it and a redraw is requested', async () => {
     const { scene, rig, invalidate, onFramed, host } = setup();

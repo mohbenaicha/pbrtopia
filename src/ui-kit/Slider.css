@@ -4,6 +4,17 @@
   gap: var(--space-2);
 }
 
+.ui-slider[data-layout='row'] {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 3rem;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ui-slider[data-layout='row'] .ui-slider__value {
+  text-align: right;
+}
+
 .ui-slider__header {
   display: flex;
   justify-content: space-between;

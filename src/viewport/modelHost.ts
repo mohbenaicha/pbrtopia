@@ -2,6 +2,7 @@ import { Box3, type Material, type Object3D, type Scene } from 'three';
 import type { CameraRig } from './cameraRig';
 import { loadModelAsset, type ModelAsset } from './loadModelAsset';
 import { createMapAdjustUniforms, setMapAdjust } from './mapAdjustUniforms';
+import { createModelSmoothing } from './modelSmoothing';
 import { createShadingModes, type ShadingMode } from './shadingModes';
 import type { ViewportResult } from './viewportError';
 import { clampViewportSettings, type ViewportSettings } from './viewportSettings';
@@ -33,6 +34,7 @@ export function createModelHost({ scene, rig, invalidate, onFramed, settings: in
   let mode: ShadingMode = 'lit';
   const adjust = createMapAdjustUniforms(settings.mapAdjust);
   const modes = createShadingModes(adjust);
+  const smoothing = createModelSmoothing();
   let current: { asset: ModelAsset; overlay: WireframeOverlay } | undefined;
   let projectionMaterial: Material | null = null;
   let flashMaterial: Material | null = null;
@@ -46,12 +48,22 @@ export function createModelHost({ scene, rig, invalidate, onFramed, settings: in
     invalidate();
   };
 
+  // The geometry was swapped by auto smooth: the faceted flag depends on the normals, and the wireframe overlay shares the geometry.
+  const showRebuiltGeometry = (): void => {
+    if (!current) return;
+    modes.setFlatShading(current.asset.root, settings.flatShading);
+    current.overlay.setVisible(false);
+    current.overlay.setVisible(settings.wireframe);
+    invalidate();
+  };
+
   const unload = (): void => {
     if (!current) return;
     const { asset, overlay } = current;
     current = undefined;
     scene.remove(asset.root);
     overlay.dispose();
+    smoothing.dispose(asset.root);
     modes.dispose(asset.root);
     asset.dispose();
     invalidate();
@@ -63,11 +75,13 @@ export function createModelHost({ scene, rig, invalidate, onFramed, settings: in
       if (!result.ok) return result;
       unload();
       const asset = result.value;
+      smoothing.apply(asset.root, settings.smoothAngleDeg);
       const overlay = createWireframeOverlay(asset.root);
       current = { asset, overlay };
       scene.add(asset.root);
       overlay.setVisible(settings.wireframe);
       showLook();
+      modes.setFlatShading(asset.root, settings.flatShading);
       rig.frameBounds(new Box3().setFromObject(asset.root));
       onFramed();
       invalidate();
@@ -91,9 +105,12 @@ export function createModelHost({ scene, rig, invalidate, onFramed, settings: in
     },
     root: () => current?.asset.root,
     setSettings(patch) {
+      const before = settings;
       settings = clampViewportSettings({ ...settings, ...patch, mapAdjust: { ...settings.mapAdjust, ...patch.mapAdjust } });
       setMapAdjust(adjust, settings.mapAdjust);
       current?.overlay.setVisible(settings.wireframe);
+      if (current && settings.flatShading !== before.flatShading) modes.setFlatShading(current.asset.root, settings.flatShading);
+      if (current && settings.smoothAngleDeg !== before.smoothAngleDeg) smoothing.request(current.asset.root, settings.smoothAngleDeg, showRebuiltGeometry);
       invalidate();
     },
     settings: () => settings,

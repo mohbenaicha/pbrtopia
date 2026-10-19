@@ -1,8 +1,40 @@
 .viewport-settings {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  width: 280px;
-  max-height: calc(100vh - 160px);
+  width: 300px;
+  max-height: calc(100vh - 300px); /* the popover starts under the corner icons, so it scrolls before it reaches the bottom of the viewport */
   overflow-y: auto;
+}
+
+/* Headings and subheadings share indent 0; a small separator (a tone change, no outline) sits between the major sections. */
+.viewport-settings__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.viewport-settings__section + .viewport-settings__section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  background: linear-gradient(var(--bg-button), var(--bg-button)) top / 100% 1px no-repeat;
+}
+
+.viewport-settings__subsection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.viewport-settings__heading {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.viewport-settings__subheading {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--text);
 }

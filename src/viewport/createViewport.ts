@@ -12,6 +12,7 @@ import { createEnvironmentLoader } from './environmentLoader';
 import { createModelHost } from './modelHost';
 import { createOrbitControls } from './orbitControlsSetup';
 import { watchPixelRatio } from './pixelRatio';
+import { createFrameRenderer } from './renderFrame';
 import { createRenderScheduler } from './renderScheduler';
 import type { ShadingMode } from './shadingModes';
 import type { ViewportResult } from './viewportError';
@@ -45,10 +46,12 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
   const renderer = new WebGLRenderer({ antialias: true });
   renderer.toneMapping = NeutralToneMapping; // keeps albedo colours true under the HDRI light
   const scene = new Scene();
+  scene.backgroundBlurriness = 0.12;
   const rig = createCameraRig(1);
   rig.resetView();
   const events = createViewportEvents();
-  const scheduler = createRenderScheduler(() => renderer.render(scene, rig.active));
+  const drawFrame = createFrameRenderer(renderer, scene, rig);
+  const scheduler = createRenderScheduler(drawFrame);
 
   const canvas = renderer.domElement;
   canvas.style.display = 'block';
@@ -159,7 +162,7 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     setShadingMode: models.setShadingMode,
     setProjectionMaterial: models.setProjectionMaterial,
     flashMaterial: flash.start,
-    captureThumbnail: (spec) => captureThumbnail(() => renderer.render(scene, rig.active), canvas, spec),
+    captureThumbnail: (spec) => captureThumbnail(drawFrame, canvas, spec),
     setSettings: applySettings,
     invalidate: scheduler.invalidate,
     resetView() {

@@ -17,10 +17,11 @@ export interface SelectProps {
   disabled?: boolean;
   emptyText?: string; // shown, with the select disabled, when there are no options
   error?: string;
+  hideLabel?: boolean; // the label stays the accessible name but is not drawn, for a select under a heading that already says it
 }
 
 // A dropdown that draws its own list so it matches the rest of the UI. Focus stays on the box; the list is driven by the keyboard or the mouse.
-export function Select({ label, options, value, onChange, disabled = false, emptyText = 'Nothing to choose', error }: SelectProps): React.JSX.Element {
+export function Select({ label, options, value, onChange, disabled = false, emptyText = 'Nothing to choose', error, hideLabel = false }: SelectProps): React.JSX.Element {
   const id = useId();
   const region = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -59,7 +60,7 @@ export function Select({ label, options, value, onChange, disabled = false, empt
 
   return (
     <div className="ui-field" ref={region}>
-      <span className="ui-field__label" id={`${id}-label`}>{label}</span>
+      <span className="ui-field__label" id={`${id}-label`} data-hidden={hideLabel ? '' : undefined}>{label}</span>
       <div className="ui-select">
         <button
           type="button"

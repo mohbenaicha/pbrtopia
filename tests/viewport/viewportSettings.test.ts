@@ -11,8 +11,17 @@ describe('viewport settings', () => {
       autoRotate: false,
       backgroundVisible: false,
       wireframe: false,
+      flatShading: false,
+      smoothAngleDeg: 180,
       mapAdjust: { metalStrength: 1, metalContrast: 1, roughStrength: 1, roughContrast: 1 },
     });
+  });
+
+  it('R14 flat shading must be a boolean and the smooth angle is clamped to 0-180, with the defaults for anything else', () => {
+    expect(clampViewportSettings({ flatShading: true, smoothAngleDeg: 45 })).toMatchObject({ flatShading: true, smoothAngleDeg: 45 });
+    expect(clampViewportSettings({ smoothAngleDeg: 400 }).smoothAngleDeg).toBe(180);
+    expect(clampViewportSettings({ smoothAngleDeg: -5 }).smoothAngleDeg).toBe(0);
+    expect(clampViewportSettings({ flatShading: 'yes', smoothAngleDeg: 'x' })).toMatchObject({ flatShading: false, smoothAngleDeg: 180 });
   });
 
   it('R14 stored values are clamped and unknown or wrongly typed fields fall back to the default', () => {

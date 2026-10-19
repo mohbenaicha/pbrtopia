@@ -16,6 +16,8 @@ export interface ViewportSettings {
   autoRotate: boolean;
   backgroundVisible: boolean;
   wireframe: boolean;
+  flatShading: boolean; // false = Smooth
+  smoothAngleDeg: number; // 0-180, the auto-smooth crease angle; 180 = Off (the model's own normals)
   mapAdjust: MapAdjust; // each 0-3
 }
 
@@ -27,6 +29,8 @@ export const DEFAULT_VIEWPORT_SETTINGS: ViewportSettings = {
   autoRotate: false,
   backgroundVisible: false,
   wireframe: false,
+  flatShading: false,
+  smoothAngleDeg: 180,
   mapAdjust: { metalStrength: 1, metalContrast: 1, roughStrength: 1, roughContrast: 1 },
 };
 
@@ -51,6 +55,8 @@ export function clampViewportSettings(raw: unknown): ViewportSettings {
     autoRotate: booleanOr(given['autoRotate'], defaults.autoRotate),
     backgroundVisible: booleanOr(given['backgroundVisible'], defaults.backgroundVisible),
     wireframe: booleanOr(given['wireframe'], defaults.wireframe),
+    flatShading: booleanOr(given['flatShading'], defaults.flatShading),
+    smoothAngleDeg: numberOr(given['smoothAngleDeg'], defaults.smoothAngleDeg, 0, 180),
     mapAdjust: {
       metalStrength: numberOr(adjust['metalStrength'], defaults.mapAdjust.metalStrength, 0, 3),
       metalContrast: numberOr(adjust['metalContrast'], defaults.mapAdjust.metalContrast, 0, 3),

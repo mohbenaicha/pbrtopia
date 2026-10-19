@@ -7,6 +7,7 @@ export type ShadingMode = 'lit' | 'albedo' | 'normal' | 'rough' | 'metal';
 export interface ShadingModes {
   apply(root: Object3D, mode: ShadingMode): void;
   applyMaterial(root: Object3D, material: Material): void; // one material over the whole model; apply() puts the looks back
+  setFlatShading(root: Object3D, flat: boolean): void; // the lit look of each mesh shows faceted when flat, and always when the mesh has no normals
   derivedMaterialCount(): number;
   dispose(root: Object3D): void; // puts the original materials back and frees the derived ones
 }
@@ -55,9 +56,24 @@ export function createShadingModes(adjust: MapAdjustUniforms): ShadingModes {
     });
   };
 
+  const setFlatShading = (root: Object3D, flat: boolean): void => {
+    root.traverse((object) => {
+      if (!isModelMesh(object)) return;
+      const wanted = flat || !object.geometry.getAttribute('normal'); // the loader leaves a model without normals flat, as there is nothing to smooth
+      const own = originals.get(object) ?? object.material;
+      for (const material of Array.isArray(own) ? own : [own]) {
+        const shaded = material as Material & { flatShading?: boolean };
+        if (typeof shaded.flatShading !== 'boolean' || shaded.flatShading === wanted) continue;
+        shaded.flatShading = wanted;
+        shaded.needsUpdate = true;
+      }
+    });
+  };
+
   return {
     apply,
     applyMaterial,
+    setFlatShading,
     derivedMaterialCount: () => [...derived.values()].reduce((total, looks) => total + looks.size, 0),
     dispose(root) {
       apply(root, 'lit');
