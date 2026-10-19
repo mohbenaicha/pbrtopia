@@ -21,8 +21,13 @@
   transition: background var(--transition-fast);
 }
 
-.ui-disclosure__header:hover {
+.ui-disclosure__header:hover:not(:disabled) {
   background: var(--bg-hover);
+}
+
+.ui-disclosure__header:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .ui-disclosure__header:focus-visible {

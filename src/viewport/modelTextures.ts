@@ -4,6 +4,7 @@ export type TextureChannel = 'albedo' | 'normal' | 'rough' | 'metal';
 
 export interface TextureInfo {
   materialName: string;
+  materialIndex: number; // which material of the model carries the picture; two materials can share a name
   channel: TextureChannel;
   width: number;
   height: number;
@@ -45,7 +46,7 @@ export function collectTextureInfos(root: Object3D): TextureInfo[] {
       const texture = (material as TexturedMaterial)[key];
       const image = texture?.image as DrawableImage | undefined;
       if (!texture || !image) continue;
-      infos.push({ materialName: material.name || `Material ${index + 1}`, channel, width: image.width, height: image.height, colorSpace: texture.colorSpace, bytes: () => encodePng(image) });
+      infos.push({ materialName: material.name || `Material ${index + 1}`, materialIndex: index, channel, width: image.width, height: image.height, colorSpace: texture.colorSpace, bytes: () => encodePng(image) });
     }
   });
   return infos;

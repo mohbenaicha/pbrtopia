@@ -1,5 +1,6 @@
 export { createViewport, type Viewport } from './createViewport';
 export type { ViewAxis, Projection } from './cameraRig';
+export { watchPixelRatio } from './pixelRatio';
 export type { ViewportEventName } from './viewportEvents';
 export type { ModelAsset } from './loadModelAsset';
 export type { TextureInfo, TextureChannel } from './modelTextures';

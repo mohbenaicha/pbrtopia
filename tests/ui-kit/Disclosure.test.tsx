@@ -39,4 +39,23 @@ describe('Disclosure', () => {
     await userEvent.keyboard(' ');
     expect(onOpenChange).toHaveBeenCalledTimes(2);
   });
+
+  it('R22 disabled: the heading cannot be focused, ignores a click and the keys, and cannot be tabbed to', async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <>
+        <Disclosure title="Skin" open={false} onOpenChange={onOpenChange} disabled>body</Disclosure>
+        <button type="button">after</button>
+      </>,
+    );
+    const heading = screen.getByRole('button', { name: 'Skin' }) as HTMLButtonElement;
+    expect(heading.disabled).toBe(true);
+    heading.focus();
+    expect(document.activeElement).not.toBe(heading);
+    await userEvent.click(heading);
+    await userEvent.tab();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'after' }));
+    await userEvent.keyboard('{Enter}');
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
 });
