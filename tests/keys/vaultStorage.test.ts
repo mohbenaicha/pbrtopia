@@ -42,12 +42,37 @@ describe('IndexedDB vault storage', () => {
   });
 
   it('R2 an unreadable stored record fails the load with a fixed message that does not repeat what was stored', async () => {
-    for (const damaged of ['not a record', { version: 2 }, { ...sampleVaultRecord(), revision: 0 }, { ...sampleVaultRecord(), kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: 'many', salt: 'secret-text' } }]) {
+    const kdf = sampleVaultRecord().kdf;
+    const damagedList = [
+      'not a record',
+      { version: 2 },
+      { ...sampleVaultRecord(), revision: 0 },
+      { ...sampleVaultRecord(), revision: 2 ** 53 },
+      { ...sampleVaultRecord(), kdf: { ...kdf, iterations: 10_000_001 } },
+      { ...sampleVaultRecord(), kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: 'many', salt: 'secret-text' } },
+    ];
+    for (const damaged of damagedList) {
       const factory = new IDBFactory();
       await putRaw(factory, damaged);
       const failure = await createIndexedDbVaultStorage(factory).load().then(() => null, (error: Error) => error);
       expect(failure?.message, JSON.stringify(damaged)).toBe('The key vault could not be read.');
     }
+  });
+
+  it('R2 the largest allowed iteration count (10,000,000) is still read', async () => {
+    const factory = new IDBFactory();
+    const record = sampleVaultRecord();
+    await putRaw(factory, { ...record, kdf: { ...record.kdf, iterations: 10_000_000 } });
+    expect((await createIndexedDbVaultStorage(factory).load())?.kdf.iterations).toBe(10_000_000);
+  });
+
+  it('R10 a save that expects no vault is a conflict when an unreadable record is stored, and the record is left as it was', async () => {
+    const factory = new IDBFactory();
+    await putRaw(factory, 'not a record');
+    const storage = createIndexedDbVaultStorage(factory);
+    expect(await storage.save(sampleVaultRecord({ revision: 1 }), null)).toBe('conflict');
+    const failure = await storage.load().then(() => null, (error: Error) => error);
+    expect(failure?.message).toBe('The key vault could not be read.');
   });
 
   it('R2 a stored key for an unknown provider is dropped when read', async () => {

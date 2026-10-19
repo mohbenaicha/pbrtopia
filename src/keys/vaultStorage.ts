@@ -65,8 +65,10 @@ export function createIndexedDbVaultStorage(factory: IDBFactory | null = globalT
 
     async save(record: VaultRecord, basedOnRevision) {
       return withStore('readwrite', FAILED, async (store) => {
-        const current = readVaultRecord(await settle(store.get(KEY)));
-        const stale = basedOnRevision === null ? current !== null : current === null || current.revision !== basedOnRevision || !sameBytes(current.kdf.salt, record.kdf.salt);
+        const raw = await settle(store.get(KEY));
+        const current = readVaultRecord(raw);
+        // "No vault yet" is only true when nothing at all is stored: a record that cannot be read is still somebody's vault.
+        const stale = basedOnRevision === null ? raw !== undefined : current === null || current.revision !== basedOnRevision || !sameBytes(current.kdf.salt, record.kdf.salt);
         if (stale) return 'conflict' as const;
         await settle(store.put(readVaultRecord(record) ?? failNow(), KEY));
         return 'saved' as const;

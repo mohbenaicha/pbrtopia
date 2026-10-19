@@ -39,10 +39,11 @@ interface Setup {
   answers: (PasswordAnswer | null)[];
 }
 
-function setup(options: { storage?: ReturnType<typeof createMemoryVaultStorage>; bus?: ReturnType<typeof createBus>; kdfIterations?: number; answers?: (PasswordAnswer | null)[] } = {}): Setup {
+function setup(options: { storage?: ReturnType<typeof createMemoryVaultStorage>; bus?: ReturnType<typeof createBus>; kdfIterations?: number; answers?: (PasswordAnswer | null)[]; gate?: Promise<void> } = {}): Setup {
   const storage = options.storage ?? createMemoryVaultStorage();
   const answers = options.answers ?? [];
   const request = vi.fn<PasswordRequest>(async (purpose) => {
+    await options.gate; // the user is still typing until the gate opens
     const next = answers.shift();
     if (next !== undefined) return next;
     return purpose === 'create' ? { password: PASSWORD, confirm: PASSWORD } : { password: PASSWORD };
@@ -411,6 +412,44 @@ describe('KeyVault: two tabs (R10)', () => {
     expect(heard).toHaveBeenCalled();
   });
 
+  it('R10 a change made by another tab while the password prompt is open ends the unlock as vault-changed and installs nothing', async () => {
+    const storage = createMemoryVaultStorage();
+    const bus = createBus();
+    const first = setup({ storage, bus });
+    await first.vault.setKey('gemini', GEMINI);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const second = setup({ storage, bus, gate });
+    const unlocking = second.vault.ensureUnlocked();
+    await vi.waitFor(() => expect(second.request).toHaveBeenCalled());
+    await first.vault.setKey('openai', OPENAI);
+    await vi.waitFor(() => expect(second.vault.hasKey('openai')).toBe(true));
+    release();
+    expect(failureCode(await unlocking)).toBe('vault-changed');
+    expect(second.vault.status()).toBe('locked');
+    expect(second.vault.getKey('gemini')).toBeNull();
+  });
+
+  it('R12 locking while a save is in flight keeps the vault locked when the save finishes, and the saved key is in the record', async () => {
+    const { vault, storage } = await vaultWith('gemini');
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const realSave = storage.save.bind(storage);
+    vi.spyOn(storage, 'save').mockImplementation(async (record, basedOnRevision) => {
+      await gate;
+      return realSave(record, basedOnRevision);
+    });
+    const saving = vault.setKey('openai', OPENAI);
+    await vi.waitFor(() => expect(storage.save).toHaveBeenCalled());
+    vault.lock();
+    release();
+    expect((await saving).ok).toBe(true);
+    expect(vault.status()).toBe('locked');
+    expect(vault.getKey('gemini')).toBeNull();
+    expect(vault.getKey('openai')).toBeNull();
+    expect(vault.hint('openai')).toBe('QRST');
+  });
+
   it('R10 a wipe in one tab makes the other tab forget the vault', async () => {
     const storage = createMemoryVaultStorage();
     const bus = createBus();
@@ -422,6 +461,15 @@ describe('KeyVault: two tabs (R10)', () => {
     await vi.waitFor(() => expect(second.vault.status()).toBe('none'));
     expect(second.vault.hasKey('gemini')).toBe(false);
   });
+});
+
+describe('KeyVault: default key derivation (R2)', () => {
+  it('R2 a vault created without a chosen iteration count stores at least 600,000 PBKDF2 iterations', async () => {
+    const storage = createMemoryVaultStorage();
+    const vault = new KeyVault({ storage, requestPassword: async () => ({ password: PASSWORD, confirm: PASSWORD }), channel: null });
+    expect((await vault.setKey('gemini', GEMINI)).ok).toBe(true);
+    expect(storage.peek()?.kdf.iterations).toBeGreaterThanOrEqual(600_000);
+  }, 30_000);
 });
 
 describe('KeyVault: nothing leaks (R4)', () => {

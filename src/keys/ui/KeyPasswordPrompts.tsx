@@ -24,7 +24,9 @@ export function KeyPasswordPrompts({ vault, prompt }: KeyPasswordPromptsProps): 
   const deleteSavedKeys = async (): Promise<void> => {
     setDeleting(true);
     setFailure(null);
-    // The vault is waiting for this answer inside its queue, so it is cancelled first: the delete runs after it.
+    // The vault is waiting for this answer inside its queue, so it is cancelled first: the delete runs after it. Changes queued
+    // behind it would ask again, so no question is opened until the delete is over; they end as cancelled.
+    prompt.refuseRequests(true);
     prompt.answer(null);
     try {
       await vault.wipe();
@@ -32,6 +34,7 @@ export function KeyPasswordPrompts({ vault, prompt }: KeyPasswordPromptsProps): 
     } catch (error) {
       setFailure(error instanceof Error ? error.message : keyFailure('storage-failed').error.message);
     } finally {
+      prompt.refuseRequests(false);
       setDeleting(false);
     }
   };

@@ -99,6 +99,25 @@ describe('usePasswordPrompt', () => {
     expect(result.current.purpose).toBe('create');
   });
 
+  it('R3 a prompt that is unmounted while a question is open answers it with null', async () => {
+    const { result, unmount } = renderHook(() => usePasswordPrompt());
+    let answered: unknown = 'pending';
+    act(() => void result.current.requestPassword('unlock').then((answer) => (answered = answer)));
+    unmount();
+    await act(async () => undefined);
+    expect(answered).toBeNull();
+  });
+
+  it('R6 while requests are refused, a request answers null at once and opens nothing; afterwards requests open again', async () => {
+    const { result } = renderHook(() => usePasswordPrompt());
+    act(() => result.current.refuseRequests(true));
+    expect(await result.current.requestPassword('unlock')).toBeNull();
+    expect(result.current.purpose).toBeNull();
+    act(() => result.current.refuseRequests(false));
+    act(() => void result.current.requestPassword('unlock'));
+    expect(result.current.purpose).toBe('unlock');
+  });
+
   it('R3 requestPassword keeps the same identity between renders, so a vault built on it is not rebuilt', () => {
     const { result, rerender } = renderHook(() => usePasswordPrompt());
     const first = result.current.requestPassword;

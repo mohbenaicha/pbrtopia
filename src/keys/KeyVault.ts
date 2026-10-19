@@ -193,6 +193,9 @@ export class KeyVault {
         const opened = sealed ? await decryptSecret(cryptoKey, sealed, additionalDataFor(provider)) : null;
         if (opened !== null) keys[provider] = opened; // a key that does not open (swapped or damaged) is left out
       }
+      // Another tab may have changed the vault while the password was being typed: these keys then belong to an old record.
+      const now = this.record;
+      if (!now || now.revision !== record.revision || !sameBytes(now.kdf.salt, record.kdf.salt)) return keyFailure('vault-changed');
       this.session = { cryptoKey, keys, revision: record.revision, salt: record.kdf.salt };
     } catch {
       return keyFailure('crypto-unavailable');
@@ -245,11 +248,15 @@ export class KeyVault {
     const next: VaultRecord = { ...record, revision: record.revision + 1, keys };
     const saved = await this.save(next, record.revision);
     if (!saved.ok) return saved;
-    this.record = next;
-    const memory = { ...session.keys };
-    if (plain === null) delete memory[provider];
-    else memory[provider] = plain;
-    this.session = { ...session, keys: memory, revision: next.revision };
+    // The save went through, but the vault may have been locked, or another tab may have changed it, while it was running:
+    // then the session is not brought back, and a newer record already read stays.
+    if (!this.record || this.record.revision <= record.revision) this.record = next;
+    if (this.session === session) {
+      const memory = { ...session.keys };
+      if (plain === null) delete memory[provider];
+      else memory[provider] = plain;
+      this.session = { ...session, keys: memory, revision: next.revision };
+    }
     this.channel?.postChanged();
     this.fire();
     return KEY_OK;

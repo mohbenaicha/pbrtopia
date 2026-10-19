@@ -6,6 +6,7 @@ import { GEMINI, OPENAI, PASSWORD, renderKeys } from './keysHarness';
 afterEach(cleanup);
 
 const row = (name: 'Gemini' | 'OpenAI') => within(screen.getByRole('group', { name }));
+const inputValues = (): string => Array.from(document.querySelectorAll('input')).map((input) => input.value).join('|');
 type User = ReturnType<typeof renderKeys>['user'];
 
 async function addKey(user: User, name: 'Gemini' | 'OpenAI', key: string): Promise<void> {
@@ -58,6 +59,7 @@ describe('KeySettingsSection', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(storage.peek()?.keys.gemini?.hint).toBe('WXYZ');
     expect(document.body.textContent).not.toContain(GEMINI);
+    expect(inputValues()).not.toContain(GEMINI); // and the key is not left in a field either
   });
 
   it('R3 a new password under 8 characters, or a confirmation that differs, is refused in the dialog and nothing is saved', async () => {
@@ -84,6 +86,16 @@ describe('KeySettingsSection', () => {
     await waitFor(() => expect(row('Gemini').getByText('No password was entered.')).toBeTruthy());
     expect(storage.peek()).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
+    expect(row('Gemini').queryByLabelText('Gemini key')).toBeNull(); // the key field closed, so no key stays on the page
+    expect(inputValues()).not.toContain(GEMINI);
+  });
+
+  it('viewport-layout R22 focus moves into the key field when it opens and back to the row button when it closes', async () => {
+    const { user } = renderKeys();
+    await user.click(row('Gemini').getByRole('button', { name: 'Add key' }));
+    expect(document.activeElement).toBe(row('Gemini').getByLabelText('Gemini key'));
+    await user.click(row('Gemini').getByRole('button', { name: 'Cancel' }));
+    expect(document.activeElement).toBe(row('Gemini').getByRole('button', { name: 'Add key' }));
   });
 
   it('R7 a key that is too short is refused under the field, the field stays open, and Cancel closes it without a change', async () => {
@@ -172,6 +184,24 @@ describe('KeySettingsSection', () => {
     expect(getVault().status()).toBe('none');
     expect(row('Gemini').getByRole('button', { name: 'Add key' })).toBeTruthy();
     expect(row('OpenAI').getByRole('button', { name: 'Add key' })).toBeTruthy();
+  });
+
+  it('R6 Forgot password still deletes the keys when another change is queued behind the open password question', async () => {
+    const { user, storage, getVault } = renderKeys();
+    await createVaultWithGemini(user);
+    await user.click(screen.getByRole('button', { name: 'Lock' }));
+    await addKey(user, 'OpenAI', OPENAI); // waits for the password
+    // Another caller (the Generate flow, say) changes the vault while the question is open: it is queued behind it.
+    let queued!: Promise<{ ok: boolean }>;
+    act(() => {
+      queued = getVault().setKey('gemini', 'AIzaSy-replacement-key-0000-ZZZZ');
+    });
+    await user.click(screen.getByRole('button', { name: 'Forgot password' }));
+    await user.click(screen.getByRole('button', { name: 'Delete saved keys' }));
+    await waitFor(() => expect(storage.peek()).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(getVault().status()).toBe('none');
+    expect((await queued).ok).toBe(false);
   });
 
   it('R11 a key the provider rejected is flagged on its row with the message given, and the key stays', async () => {

@@ -1,4 +1,4 @@
-import { PROVIDERS, VAULT_VERSION, type SealedKey, type VaultRecord } from './vaultTypes';
+import { MAX_KDF_ITERATIONS, PROVIDERS, VAULT_VERSION, type SealedKey, type VaultRecord } from './vaultTypes';
 import { IV_BYTES, SALT_BYTES, type SealedBytes } from './crypto/sealedBytes';
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -23,10 +23,10 @@ function readSealedKey(value: unknown): SealedKey | null {
 export function readVaultRecord(raw: unknown): VaultRecord | null {
   if (!isObject(raw) || raw['version'] !== VAULT_VERSION) return null;
   const { revision, kdf, keys } = raw;
-  if (typeof revision !== 'number' || !Number.isInteger(revision) || revision < 1) return null;
+  if (typeof revision !== 'number' || !Number.isSafeInteger(revision) || revision < 1) return null;
   if (!isObject(kdf) || kdf['name'] !== 'PBKDF2' || kdf['hash'] !== 'SHA-256') return null;
   const { iterations, salt } = kdf;
-  if (typeof iterations !== 'number' || !Number.isInteger(iterations) || iterations < 1) return null;
+  if (typeof iterations !== 'number' || !Number.isSafeInteger(iterations) || iterations < 1 || iterations > MAX_KDF_ITERATIONS) return null;
   if (!(salt instanceof Uint8Array) || salt.length !== SALT_BYTES) return null;
   const verifier = readSealedBytes(raw['verifier']);
   if (!verifier || !isObject(keys)) return null;

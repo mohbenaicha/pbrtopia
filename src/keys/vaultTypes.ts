@@ -4,6 +4,7 @@ export const PROVIDERS = ['gemini', 'openai'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 export const VAULT_VERSION = 1;
+export const MAX_KDF_ITERATIONS = 10_000_000; // a stored record asking for more is unreadable (about 16 times the default)
 
 // One provider key as stored: ciphertext and IV, the last 4 characters in plain to tell keys apart, and when it was added.
 export interface SealedKey extends SealedBytes {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, TextInput } from '../../ui-kit';
 import type { KeyVault } from '../KeyVault';
 import type { Provider } from '../vaultTypes';
@@ -21,6 +21,15 @@ export function KeyRow({ provider, label, vault, message, rejected, onMessage }:
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState<Busy>(null);
   const hasKey = vault.hasKey(provider);
+  const row = useRef<HTMLDivElement>(null);
+  const wasEditing = useRef(false);
+
+  // The control that was pressed goes away when the field opens or closes, so focus follows: into the field, and back to Add or Replace.
+  useEffect(() => {
+    if (editing) row.current?.querySelector<HTMLElement>('input')?.focus();
+    else if (wasEditing.current) row.current?.querySelector<HTMLElement>('.key-row__actions button')?.focus();
+    wasEditing.current = editing;
+  }, [editing]);
 
   const closeField = (): void => {
     setEditing(false);
@@ -55,7 +64,7 @@ export function KeyRow({ provider, label, vault, message, rejected, onMessage }:
   };
 
   return (
-    <div className="key-row" role="group" aria-label={label}>
+    <div className="key-row" role="group" aria-label={label} ref={row}>
       <div className="key-row__line">
         <span className="key-row__name">{label}</span>
         <span className="key-row__value">{hasKey ? `••••${vault.hint(provider) ?? ''}` : 'Not set'}</span>
