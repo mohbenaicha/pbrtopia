@@ -5,6 +5,7 @@ import './base.css';
 export { Button, type ButtonProps } from './Button';
 export { Checkbox, type CheckboxProps } from './Checkbox';
 export { Dialog, type DialogProps } from './Dialog';
+export { Disclosure, type DisclosureProps } from './Disclosure';
 export { Icon, type IconName } from './Icon';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { Popover, type PopoverProps } from './Popover';
