@@ -1,4 +1,5 @@
 import type { ResolutionKey } from '../../catalog/modelTypes';
+import type { EncodedImage } from '../base64';
 import { makeProviderError } from '../classifyProviderError';
 import { buildEnhancerText } from '../enhancerInstructions';
 import type { ProviderError, Result } from '../providerTypes';
@@ -6,11 +7,6 @@ import type { ProviderError, Result } from '../providerTypes';
 export const GEMINI_INTERACTIONS_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
 export const INLINE_LIMIT_BYTES = 20 * 1024 * 1024;
 const GEMINI_SIZES: ReadonlySet<ResolutionKey> = new Set<ResolutionKey>(['1K', '2K', '4K']);
-
-export interface EncodedImage {
-  mimeType: string;
-  base64: string;
-}
 
 type GeminiPart = { type: 'text'; text: string } | { type: 'image'; mime_type: string; data: string };
 

@@ -8,6 +8,16 @@ export async function encodeBlobBase64(blob: Blob): Promise<string> {
   return btoa(binary);
 }
 
+export interface EncodedImage {
+  mimeType: string;
+  base64: string;
+}
+
+// R7, R8: an image blob as its type and base64 (a blob with no type is sent as a PNG).
+export async function encodeImage(blob: Blob): Promise<EncodedImage> {
+  return { mimeType: blob.type === '' ? 'image/png' : blob.type, base64: await encodeBlobBase64(blob) };
+}
+
 // R7: a base64 image answer as a blob of the given type.
 export function decodeBase64ToBlob(base64: string, mimeType: string): Blob {
   const binary = atob(base64);

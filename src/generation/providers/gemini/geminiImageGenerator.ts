@@ -1,11 +1,9 @@
 import { classifyOkBody } from '../classifyProviderError';
-import { decodeBase64ToBlob, encodeBlobBase64 } from '../base64';
+import { decodeBase64ToBlob, encodeImage } from '../base64';
 import type { ImageGenerator } from '../ImageGenerator';
 import { sendProviderRequest } from '../sendProviderRequest';
-import { checkInlineSize, buildGeminiImageBody, GEMINI_INTERACTIONS_URL, type EncodedImage } from './geminiRequests';
+import { checkInlineSize, buildGeminiImageBody, GEMINI_INTERACTIONS_URL } from './geminiRequests';
 import { parseGeminiImage } from './geminiResponses';
-
-const encode = async (blob: Blob): Promise<EncodedImage> => ({ mimeType: blob.type === '' ? 'image/png' : blob.type, base64: await encodeBlobBase64(blob) });
 
 // R7: the Gemini image call: build, send once, read the answer. The key goes only into the x-goog-api-key header (R14).
 export function createGeminiImageGenerator(fetchImpl: typeof fetch = fetch): ImageGenerator {
@@ -13,7 +11,7 @@ export function createGeminiImageGenerator(fetchImpl: typeof fetch = fetch): Ima
     async generate(request, ctx) {
       const tooBig = checkInlineSize([request.atlas, ...request.references], request.prompt);
       if (tooBig !== null) return { ok: false, error: tooBig };
-      const images = await Promise.all([request.atlas, ...request.references].map(encode));
+      const images = await Promise.all([request.atlas, ...request.references].map(encodeImage));
       const body = buildGeminiImageBody({ model: request.model, prompt: request.prompt, resolutionKey: request.resolutionKey, quality: request.quality, images });
       if (!body.ok) return body;
       const sent = await sendProviderRequest(
