@@ -23,6 +23,7 @@ export function RenameField({ initialName, save, cancel }: RenameFieldProps): Re
 
   const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
+    if (saving) return;
     const name = normalizeProjectName(value);
     if (name === null) return setError(NAME_MESSAGE);
     setSaving(true);

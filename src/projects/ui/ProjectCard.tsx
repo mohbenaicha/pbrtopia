@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Button, Checkbox } from '../../ui-kit';
 import type { ProjectSummary } from '../records/projectRecords';
 import { RenameField } from './RenameField';
@@ -19,9 +20,18 @@ export interface ProjectCardProps {
 // One project in the list: thumbnail, name, size and last change, with selection and the actions.
 export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, toggleSelected, startRename, saveName, cancelRename, remove }: ProjectCardProps): React.JSX.Element {
   const thumbnail = useThumbnailUrl(loadThumbnail, summary.id);
+  const card = useRef<HTMLLIElement>(null);
+  const wasRenaming = useRef(false);
+  useEffect(() => {
+    // leaving the rename field must not drop the keyboard focus: it goes back to this card's Rename button
+    if (wasRenaming.current && !renaming) {
+      Array.from(card.current?.querySelectorAll('button') ?? []).find((button) => button.textContent === 'Rename')?.focus();
+    }
+    wasRenaming.current = renaming;
+  }, [renaming]);
   const changed = new Date(summary.updatedAt).toLocaleDateString('en-US', { dateStyle: 'medium' });
   return (
-    <li className="project-card" data-testid="project-card" data-selected={selected ? '' : undefined}>
+    <li ref={card} className="project-card" data-testid="project-card" data-selected={selected ? '' : undefined}>
       <div className="project-card__thumbnail">{thumbnail !== null && <img src={thumbnail} alt={`${summary.name} thumbnail`} />}</div>
       <div className="project-card__select">
         <Checkbox label={`Select ${summary.name}`} hideLabel checked={selected} onChange={toggleSelected} />

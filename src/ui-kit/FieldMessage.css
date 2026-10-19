@@ -1,7 +1,7 @@
 .ui-field-message {
   margin: 0;
   color: var(--text-hint);
-  font-size: 12px;
+  font-size: var(--font-size-small);
 }
 
 .ui-field-message[data-error] {

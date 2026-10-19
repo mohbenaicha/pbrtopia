@@ -139,6 +139,42 @@ describe('ProjectListView', () => {
       expect(renameProject).not.toHaveBeenCalled();
     });
 
+    it('projects R8 pressing Save again while a rename is being written does not write twice', async () => {
+      const { renameProject } = await showList([summary('a', 'Orc helmet')]);
+      let finish: () => void = () => undefined;
+      renameProject.mockImplementationOnce(() => new Promise((resolve) => (finish = () => resolve({ ok: true as const, value: undefined }))));
+      await userEvent.click(within(cardOf('Orc helmet')).getByRole('button', { name: 'Rename' }));
+      await userEvent.type(screen.getByRole('textbox', { name: 'Project name' }), '2');
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await userEvent.keyboard('{Enter}');
+      expect(renameProject).toHaveBeenCalledTimes(1);
+      finish();
+      await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Project name' })).toBeNull());
+    });
+
+    it('projects R8 a rename that finishes after its editor was cancelled does not close another project\'s editor', async () => {
+      const { renameProject, listProjects } = await showList([summary('a', 'Orc helmet'), summary('b', 'Cube')]);
+      let finish: () => void = () => undefined;
+      renameProject.mockImplementationOnce(() => new Promise((resolve) => (finish = () => resolve({ ok: true as const, value: undefined }))));
+      await userEvent.click(within(cardOf('Orc helmet')).getByRole('button', { name: 'Rename' }));
+      await userEvent.type(screen.getByRole('textbox', { name: 'Project name' }), '2{Enter}');
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      await userEvent.click(within(cardOf('Cube')).getByRole('button', { name: 'Rename' }));
+      await userEvent.type(screen.getByRole('textbox', { name: 'Project name' }), ' keep me');
+      const readsBefore = listProjects.mock.calls.length;
+      finish();
+      await waitFor(() => expect(listProjects.mock.calls.length).toBeGreaterThan(readsBefore));
+      expect((screen.getByRole('textbox', { name: 'Project name' }) as HTMLInputElement).value).toBe('Cube keep me');
+    });
+
+    it('projects R22 leaving the rename field puts the focus back on that card\'s Rename button', async () => {
+      await showList([summary('a', 'Orc helmet')]);
+      await userEvent.click(within(cardOf('Orc helmet')).getByRole('button', { name: 'Rename' }));
+      await userEvent.keyboard('{Escape}');
+      expect(document.activeElement).toBe(within(cardOf('Orc helmet')).getByRole('button', { name: 'Rename' }));
+    });
+
     it('projects R8 a store failure shows its message and keeps the field open', async () => {
       const { renameProject } = await showList([summary('a', 'Orc helmet')]);
       renameProject.mockResolvedValueOnce(storeFailure('storage-unavailable', 'Could not save the name.') as never);

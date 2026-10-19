@@ -101,7 +101,9 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
 
   const setProjection = (projection: Projection): void => {
     if (!rig.setProjection(projection)) return;
+    models.setSettings({ projection }); // the stored settings follow the camera, so a later setting change does not put the old projection back
     events.emit('projection-changed', projection);
+    events.emit('settings-changed', models.settings());
     scheduler.invalidate();
   };
 

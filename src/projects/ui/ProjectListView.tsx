@@ -83,7 +83,7 @@ export function ProjectListView({ store, onOpen, headerActions, notice = null, o
             startRename={() => setRenamingId(summary.id)}
             saveName={async (name) => {
               const failure = await rename(summary.id, name);
-              if (failure === null) setRenamingId(null);
+              if (failure === null) setRenamingId((current) => (current === summary.id ? null : current));
               return failure;
             }}
             cancelRename={() => setRenamingId(null)}

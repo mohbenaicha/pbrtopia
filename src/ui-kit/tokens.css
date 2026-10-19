@@ -34,6 +34,9 @@
   --control-height: 38px;
   --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --font-size: 13.5px;
+  --font-size-small: 12px;
+  --font-size-heading: 15px;
+  --font-size-title: 22px;
   --line-height: 1.35;
 
   --focus-ring: 2px solid var(--accent);
