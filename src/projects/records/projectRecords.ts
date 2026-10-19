@@ -32,7 +32,7 @@ export interface GenerateSettingsRecord {
   provider: 'gemini' | 'openai';
   modelId: string;
   resolutionKey: '1K' | '2K' | '2.8K' | '4K';
-  quality: 'low' | 'medium' | 'high';
+  quality: string; // a level name from the chosen model's list (minimal, low, medium, high, xhigh, ...); never empty
 }
 
 export interface ProjectRecord {

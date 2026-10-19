@@ -65,7 +65,7 @@ function readGenerateSettings(value: unknown, path: string): GenerateSettingsRec
     provider: readChoice(raw['provider'], `${path}.provider`, ['gemini', 'openai'] as const),
     modelId: readText(raw['modelId'], `${path}.modelId`),
     resolutionKey: readChoice(raw['resolutionKey'], `${path}.resolutionKey`, ['1K', '2K', '2.8K', '4K'] as const),
-    quality: readChoice(raw['quality'], `${path}.quality`, ['low', 'medium', 'high'] as const),
+    quality: readNonEmptyText(raw['quality'], `${path}.quality`), // any level a model offers (generate spec R5); an unknown one is kept and the panel falls back
   };
 }
 
