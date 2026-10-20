@@ -23,6 +23,12 @@ export interface RunError {
   details?: string;
   retryAfterMs?: number;
 }
+// The Generate UV run (R17): progress and the error to show. Separate from the Generate run above.
+export interface UnwrapState {
+  status: RunStatus;
+  fraction: number; // 0-1 over the whole unwrap
+  error: RunError | null;
+}
 export type ModelCatalog = Record<Provider, ModelInfo[]>;
 export interface EnhancerChoice {
   provider: Provider;
@@ -51,6 +57,7 @@ export interface GenerateState {
   fraction: number;
   error: RunError | null;
   enhancedPrompt: string | null;
+  unwrap: UnwrapState;
   setPrompt: (prompt: string) => void;
   addReferences: (images: ReferenceImage[]) => { added: number; refused: number };
   removeReference: (id: string) => void;
@@ -68,6 +75,10 @@ export interface GenerateState {
   setEnhancedPrompt: (text: string | null) => void;
   failRun: (error: RunError) => void;
   clearRun: () => void;
+  beginUnwrap: () => void;
+  setUnwrapProgress: (fraction: number) => void;
+  failUnwrap: (error: RunError) => void;
+  clearUnwrap: () => void;
 }
 
 type Selection = Pick<GenerateState, 'provider' | 'modelId' | 'resolutionKey' | 'quality'>;
@@ -95,7 +106,8 @@ function settleAtlasKey(current: AtlasKey, maxTextureSize: number): AtlasKey {
 }
 
 const referenceCap =(info: ModelInfo | null): number => (info?.maxReferenceImages === undefined ? Infinity : Math.max(0, info.maxReferenceImages - 1));
-const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
+const IDLE_UNWRAP: UnwrapState = { status: 'idle', fraction: 0, error: null };
+const clamp01 =(value: number): number => Math.min(1, Math.max(0, value));
 
 export function createGenerateStore() {
   return createStore<GenerateState>()((set, get) => {
@@ -125,6 +137,7 @@ export function createGenerateStore() {
       fraction: 0,
       error: null,
       enhancedPrompt: null,
+      unwrap: IDLE_UNWRAP,
       setPrompt: (prompt) => set({ prompt }),
       addReferences: (images) => {
         const { references, catalog, provider, modelId } = get();
@@ -168,6 +181,10 @@ export function createGenerateStore() {
       setEnhancedPrompt: (enhancedPrompt) => set({ enhancedPrompt }),
       failRun: (error) => set({ status: 'failed', error }),
       clearRun: () => set({ status: 'idle', step: null, fraction: 0, error: null }),
+      beginUnwrap: () => set({ unwrap: { status: 'running', fraction: 0, error: null } }),
+      setUnwrapProgress: (fraction) => set({ unwrap: { ...get().unwrap, fraction: clamp01(fraction) } }),
+      failUnwrap: (error) => set({ unwrap: { status: 'failed', fraction: 0, error } }),
+      clearUnwrap: () => set({ unwrap: IDLE_UNWRAP }),
     };
   });
 }

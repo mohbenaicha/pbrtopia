@@ -25,6 +25,45 @@ function setup() {
   return { store, props };
 }
 
+describe('GeneratePanel: the unwrap in flight (R17)', () => {
+  const noUvs = (store: ReturnType<typeof setup>['store']) => act(() => store.getState().setSceneState({ hasModel: true, hasUvs: false }));
+
+  it('R17 while the unwrap runs a progress bar shows and Generate UV is disabled', () => {
+    const { store } = setup();
+    noUvs(store);
+    act(() => store.getState().beginUnwrap());
+    act(() => store.getState().setUnwrapProgress(0.25));
+    const bar = screen.getByRole('progressbar', { name: 'Generating UVs' });
+    expect(bar.getAttribute('aria-valuenow')).toBe('25');
+    expect((screen.getByRole('button', { name: 'Generate UV' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('R17 a failed unwrap shows its message in a dialog; OK closes it and Generate UV works again', () => {
+    const { store } = setup();
+    noUvs(store);
+    act(() => store.getState().beginUnwrap());
+    act(() => store.getState().failUnwrap({ category: 'engine', retryable: false, message: 'This model has too many vertices.' }));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.textContent).toContain('This model has too many vertices.');
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(store.getState().unwrap.status).toBe('idle');
+    expect((screen.getByRole('button', { name: 'Generate UV' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('R17 after success the panel shows Generate and no progress bar', () => {
+    const { store } = setup();
+    noUvs(store);
+    act(() => store.getState().beginUnwrap());
+    act(() => {
+      store.getState().setSceneState({ hasModel: true, hasUvs: true });
+      store.getState().clearUnwrap();
+    });
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Generate' })).toBeTruthy();
+  });
+});
+
 describe('GeneratePanel: a run in flight (R10)', () => {
   it('R10 the step list and Cancel replace the Generate button while a run is in flight', () => {
     const { store } = setup();

@@ -159,4 +159,30 @@ describe('describeGenerateAvailability (R6, R15)', () => {
     expect(result).toMatchObject({ action: 'generate-uv', enabled: false });
     expect(result.reason).not.toBeNull();
   });
+
+  it('R17 Generate UV is disabled with its own reason while the unwrap runs, and enabled again after a failure', () => {
+    const store = createGenerateStore();
+    store.getState().setSceneState({ hasModel: true, hasUvs: false });
+    store.getState().beginUnwrap();
+    expect(describeGenerateAvailability(store.getState())).toEqual({ action: 'generate-uv', enabled: false, reason: 'UVs are being generated.' });
+    store.getState().failUnwrap({ category: 'engine', retryable: false, message: 'x' });
+    expect(describeGenerateAvailability(store.getState())).toEqual({ action: 'generate-uv', enabled: true, reason: null });
+  });
+
+  it('R17 Generate stays disabled while the unwrap is still running after it has set hasUvs (the viewport still shows the old model)', () => {
+    const store = createGenerateStore();
+    store.getState().setSceneState({ hasModel: true, hasUvs: false });
+    store.getState().beginUnwrap();
+    store.getState().setSceneState({ hasModel: true, hasUvs: true });
+    expect(describeGenerateAvailability(store.getState())).toEqual({ action: 'generate', enabled: false, reason: 'UVs are being generated.' });
+  });
+
+  it('R17 once the unwrap has given the model UVs the button is Generate again', () => {
+    const store = createGenerateStore();
+    store.getState().setSceneState({ hasModel: true, hasUvs: false });
+    store.getState().beginUnwrap();
+    store.getState().setSceneState({ hasModel: true, hasUvs: true });
+    store.getState().clearUnwrap();
+    expect(describeGenerateAvailability(store.getState()).action).toBe('generate');
+  });
 });

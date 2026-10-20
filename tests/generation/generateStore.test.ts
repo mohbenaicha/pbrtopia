@@ -159,6 +159,35 @@ describe('generateStore: atlas size, separate from the output size (R16)', () =>
   });
 });
 
+describe('generateStore: unwrap state (R17)', () => {
+  it('R17 starts idle with no progress and no error', () => {
+    expect(createGenerateStore().getState().unwrap).toEqual({ status: 'idle', fraction: 0, error: null });
+  });
+
+  it('R17 beginUnwrap runs from zero, progress is clamped to 0-1, fail keeps the error, clear returns to idle', () => {
+    const store = createGenerateStore();
+    store.getState().beginUnwrap();
+    expect(store.getState().unwrap).toEqual({ status: 'running', fraction: 0, error: null });
+    store.getState().setUnwrapProgress(0.4);
+    expect(store.getState().unwrap.fraction).toBe(0.4);
+    store.getState().setUnwrapProgress(7);
+    expect(store.getState().unwrap.fraction).toBe(1);
+    store.getState().setUnwrapProgress(-1);
+    expect(store.getState().unwrap.fraction).toBe(0);
+    const error = { category: 'engine' as const, retryable: false, message: 'too many vertices' };
+    store.getState().failUnwrap(error);
+    expect(store.getState().unwrap).toEqual({ status: 'failed', fraction: 0, error });
+    store.getState().clearUnwrap();
+    expect(store.getState().unwrap).toEqual({ status: 'idle', fraction: 0, error: null });
+  });
+
+  it('R17 an unwrap does not touch the Generate run state', () => {
+    const store = createGenerateStore();
+    store.getState().beginUnwrap();
+    expect(store.getState()).toMatchObject({ status: 'idle', step: null });
+  });
+});
+
 describe('generateStore: references (R2)', () => {
   it('R2 adds references in order and removes one by id', () => {
     const store = setup();

@@ -16,6 +16,7 @@ import { readImageFile } from './readImageFile';
 import { ReferenceStrip } from './ReferenceStrip';
 import { ResolutionSelect } from './ResolutionSelect';
 import { RunErrorBlock } from './RunErrorBlock';
+import { UnwrapStatusBlock } from './UnwrapStatusBlock';
 import { UvOptionsDialog, type UvOptions } from './UvOptionsDialog';
 import './GeneratePanel.css';
 
@@ -83,6 +84,7 @@ export function GeneratePanel({ onGenerate, onGenerateUv, onDebugProjection, onC
       <QualitySelect levels={options.qualityLevels} value={state.quality} onChange={state.setQuality} />
       {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} onCancel={onCancel} />}
       {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} />}
+      <UnwrapStatusBlock unwrap={state.unwrap} onDismissError={state.clearUnwrap} />
       <div className="generate-panel__actions">
         {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />}
         <Button variant="ghost" disabled={debugDisabled} onClick={onDebugProjection}>Debug projection</Button>

@@ -2,7 +2,7 @@ import type { Provider } from '../keys';
 import type { ModelInfo } from './catalog/modelTypes';
 import type { EnhancerChoice, GenerateState } from './generateStore';
 
-export type AvailabilityInput = Pick<GenerateState, 'hasModel' | 'hasUvs' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status'>;
+export type AvailabilityInput = Pick<GenerateState, 'hasModel' | 'hasUvs' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status' | 'unwrap'>;
 
 export interface GenerateAvailability {
   action: 'generate' | 'generate-uv';
@@ -26,7 +26,11 @@ const blocked = (action: GenerateAvailability['action'], reason: string): Genera
 export function describeGenerateAvailability(input: AvailabilityInput): GenerateAvailability {
   const busy = input.status === 'running';
   if (!input.hasModel) return blocked('generate', 'Load a 3D model first.');
-  if (!input.hasUvs) return busy ? blocked('generate-uv', 'A request is already running.') : { action: 'generate-uv', enabled: true, reason: null };
+  // The unwrap sets hasUvs before the viewport shows the new model, so the button stays blocked until the whole unwrap is over.
+  if (input.unwrap.status === 'running') return blocked(input.hasUvs ? 'generate' : 'generate-uv', 'UVs are being generated.');
+  if (!input.hasUvs) {
+    return busy ? blocked('generate-uv', 'A request is already running.') : { action: 'generate-uv', enabled: true, reason: null };
+  }
   const { provider, modelId } = input;
   const image = provider === null || modelId === null ? undefined : input.catalog[provider].find((model) => model.id === modelId);
   if (provider === null || image === undefined) return blocked('generate', 'Choose an image model.');
