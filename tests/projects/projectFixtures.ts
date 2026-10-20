@@ -29,6 +29,7 @@ export function sampleProjectRecord(overrides: Partial<ProjectRecord> = {}): Pro
       provider: 'gemini',
       modelId: 'gemini-3-pro-image',
       resolutionKey: '2K',
+      atlasKey: '2K',
       quality: 'medium',
     },
     setIds: ['set-1', 'set-2'],

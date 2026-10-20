@@ -8,7 +8,7 @@ export interface ResolutionSelectProps {
   onChange: (key: ResolutionKey) => void;
 }
 
-// R4: the atlas sizes the selected model offers.
+// R4: the output sizes the selected model offers.
 export function ResolutionSelect({ options, experimental, value, onChange }: ResolutionSelectProps): React.JSX.Element {
   return (
     <Select

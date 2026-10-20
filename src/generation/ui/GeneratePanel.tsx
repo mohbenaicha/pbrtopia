@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore, type StoreApi } from 'zustand';
 import { Button } from '../../ui-kit';
+import { listAtlasSizes } from '../catalog/atlasSizes';
 import { optionsForModel } from '../catalog/optionsForModel';
 import { describeGenerateAvailability } from '../generateAvailability';
 import { findCatalogModel, generateStore, type GenerateState, type ReferenceImage } from '../generateStore';
+import { AtlasSizeSelect } from './AtlasSizeSelect';
 import { ChannelToggle } from './ChannelToggle';
 import { EnhancedPromptBlock } from './EnhancedPromptBlock';
 import { GenerateButton } from './GenerateButton';
@@ -77,6 +79,7 @@ export function GeneratePanel({ onGenerate, onGenerateUv, onDebugProjection, onC
       <ChannelToggle />
       <ModelSelect catalog={state.catalog} hasKey={state.hasKey} provider={state.provider} modelId={state.modelId} today={today} onSelect={state.selectModel} />
       <ResolutionSelect options={options.resolutions} experimental={model?.experimentalResolutions ?? []} value={state.resolutionKey} onChange={state.setResolution} />
+      <AtlasSizeSelect options={listAtlasSizes(state.maxTextureSize)} value={state.atlasKey} onChange={state.setAtlasKey} />
       <QualitySelect levels={options.qualityLevels} value={state.quality} onChange={state.setQuality} />
       {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} onCancel={onCancel} />}
       {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} />}

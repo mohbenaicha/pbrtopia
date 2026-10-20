@@ -106,6 +106,59 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
   });
 });
 
+describe('generateStore: atlas size, separate from the output size (R16)', () => {
+  it('R16 starts at 2K with no model chosen', () => {
+    expect(createGenerateStore().getState().atlasKey).toBe('2K');
+  });
+
+  it('R16 a model that offers only 1K as output still gets the 2K atlas', () => {
+    const store = setup();
+    store.getState().selectModel('gemini', 'gemini-3.1-flash-lite-image');
+    expect(store.getState()).toMatchObject({ resolutionKey: '1K', atlasKey: '2K' });
+  });
+
+  it('R16 changing the output size or the model never changes the atlas size', () => {
+    const store = setup();
+    store.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
+    store.getState().setAtlasKey('1K');
+    store.getState().setResolution('4K');
+    store.getState().selectModel('gemini', 'gemini-3.1-flash-lite-image');
+    store.getState().selectModel('openai', 'gpt-image-2.5-sunburst');
+    expect(store.getState().atlasKey).toBe('1K');
+  });
+
+  it('R16 changing the atlas size never changes the output size', () => {
+    const store = setup();
+    store.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
+    store.getState().setResolution('4K');
+    store.getState().setAtlasKey('1K');
+    expect(store.getState().resolutionKey).toBe('4K');
+  });
+
+  it('R16 the atlas size can be set without any model chosen', () => {
+    const store = setup();
+    store.getState().setAtlasKey('4K');
+    expect(store.getState().atlasKey).toBe('4K');
+  });
+
+  it('R16 a size the GPU cannot make is not chosen, and a chosen one it can no longer make falls back to 2K', () => {
+    const store = setup();
+    store.getState().setMaxTextureSize(2048);
+    store.getState().setAtlasKey('4K');
+    expect(store.getState().atlasKey).toBe('2K');
+    store.getState().setMaxTextureSize(8192);
+    store.getState().setAtlasKey('4K');
+    store.getState().setMaxTextureSize(2048);
+    expect(store.getState().atlasKey).toBe('2K');
+  });
+
+  it('R16 a GPU limited to 1K gets the 1K atlas', () => {
+    const store = setup();
+    store.getState().setMaxTextureSize(1024);
+    expect(store.getState().atlasKey).toBe('1K');
+  });
+});
+
 describe('generateStore: references (R2)', () => {
   it('R2 adds references in order and removes one by id', () => {
     const store = setup();

@@ -31,7 +31,8 @@ export interface GenerateSettingsRecord {
   channel: 'albedo';
   provider: 'gemini' | 'openai';
   modelId: string;
-  resolutionKey: '1K' | '2K' | '2.8K' | '4K';
+  resolutionKey: '1K' | '2K' | '2.8K' | '4K'; // the output size asked of the image model
+  atlasKey: '1K' | '2K' | '4K'; // the size of the atlas sent in (generate R16)
   quality: string; // a level name from the chosen model's list (minimal, low, medium, high, xhigh, ...); never empty
 }
 

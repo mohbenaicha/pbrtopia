@@ -65,6 +65,7 @@ function readGenerateSettings(value: unknown, path: string): GenerateSettingsRec
     provider: readChoice(raw['provider'], `${path}.provider`, ['gemini', 'openai'] as const),
     modelId: readText(raw['modelId'], `${path}.modelId`),
     resolutionKey: readChoice(raw['resolutionKey'], `${path}.resolutionKey`, ['1K', '2K', '2.8K', '4K'] as const),
+    atlasKey: raw['atlasKey'] === undefined ? '2K' : readChoice(raw['atlasKey'], `${path}.atlasKey`, ['1K', '2K', '4K'] as const), // absent in projects saved before generate R16
     quality: readNonEmptyText(raw['quality'], `${path}.quality`), // any level a model offers (generate spec R5); an unknown one is kept and the panel falls back
   };
 }

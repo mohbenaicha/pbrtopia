@@ -1,5 +1,6 @@
 import { createStore, useStore } from 'zustand';
 import type { Provider } from '../keys';
+import { DEFAULT_ATLAS_KEY, listAtlasSizes, type AtlasKey } from './catalog/atlasSizes';
 import { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
 import type { ModelInfo, ResolutionKey } from './catalog/modelTypes';
 import type { ProviderErrorCategory } from './providers/providerTypes';
@@ -34,7 +35,8 @@ export interface GenerateState {
   channel: 'albedo';
   provider: Provider | null;
   modelId: string | null;
-  resolutionKey: ResolutionKey | null;
+  resolutionKey: ResolutionKey | null; // the output size asked of the model (R4)
+  atlasKey: AtlasKey; // the size of the atlas sent in (R16); independent of the model and the output size
   quality: string | null;
   // fed by app/
   catalog: ModelCatalog;
@@ -54,6 +56,7 @@ export interface GenerateState {
   removeReference: (id: string) => void;
   selectModel: (provider: Provider, modelId: string) => void;
   setResolution: (key: ResolutionKey) => void;
+  setAtlasKey: (key: AtlasKey) => void;
   setQuality: (level: string) => void;
   setCatalog: (catalog: ModelCatalog) => void;
   setHasKey: (provider: Provider, has: boolean) => void;
@@ -74,7 +77,7 @@ export const findCatalogModel = (catalog: ModelCatalog, provider: Provider | nul
   provider === null || modelId === null ? null : (catalog[provider].find((model) => model.id === modelId) ?? null);
 const findModel = findCatalogModel;
 
-// R4, R5: the size and level for a model: the current ones when the model offers them, else 2K, else the first size; else the model's default level.
+// R4, R5: the output size and level for a model: the current ones when the model offers them, else 2K, else the first size; else the model's default level.
 function settleSelection(catalog: ModelCatalog, maxTextureSize: number, provider: Provider, modelId: string, current: Selection): Selection {
   const info = findModel(catalog, provider, modelId);
   if (info === null) return NO_SELECTION;
@@ -84,7 +87,14 @@ function settleSelection(catalog: ModelCatalog, maxTextureSize: number, provider
   return { provider, modelId, resolutionKey, quality: chooseQualityLevel(info, current.quality ?? '') };
 }
 
-const referenceCap = (info: ModelInfo | null): number => (info?.maxReferenceImages === undefined ? Infinity : Math.max(0, info.maxReferenceImages - 1));
+// R16: the atlas size stays unless the device cannot make it; then 2K, else the largest the device can make. A device size not yet known (0) changes nothing.
+function settleAtlasKey(current: AtlasKey, maxTextureSize: number): AtlasKey {
+  const keys = listAtlasSizes(maxTextureSize).map((option) => option.key);
+  if (keys.length === 0 || keys.includes(current)) return current;
+  return keys.includes(DEFAULT_ATLAS_KEY) ? DEFAULT_ATLAS_KEY : keys[keys.length - 1]!;
+}
+
+const referenceCap =(info: ModelInfo | null): number => (info?.maxReferenceImages === undefined ? Infinity : Math.max(0, info.maxReferenceImages - 1));
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
 export function createGenerateStore() {
@@ -92,13 +102,18 @@ export function createGenerateStore() {
     const resettle = (patch: Partial<Pick<GenerateState, 'catalog' | 'maxTextureSize'>>): void => {
       const next = { ...get(), ...patch };
       const { provider, modelId } = next;
-      set({ ...patch, ...(provider === null || modelId === null ? {} : settleSelection(next.catalog, next.maxTextureSize, provider, modelId, next)) });
+      set({
+        ...patch,
+        atlasKey: settleAtlasKey(next.atlasKey, next.maxTextureSize),
+        ...(provider === null || modelId === null ? {} : settleSelection(next.catalog, next.maxTextureSize, provider, modelId, next)),
+      });
     };
     return {
       prompt: '',
       references: [],
       channel: 'albedo',
       ...NO_SELECTION,
+      atlasKey: DEFAULT_ATLAS_KEY,
       catalog: { gemini: [], openai: [] },
       hasKey: { gemini: false, openai: false },
       enhancer: null,
@@ -130,6 +145,9 @@ export function createGenerateStore() {
         const { catalog, provider, modelId, maxTextureSize } = get();
         const info = findModel(catalog, provider, modelId);
         if (info !== null && optionsForModel(info, maxTextureSize).resolutions.some((option) => option.key === key)) set({ resolutionKey: key });
+      },
+      setAtlasKey: (key) => {
+        if (listAtlasSizes(get().maxTextureSize).some((option) => option.key === key)) set({ atlasKey: key });
       },
       setQuality: (level) => {
         const { catalog, provider, modelId, maxTextureSize } = get();
