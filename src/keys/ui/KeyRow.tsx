@@ -11,12 +11,13 @@ export interface KeyRowProps {
   message: string | undefined; // the last failure of an action on this row
   rejected: string | undefined; // R11: the provider refused the stored key
   onMessage: (text: string | null) => void;
+  onKeySaved?: (() => void) | undefined; // after the vault accepted a new or replaced key (settings R3)
 }
 
 type Busy = 'saving' | 'removing' | null;
 
 // R1, R7: one provider's line: the masked key and its status, and the actions on it (add or replace behind a masked field, remove).
-export function KeyRow({ provider, label, vault, message, rejected, onMessage }: KeyRowProps): React.JSX.Element {
+export function KeyRow({ provider, label, vault, message, rejected, onMessage, onKeySaved }: KeyRowProps): React.JSX.Element {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState<Busy>(null);
@@ -43,6 +44,7 @@ export function KeyRow({ provider, label, vault, message, rejected, onMessage }:
     setBusy(null);
     if (result.ok) {
       closeField();
+      onKeySaved?.();
     } else {
       // A key that is too short stays in the field to be fixed; any other failure closes it, so no key is left on the page.
       if (result.error.code !== 'invalid-key') closeField();

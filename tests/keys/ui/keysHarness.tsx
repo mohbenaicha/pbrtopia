@@ -15,7 +15,7 @@ export const OPENAI = 'sk-proj-OPENAI-0123456789-efghQRST';
 type Storage = ReturnType<typeof createMemoryVaultStorage>;
 
 // The settings section and the password dialogs wired to one real KeyVault on an in-memory storage, as the app wires them.
-export function renderKeys(options: { storage?: Storage; rejectedKeys?: Partial<Record<Provider, string>> } = {}) {
+export function renderKeys(options: { storage?: Storage; rejectedKeys?: Partial<Record<Provider, string>>; onKeySaved?: (provider: Provider) => void } = {}) {
   const storage = options.storage ?? createMemoryVaultStorage();
   let vault!: KeyVault;
   function Wired(): React.JSX.Element {
@@ -23,7 +23,7 @@ export function renderKeys(options: { storage?: Storage; rejectedKeys?: Partial<
     vault = useMemo(() => new KeyVault({ storage, requestPassword: prompt.requestPassword, kdfIterations: 1000, channel: null }), [prompt.requestPassword]);
     return (
       <>
-        <KeySettingsSection vault={vault} prompt={prompt} {...(options.rejectedKeys ? { rejectedKeys: options.rejectedKeys } : {})} />
+        <KeySettingsSection vault={vault} prompt={prompt} {...(options.rejectedKeys ? { rejectedKeys: options.rejectedKeys } : {})} {...(options.onKeySaved ? { onKeySaved: options.onKeySaved } : {})} />
         <KeyPasswordPrompts vault={vault} prompt={prompt} />
       </>
     );

@@ -38,6 +38,24 @@ describe('KeySettingsSection', () => {
     expect(screen.queryByRole('button', { name: 'Lock' })).toBeNull();
   });
 
+  it('settings R3 onKeySaved reports the provider once after a key is saved, also for the same text again, and not after a key that is too short', async () => {
+    const onKeySaved = vi.fn();
+    const { user } = renderKeys({ onKeySaved });
+    await addKey(user, 'Gemini', 'short');
+    await waitFor(() => expect(row('Gemini').getByRole('alert')).toBeTruthy());
+    expect(onKeySaved).not.toHaveBeenCalled();
+    await user.clear(row('Gemini').getByLabelText('Gemini key'));
+    await user.type(row('Gemini').getByLabelText('Gemini key'), GEMINI);
+    await user.click(row('Gemini').getByRole('button', { name: 'Save' }));
+    await user.type(screen.getByLabelText('Password'), PASSWORD);
+    await user.type(screen.getByLabelText('Confirm password'), PASSWORD);
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(onKeySaved).toHaveBeenCalledTimes(1));
+    expect(onKeySaved).toHaveBeenLastCalledWith('gemini');
+    await addKey(user, 'Gemini', GEMINI);
+    await waitFor(() => expect(onKeySaved).toHaveBeenCalledTimes(2));
+  });
+
   it('R9 the section says keys stay in this browser, and that this protects keys at rest only', () => {
     renderKeys();
     expect(screen.getByText('Keys are encrypted with your password and stay in this browser.')).toBeTruthy();

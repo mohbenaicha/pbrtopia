@@ -33,6 +33,15 @@ describe('QuotaWarning', () => {
     expect(screen.getByRole('button', { name: 'Export project' })).toBeTruthy();
   });
 
+  it('projects R13 with a set open or a task running Export is disabled and the reason shows', () => {
+    const { onExport } = show({ exportDisabledReason: 'Exit projection mode to export.' });
+    const button = screen.getByRole('button', { name: 'Export project' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(screen.getByText('Exit projection mode to export.')).toBeTruthy();
+    fireEvent.click(button);
+    expect(onExport).not.toHaveBeenCalled();
+  });
+
   it('R2 a busy export disables the button', () => {
     const { onExport } = show({ exporting: true });
     const button = screen.getByRole('button', { name: 'Export project' }) as HTMLButtonElement;

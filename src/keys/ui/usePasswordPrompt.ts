@@ -10,6 +10,9 @@ export interface PasswordPrompt {
   refuseRequests: (refuse: boolean) => void; // while true, every request is answered null without opening a dialog
 }
 
+/** The part of the prompt the key section uses (to cancel an open question and refuse new ones while it deletes the saved keys); it never changes between renders. */
+export type PasswordPromptControls = Pick<PasswordPrompt, 'answer' | 'refuseRequests'>;
+
 // R3: turns the vault's "ask for a password" call into dialog state. One question at a time; a new request cancels the open one,
 // and a question still open when the component goes away is answered null so the vault is not left waiting.
 export function usePasswordPrompt(): PasswordPrompt {

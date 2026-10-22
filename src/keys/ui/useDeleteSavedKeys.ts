@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { keyFailure } from '../keyError';
 import type { KeyVault } from '../KeyVault';
-import type { PasswordPrompt } from './usePasswordPrompt';
+import type { PasswordPromptControls } from './usePasswordPrompt';
 
 export interface DeleteSavedKeys {
   deleting: boolean;
@@ -13,7 +13,7 @@ export interface DeleteSavedKeys {
 // R6: deletes the stored vault for a confirmation dialog (Forgot password, Reset saved keys). A password question the vault is waiting
 // on is cancelled first, so the delete does not wait behind it; changes queued behind the delete would ask again, so no question is
 // opened until the delete is over, and they end as cancelled.
-export function useDeleteSavedKeys(vault: KeyVault, prompt: PasswordPrompt): DeleteSavedKeys {
+export function useDeleteSavedKeys(vault: KeyVault, prompt: PasswordPromptControls): DeleteSavedKeys {
   const [deleting, setDeleting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
 

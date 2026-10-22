@@ -5,4 +5,4 @@ export { createIndexedDbVaultStorage } from './vaultStorage';
 export { PROVIDERS, type PasswordAnswer, type PasswordRequest, type Provider, type VaultStorage } from './vaultTypes';
 export { KeyPasswordPrompts } from './ui/KeyPasswordPrompts';
 export { KeySettingsSection } from './ui/KeySettingsSection';
-export { usePasswordPrompt, type PasswordPrompt } from './ui/usePasswordPrompt';
+export { usePasswordPrompt, type PasswordPrompt, type PasswordPromptControls } from './ui/usePasswordPrompt';

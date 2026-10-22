@@ -5,20 +5,21 @@ import { PROVIDERS, type Provider } from '../vaultTypes';
 import { KeyRow } from './KeyRow';
 import { ResetSavedKeys } from './ResetSavedKeys';
 import { useDeleteSavedKeys } from './useDeleteSavedKeys';
-import type { PasswordPrompt } from './usePasswordPrompt';
+import type { PasswordPromptControls } from './usePasswordPrompt';
 import { useVaultVersion } from './useVaultVersion';
 import './keysUi.css';
 
 export interface KeySettingsSectionProps {
   vault: KeyVault;
-  prompt: PasswordPrompt; // the password question the vault asks through; Reset cancels it before deleting
+  prompt: PasswordPromptControls; // the password question the vault asks through; Reset cancels it before deleting
   rejectedKeys?: Partial<Record<Provider, string>> | undefined; // R11: providers whose stored key was refused, with the message to show
+  onKeySaved?: ((provider: Provider) => void) | undefined; // after a key was saved or replaced (settings R3); the app checks it (R11)
 }
 
 const LABELS: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
 
 // R1, R3, R6, R7, R9, R12: the "API keys" part of Settings. It reads the stored vault when it opens and follows its status after that.
-export function KeySettingsSection({ vault, prompt, rejectedKeys }: KeySettingsSectionProps): React.JSX.Element {
+export function KeySettingsSection({ vault, prompt, rejectedKeys, onKeySaved }: KeySettingsSectionProps): React.JSX.Element {
   useVaultVersion(vault);
   const [messages, setMessages] = useState<Partial<Record<Provider, string>>>({});
   const deletion = useDeleteSavedKeys(vault, prompt);
@@ -55,6 +56,7 @@ export function KeySettingsSection({ vault, prompt, rejectedKeys }: KeySettingsS
           vault={vault}
           message={messages[provider]}
           rejected={rejectedKeys?.[provider]}
+          onKeySaved={() => onKeySaved?.(provider)}
           onMessage={(text) =>
             setMessages((current) => {
               const others = { ...current };
