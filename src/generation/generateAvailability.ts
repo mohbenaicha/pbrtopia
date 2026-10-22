@@ -2,7 +2,7 @@ import type { Provider } from '../keys';
 import type { ModelInfo } from './catalog/modelTypes';
 import type { EnhancerChoice, GenerateState } from './generateStore';
 
-export type AvailabilityInput = Pick<GenerateState, 'hasModel' | 'hasUvs' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status' | 'unwrap'>;
+export type AvailabilityInput = Pick<GenerateState, 'hasModel' | 'hasUvs' | 'readOnly' | 'setOpen' | 'setBusy' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status' | 'unwrap'>;
 
 export interface GenerateAvailability {
   action: 'generate' | 'generate-uv';
@@ -25,15 +25,20 @@ const blocked = (action: GenerateAvailability['action'], reason: string): Genera
 // R6, R15: whether the Generate button works and, when not, one fixed sentence saying why. The first failing check wins.
 export function describeGenerateAvailability(input: AvailabilityInput): GenerateAvailability {
   const busy = input.status === 'running';
+  const action = input.hasUvs ? 'generate' : 'generate-uv';
   if (!input.hasModel) return blocked('generate', 'Load a 3D model first.');
+  if (input.readOnly) return blocked(action, 'This project is open in another tab.');
+  if (input.setOpen) return blocked(action, 'Exit projection mode first.');
+  if (input.setBusy) return blocked(action, 'Wait for the current task to finish.');
   // The unwrap sets hasUvs before the viewport shows the new model, so the button stays blocked until the whole unwrap is over.
-  if (input.unwrap.status === 'running') return blocked(input.hasUvs ? 'generate' : 'generate-uv', 'UVs are being generated.');
+  if (input.unwrap.status === 'running') return blocked(action, 'UVs are being generated.');
   if (!input.hasUvs) {
     return busy ? blocked('generate-uv', 'A request is already running.') : { action: 'generate-uv', enabled: true, reason: null };
   }
   const { provider, modelId } = input;
   const image = provider === null || modelId === null ? undefined : input.catalog[provider].find((model) => model.id === modelId);
-  if (provider === null || image === undefined) return blocked('generate', 'Choose an image model.');
+  if (provider === null || modelId === null) return blocked('generate', 'Choose an image model.');
+  if (image === undefined) return blocked('generate', 'The chosen image model is no longer available. Choose another.');
   if (!image.verified) return blocked('generate', 'This image model is not verified yet, so its sizes and quality levels are unknown. Choose another.');
   if (!input.hasKey[provider]) return blocked('generate', `Add a ${PROVIDER_NAME[provider]} key in Settings.`);
   const enhancer = pickEnhancerModel(input);

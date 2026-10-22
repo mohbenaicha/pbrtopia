@@ -49,6 +49,16 @@ describe('describeGenerateAvailability (R6, R15)', () => {
     expect(result.reason).toMatch(/image model/);
   });
 
+  it('R20 a chosen model that is missing from the model list says so, and Generate stays disabled until it is back', () => {
+    const store = readyStore();
+    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-3.8-flash')], openai: [] });
+    const result = describeNow(store);
+    expect(result.enabled).toBe(false);
+    expect(result.reason).toMatch(/no longer available/i);
+    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')], openai: [] });
+    expect(describeNow(store)).toEqual({ action: 'generate', enabled: true, reason: null });
+  });
+
   it('R6 an unverified model cannot be used until the table knows it', () => {
     const store = readyStore();
     store.getState().setHasKey('openai', true);
@@ -167,6 +177,30 @@ describe('describeGenerateAvailability (R6, R15)', () => {
     expect(describeGenerateAvailability(store.getState())).toEqual({ action: 'generate-uv', enabled: false, reason: 'UVs are being generated.' });
     store.getState().failUnwrap({ category: 'engine', retryable: false, message: 'x' });
     expect(describeGenerateAvailability(store.getState())).toEqual({ action: 'generate-uv', enabled: true, reason: null });
+  });
+
+  it.each([
+    ['readOnly', { readOnly: true }, 'This project is open in another tab.'],
+    ['setOpen', { setOpen: true }, 'Exit projection mode first.'],
+    ['setBusy', { setBusy: true }, 'Wait for the current task to finish.'],
+  ] as const)('R18 %s disables the button with its reason, for Generate and for Generate UV', (_name, flag, reason) => {
+    const store = createGenerateStore();
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, ...flag });
+    expect(describeGenerateAvailability(store.getState())).toEqual({ action: 'generate', enabled: false, reason });
+    store.getState().setSceneState({ hasModel: true, hasUvs: false, ...flag });
+    expect(describeGenerateAvailability(store.getState())).toEqual({ action: 'generate-uv', enabled: false, reason });
+  });
+
+  it('R18 the reasons come right after "Load a 3D model first." and before the key checks, in this order: read-only, set open, busy', () => {
+    const store = createGenerateStore();
+    store.getState().setSceneState({ hasModel: false, hasUvs: true, readOnly: true });
+    expect(describeGenerateAvailability(store.getState()).reason).toBe('Load a 3D model first.');
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, readOnly: true, setOpen: true, setBusy: true });
+    expect(describeGenerateAvailability(store.getState()).reason).toBe('This project is open in another tab.');
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, setOpen: true, setBusy: true });
+    expect(describeGenerateAvailability(store.getState()).reason).toBe('Exit projection mode first.');
+    store.getState().setSceneState({ hasModel: true, hasUvs: true });
+    expect(describeGenerateAvailability(store.getState()).reason).not.toBe('Wait for the current task to finish.');
   });
 
   it('R17 Generate stays disabled while the unwrap is still running after it has set hasUvs (the viewport still shows the old model)', () => {

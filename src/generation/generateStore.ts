@@ -35,6 +35,26 @@ export interface EnhancerChoice {
   modelId: string;
 }
 
+/** What the app tells the panel about the open project; the three flags of R18 default to false. */
+export interface SceneState {
+  hasModel: boolean;
+  hasUvs: boolean;
+  readOnly?: boolean;
+  setOpen?: boolean;
+  setBusy?: boolean;
+}
+
+/** What the project saves of the panel (R22). */
+export interface SavedPanelSettings {
+  prompt: string;
+  references: ReferenceImage[];
+  provider: Provider | null;
+  modelId: string | null;
+  resolutionKey: ResolutionKey | null;
+  atlasKey: AtlasKey;
+  quality: string | null;
+}
+
 export interface GenerateState {
   prompt: string;
   references: ReferenceImage[];
@@ -51,14 +71,21 @@ export interface GenerateState {
   maxTextureSize: number;
   hasModel: boolean;
   hasUvs: boolean;
+  readOnly: boolean; // the project is open in another tab (R18)
+  setOpen: boolean; // a projection set is open (R18)
+  setBusy: boolean; // a set is being entered or left (R18)
   // run state
   status: RunStatus;
   step: RunStep | null;
   fraction: number;
   error: RunError | null;
   enhancedPrompt: string | null;
+  atlasPreview: Blob | null; // the captured atlas, docked in the viewport while a run is going (R10)
+  notice: string | null; // a plain message that is not a failure (R19: the set is saved but could not be opened)
   unwrap: UnwrapState;
   setPrompt: (prompt: string) => void;
+  restoreSettings: (settings: SavedPanelSettings) => void;
+  setNotice: (notice: string | null) => void;
   addReferences: (images: ReferenceImage[]) => { added: number; refused: number };
   removeReference: (id: string) => void;
   selectModel: (provider: Provider, modelId: string) => void;
@@ -69,10 +96,11 @@ export interface GenerateState {
   setHasKey: (provider: Provider, has: boolean) => void;
   setEnhancer: (enhancer: EnhancerChoice | null) => void;
   setMaxTextureSize: (size: number) => void;
-  setSceneState: (scene: { hasModel: boolean; hasUvs: boolean }) => void;
+  setSceneState: (scene: SceneState) => void;
   beginRun: () => void;
   setStep: (step: RunStep, fraction: number) => void;
   setEnhancedPrompt: (text: string | null) => void;
+  setAtlasPreview: (atlas: Blob | null) => void;
   failRun: (error: RunError) => void;
   clearRun: () => void;
   beginUnwrap: () => void;
@@ -114,11 +142,9 @@ export function createGenerateStore() {
     const resettle = (patch: Partial<Pick<GenerateState, 'catalog' | 'maxTextureSize'>>): void => {
       const next = { ...get(), ...patch };
       const { provider, modelId } = next;
-      set({
-        ...patch,
-        atlasKey: settleAtlasKey(next.atlasKey, next.maxTextureSize),
-        ...(provider === null || modelId === null ? {} : settleSelection(next.catalog, next.maxTextureSize, provider, modelId, next)),
-      });
+      // A chosen model that the list lacks stays chosen (a saved choice survives a list that is still loading); it settles when it is listed.
+      const settled = provider !== null && modelId !== null && findModel(next.catalog, provider, modelId) !== null ? settleSelection(next.catalog, next.maxTextureSize, provider, modelId, next) : {};
+      set({ ...patch, atlasKey: settleAtlasKey(next.atlasKey, next.maxTextureSize), ...settled });
     };
     return {
       prompt: '',
@@ -132,13 +158,23 @@ export function createGenerateStore() {
       maxTextureSize: 0,
       hasModel: false,
       hasUvs: false,
+      readOnly: false,
+      setOpen: false,
+      setBusy: false,
       status: 'idle',
       step: null,
       fraction: 0,
       error: null,
       enhancedPrompt: null,
+      atlasPreview: null,
+      notice: null,
       unwrap: IDLE_UNWRAP,
       setPrompt: (prompt) => set({ prompt }),
+      restoreSettings: (settings) => {
+        set(settings);
+        resettle({});
+      },
+      setNotice: (notice) => set({ notice }),
       addReferences: (images) => {
         const { references, catalog, provider, modelId } = get();
         const known = new Set(references.map((reference) => reference.id));
@@ -167,20 +203,17 @@ export function createGenerateStore() {
         const info = findModel(catalog, provider, modelId);
         if (info !== null && optionsForModel(info, maxTextureSize).qualityLevels.includes(level)) set({ quality: level });
       },
-      setCatalog: (catalog) => {
-        const { provider, modelId } = get();
-        if (findModel(catalog, provider, modelId) === null) set({ catalog, ...NO_SELECTION });
-        else resettle({ catalog });
-      },
+      setCatalog: (catalog) => resettle({ catalog }),
       setHasKey: (provider, has) => set({ hasKey: { ...get().hasKey, [provider]: has } }),
       setEnhancer: (enhancer) => set({ enhancer }),
       setMaxTextureSize: (maxTextureSize) => resettle({ maxTextureSize }),
-      setSceneState: ({ hasModel, hasUvs }) => set({ hasModel, hasUvs }),
-      beginRun: () => set({ status: 'running', step: 'capture', fraction: 0, error: null, enhancedPrompt: null }),
+      setSceneState: ({ hasModel, hasUvs, readOnly = false, setOpen = false, setBusy = false }) => set({ hasModel, hasUvs, readOnly, setOpen, setBusy }),
+      beginRun: () => set({ status: 'running', step: 'capture', fraction: 0, error: null, enhancedPrompt: null, atlasPreview: null, notice: null }),
       setStep: (step, fraction) => set({ step, fraction: clamp01(fraction) }),
       setEnhancedPrompt: (enhancedPrompt) => set({ enhancedPrompt }),
-      failRun: (error) => set({ status: 'failed', error }),
-      clearRun: () => set({ status: 'idle', step: null, fraction: 0, error: null }),
+      setAtlasPreview: (atlasPreview) => set({ atlasPreview }),
+      failRun: (error) => set({ status: 'failed', error, atlasPreview: null }),
+      clearRun: () => set({ status: 'idle', step: null, fraction: 0, error: null, atlasPreview: null }),
       beginUnwrap: () => set({ unwrap: { status: 'running', fraction: 0, error: null } }),
       setUnwrapProgress: (fraction) => set({ unwrap: { ...get().unwrap, fraction: clamp01(fraction) } }),
       failUnwrap: (error) => set({ unwrap: { status: 'failed', fraction: 0, error } }),

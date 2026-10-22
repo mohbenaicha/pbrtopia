@@ -89,12 +89,25 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
     expect(store.getState().modelId).toBe('gemini-nano-banana-2.1');
   });
 
-  it('R4 a new catalog that no longer lists the selected model clears the selection and keeps the prompt', () => {
+  it('R20 a new catalog that no longer lists the selected model keeps the selection as it was (a saved choice is never wiped) and the prompt', () => {
     const store = setup();
     store.getState().setPrompt('a mossy stone');
     store.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
+    const before = store.getState();
     store.getState().setCatalog({ gemini: [FLASH], openai: [] });
-    expect(store.getState()).toMatchObject({ provider: null, modelId: null, resolutionKey: null, quality: null, prompt: 'a mossy stone' });
+    expect(store.getState()).toMatchObject({ provider: 'gemini', modelId: 'gemini-nano-banana-2.1', resolutionKey: before.resolutionKey, quality: before.quality, prompt: 'a mossy stone' });
+    expect(store.getState().catalog.gemini).toEqual([FLASH]);
+  });
+
+  it('R20 a model missing from the catalog stays selected through a texture-size change and settles again when it is listed', () => {
+    const store = setup();
+    store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
+    store.getState().setResolution('4K');
+    store.getState().setCatalog({ gemini: [], openai: [] });
+    store.getState().setMaxTextureSize(4096);
+    expect(store.getState()).toMatchObject({ modelId: 'gemini-3.1-flash-image', resolutionKey: '4K' });
+    store.getState().setCatalog({ gemini: [{ ...FLASH, resolutions: [{ key: '1K', sizePx: 1024 }] }], openai: [] });
+    expect(store.getState()).toMatchObject({ modelId: 'gemini-3.1-flash-image', resolutionKey: '1K' });
   });
 
   it('R4 a new catalog that still lists the selected model keeps the selection and refreshes its options', () => {
@@ -103,6 +116,59 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
     store.getState().setResolution('4K');
     store.getState().setCatalog({ gemini: [{ ...FLASH, resolutions: [{ key: '1K', sizePx: 1024 }] }], openai: [] });
     expect(store.getState()).toMatchObject({ modelId: 'gemini-3.1-flash-image', resolutionKey: '1K' });
+  });
+});
+
+describe('generateStore: restoring a project\'s saved settings (R22) and the notice (R19)', () => {
+  const saved = { prompt: 'saved prompt', references: [image('r1')], provider: 'gemini' as const, modelId: 'gemini-3.1-flash-image', resolutionKey: '4K' as const, atlasKey: '4K' as const, quality: 'high' };
+
+  it('R22 restoreSettings sets the prompt, references, model, sizes and quality, and settles them against the list', () => {
+    const store = setup();
+    store.getState().restoreSettings(saved);
+    expect(store.getState()).toMatchObject({ prompt: 'saved prompt', provider: 'gemini', modelId: 'gemini-3.1-flash-image', resolutionKey: '4K', atlasKey: '4K' });
+    expect(store.getState().references.map((reference) => reference.id)).toEqual(['r1']);
+  });
+
+  it('R22 restoring a model that the list lacks keeps it (it is not wiped), and the rest is restored', () => {
+    const store = createGenerateStore();
+    store.getState().setMaxTextureSize(8192);
+    store.getState().restoreSettings(saved);
+    expect(store.getState()).toMatchObject({ prompt: 'saved prompt', provider: 'gemini', modelId: 'gemini-3.1-flash-image', resolutionKey: '4K', quality: 'high', atlasKey: '4K' });
+    store.getState().setCatalog({ gemini: [FLASH], openai: [] });
+    expect(store.getState().modelId).toBe('gemini-3.1-flash-image');
+  });
+
+  it('R22 restoring does not cap the saved references by the model\'s limit and replaces the earlier ones', () => {
+    const store = setup();
+    store.getState().addReferences([image('old')]);
+    store.getState().restoreSettings({ ...saved, references: [image('a'), image('b'), image('c')] });
+    expect(store.getState().references.map((reference) => reference.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('R19 setNotice shows a notice that beginRun clears; failRun and clearRun leave it alone', () => {
+    const store = createGenerateStore();
+    store.getState().setNotice('The set is saved.');
+    store.getState().failRun({ category: 'server', retryable: true, message: 'x' });
+    expect(store.getState().notice).toBe('The set is saved.');
+    store.getState().beginRun();
+    expect(store.getState().notice).toBeNull();
+  });
+});
+
+describe('generateStore: the atlas docked while a run goes (R10)', () => {
+  it('R10 a run starts without an atlas, holds the one set, and drops it on failure and on clear', () => {
+    const store = createGenerateStore();
+    const atlas = new Blob(['atlas']);
+    store.getState().setAtlasPreview(atlas);
+    store.getState().beginRun();
+    expect(store.getState().atlasPreview).toBeNull();
+    store.getState().setAtlasPreview(atlas);
+    expect(store.getState().atlasPreview).toBe(atlas);
+    store.getState().failRun({ category: 'server', retryable: true, message: 'x' });
+    expect(store.getState().atlasPreview).toBeNull();
+    store.getState().setAtlasPreview(atlas);
+    store.getState().clearRun();
+    expect(store.getState().atlasPreview).toBeNull();
   });
 });
 

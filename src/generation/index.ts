@@ -1,9 +1,12 @@
+export { AtlasPreview } from './ui/AtlasPreview';
 export { GeneratePanel, type GeneratePanelProps } from './ui/GeneratePanel';
 export type { UvOptions } from './ui/UvOptionsDialog';
 export { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
+export { listAtlasSizes } from './catalog/atlasSizes';
 export { describeGenerateAvailability, pickEnhancerModel, type GenerateAvailability } from './generateAvailability';
 export {
   createGenerateStore,
+  findCatalogModel,
   generateStore,
   useGenerateStore,
   type EnhancerChoice,
@@ -11,6 +14,7 @@ export {
   type ModelCatalog,
   type ReferenceImage,
   type RunError,
+  type SavedPanelSettings,
   type RunStep,
 } from './generateStore';
 export { createImageGenerator, createPromptEnhancer } from './providers/createProviders';
@@ -18,4 +22,5 @@ export type { GeneratedImage, GenerateRequest, ImageGenerator } from './provider
 export type { EnhanceRequest, PromptEnhancer } from './providers/PromptEnhancer';
 export type { ProviderError, ProviderErrorCategory } from './providers/providerTypes';
 export { discoverModels } from './catalog/discoverModels';
+export { KNOWN_MODELS } from './catalog/knownModels';
 export type { ModelInfo } from './catalog/modelTypes';

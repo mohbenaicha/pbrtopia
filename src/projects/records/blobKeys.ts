@@ -17,6 +17,8 @@ export function textureBlobKey(materialName: string, channel: TextureChannel, ta
 
 /** The model file written after a Generate UV (generate R17); a fresh `id` per unwrap, so the file the record still points at is never overwritten. */
 export const unwrappedModelBlobKey = (id: string): string => `model-${id}.glb`;
+/** A reference image of the Generate panel (generate R22), under the id the panel gave it. Other characters become `_<hex>_` ("_" too), so two ids never share a key. */
+export const referenceBlobKey = (id: string): string => `references/${id.replace(/[^A-Za-z0-9.-]/g, (character) => `_${character.codePointAt(0)!.toString(16)}_`)}`;
 export const returnedImageBlobKey = (setId: string): string => `sets/${setId}/returned.png`;
 /** A bake file has a fresh `bakeId` per save, so a new bake never overwrites the one the records still point at. */
 export const bakeBlobKey = (setId: string, bakeId: string): string => `sets/${setId}/bake-${bakeId}.png`;

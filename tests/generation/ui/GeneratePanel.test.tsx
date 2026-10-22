@@ -70,6 +70,17 @@ describe('GeneratePanel: fields (R1, R3)', () => {
     expect((screen.getByRole('button', { name: 'Debug projection' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('R19 a notice from the store is shown as plain status text, with no Retry', () => {
+    setup((store) => store.getState().setNotice('The set is saved. Open it from the Projections tab.'));
+    expect(screen.getByRole('status').textContent).toBe('The set is saved. Open it from the Projections tab.');
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('R19 nothing is shown when there is no notice', () => {
+    setup();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
   it('R3 Albedo is selected and the other channels are disabled', () => {
     setup();
     const group = screen.getByRole('radiogroup', { name: 'Channel' });
