@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore, type StoreApi } from 'zustand';
-import { Button } from '../../ui-kit';
 import { listAtlasSizes } from '../catalog/atlasSizes';
 import { optionsForModel } from '../catalog/optionsForModel';
 import { describeGenerateAvailability } from '../generateAvailability';
@@ -23,10 +22,8 @@ import './GeneratePanel.css';
 interface GeneratePanelProps {
   onGenerate: () => void;
   onGenerateUv: (options: UvOptions) => void;
-  onDebugProjection: () => void;
   onCancel: () => void; // Cancel in the step list (R10)
   onRetry: () => void; // Retry in the error block (R9)
-  debugDisabled?: boolean;
   store?: StoreApi<GenerateState>;
   readImageFile?: (file: File) => Promise<ReferenceImage>;
   today?: string; // YYYY-MM-DD; defaults to the current date
@@ -34,7 +31,7 @@ interface GeneratePanelProps {
 
 // R1: the Generate panel: prompt, references, channel, model, resolution, quality, Generate and the debug-projection button.
 // The handlers run the flows (G9, G10); this panel only shows state and reports clicks.
-export function GeneratePanel({ onGenerate, onGenerateUv, onDebugProjection, onCancel, onRetry, debugDisabled = false, store = generateStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
+export function GeneratePanel({ onGenerate, onGenerateUv, onCancel, onRetry, store = generateStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
   const state = useStore(store);
   const [notice, setNotice] = useState<string | null>(null);
   const [uvDialogOpen, setUvDialogOpen] = useState(false);
@@ -87,9 +84,7 @@ export function GeneratePanel({ onGenerate, onGenerateUv, onDebugProjection, onC
       {state.notice !== null && <p className="generate-panel__notice" role="status">{state.notice}</p>}
       <UnwrapStatusBlock unwrap={state.unwrap} onDismissError={state.clearUnwrap} />
       <div className="generate-panel__actions">
-        {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />}
-        <Button variant="ghost" disabled={debugDisabled} onClick={onDebugProjection}>Debug projection</Button>
-      </div>
+        {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />}      </div>
       <EnhancedPromptBlock text={state.enhancedPrompt} />
       <UvOptionsDialog
         open={uvDialogOpen}

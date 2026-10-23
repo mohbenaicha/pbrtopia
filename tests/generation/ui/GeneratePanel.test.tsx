@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void = () => undefined, extra: { debugDisabled?: boolean } = {}) {
+function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void = () => undefined) {
   const store = createGenerateStore();
   const s = store.getState();
   s.setMaxTextureSize(8192);
@@ -31,9 +31,9 @@ function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void 
   s.setSceneState({ hasModel: true, hasUvs: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
   prepare(store);
-  const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(), onDebugProjection: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn() };
+  const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn() };
   const readImageFile = vi.fn(async (file: File): Promise<ReferenceImage> => ({ id: `${file.name}:${file.size}`, name: file.name, width: 8, height: 8, blob: file }));
-  const view = render(<GeneratePanel store={store} readImageFile={readImageFile} today="2026-10-19" {...props} {...extra} />);
+  const view = render(<GeneratePanel store={store} readImageFile={readImageFile} today="2026-10-19" {...props} />);
   const combo = (name: string): HTMLElement => screen.getByRole('combobox', { name });
   const optionsOf = (name: string): string[] => {
     fireEvent.click(combo(name));
@@ -45,14 +45,13 @@ function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void 
 }
 
 describe('GeneratePanel: fields (R1, R3)', () => {
-  it('R1 shows prompt, references, channel, model, resolution, quality, Generate and the debug button', () => {
+  it('R1 shows prompt, references, channel, model, resolution, quality and Generate', () => {
     setup();
     expect(screen.getByRole('textbox', { name: 'Prompt' })).toBeTruthy();
     expect(screen.getByLabelText('Add reference images')).toBeTruthy();
     expect(screen.getByRole('radiogroup', { name: 'Channel' })).toBeTruthy();
     for (const name of ['Model', 'Resolution', 'Atlas size', 'Quality']) expect(screen.getByRole('combobox', { name })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Generate' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Debug projection' })).toBeTruthy();
   });
 
   it('R1 typing in the prompt writes the store', () => {
@@ -61,13 +60,9 @@ describe('GeneratePanel: fields (R1, R3)', () => {
     expect(store.getState().prompt).toBe('weathered bronze');
   });
 
-  it('R1 the debug button calls its handler and can be disabled', () => {
-    const first = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Debug projection' }));
-    expect(first.props.onDebugProjection).toHaveBeenCalledTimes(1);
-    cleanup();
-    setup(() => undefined, { debugDisabled: true });
-    expect((screen.getByRole('button', { name: 'Debug projection' }) as HTMLButtonElement).disabled).toBe(true);
+  it('R1 the panel has no debug button (the debug view is the mode toolbar\'s switch)', () => {
+    setup();
+    expect(screen.queryByRole('button', { name: /debug/i })).toBeNull();
   });
 
   it('R19 a notice from the store is shown as plain status text, with no Retry', () => {
@@ -187,7 +182,7 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     try {
       const store = createGenerateStore();
-      const panel = <GeneratePanel store={store} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onDebugProjection={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />;
+      const panel = <GeneratePanel store={store} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />;
       const { rerender } = render(panel);
       expect(warn).toHaveBeenCalledTimes(1);
       expect(String(warn.mock.calls[0]?.[0])).toMatch(/Known models last checked/);
@@ -203,7 +198,7 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.stubEnv('DEV', false);
     try {
-      render(<GeneratePanel store={createGenerateStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onDebugProjection={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />);
+      render(<GeneratePanel store={createGenerateStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />);
       expect(warn).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllEnvs();
