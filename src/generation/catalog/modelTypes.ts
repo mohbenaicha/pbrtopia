@@ -17,6 +17,7 @@ export interface ProviderModelRecord {
   resolutions: ResolutionOption[];
   qualityLevels: string[]; // the provider's own names, in the order to show
   defaultQuality?: string; // one of qualityLevels; absent when there are none
+  enhancerLevel?: string; // vision-text models: the reasoning effort (OpenAI) or thinking level (Gemini) the enhancer request carries; absent = provider default
   maxReferenceImages?: number; // images in total including the atlas
   timeoutMs?: number;
   experimentalResolutions?: ResolutionKey[]; // sizes the provider documents as experimental

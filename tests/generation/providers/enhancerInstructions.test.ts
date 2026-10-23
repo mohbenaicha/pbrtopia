@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { buildEnhancerText, ENHANCER_INSTRUCTION } from '../../../src/generation/providers/enhancerInstructions';
 
-// The text the user supplied on 2026-10-17 (specs/generation/generate/spec.md R8).
+// The text of specs/generation/generate/spec.md R8 (the user's text of 2026-10-17, reworded 2026-10-23: one object on one sheet).
 const SPEC_TEXT =
-  'Enhance this user prompt by describing what you see in the 3D image snapshots provided. Mention features and where they lie relative to the overall model (e.g. left, right, top). Describe each feature briefly without over-interpreting or over-complicating. Mention multiple instances when there are several (e.g. left hand, right hand, chest pocket, pant pocket, left window, back window). Keep the overall description to 100 words or less.';
+  'Enhance this user prompt by describing what you see in the 3D image snapshots provided. The snapshots are several views of one single object, laid out on one sheet: describe that one object, never the sheet or its views, and count each feature once however many views show it (an object with one staff has one staff). Mention features and where they lie relative to the overall model (e.g. left, right, top, front, back). Describe each feature briefly without over-interpreting or over-complicating. Mention multiple instances only when the object itself has several (e.g. left hand and right hand, two windows). Keep the overall description to 100 words or less.';
 
 describe('enhancerInstructions', () => {
-  it('R8 the instruction is the text the user supplied, word for word', () => {
+  it('R8 the instruction is the spec text, word for word', () => {
     expect(ENHANCER_INSTRUCTION).toBe(SPEC_TEXT);
   });
 

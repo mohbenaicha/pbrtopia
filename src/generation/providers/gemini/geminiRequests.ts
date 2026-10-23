@@ -20,6 +20,7 @@ interface GeminiImageBody {
 interface GeminiEnhanceBody {
   model: string;
   input: GeminiPart[];
+  generation_config?: { thinking_level: string };
 }
 
 const imagePart = (image: EncodedImage): GeminiPart => ({ type: 'image', mime_type: image.mimeType, data: image.base64 });
@@ -39,9 +40,13 @@ export function buildGeminiImageBody(input: { model: string; prompt: string; res
   };
 }
 
-// R8: the enhancer body: the fixed instruction with the user's prompt, then the atlas.
-export function buildGeminiEnhanceBody(input: { model: string; prompt: string; atlas: EncodedImage }): GeminiEnhanceBody {
-  return { model: input.model, input: [{ type: 'text', text: buildEnhancerText(input.prompt) }, imagePart(input.atlas)] };
+// R8: the enhancer body: the fixed instruction with the user's prompt, then the atlas, and the thinking level when the model's table row has one.
+export function buildGeminiEnhanceBody(input: { model: string; prompt: string; atlas: EncodedImage; level: string | null }): GeminiEnhanceBody {
+  return {
+    model: input.model,
+    input: [{ type: 'text', text: buildEnhancerText(input.prompt) }, imagePart(input.atlas)],
+    ...(input.level === null ? {} : { generation_config: { thinking_level: input.level } }),
+  };
 }
 
 // R7: images go inline as base64 (a third larger than the bytes); the request must stay under 20 MiB. Null when it fits.

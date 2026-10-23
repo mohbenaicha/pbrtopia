@@ -102,8 +102,17 @@ describe('createOpenAiImageGenerator (R7, R14)', () => {
 });
 
 describe('createOpenAiPromptEnhancer (R8)', () => {
-  const enhanceRequest = { model: 'gpt-6-astra', prompt: 'weathered steel', atlas: png() };
+  const enhanceRequest = { model: 'gpt-6-astra', prompt: 'weathered steel', atlas: png(), level: null };
   const answer = (text: string) => ({ output: [{ type: 'message', content: [{ type: 'output_text', text }] }] });
+
+  it('R8 sends the request level as reasoning.effort, and no reasoning field without one', async () => {
+    const withLevel = fakeFetch(reply(answer('A steel plate.')));
+    await createOpenAiPromptEnhancer(withLevel.fetchImpl).enhance({ ...enhanceRequest, model: 'gpt-6-luna', level: 'none' }, ctx());
+    expect(JSON.parse(String(withLevel.calls[0]?.init.body)).reasoning).toEqual({ effort: 'none' });
+    const without = fakeFetch(reply(answer('A steel plate.')));
+    await createOpenAiPromptEnhancer(without.fetchImpl).enhance(enhanceRequest, ctx());
+    expect('reasoning' in JSON.parse(String(without.calls[0]?.init.body))).toBe(false);
+  });
 
   it('R8 posts the chosen text model with the prompt and the atlas as JSON and returns the text', async () => {
     const { fetchImpl, calls } = fakeFetch(reply(answer(' A steel plate. ')));

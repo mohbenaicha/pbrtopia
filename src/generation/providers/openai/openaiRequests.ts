@@ -16,6 +16,7 @@ type OpenAiPart = { type: 'input_text'; text: string } | { type: 'input_image'; 
 interface OpenAiEnhanceBody {
   model: string;
   input: { role: 'user'; content: OpenAiPart[] }[];
+  reasoning?: { effort: string };
 }
 
 const extensionOf = (blob: Blob): string => (blob.type.startsWith('image/') && blob.type.length > 6 ? blob.type.slice(6) : 'png');
@@ -37,8 +38,9 @@ export function buildOpenAiImageForm(input: { model: string; prompt: string; res
   return { ok: true, value: form };
 }
 
-// R8: the Responses body for the prompt enhancer: one user message with the instruction text and the atlas as a data URL.
-export function buildOpenAiEnhanceBody(input: { model: string; prompt: string; atlas: EncodedImage }): OpenAiEnhanceBody {
+// R8: the Responses body for the prompt enhancer: one user message with the instruction text and the atlas as a data URL, and the
+// reasoning effort when the model's table row has one.
+export function buildOpenAiEnhanceBody(input: { model: string; prompt: string; atlas: EncodedImage; level: string | null }): OpenAiEnhanceBody {
   return {
     model: input.model,
     input: [
@@ -50,5 +52,6 @@ export function buildOpenAiEnhanceBody(input: { model: string; prompt: string; a
         ],
       },
     ],
+    ...(input.level === null ? {} : { reasoning: { effort: input.level } }),
   };
 }

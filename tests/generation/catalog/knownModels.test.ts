@@ -7,7 +7,7 @@ const ids = (provider: string): string[] => KNOWN_MODELS.filter((entry) => entry
 describe('knownModels', () => {
   it('R4 the shipped table is the verified table of providers.md 4.4 without the models past or at their shutdown', () => {
     expect(ids('gemini')).toEqual(['gemini-3-pro-image', 'gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-nano-banana-2.1']);
-    expect(ids('openai')).toEqual(['gpt-5.6-luna', 'gpt-6-astra', 'gpt-image-2', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst']);
+    expect(ids('openai')).toEqual(['gpt-5.6-luna', 'gpt-6-astra', 'gpt-6-luna', 'gpt-image-2', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst']);
     expect(findKnownModel('openai', 'gpt-image-1')).toBeNull();
     expect(findKnownModel('gemini', 'gemini-2.5-flash-image')).toBeNull();
   });
@@ -42,9 +42,21 @@ describe('knownModels', () => {
   });
 
   it('R5 a model whose levels are unconfirmed (gemini-3-pro-image) and the text models offer no levels', () => {
-    for (const [provider, id] of [['gemini', 'gemini-3-pro-image'], ['gemini', 'gemini-3.8-flash'], ['gemini', 'gemini-3.5-flash-lite'], ['openai', 'gpt-6-astra'], ['openai', 'gpt-5.6-luna']] as const) {
+    for (const [provider, id] of [['gemini', 'gemini-3-pro-image'], ['gemini', 'gemini-3.8-flash'], ['gemini', 'gemini-3.5-flash-lite'], ['openai', 'gpt-6-astra'], ['openai', 'gpt-5.6-luna'], ['openai', 'gpt-6-luna']] as const) {
       expect(findKnownModel(provider, id)?.qualityLevels, id).toEqual([]);
     }
+  });
+
+  it('R8 gpt-6-luna is a verified vision-text model, dated 2026-10-23 and sourced from the live probes', () => {
+    const luna = findKnownModel('openai', 'gpt-6-luna');
+    expect(luna).toMatchObject({ role: 'vision-text', displayName: 'GPT-6 Luna', verified: true, verifiedAt: '2026-10-23' });
+    expect(luna?.source.length).toBeGreaterThan(0);
+  });
+
+  it('R8 the enhancer level is held only by the four vision-text rows the spec names, with the values seen accepted', () => {
+    const withLevel = KNOWN_MODELS.filter((entry) => entry.enhancerLevel !== undefined).map((entry) => `${entry.id}=${entry.enhancerLevel}`).sort();
+    expect(withLevel).toEqual(['gemini-3.8-flash=low', 'gpt-5.6-luna=none', 'gpt-6-astra=low', 'gpt-6-luna=none']);
+    for (const entry of KNOWN_MODELS) if (entry.enhancerLevel !== undefined) expect(entry.role, entry.id).toBe('vision-text');
   });
 
   it('R5 the default level of each model is one of its levels, and a model without levels has no default', () => {
@@ -85,7 +97,7 @@ describe('knownModels', () => {
   it('R4 findStaleKnownModels lists entries verified more than 90 days before the given day, and none on the day they were verified', () => {
     expect(findStaleKnownModels(KNOWN_MODELS, '2026-10-17')).toEqual([]);
     expect(findStaleKnownModels(KNOWN_MODELS, '2027-01-15')).toEqual([]); // 90 days exactly
-    expect(findStaleKnownModels(KNOWN_MODELS, '2027-01-16').length).toBe(KNOWN_MODELS.length);
+    expect(findStaleKnownModels(KNOWN_MODELS, '2027-01-16').length).toBe(KNOWN_MODELS.filter((entry) => entry.verifiedAt === '2026-10-17').length);
   });
 
   it('R4 warnAboutStaleKnownModels prints one line naming the stale models and the day they were checked, and nothing when none is stale', () => {

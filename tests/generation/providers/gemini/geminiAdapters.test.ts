@@ -127,7 +127,16 @@ describe('createGeminiImageGenerator (R7, R14)', () => {
 });
 
 describe('createGeminiPromptEnhancer (R8)', () => {
-  const enhanceRequest = { model: 'gemini-3.8-flash', prompt: 'weathered steel', atlas: png() };
+  const enhanceRequest = { model: 'gemini-3.8-flash', prompt: 'weathered steel', atlas: png(), level: null };
+
+  it('R8 sends the request level as generation_config.thinking_level, and no generation_config without one', async () => {
+    const withLevel = fakeFetch(reply(answerWith([{ type: 'text', text: 'A steel plate.' }])));
+    await createGeminiPromptEnhancer(withLevel.fetchImpl).enhance({ ...enhanceRequest, level: 'low' }, ctx());
+    expect(JSON.parse(String(withLevel.calls[0]?.init.body)).generation_config).toEqual({ thinking_level: 'low' });
+    const without = fakeFetch(reply(answerWith([{ type: 'text', text: 'A steel plate.' }])));
+    await createGeminiPromptEnhancer(without.fetchImpl).enhance(enhanceRequest, ctx());
+    expect('generation_config' in JSON.parse(String(without.calls[0]?.init.body))).toBe(false);
+  });
 
   it('R8 posts the chosen text model with the prompt and the atlas and returns the answer text', async () => {
     const { fetchImpl, calls } = fakeFetch(reply(answerWith([{ type: 'text', text: ' A steel plate with scratches. ' }])));

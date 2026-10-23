@@ -9,7 +9,7 @@ import { parseOpenAiText } from './openaiResponses';
 export function createOpenAiPromptEnhancer(fetchImpl: typeof fetch = fetch): PromptEnhancer {
   return {
     async enhance(request, ctx) {
-      const body = buildOpenAiEnhanceBody({ model: request.model, prompt: request.prompt, atlas: await encodeImage(request.atlas) });
+      const body = buildOpenAiEnhanceBody({ model: request.model, prompt: request.prompt, atlas: await encodeImage(request.atlas), level: request.level });
       const sent = await sendProviderRequest(
         { provider: 'openai', url: OPENAI_RESPONSES_URL, method: 'POST', headers: { Authorization: `Bearer ${ctx.apiKey}`, 'content-type': 'application/json' }, body: JSON.stringify(body) },
         ctx,

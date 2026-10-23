@@ -65,7 +65,7 @@ describe('buildOpenAiImageForm (R7)', () => {
 
 describe('buildOpenAiEnhanceBody (R8)', () => {
   it('R8 sends one user message with the instruction text and the atlas as a data URL', () => {
-    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-astra', prompt: 'weathered steel', atlas: { mimeType: 'image/png', base64: 'QVRMQVM=' } });
+    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-astra', prompt: 'weathered steel', atlas: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: null });
     expect(body.model).toBe('gpt-6-astra');
     expect(body.input).toHaveLength(1);
     const message = body.input[0];
@@ -73,6 +73,16 @@ describe('buildOpenAiEnhanceBody (R8)', () => {
     expect(message?.content[0]).toMatchObject({ type: 'input_text' });
     expect((message?.content[0] as { text: string }).text).toContain('weathered steel');
     expect(message?.content[1]).toEqual({ type: 'input_image', image_url: 'data:image/png;base64,QVRMQVM=', detail: 'auto' });
+  });
+
+  it('R8 a level is sent as reasoning.effort', () => {
+    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-luna', prompt: 'weathered steel', atlas: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: 'none' });
+    expect(body.reasoning).toEqual({ effort: 'none' });
+  });
+
+  it('R8 no level sends no reasoning field at all', () => {
+    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-astra', prompt: 'weathered steel', atlas: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: null });
+    expect('reasoning' in body).toBe(false);
   });
 });
 
