@@ -1,7 +1,7 @@
 import { Unzip, UnzipInflate, UnzipPassThrough } from 'fflate';
-import { storeFailure, type StoreError } from '../storeError';
+import { StoreAbort, storeFailure, type StoreError } from '../storeError';
 import { updateCrc32 } from './crc32';
-import { Rejection, shorten } from './zipRejection';
+import { shorten } from './zipRejection';
 import { ZIP_LIMITS, classifyEntryPath, type EntryKind } from './zipFormat';
 
 const SLICE_BYTES = 16 * 1024; // how much is given to the unzipper at a time, which bounds what one step can unpack
@@ -26,9 +26,9 @@ interface ZipReadOutcome {
   open: boolean; // an entry was still being unpacked when the source ended
 }
 
-/** The store error a thrown value stands for: a Rejection keeps its own, anything else is `corrupt` with the given reason. */
+/** The store error a thrown value stands for: a StoreAbort keeps its own, anything else is `corrupt` with the given reason. */
 export function describeFailure(error: unknown, fallback = 'The zip could not be imported.'): StoreError {
-  return error instanceof Rejection ? error.storeError : storeFailure('corrupt', typeof error === 'string' ? error : fallback).error;
+  return error instanceof StoreAbort ? error.storeError : storeFailure('corrupt', typeof error === 'string' ? error : fallback).error;
 }
 
 function concatBytes(first: Uint8Array, second: Uint8Array): Uint8Array {
