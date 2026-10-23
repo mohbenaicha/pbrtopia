@@ -1,6 +1,6 @@
 import type { Provider } from '../../keys';
 import { KNOWN_MODELS } from './knownModels';
-import type { ModelInfo } from './modelTypes';
+import type { ProviderModelRecord } from './modelTypes';
 
 // One model as a provider's list endpoint reports it (a Gemini `models/` prefix already removed).
 export interface ListedModel {
@@ -11,7 +11,7 @@ export interface ListedModel {
 
 export interface CandidateModel {
   id: string;
-  role: ModelInfo['role'];
+  role: ProviderModelRecord['role'];
   shutdownDate?: string; // a future date: the model is still offered but retiring
 }
 
@@ -23,7 +23,7 @@ const DATED_SUFFIXES = [/-\d{4}-\d{2}-\d{2}$/, /-\d{3}$/];
 const GEMINI_TEXT_EXCLUDED = /-(tts|embedding|live|image)(-|$)/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-function roleOf(provider: Provider, id: string): ModelInfo['role'] | null {
+function roleOf(provider: Provider, id: string): ProviderModelRecord['role'] | null {
   if (provider === 'openai') {
     if (id.startsWith('gpt-image-')) return 'image';
     return KNOWN_MODELS.some((known) => known.provider === 'openai' && known.role === 'vision-text' && known.id === id) ? 'vision-text' : null;

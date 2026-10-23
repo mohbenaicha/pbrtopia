@@ -1,7 +1,7 @@
-import type { ProjectLockManager } from '../../../src/projects/lock/acquireProjectLock';
+import type { ProjectLockRequester } from '../../../src/projects/lock/acquireProjectLock';
 
 // The part of the Web Locks API the app uses: a named lock is held until the callback's promise settles; `ifAvailable` gives null when it is taken.
-export function createFakeLockManager(): ProjectLockManager & { requested: string[] } {
+export function createFakeLockManager(): ProjectLockRequester & { requested: string[] } {
   const held = new Set<string>();
   const requested: string[] = [];
   return {
@@ -14,6 +14,6 @@ export function createFakeLockManager(): ProjectLockManager & { requested: strin
       }
       held.add(name);
       return callback({ name }).finally(() => held.delete(name));
-    }) as ProjectLockManager['request'],
+    }) as ProjectLockRequester['request'],
   };
 }

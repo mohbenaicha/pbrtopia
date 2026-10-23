@@ -1,5 +1,5 @@
 import type { Provider } from '../keys';
-import type { ModelInfo } from './catalog/modelTypes';
+import type { ProviderModelRecord } from './catalog/modelTypes';
 import type { EnhancerChoice, GenerateState } from './generateStore';
 
 export type AvailabilityInput = Pick<GenerateState, 'hasModel' | 'hasUvs' | 'readOnly' | 'setOpen' | 'setBusy' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status' | 'unwrap'>;
@@ -16,7 +16,7 @@ const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'Ope
 export function pickEnhancerModel(input: Pick<AvailabilityInput, 'enhancer' | 'provider' | 'catalog'>): EnhancerChoice | null {
   if (input.enhancer !== null) return input.enhancer;
   if (input.provider === null) return null;
-  const fallback = input.catalog[input.provider].find((model: ModelInfo) => model.role === 'vision-text' && model.verified);
+  const fallback = input.catalog[input.provider].find((model: ProviderModelRecord) => model.role === 'vision-text' && model.verified);
   return fallback === undefined ? null : { provider: input.provider, modelId: fallback.id };
 }
 

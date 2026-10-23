@@ -3,7 +3,7 @@ import type { ProviderError, Result } from '../providers/providerTypes';
 import { sendProviderRequest } from '../providers/sendProviderRequest';
 import { filterModelIds, type CandidateModel, type ListedModel } from './filterModelIds';
 import { findKnownModel } from './knownModels';
-import type { ModelInfo } from './modelTypes';
+import type { ProviderModelRecord } from './modelTypes';
 
 export interface DiscoverDeps {
   fetchImpl?: typeof fetch;
@@ -31,17 +31,17 @@ const parseGeminiList = (body: unknown): ListedModel[] =>
   });
 
 // A candidate as the app shows it: the table row for a known id (without its bookkeeping), a bare unverified entry for any other.
-function joinWithKnownTable(provider: Provider, candidate: CandidateModel): ModelInfo {
+function joinWithKnownTable(provider: Provider, candidate: CandidateModel): ProviderModelRecord {
   const known = findKnownModel(provider, candidate.id);
   const retiring = candidate.shutdownDate === undefined ? {} : { retiring: { shutdownDate: candidate.shutdownDate } };
   if (known !== null) {
-    const info = Object.fromEntries(Object.entries(known).filter(([key]) => key !== 'verifiedAt' && key !== 'source')) as unknown as ModelInfo;
+    const info = Object.fromEntries(Object.entries(known).filter(([key]) => key !== 'verifiedAt' && key !== 'source')) as unknown as ProviderModelRecord;
     return { ...info, ...retiring };
   }
   return { provider, id: candidate.id, role: candidate.role, displayName: candidate.id, verified: false, resolutions: [], qualityLevels: [], ...retiring };
 }
 
-const sortKey = (model: ModelInfo): string => `${model.role === 'image' ? 0 : 1}|${model.verified ? 0 : 1}|${model.id}`;
+const sortKey = (model: ProviderModelRecord): string => `${model.role === 'image' ? 0 : 1}|${model.verified ? 0 : 1}|${model.id}`;
 
 async function listGemini(apiKey: string, signal: AbortSignal, fetchImpl: typeof fetch): Promise<Result<ListedModel[], ProviderError>> {
   const listed: ListedModel[] = [];
@@ -63,7 +63,7 @@ async function listGemini(apiKey: string, signal: AbortSignal, fetchImpl: typeof
  * them with the shipped table; ids not in the table come back unverified with no sizes or levels. Sorted image models first, verified before
  * unverified, then by id. A failed call returns its ProviderError (401 or 403 means the key is bad); nothing partial is returned.
  */
-export async function discoverModels(provider: Provider, apiKey: string, signal: AbortSignal, deps: DiscoverDeps = {}): Promise<Result<ModelInfo[], ProviderError>> {
+export async function discoverModels(provider: Provider, apiKey: string, signal: AbortSignal, deps: DiscoverDeps = {}): Promise<Result<ProviderModelRecord[], ProviderError>> {
   const fetchImpl = deps.fetchImpl ?? fetch;
   const today = deps.today ?? new Date().toISOString().slice(0, 10);
   let listed: Result<ListedModel[], ProviderError>;

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { findKnownModel } from '../../../src/generation/catalog/knownModels';
 import { chooseQualityLevel, optionsForModel } from '../../../src/generation/catalog/optionsForModel';
-import type { ModelInfo } from '../../../src/generation/catalog/modelTypes';
+import type { ProviderModelRecord } from '../../../src/generation/catalog/modelTypes';
 
-const known = (provider: 'gemini' | 'openai', id: string): ModelInfo => {
+const known = (provider: 'gemini' | 'openai', id: string): ProviderModelRecord => {
   const info = findKnownModel(provider, id);
   if (!info) throw new Error(`missing ${id}`);
   return info;
 };
-const unknownModel: ModelInfo = { provider: 'openai', id: 'gpt-image-9', role: 'image', displayName: 'gpt-image-9', verified: false, resolutions: [], qualityLevels: [] };
+const unknownModel: ProviderModelRecord = { provider: 'openai', id: 'gpt-image-9', role: 'image', displayName: 'gpt-image-9', verified: false, resolutions: [], qualityLevels: [] };
 
 describe('optionsForModel', () => {
   it('R4 a verified image model offers its sizes and its own quality levels', () => {
@@ -38,7 +38,7 @@ describe('optionsForModel', () => {
 
   it('R4, R5 a model that is not in the table offers no sizes and no levels, even if it claims some', () => {
     expect(optionsForModel(unknownModel, 16384)).toEqual({ resolutions: [], qualityLevels: [] });
-    const claiming: ModelInfo = { ...unknownModel, resolutions: [{ key: '1K', sizePx: 1024 }], qualityLevels: ['high'] };
+    const claiming: ProviderModelRecord = { ...unknownModel, resolutions: [{ key: '1K', sizePx: 1024 }], qualityLevels: ['high'] };
     expect(optionsForModel(claiming, 16384)).toEqual({ resolutions: [], qualityLevels: [] });
   });
 

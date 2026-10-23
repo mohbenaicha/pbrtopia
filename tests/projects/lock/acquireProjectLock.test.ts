@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acquireProjectLock, type ProjectLockManager } from '../../../src/projects/lock/acquireProjectLock';
+import { acquireProjectLock, type ProjectLockRequester } from '../../../src/projects/lock/acquireProjectLock';
 import { createFakeLockManager } from './fakeLockManager';
 
 describe('acquireProjectLock', () => {
@@ -35,11 +35,11 @@ describe('acquireProjectLock', () => {
 
   it('R4 a browser without Web Locks, or a request that fails, counts as held because nothing can arbitrate', async () => {
     expect((await acquireProjectLock('p1', undefined)).held).toBe(true);
-    const throwing: ProjectLockManager = { request: (() => {
+    const throwing: ProjectLockRequester = { request: (() => {
       throw new Error('SecurityError');
-    }) as ProjectLockManager['request'] };
+    }) as ProjectLockRequester['request'] };
     expect((await acquireProjectLock('p1', throwing)).held).toBe(true);
-    const rejecting: ProjectLockManager = { request: (() => Promise.reject(new Error('nope'))) as ProjectLockManager['request'] };
+    const rejecting: ProjectLockRequester = { request: (() => Promise.reject(new Error('nope'))) as ProjectLockRequester['request'] };
     const result = await acquireProjectLock('p1', rejecting);
     expect(result.held).toBe(true);
     expect(() => result.release()).not.toThrow();

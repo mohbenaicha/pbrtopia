@@ -1,4 +1,4 @@
-export type ProjectLockManager = Pick<LockManager, 'request'>;
+export type ProjectLockRequester = Pick<LockManager, 'request'>;
 
 export interface ProjectLock {
   held: boolean; // false: another tab holds this project, so open it read-only
@@ -8,7 +8,7 @@ export interface ProjectLock {
 const NOT_HELD: ProjectLock = { held: false, release: () => undefined };
 
 // One writer per project: the Web Lock `project:<id>` is kept until release() or the tab closes. Where there is no Web Locks, or it fails, nothing can arbitrate, so the project counts as held.
-export async function acquireProjectLock(projectId: string, locks: ProjectLockManager | undefined = typeof navigator === 'undefined' ? undefined : navigator.locks): Promise<ProjectLock> {
+export async function acquireProjectLock(projectId: string, locks: ProjectLockRequester | undefined = typeof navigator === 'undefined' ? undefined : navigator.locks): Promise<ProjectLock> {
   if (locks === undefined) return { held: true, release: () => undefined };
   return new Promise<ProjectLock>((resolve) => {
     let release: () => void = () => undefined;

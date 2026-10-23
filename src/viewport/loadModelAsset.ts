@@ -1,12 +1,12 @@
 import { Box3, Sphere, Vector3, type Material, type Mesh, type Object3D, type Texture } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { inspectGlb } from './inspectGlb';
-import { allMaterialsOf, collectTextureInfos, type TextureInfo } from './modelTextures';
+import { allMaterialsOf, collectTextureInfos, type ModelTextureRecord } from './modelTextures';
 import type { ViewportResult } from './viewportError';
 
 export interface ModelAsset {
   root: Object3D;
-  textures: TextureInfo[];
+  textures: ModelTextureRecord[];
   bounds: { center: Vector3; radius: number }; // of the model as loaded: it is not moved or scaled
   dispose(): void;
 }

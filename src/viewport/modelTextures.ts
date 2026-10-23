@@ -2,7 +2,7 @@ import type { Material, Mesh, Object3D, Texture } from 'three';
 
 export type TextureChannel = 'albedo' | 'normal' | 'rough' | 'metal';
 
-export interface TextureInfo {
+export interface ModelTextureRecord {
   materialName: string;
   materialIndex: number; // which material of the model carries the picture; two materials can share a name
   channel: TextureChannel;
@@ -39,8 +39,8 @@ export function allMaterialsOf(root: Object3D): Material[] {
 }
 
 // One entry for every picture a material carries; the same file used for two channels (glTF's metal and rough) is listed under both.
-export function collectTextureInfos(root: Object3D): TextureInfo[] {
-  const infos: TextureInfo[] = [];
+export function collectTextureInfos(root: Object3D): ModelTextureRecord[] {
+  const infos: ModelTextureRecord[] = [];
   allMaterialsOf(root).forEach((material, index) => {
     for (const { channel, key } of SLOTS) {
       const texture = (material as TexturedMaterial)[key];

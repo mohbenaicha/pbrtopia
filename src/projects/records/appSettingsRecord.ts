@@ -6,7 +6,7 @@ export interface EnhancerChoiceRecord {
   modelId: string;
 }
 
-// The model list last fetched from the providers. Entries are generation's ModelInfo; `projects/` keeps them as stored.
+// The model list last fetched from the providers. Entries are generation's ProviderModelRecord; `projects/` keeps them as stored.
 export interface CatalogCacheRecord {
   fetchedAt: string;
   gemini: Record<string, unknown>[];

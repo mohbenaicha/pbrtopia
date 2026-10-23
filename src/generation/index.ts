@@ -23,4 +23,4 @@ export type { EnhanceRequest, PromptEnhancer } from './providers/PromptEnhancer'
 export type { ProviderError, ProviderErrorCategory, Result } from './providers/providerTypes';
 export { discoverModels } from './catalog/discoverModels';
 export { KNOWN_MODELS } from './catalog/knownModels';
-export type { ModelInfo } from './catalog/modelTypes';
+export type { ProviderModelRecord } from './catalog/modelTypes';

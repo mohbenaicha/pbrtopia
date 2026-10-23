@@ -8,7 +8,7 @@ export interface ResolutionOption {
 }
 
 // What the app knows about one model. `verified` is true when the id is in the shipped table; an unverified model offers no sizes or levels.
-export interface ModelInfo {
+export interface ProviderModelRecord {
   provider: Provider;
   id: string;
   role: 'image' | 'vision-text';
@@ -24,7 +24,7 @@ export interface ModelInfo {
 }
 
 // A shipped table row: a verified model, dated, with where the facts came from.
-export interface KnownModelEntry extends ModelInfo {
+export interface KnownModelEntry extends ProviderModelRecord {
   verifiedAt: string; // YYYY-MM-DD
   source: string[];
 }

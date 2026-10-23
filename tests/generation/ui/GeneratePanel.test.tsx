@@ -2,16 +2,16 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { findKnownModel } from '../../../src/generation/catalog/knownModels';
-import type { ModelInfo } from '../../../src/generation/catalog/modelTypes';
+import type { ProviderModelRecord } from '../../../src/generation/catalog/modelTypes';
 import { createGenerateStore, type ReferenceImage } from '../../../src/generation/generateStore';
 import { GeneratePanel } from '../../../src/generation/ui/GeneratePanel';
 
-const known = (provider: 'gemini' | 'openai', id: string): ModelInfo => {
+const known = (provider: 'gemini' | 'openai', id: string): ProviderModelRecord => {
   const entry = findKnownModel(provider, id);
   if (entry === null) throw new Error(`${id} is not in the table`);
   return entry;
 };
-const unverified: ModelInfo = { provider: 'openai', id: 'gpt-image-9-mystery', role: 'image', displayName: 'gpt-image-9-mystery', verified: false, resolutions: [], qualityLevels: [] };
+const unverified: ProviderModelRecord = { provider: 'openai', id: 'gpt-image-9-mystery', role: 'image', displayName: 'gpt-image-9-mystery', verified: false, resolutions: [], qualityLevels: [] };
 
 beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:fake/1');

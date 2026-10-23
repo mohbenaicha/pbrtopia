@@ -3,7 +3,7 @@ export type { ViewAxis, Projection } from './cameraRig';
 export { watchPixelRatio } from './pixelRatio';
 export type { ViewportEventName } from './viewportEvents';
 export type { ModelAsset } from './loadModelAsset';
-export type { TextureInfo, TextureChannel } from './modelTextures';
+export type { ModelTextureRecord, TextureChannel } from './modelTextures';
 export type { ShadingMode } from './shadingModes';
 export type { ViewportError, ViewportErrorCode, ViewportResult } from './viewportError';
 export { DEFAULT_VIEWPORT_SETTINGS, clampViewportSettings, type MapAdjust, type ViewportSettings } from './viewportSettings';

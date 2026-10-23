@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { findKnownModel } from '../../src/generation/catalog/knownModels';
-import type { ModelInfo } from '../../src/generation/catalog/modelTypes';
+import type { ProviderModelRecord } from '../../src/generation/catalog/modelTypes';
 import { describeGenerateAvailability, pickEnhancerModel } from '../../src/generation/generateAvailability';
 import { createGenerateStore } from '../../src/generation/generateStore';
 
-const known = (provider: 'gemini' | 'openai', id: string): ModelInfo => {
+const known = (provider: 'gemini' | 'openai', id: string): ProviderModelRecord => {
   const entry = findKnownModel(provider, id);
   if (entry === null) throw new Error(`${id} is not in the table`);
   return entry;
 };
-const unverified: ModelInfo = { provider: 'openai', id: 'gpt-image-9-mystery', role: 'image', displayName: 'gpt-image-9-mystery', verified: false, resolutions: [], qualityLevels: [] };
+const unverified: ProviderModelRecord = { provider: 'openai', id: 'gpt-image-9-mystery', role: 'image', displayName: 'gpt-image-9-mystery', verified: false, resolutions: [], qualityLevels: [] };
 
 // A store that is ready to generate with Gemini: model loaded with UVs, image model chosen, key present, enhancer from Settings.
 function readyStore() {

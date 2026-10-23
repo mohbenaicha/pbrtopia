@@ -2,7 +2,7 @@ import { createStore, useStore } from 'zustand';
 import type { Provider } from '../keys';
 import { DEFAULT_ATLAS_KEY, listAtlasSizes, type AtlasKey } from './catalog/atlasSizes';
 import { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
-import type { ModelInfo, ResolutionKey } from './catalog/modelTypes';
+import type { ProviderModelRecord, ResolutionKey } from './catalog/modelTypes';
 import type { ProviderErrorCategory } from './providers/providerTypes';
 
 export interface ReferenceImage {
@@ -29,7 +29,7 @@ export interface UnwrapState {
   fraction: number; // 0-1 over the whole unwrap
   error: RunError | null;
 }
-export type ModelCatalog = Record<Provider, ModelInfo[]>;
+export type ModelCatalog = Record<Provider, ProviderModelRecord[]>;
 export interface EnhancerChoice {
   provider: Provider;
   modelId: string;
@@ -112,7 +112,7 @@ export interface GenerateState {
 type Selection = Pick<GenerateState, 'provider' | 'modelId' | 'resolutionKey' | 'quality'>;
 const NO_SELECTION: Selection = { provider: null, modelId: null, resolutionKey: null, quality: null };
 
-export const findCatalogModel = (catalog: ModelCatalog, provider: Provider | null, modelId: string | null): ModelInfo | null =>
+export const findCatalogModel = (catalog: ModelCatalog, provider: Provider | null, modelId: string | null): ProviderModelRecord | null =>
   provider === null || modelId === null ? null : (catalog[provider].find((model) => model.id === modelId) ?? null);
 const findModel = findCatalogModel;
 
@@ -133,7 +133,7 @@ function settleAtlasKey(current: AtlasKey, maxTextureSize: number): AtlasKey {
   return keys.includes(DEFAULT_ATLAS_KEY) ? DEFAULT_ATLAS_KEY : keys[keys.length - 1]!;
 }
 
-const referenceCap =(info: ModelInfo | null): number => (info?.maxReferenceImages === undefined ? Infinity : Math.max(0, info.maxReferenceImages - 1));
+const referenceCap =(info: ProviderModelRecord | null): number => (info?.maxReferenceImages === undefined ? Infinity : Math.max(0, info.maxReferenceImages - 1));
 const IDLE_UNWRAP: UnwrapState = { status: 'idle', fraction: 0, error: null };
 const clamp01 =(value: number): number => Math.min(1, Math.max(0, value));
 
