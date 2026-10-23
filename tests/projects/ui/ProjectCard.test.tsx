@@ -74,7 +74,7 @@ describe('ProjectCard', () => {
     expect(screen.queryByRole('heading')).toBeNull();
   });
 
-  it('projects R22 when renaming ends the keyboard focus goes to this card\'s Rename button', () => {
+  it('viewport-layout R22 when renaming ends the keyboard focus goes to this card\'s Rename button', () => {
     const { again } = show({ renaming: true });
     again({ renaming: false });
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Rename' }));
