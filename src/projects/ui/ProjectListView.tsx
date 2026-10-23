@@ -8,7 +8,7 @@ import './ProjectListView.css';
 
 export type { ListViewStore } from './useProjectList';
 
-export interface ProjectListViewProps {
+interface ProjectListViewProps {
   store: ListViewStore;
   onOpen: (projectId: string) => void;
   headerActions?: ReactNode; // e.g. the New project button, put here by the app

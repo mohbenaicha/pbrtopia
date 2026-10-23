@@ -13,7 +13,7 @@ const OPENAI_SIZES: ReadonlySet<ResolutionKey> = new Set<ResolutionKey>(['1K', '
 
 type OpenAiPart = { type: 'input_text'; text: string } | { type: 'input_image'; image_url: string; detail: 'auto' };
 
-export interface OpenAiEnhanceBody {
+interface OpenAiEnhanceBody {
   model: string;
   input: { role: 'user'; content: OpenAiPart[] }[];
 }

@@ -7,7 +7,7 @@ export interface TabOption<T extends string> {
   disabled?: boolean;
 }
 
-export interface TabsProps<T extends string> {
+interface TabsProps<T extends string> {
   label: string; // accessible name of the tab list
   tabs: TabOption<T>[];
   value: T;

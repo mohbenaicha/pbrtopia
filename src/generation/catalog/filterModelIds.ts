@@ -16,7 +16,7 @@ export interface CandidateModel {
 }
 
 // The Gemini method name that marks Interactions support. Not known until the live check (G1); null means methods are not checked.
-export const GEMINI_IMAGE_METHOD: string | null = null;
+const GEMINI_IMAGE_METHOD: string | null = null;
 
 const PREVIEW_SUFFIX = /-(preview|exp)(-[\w-]+)?$/;
 const DATED_SUFFIXES = [/-\d{4}-\d{2}-\d{2}$/, /-\d{3}$/];

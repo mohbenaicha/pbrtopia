@@ -1,4 +1,4 @@
-export const VAULT_CHANNEL_NAME = 'texture-lab-keys';
+const VAULT_CHANNEL_NAME ='texture-lab-keys';
 
 // How one tab tells the others the vault changed (R10). The message carries nothing: a tab that hears it locks and reads the record again.
 export interface VaultChannel {

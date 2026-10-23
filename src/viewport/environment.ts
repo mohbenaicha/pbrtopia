@@ -17,7 +17,7 @@ export interface Environment {
   dispose(): void;
 }
 
-export interface EnvironmentOptions {
+interface EnvironmentOptions {
   scene: Scene;
   loader: EnvironmentLoader;
   invalidate(): void;
@@ -26,7 +26,7 @@ export interface EnvironmentOptions {
   now?: () => number;
 }
 
-export const AUTO_ROTATE_DEGREES_PER_SECOND = 14;
+const AUTO_ROTATE_DEGREES_PER_SECOND = 14;
 
 const toRadians = (degrees: number): number => (degrees * Math.PI) / 180;
 

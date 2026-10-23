@@ -5,7 +5,7 @@ import { PasswordDialog } from './PasswordDialog';
 import { useDeleteSavedKeys } from './useDeleteSavedKeys';
 import type { PasswordPrompt } from './usePasswordPrompt';
 
-export interface KeyPasswordPromptsProps {
+interface KeyPasswordPromptsProps {
   vault: KeyVault;
   prompt: PasswordPrompt;
 }

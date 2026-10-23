@@ -1,7 +1,7 @@
 import { Select } from '../../ui-kit';
 import type { ResolutionKey, ResolutionOption } from '../catalog/modelTypes';
 
-export interface ResolutionSelectProps {
+interface ResolutionSelectProps {
   options: ResolutionOption[];
   experimental: ResolutionKey[]; // sizes the provider documents as experimental
   value: ResolutionKey | null;

@@ -3,7 +3,7 @@ export interface FrameClock {
   cancelAnimationFrame(handle: number): void;
 }
 
-export interface RenderScheduler {
+interface RenderScheduler {
   invalidate(): void; // ask for a draw on the next animation frame
   pause(): void; // draw nothing until resume (context lost)
   resume(): void; // draw once now, then only on invalidate

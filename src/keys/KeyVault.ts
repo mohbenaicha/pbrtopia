@@ -7,12 +7,12 @@ import { KEY_OK, keyFailure, type KeyResult } from './keyError';
 import { createBroadcastVaultChannel, type VaultChannel } from './vaultChannel';
 import { PROVIDERS, VAULT_VERSION, type PasswordRequest, type Provider, type SealedKey, type VaultRecord, type VaultStorage } from './vaultTypes';
 
-export const DEFAULT_KDF_ITERATIONS = 600_000;
+const DEFAULT_KDF_ITERATIONS =600_000;
 export const MIN_PASSWORD_LENGTH = 8;
-export const MIN_KEY_LENGTH = 8;
+const MIN_KEY_LENGTH =8;
 const HINT_LENGTH = 4;
 
-export interface KeyVaultDeps {
+interface KeyVaultDeps {
   storage: VaultStorage;
   requestPassword: PasswordRequest;
   kdfIterations?: number; // only used when a vault is created; unlock uses the iterations stored in the record

@@ -1,7 +1,7 @@
 import { Button } from '../../ui-kit';
 import type { GenerateAvailability } from '../generateAvailability';
 
-export interface GenerateButtonProps {
+interface GenerateButtonProps {
   availability: GenerateAvailability;
   onGenerate: () => void;
   onGenerateUv: () => void;

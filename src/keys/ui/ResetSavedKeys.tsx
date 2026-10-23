@@ -4,7 +4,7 @@ import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import type { DeleteSavedKeys } from './useDeleteSavedKeys';
 import './keysUi.css';
 
-export interface ResetSavedKeysProps {
+interface ResetSavedKeysProps {
   problem: string | null; // why the stored vault could not be read; null once it reads again while a delete is still running
   deletion: DeleteSavedKeys;
 }

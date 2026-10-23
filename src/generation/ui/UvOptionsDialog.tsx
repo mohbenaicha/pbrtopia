@@ -7,7 +7,7 @@ export interface UvOptions {
   paddingTexels: number;
 }
 
-export interface UvOptionsDialogProps {
+interface UvOptionsDialogProps {
   open: boolean;
   onCancel: () => void;
   onConfirm: (options: UvOptions) => void;

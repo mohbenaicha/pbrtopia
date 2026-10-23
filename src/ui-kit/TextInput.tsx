@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { describedBy, FieldMessage } from './FieldMessage';
 import './TextInput.css';
 
-export interface TextInputProps {
+interface TextInputProps {
   label: string;
   value: string;
   onChange: (value: string) => void;

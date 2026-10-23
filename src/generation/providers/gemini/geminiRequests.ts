@@ -10,14 +10,14 @@ const GEMINI_SIZES: ReadonlySet<ResolutionKey> = new Set<ResolutionKey>(['1K', '
 
 type GeminiPart = { type: 'text'; text: string } | { type: 'image'; mime_type: string; data: string };
 
-export interface GeminiImageBody {
+interface GeminiImageBody {
   model: string;
   input: GeminiPart[];
   response_format: { type: 'image'; mime_type: 'image/jpeg'; aspect_ratio: '1:1'; image_size: string };
   generation_config?: { thinking_level: string };
 }
 
-export interface GeminiEnhanceBody {
+interface GeminiEnhanceBody {
   model: string;
   input: GeminiPart[];
 }

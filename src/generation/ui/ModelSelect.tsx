@@ -4,7 +4,7 @@ import { Select, type SelectOption } from '../../ui-kit';
 import { KNOWN_MODELS, warnAboutStaleKnownModels } from '../catalog/knownModels';
 import type { ModelCatalog } from '../generateStore';
 
-export interface ModelSelectProps {
+interface ModelSelectProps {
   catalog: ModelCatalog;
   hasKey: Record<Provider, boolean>;
   provider: Provider | null;

@@ -8,7 +8,7 @@ import type { ViewportResult } from './viewportError';
 import { clampViewportSettings, type ViewportSettings } from './viewportSettings';
 import { createWireframeOverlay, type WireframeOverlay } from './wireframeOverlay';
 
-export interface ModelHostOptions {
+interface ModelHostOptions {
   scene: Scene;
   rig: CameraRig;
   invalidate(): void;
@@ -16,7 +16,7 @@ export interface ModelHostOptions {
   settings: ViewportSettings;
 }
 
-export interface ModelHost {
+interface ModelHost {
   load(glb: ArrayBuffer): Promise<ViewportResult<ModelAsset>>;
   unload(): void;
   setShadingMode(mode: ShadingMode): void;

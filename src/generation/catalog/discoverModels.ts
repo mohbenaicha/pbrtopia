@@ -5,7 +5,7 @@ import { filterModelIds, type CandidateModel, type ListedModel } from './filterM
 import { findKnownModel } from './knownModels';
 import type { ProviderModelRecord } from './modelTypes';
 
-export interface DiscoverDeps {
+interface DiscoverDeps {
   fetchImpl?: typeof fetch;
   today?: string; // YYYY-MM-DD; today by default
 }

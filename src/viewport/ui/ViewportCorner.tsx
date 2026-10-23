@@ -8,7 +8,7 @@ import './ViewportCorner.css';
 
 export type CornerViewport = PoseSource & Pick<Viewport, 'snapToAxis' | 'setProjection'>;
 
-export interface ViewportCornerProps {
+interface ViewportCornerProps {
   viewport: CornerViewport;
   settingsOpen: boolean;
   onSettingsOpenChange: (open: boolean) => void;

@@ -12,8 +12,8 @@ const IMAGE_ICON_URLS = {
   'open-project': openProjectUrl,
 } as const;
 
-export type ImageIconName = keyof typeof IMAGE_ICON_URLS;
-export type IconName = ImageIconName | LineIconName;
+type ImageIconName =keyof typeof IMAGE_ICON_URLS;
+type IconName =ImageIconName | LineIconName;
 
 const isImageIcon = (name: IconName): name is ImageIconName => name in IMAGE_ICON_URLS;
 

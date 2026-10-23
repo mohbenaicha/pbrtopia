@@ -1,6 +1,6 @@
 import './Toggle.css';
 
-export interface ToggleProps {
+interface ToggleProps {
   label: string; // shown beside the switch and used as its accessible name
   checked: boolean;
   onChange: (checked: boolean) => void;

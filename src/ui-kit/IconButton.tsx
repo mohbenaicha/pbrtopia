@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import './IconButton.css';
 
-export interface IconButtonProps {
+interface IconButtonProps {
   label: string; // the accessible name and the tooltip
   icon: ReactNode;
   pressed?: boolean; // for a toggle: reported as aria-pressed and drawn selected

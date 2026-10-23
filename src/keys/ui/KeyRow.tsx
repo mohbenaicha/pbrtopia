@@ -4,7 +4,7 @@ import type { KeyVault } from '../KeyVault';
 import type { Provider } from '../vaultTypes';
 import './keysUi.css';
 
-export interface KeyRowProps {
+interface KeyRowProps {
   provider: Provider;
   label: string; // "Gemini", "OpenAI"
   vault: KeyVault;

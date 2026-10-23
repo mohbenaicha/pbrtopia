@@ -1,7 +1,7 @@
 import { Button, Dialog } from '../../ui-kit';
 import type { ProjectSummary } from '../records/projectRecords';
 
-export interface ConfirmDeleteDialogProps {
+interface ConfirmDeleteDialogProps {
   projects: ProjectSummary[]; // what would be deleted; the dialog is closed when empty
   progress: { done: number; total: number } | null; // set while deleting
   confirm: () => void;

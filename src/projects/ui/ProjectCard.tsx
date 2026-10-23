@@ -4,7 +4,7 @@ import type { ProjectSummary } from '../records/projectRecords';
 import { RenameField } from './RenameField';
 import { useThumbnailUrl } from './useThumbnailUrl';
 
-export interface ProjectCardProps {
+interface ProjectCardProps {
   summary: ProjectSummary;
   selected: boolean;
   renaming: boolean;

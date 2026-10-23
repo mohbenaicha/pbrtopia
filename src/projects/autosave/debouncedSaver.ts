@@ -5,7 +5,7 @@ export interface SaveEntry<T> {
   value: T;
 }
 
-export interface DebouncedSaverOptions<T> {
+interface DebouncedSaverOptions<T> {
   write(entries: SaveEntry<T>[]): Promise<StoreResult<void>>;
   onFailure?(error: StoreError): void;
   delayMs?: number; // the least time between two writes, 1500 by default
@@ -22,7 +22,7 @@ export interface DebouncedSaver<T> {
 const DEFAULT_DELAY_MS = 1500;
 
 // Plain values (objects, arrays, numbers, strings, booleans, null) and typed arrays, compared by content.
-export function isSameValue(a: unknown, b: unknown): boolean {
+function isSameValue(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;
   if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
   if (ArrayBuffer.isView(a) || ArrayBuffer.isView(b)) {

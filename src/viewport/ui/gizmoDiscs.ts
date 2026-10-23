@@ -1,7 +1,7 @@
 import { Vector3, type Quaternion } from 'three';
 import type { ViewAxis } from '../cameraRig';
 
-export interface GizmoDisc {
+interface GizmoDisc {
   axis: ViewAxis;
   label: 'X' | 'Y' | 'Z';
   positive: boolean;

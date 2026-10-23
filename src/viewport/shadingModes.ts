@@ -4,7 +4,7 @@ import { createAlbedoLook, createChannelLook, createNormalLook } from './shading
 
 export type ShadingMode = 'lit' | 'albedo' | 'normal' | 'rough' | 'metal';
 
-export interface ShadingModes {
+interface ShadingModes {
   apply(root: Object3D, mode: ShadingMode): void;
   applyMaterial(root: Object3D, material: Material): void; // one material over the whole model; apply() puts the looks back
   setFlatShading(root: Object3D, flat: boolean): void; // the lit look of each mesh shows faceted when flat, and always when the mesh has no normals

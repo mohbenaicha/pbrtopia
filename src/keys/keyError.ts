@@ -1,4 +1,4 @@
-export type KeyErrorCode =
+type KeyErrorCode =
   | 'wrong-password'
   | 'password-cancelled'
   | 'weak-password'

@@ -6,7 +6,7 @@ import './AxisGizmo.css';
 
 const DISC_ORBIT_RADIUS = 36; // pixels from the gizmo centre
 
-export interface AxisGizmoProps {
+interface AxisGizmoProps {
   quaternion: Quaternion; // the camera orientation the discs follow
   onSelectAxis: (axis: ViewAxis) => void;
 }

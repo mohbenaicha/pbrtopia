@@ -1,10 +1,10 @@
 import type { FrameClock } from './renderScheduler';
 
-export interface TransitionClock extends FrameClock {
+interface TransitionClock extends FrameClock {
   now(): number;
 }
 
-export interface TransitionOptions {
+interface TransitionOptions {
   durationMs?: number | undefined;
   reducedMotion?: boolean | undefined; // jump straight to the end
   clock?: TransitionClock | undefined;

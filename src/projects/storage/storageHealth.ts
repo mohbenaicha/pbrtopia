@@ -13,7 +13,7 @@ const MIB = 1024 * 1024;
 const LOW_FREE_BYTES = 200 * MIB;
 const LOW_USED_FRACTION = 0.9;
 
-export interface StorageHealthOperations {
+interface StorageHealthOperations {
   requestPersistence(): Promise<boolean>;
   estimateStorage(): Promise<StorageEstimate | null>;
 }

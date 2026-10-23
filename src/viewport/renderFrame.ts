@@ -1,6 +1,6 @@
 import { Scene, type Camera, type PerspectiveCamera, type WebGLRenderer } from 'three';
 
-export interface FrameCameras {
+interface FrameCameras {
   readonly active: Camera;
   readonly perspective: PerspectiveCamera;
   readonly projection: 'perspective' | 'orthographic';

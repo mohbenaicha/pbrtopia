@@ -20,7 +20,7 @@ import { UnwrapStatusBlock } from './UnwrapStatusBlock';
 import { UvOptionsDialog, type UvOptions } from './UvOptionsDialog';
 import './GeneratePanel.css';
 
-export interface GeneratePanelProps {
+interface GeneratePanelProps {
   onGenerate: () => void;
   onGenerateUv: (options: UvOptions) => void;
   onDebugProjection: () => void;

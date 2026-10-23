@@ -4,7 +4,7 @@ import { CURRENT_SCHEMA_VERSION, type ProjectRecord } from './projectRecords';
 import { readProjectRecord } from './readProjectRecord';
 
 // Turns a record of version N into one of version N + 1.
-export type MigrationStep = (record: RawRecord) => RawRecord;
+type MigrationStep =(record: RawRecord) => RawRecord;
 export type MigrationSteps = Readonly<Record<number, MigrationStep>>; // keyed by the version a step upgrades from
 
 // One entry per schema change: version 1 is the first, so there is nothing to upgrade from yet.

@@ -1,16 +1,16 @@
 import type { Material } from 'three';
 import type { FrameClock } from './renderScheduler';
 
-export const FLASH_COUNT = 3;
-export const FLASH_PHASE_MS = 150; // each flash is one phase with the material and one without
+const FLASH_COUNT = 3;
+const FLASH_PHASE_MS = 150; // each flash is one phase with the material and one without
 
-export interface MaterialFlash {
+interface MaterialFlash {
   start(material: Material): Promise<void>; // resolves when the flashes are over or were replaced or cancelled
   cancel(): void;
   dispose(): void;
 }
 
-export interface MaterialFlashOptions {
+interface MaterialFlashOptions {
   show: (material: Material | null) => void; // null puts the normal look back
   clock?: FrameClock;
   now?: () => number;

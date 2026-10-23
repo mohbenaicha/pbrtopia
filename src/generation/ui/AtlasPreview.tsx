@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import './AtlasPreview.css';
 
-export interface AtlasPreviewProps {
+interface AtlasPreviewProps {
   atlas: Blob | null;
 }
 

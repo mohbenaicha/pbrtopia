@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from 'react';
 import './Disclosure.css';
 
-export interface DisclosureProps {
+interface DisclosureProps {
   title: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;

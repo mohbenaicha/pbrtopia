@@ -1,4 +1,4 @@
-export interface ContextLossHandlers {
+interface ContextLossHandlers {
   onLost: () => void;
   onRestored: () => void;
 }

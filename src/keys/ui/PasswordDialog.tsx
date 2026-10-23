@@ -6,7 +6,7 @@ import type { PasswordAnswer } from '../vaultTypes';
 import type { PasswordPurpose } from './usePasswordPrompt';
 import './keysUi.css';
 
-export interface PasswordDialogProps {
+interface PasswordDialogProps {
   purpose: PasswordPurpose | null; // null = closed
   onAnswer: (answer: PasswordAnswer | null) => void; // null = cancelled
   onForgotPassword?: (() => void) | undefined; // the link shown when unlocking

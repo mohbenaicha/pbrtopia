@@ -1,6 +1,6 @@
 import './FieldMessage.css';
 
-export interface FieldMessageProps {
+interface FieldMessageProps {
   id: string;
   hint?: string | undefined;
   error?: string | undefined;

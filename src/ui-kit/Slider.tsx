@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import './Slider.css';
 
-export interface SliderProps {
+interface SliderProps {
   label: string; // shown above the track and used as the accessible name
   value: number;
   min: number;

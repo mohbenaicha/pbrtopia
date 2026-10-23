@@ -14,7 +14,7 @@ export interface ViewportHandle {
   dispose(): void;
 }
 
-export interface ViewportHandleOptions {
+interface ViewportHandleOptions {
   canvas: HTMLCanvasElement;
   camera: () => Camera;
   pick: SurfacePicker;

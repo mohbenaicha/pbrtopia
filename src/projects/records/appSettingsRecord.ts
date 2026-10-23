@@ -1,7 +1,7 @@
 import { isRawRecord, type RawRecord } from './fieldReaders';
 import { CURRENT_SCHEMA_VERSION } from './projectRecords';
 
-export interface EnhancerChoiceRecord {
+interface EnhancerChoiceRecord {
   provider: 'gemini' | 'openai';
   modelId: string;
 }

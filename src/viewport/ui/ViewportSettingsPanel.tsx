@@ -4,7 +4,7 @@ import { HDRI_CHOICES } from '../hdriCatalog';
 import type { MapAdjust, ViewportSettings } from '../viewportSettings';
 import './ViewportSettingsPanel.css';
 
-export interface ViewportSettingsPanelProps {
+interface ViewportSettingsPanelProps {
   settings: ViewportSettings;
   onChange: (patch: Partial<ViewportSettings>) => void;
 }

@@ -1,6 +1,6 @@
 import { Select } from '../../ui-kit';
 
-export interface QualitySelectProps {
+interface QualitySelectProps {
   levels: string[]; // the provider's own names, in the order to show
   value: string | null;
   onChange: (level: string) => void;

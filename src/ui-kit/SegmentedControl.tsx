@@ -7,7 +7,7 @@ export interface SegmentOption<T extends string> {
   disabled?: boolean;
 }
 
-export interface SegmentedControlProps<T extends string> {
+interface SegmentedControlProps<T extends string> {
   label: string; // accessible name of the group
   options: SegmentOption<T>[];
   value: T;

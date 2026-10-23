@@ -1,6 +1,6 @@
 export type ViewportErrorCode = 'unsupported-compression' | 'not-glb' | 'parse-failed' | 'webgl-unavailable';
 
-export interface ViewportError {
+interface ViewportError {
   code: ViewportErrorCode;
   message: string; // plain words for the person using the app
 }

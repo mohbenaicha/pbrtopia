@@ -2,7 +2,7 @@ import type { Provider } from '../keys';
 import type { ProviderModelRecord } from './catalog/modelTypes';
 import type { EnhancerChoice, GenerateState } from './generateStore';
 
-export type AvailabilityInput = Pick<GenerateState, 'hasModel' | 'hasUvs' | 'readOnly' | 'setOpen' | 'setBusy' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status' | 'unwrap'>;
+type AvailabilityInput =Pick<GenerateState, 'hasModel' | 'hasUvs' | 'readOnly' | 'setOpen' | 'setBusy' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status' | 'unwrap'>;
 
 export interface GenerateAvailability {
   action: 'generate' | 'generate-uv';

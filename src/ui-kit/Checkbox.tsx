@@ -1,6 +1,6 @@
 import './Checkbox.css';
 
-export interface CheckboxProps {
+interface CheckboxProps {
   label: string; // the accessible name; drawn beside the box unless hideLabel is set
   checked: boolean;
   onChange: (checked: boolean) => void;

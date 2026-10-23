@@ -1,4 +1,4 @@
-import { createStore, useStore } from 'zustand';
+import { createStore } from 'zustand';
 import type { Provider } from '../keys';
 import { DEFAULT_ATLAS_KEY, listAtlasSizes, type AtlasKey } from './catalog/atlasSizes';
 import { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
@@ -14,7 +14,7 @@ export interface ReferenceImage {
 }
 
 export type RunStep = 'capture' | 'enhance' | 'generate' | 'validate';
-export type RunStatus = 'idle' | 'running' | 'failed';
+type RunStatus ='idle' | 'running' | 'failed';
 // What the panel shows for a failed run: any ProviderError fits; the flow adds the categories of the steps that are not provider calls.
 export interface RunError {
   category: ProviderErrorCategory | 'validation' | 'storage-failed' | 'engine';
@@ -36,7 +36,7 @@ export interface EnhancerChoice {
 }
 
 /** What the app tells the panel about the open project; the three flags of R18 default to false. */
-export interface SceneState {
+interface SceneState {
   hasModel: boolean;
   hasUvs: boolean;
   readOnly?: boolean;
@@ -223,4 +223,3 @@ export function createGenerateStore() {
 }
 
 export const generateStore = createGenerateStore();
-export const useGenerateStore = <T,>(selector: (state: GenerateState) => T): T => useStore(generateStore, selector);

@@ -1,6 +1,6 @@
 import { Button } from '../../ui-kit';
 
-export interface SelectionBarProps {
+interface SelectionBarProps {
   count: number;
   deleteSelected: () => void;
   clear: () => void;

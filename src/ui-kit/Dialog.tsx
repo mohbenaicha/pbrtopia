@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 're
 import { useDismiss } from './useDismiss';
 import './Dialog.css';
 
-export interface DialogProps {
+interface DialogProps {
   open: boolean;
   title: string;
   onClose: () => void;

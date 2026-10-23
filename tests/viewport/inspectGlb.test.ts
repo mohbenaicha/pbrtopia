@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { inspectGlb } from '../../src/viewport/inspectGlb';
 import { buildGlbFromJsonText, buildTriangleGlb } from './glbBuilder';
 
-describe('inspectGlb', () => {
+describe('inspectGlb (projects R9)', () => {
   it('Additional-tests a plain GLB is accepted', () => {
     expect(inspectGlb(buildTriangleGlb())).toEqual({ ok: true });
   });

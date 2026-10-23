@@ -18,7 +18,7 @@ export interface ZipEntry {
   crc: number; // CRC-32 of the unpacked bytes
 }
 
-export interface ZipReadOutcome {
+interface ZipReadOutcome {
   failure: StoreError | undefined;
   checksums: Map<string, number>; // the CRC-32 of each entry as streamed, to compare with the zip's own record
   tail: Uint8Array; // the last bytes of the source, where the central directory and the end record must be

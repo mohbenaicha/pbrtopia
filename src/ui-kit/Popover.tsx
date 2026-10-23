@@ -2,7 +2,7 @@ import { useRef, type ReactNode } from 'react';
 import { useDismiss } from './useDismiss';
 import './Popover.css';
 
-export interface PopoverProps {
+interface PopoverProps {
   open: boolean;
   onClose: () => void; // Escape or a click outside the trigger and panel
   label: string; // accessible name of the panel

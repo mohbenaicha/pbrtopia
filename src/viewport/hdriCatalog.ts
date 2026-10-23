@@ -1,4 +1,4 @@
-export interface HdriChoice {
+interface HdriChoice {
   id: string; // the file name under public/hdri/ without .hdr; 'studio' is the built-in environment and has no file
   label: string;
 }

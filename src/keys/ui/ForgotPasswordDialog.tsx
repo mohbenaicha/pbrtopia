@@ -1,7 +1,7 @@
 import { Button, Dialog } from '../../ui-kit';
 import './keysUi.css';
 
-export interface ForgotPasswordDialogProps {
+interface ForgotPasswordDialogProps {
   open: boolean;
   busy: boolean;
   error: string | null; // why the keys could not be deleted

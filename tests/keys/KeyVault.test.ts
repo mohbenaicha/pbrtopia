@@ -565,7 +565,7 @@ describe('KeyVault: nothing leaks (R4)', () => {
   });
 });
 
-describe('KeyVault: no Web Crypto', () => {
+describe('KeyVault: no Web Crypto (R2)', () => {
   it('crypto-unavailable is returned, with no password prompt and no fallback, when crypto.subtle is missing', async () => {
     const { storage } = await vaultWith('gemini');
     vi.stubGlobal('crypto', {});

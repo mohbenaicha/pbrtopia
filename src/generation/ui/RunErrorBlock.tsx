@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button, Disclosure } from '../../ui-kit';
 import type { RunError } from '../generateStore';
 
-export interface RunErrorBlockProps {
+interface RunErrorBlockProps {
   error: RunError;
   onRetry: () => void;
 }

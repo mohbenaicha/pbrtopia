@@ -4,7 +4,7 @@ const END_SIGNATURE = 0x06054b50;
 const HEADER_SIGNATURE = 0x02014b50;
 const UTF8_NAME_FLAG = 0x800;
 
-export interface ChecksumRecord {
+interface ChecksumRecord {
   name: string;
   crc: number; // CRC-32 of the entry's unpacked bytes, as the zip records it
 }

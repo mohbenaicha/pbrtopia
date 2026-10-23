@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { loadModelAsset } from '../../src/viewport/loadModelAsset';
 import { buildGlbFromJsonText, buildTriangleGlb } from './glbBuilder';
 
-describe('loadModelAsset', () => {
+describe('loadModelAsset (projects R9)', () => {
   it('Additional-tests a GLB loads into a root with its meshes and the bounds sphere of the model as it is', async () => {
     const result = await loadModelAsset(buildTriangleGlb({ positions: [10, 0, 0, 12, 0, 0, 10, 2, 0] }));
     expect(result.ok).toBe(true);

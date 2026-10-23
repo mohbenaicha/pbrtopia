@@ -1,7 +1,7 @@
 import { Button, Dialog } from '../../ui-kit';
 import type { UnwrapState } from '../generateStore';
 
-export interface UnwrapStatusBlockProps {
+interface UnwrapStatusBlockProps {
   unwrap: UnwrapState;
   onDismissError: () => void;
 }

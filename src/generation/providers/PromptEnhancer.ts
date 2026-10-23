@@ -1,6 +1,6 @@
 import type { CallContext, ProviderError, Result } from './providerTypes';
 
-export interface EnhanceRequest {
+interface EnhanceRequest {
   model: string; // the Settings enhancer model
   prompt: string;
   atlas: Blob;

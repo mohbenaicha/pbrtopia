@@ -1,7 +1,7 @@
 import { MathUtils, type BufferGeometry, type Mesh, type Object3D } from 'three';
 import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-export interface ModelSmoothing {
+interface ModelSmoothing {
   apply(root: Object3D, angleDeg: number): boolean; // true when any mesh got different geometry
   request(root: Object3D, angleDeg: number, onApplied: () => void): void; // apply(), at most once per 200 ms; the last angle asked for wins
   cancel(): void; // drops a waiting request

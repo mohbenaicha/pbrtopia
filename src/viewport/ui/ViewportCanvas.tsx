@@ -3,7 +3,7 @@ import { createViewport, type Viewport } from '../createViewport';
 import { HintLine } from './HintLine';
 import './ViewportCanvas.css';
 
-export interface ViewportCanvasProps {
+interface ViewportCanvasProps {
   onReady?: (viewport: Viewport | null) => void; // the viewport once created, null when it is disposed
   overlay?: (viewport: Viewport) => ReactNode; // drawn over the canvas, e.g. the corner controls
 }

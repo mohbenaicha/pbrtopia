@@ -5,7 +5,7 @@ const JSON_CHUNK = 0x4e4f534a;
 // The viewer ships no Draco, Meshopt or KTX2 decoder (architecture.md decision 7), so a file that needs one is refused with a clear message.
 const UNSUPPORTED_EXTENSIONS = ['KHR_draco_mesh_compression', 'EXT_meshopt_compression', 'KHR_texture_basisu'];
 
-export type GlbInspection = { ok: true } | { ok: false; code: ViewportErrorCode; message: string };
+type GlbInspection ={ ok: true } | { ok: false; code: ViewportErrorCode; message: string };
 
 function refuse(code: ViewportErrorCode, message: string): GlbInspection {
   return { ok: false, code, message };

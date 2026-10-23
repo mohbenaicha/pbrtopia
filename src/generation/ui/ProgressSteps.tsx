@@ -1,7 +1,7 @@
 import { Button, Icon } from '../../ui-kit';
 import type { RunStep } from '../generateStore';
 
-export interface ProgressStepsProps {
+interface ProgressStepsProps {
   step: RunStep;
   fraction: number; // 0-1 within the current step; 0 is shown as an indeterminate bar
   failed: boolean; // the current step is the one that failed

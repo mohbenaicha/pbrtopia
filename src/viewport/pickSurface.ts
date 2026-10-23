@@ -8,7 +8,7 @@ export interface SurfaceHit {
 
 export type SurfacePicker = (clientX: number, clientY: number) => SurfaceHit | null;
 
-export interface SurfacePickerOptions {
+interface SurfacePickerOptions {
   canvas: Pick<HTMLCanvasElement, 'getBoundingClientRect'>;
   camera: () => Camera;
   model: () => Object3D | undefined;

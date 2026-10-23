@@ -1,7 +1,7 @@
 import { Select } from '../../ui-kit';
 import type { AtlasKey, AtlasSizeOption } from '../catalog/atlasSizes';
 
-export interface AtlasSizeSelectProps {
+interface AtlasSizeSelectProps {
   options: AtlasSizeOption[];
   value: AtlasKey;
   onChange: (key: AtlasKey) => void;

@@ -1,4 +1,4 @@
-export interface PixelRatioSource {
+interface PixelRatioSource {
   devicePixelRatio: number;
   matchMedia(query: string): {
     addEventListener(type: 'change', listener: () => void): void;

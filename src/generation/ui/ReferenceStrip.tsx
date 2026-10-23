@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Dialog, Icon, IconButton } from '../../ui-kit';
 import type { ReferenceImage } from '../generateStore';
 
-export interface ReferenceStripProps {
+interface ReferenceStripProps {
   references: ReferenceImage[];
   notice: string | null; // why something was refused, shown as plain text
   onFiles: (files: File[]) => void;

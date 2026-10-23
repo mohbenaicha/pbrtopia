@@ -1,6 +1,6 @@
 import type { ViewportSettings } from './viewportSettings';
 
-export interface ViewportEventPayloads {
+interface ViewportEventPayloads {
   'context-lost': undefined;
   'context-restored': undefined;
   'camera-change': undefined;
@@ -8,7 +8,7 @@ export interface ViewportEventPayloads {
   'settings-changed': ViewportSettings; // the viewport changed a setting by itself, e.g. where auto-rotate stopped
 }
 
-export type ViewportEventName = keyof ViewportEventPayloads;
+type ViewportEventName =keyof ViewportEventPayloads;
 
 type Listener<E extends ViewportEventName> = (payload: ViewportEventPayloads[E]) => void;
 

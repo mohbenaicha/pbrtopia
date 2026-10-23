@@ -2,7 +2,7 @@ import { MOUSE } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { CameraRig } from './cameraRig';
 
-export interface OrbitSetup {
+interface OrbitSetup {
   controls: OrbitControls;
   applyDistanceLimits(): void;
   dispose(): void;

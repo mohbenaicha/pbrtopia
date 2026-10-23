@@ -1,7 +1,7 @@
 import { Icon, IconButton } from '../../ui-kit';
 import type { Projection } from '../cameraRig';
 
-export interface CameraToggleProps {
+interface CameraToggleProps {
   projection: Projection;
   onToggle: (next: Projection) => void;
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import { Button, TextInput } from '../../ui-kit';
 import { normalizeProjectName } from '../records/projectRecords';
 
-export interface RenameFieldProps {
+interface RenameFieldProps {
   initialName: string;
   save: (name: string) => Promise<string | null>; // resolves to an error message, or null when the name was kept
   cancel: () => void;

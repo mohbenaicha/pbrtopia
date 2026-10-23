@@ -4,7 +4,7 @@ import type { ProjectSummary } from '../records/projectRecords';
 
 export type ListViewStore = Pick<ProjectStore, 'listProjects' | 'renameProject' | 'deleteProjects' | 'loadThumbnail'>;
 
-export type ListLoad = { state: 'loading' } | { state: 'failed'; message: string } | { state: 'ready'; projects: ProjectSummary[] };
+type ListLoad ={ state: 'loading' } | { state: 'failed'; message: string } | { state: 'ready'; projects: ProjectSummary[] };
 
 /** The stored projects, newest first: read on mount and after each change, with rename and delete that return an error message or null. */
 export function useProjectList(store: ListViewStore) {

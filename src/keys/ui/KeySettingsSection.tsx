@@ -9,7 +9,7 @@ import type { PasswordPromptControls } from './usePasswordPrompt';
 import { useVaultVersion } from './useVaultVersion';
 import './keysUi.css';
 
-export interface KeySettingsSectionProps {
+interface KeySettingsSectionProps {
   vault: KeyVault;
   prompt: PasswordPromptControls; // the password question the vault asks through; Reset cancels it before deleting
   rejectedKeys?: Partial<Record<Provider, string>> | undefined; // R11: providers whose stored key was refused, with the message to show
