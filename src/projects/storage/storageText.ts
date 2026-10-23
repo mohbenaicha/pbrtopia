@@ -7,7 +7,7 @@ const UNITS = ['KB', 'MB', 'GB', 'TB'];
 export function formatBytes(bytes: number): string {
   let value = Math.max(0, bytes) / KIB;
   let unit = 0;
-  while (value >= KIB && unit < UNITS.length - 1) {
+  while (Math.round(value * 10) / 10 >= KIB && unit < UNITS.length - 1) {
     value /= KIB;
     unit += 1;
   }
