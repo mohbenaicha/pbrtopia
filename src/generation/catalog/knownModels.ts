@@ -17,7 +17,7 @@ export const KNOWN_MODELS: readonly KnownModelEntry[] = [
   { provider: 'gemini', id: 'gemini-3.1-flash-image', role: 'image', displayName: 'Gemini 3.1 Flash Image', verified: true, resolutions: GEMINI_SIZES, qualityLevels: ['minimal', 'high'], defaultQuality: 'minimal', maxReferenceImages: 14, verifiedAt: VERIFIED_AT, source: GEMINI_DOCS },
   { provider: 'gemini', id: 'gemini-3.1-flash-lite-image', role: 'image', displayName: 'Gemini 3.1 Flash Lite Image', verified: true, resolutions: [{ key: '1K', sizePx: 1024 }], qualityLevels: ['minimal', 'high'], defaultQuality: 'minimal', maxReferenceImages: 14, verifiedAt: VERIFIED_AT, source: GEMINI_DOCS },
   { provider: 'gemini', id: 'gemini-3-pro-image', role: 'image', displayName: 'Gemini 3 Pro Image', verified: true, resolutions: GEMINI_SIZES, qualityLevels: [], maxReferenceImages: 14, verifiedAt: VERIFIED_AT, source: GEMINI_DOCS },
-  // enhancerLevel (spec generate R8): a value the provider accepted in the live probes of 2026-10-23, or, for gpt-6-astra, one its own refusal of `none` lists.
+  // enhancerLevel (spec generate R8): a value the provider accepted in the live probes of 2026-10-23.
   // gemini-3.5-flash-lite has none: `low` made it think more than its default.
   { provider: 'gemini', id: 'gemini-3.8-flash', role: 'vision-text', displayName: 'Gemini 3.8 Flash', verified: true, resolutions: [], qualityLevels: [], enhancerLevel: 'low', verifiedAt: VERIFIED_AT, source: ['ai.google.dev models', 'ai.google.dev pricing'] },
   { provider: 'gemini', id: 'gemini-3.5-flash-lite', role: 'vision-text', displayName: 'Gemini 3.5 Flash Lite', verified: true, resolutions: [], qualityLevels: [], verifiedAt: VERIFIED_AT, source: ['ai.google.dev models', 'ai.google.dev pricing'] },
@@ -25,7 +25,7 @@ export const KNOWN_MODELS: readonly KnownModelEntry[] = [
   { provider: 'openai', id: 'gpt-image-2.5-flare', role: 'image', displayName: 'GPT Image 2.5 Flare', verified: true, resolutions: OPENAI_SIZES, qualityLevels: OPENAI_LEVELS, defaultQuality: 'auto', experimentalResolutions: ['2K', '2.8K'], verifiedAt: VERIFIED_AT, source: OPENAI_DOCS },
   // Levels low..high; the provider's default for this model is unconfirmed, so the app's default is medium.
   { provider: 'openai', id: 'gpt-image-2', role: 'image', displayName: 'GPT Image 2', verified: true, resolutions: OPENAI_SIZES, qualityLevels: ['low', 'medium', 'high'], defaultQuality: 'medium', experimentalResolutions: ['2K', '2.8K'], verifiedAt: VERIFIED_AT, source: OPENAI_DOCS },
-  { provider: 'openai', id: 'gpt-6-astra', role: 'vision-text', displayName: 'GPT-6 Astra', verified: true, resolutions: [], qualityLevels: [], enhancerLevel: 'low', verifiedAt: VERIFIED_AT, source: ['developers.openai.com images-vision', 'developers.openai.com pricing'] },
+  { provider: 'openai', id: 'gpt-6-astra', role: 'vision-text', displayName: 'GPT-6 Astra', verified: true, resolutions: [], qualityLevels: [], verifiedAt: VERIFIED_AT, source: ['developers.openai.com images-vision', 'developers.openai.com pricing'] },
   { provider: 'openai', id: 'gpt-6-luna', role: 'vision-text', displayName: 'GPT-6 Luna', verified: true, resolutions: [], qualityLevels: [], enhancerLevel: 'none', verifiedAt: '2026-10-23', source: ['OpenAI models list (live, 2026-10-23)', 'research/api/live-check.md enhancer probes'] },
   { provider: 'openai', id: 'gpt-5.6-luna', role: 'vision-text', displayName: 'GPT-5.6 Luna', verified: true, resolutions: [], qualityLevels: [], enhancerLevel: 'none', verifiedAt: VERIFIED_AT, source: ['developers.openai.com pricing'] },
 ];

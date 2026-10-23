@@ -53,9 +53,9 @@ describe('knownModels', () => {
     expect(luna?.source.length).toBeGreaterThan(0);
   });
 
-  it('R8 the enhancer level is held only by the four vision-text rows the spec names, with the values seen accepted', () => {
+  it('R8 the enhancer level is held only by the three vision-text rows the spec names, with the values seen accepted, and none for gpt-6-astra', () => {
     const withLevel = KNOWN_MODELS.filter((entry) => entry.enhancerLevel !== undefined).map((entry) => `${entry.id}=${entry.enhancerLevel}`).sort();
-    expect(withLevel).toEqual(['gemini-3.8-flash=low', 'gpt-5.6-luna=none', 'gpt-6-astra=low', 'gpt-6-luna=none']);
+    expect(withLevel).toEqual(['gemini-3.8-flash=low', 'gpt-5.6-luna=none', 'gpt-6-luna=none']);
     for (const entry of KNOWN_MODELS) if (entry.enhancerLevel !== undefined) expect(entry.role, entry.id).toBe('vision-text');
   });
 
