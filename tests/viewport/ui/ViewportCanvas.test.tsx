@@ -31,7 +31,9 @@ describe('ViewportCanvas', () => {
     const onReady = vi.fn();
     render(<ViewportCanvas onReady={onReady} />);
     expect(created.calls).toHaveLength(1);
-    expect((created.calls[0] as HTMLElement).className).toBe('viewport-surface__canvas');
+    const host = created.calls[0] as HTMLElement;
+    expect(screen.getByTestId('viewport').contains(host)).toBe(true);
+    expect(host).not.toBe(screen.getByTestId('viewport'));
     expect(onReady).toHaveBeenCalledTimes(1);
     expect(onReady).toHaveBeenCalledWith(created.viewport);
   });
