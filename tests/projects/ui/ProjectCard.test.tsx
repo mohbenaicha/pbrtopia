@@ -33,6 +33,22 @@ describe('ProjectCard', () => {
     expect(screen.getByText(/^20,812 triangles · Oct 18, 2026$/)).toBeTruthy();
   });
 
+  it('textures R22 a project of an older version shows why it cannot be opened, cannot be opened or renamed, and can be deleted', async () => {
+    const { open, startRename, remove } = show({ summary: { ...summary, unreadable: 'This project was made by an older version of the app and cannot be opened. Delete it.' } });
+    expect(screen.getByText('This project was made by an older version of the app and cannot be opened. Delete it.')).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Open' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Rename' }) as HTMLButtonElement).disabled).toBe(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(remove).toHaveBeenCalledTimes(1);
+    expect(open).not.toHaveBeenCalled();
+    expect(startRename).not.toHaveBeenCalled();
+  });
+
+  it('viewport-layout R3 the Open button draws the supplied open-project icon, not an arrow', () => {
+    show();
+    expect(screen.getByRole('button', { name: 'Open' }).querySelector('[data-icon]')?.getAttribute('data-icon')).toBe('open-project');
+  });
+
   it('projects R7 the stored thumbnail is shown, loaded for this project', async () => {
     const loadThumbnail = vi.fn(async () => new Blob(['jpg']));
     show({ loadThumbnail });

@@ -27,7 +27,7 @@ function Thumbnail({ reference, onEnlarge, onRemove }: { reference: ReferenceIma
         <img src={url} alt={reference.name} />
       </button>
       <span className="reference-strip__remove">
-        <IconButton label={`Remove ${reference.name}`} icon={<Icon name="close" size={12} />} onClick={onRemove} />
+        <IconButton label={`Remove ${reference.name}`} icon={<Icon name="close" size={10} />} compact onClick={onRemove} />
       </span>
     </li>
   );

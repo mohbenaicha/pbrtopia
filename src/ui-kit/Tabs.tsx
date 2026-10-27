@@ -1,10 +1,13 @@
 import { useRef, type KeyboardEvent } from 'react';
+import { Icon, type IconName } from './Icon';
 import './Tabs.css';
 
 export interface TabOption<T extends string> {
   value: T;
-  label: string;
+  label: string; // the tab's text; for an icon-only tab its tooltip and accessible name
   disabled?: boolean;
+  icon?: IconName;
+  iconOnly?: boolean; // R32: only the icon is drawn and the tab is compact
 }
 
 interface TabsProps<T extends string> {
@@ -14,7 +17,7 @@ interface TabsProps<T extends string> {
   onChange: (value: T) => void;
 }
 
-// A row of tabs that switch a panel the owner draws. Arrow keys move to the next enabled tab; only the chosen tab is in the tab order.
+// A row of browser-style tabs (R32) that switch a panel the owner draws. Arrow keys move to the next enabled tab; only the chosen tab is in the tab order.
 export function Tabs<T extends string>({ label, tabs, value, onChange }: TabsProps<T>): React.JSX.Element {
   const buttons = useRef(new Map<T, HTMLButtonElement>());
   const choosable = tabs.filter((tab) => !tab.disabled);
@@ -57,9 +60,12 @@ export function Tabs<T extends string>({ label, tabs, value, onChange }: TabsPro
             disabled={tab.disabled === true}
             className="ui-tabs__tab"
             data-selected={selected ? '' : undefined}
+            data-compact={tab.iconOnly === true ? '' : undefined}
+            {...(tab.iconOnly === true ? { title: tab.label, 'aria-label': tab.label } : {})}
             onClick={() => choose(tab.value)}
           >
-            {tab.label}
+            {tab.icon !== undefined && <Icon name={tab.icon} size={16} />}
+            {tab.iconOnly === true ? null : tab.label}
           </button>
         );
       })}

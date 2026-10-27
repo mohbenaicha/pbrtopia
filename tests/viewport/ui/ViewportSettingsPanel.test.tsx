@@ -11,11 +11,11 @@ const panel = (settings: ViewportSettings = DEFAULT_VIEWPORT_SETTINGS, onChange:
 const group = (name: string) => within(screen.getByRole('group', { name }));
 
 describe('ViewportSettingsPanel', () => {
-  it('R14 it has the headings Environment, Material and View, and the subheadings Light, HDRI, Metal, Roughness, Shading and Mesh', () => {
+  it('R14 it has the headings Environment, Material and View, and the subheadings Light, HDRI, Metal, Roughness, Normal, Shading and Mesh', () => {
     panel();
     expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual(['Environment', 'Material', 'View']);
-    expect(screen.getAllByRole('heading', { level: 4 }).map((heading) => heading.textContent)).toEqual(['Light', 'HDRI', 'Metal', 'Roughness', 'Shading', 'Mesh']);
-    for (const name of ['Light', 'HDRI', 'Metal', 'Roughness', 'Shading', 'Mesh']) expect(screen.getByRole('group', { name })).toBeTruthy();
+    expect(screen.getAllByRole('heading', { level: 4 }).map((heading) => heading.textContent)).toEqual(['Light', 'HDRI', 'Metal', 'Roughness', 'Normal', 'Shading', 'Mesh']);
+    for (const name of ['Light', 'HDRI', 'Metal', 'Roughness', 'Normal', 'Shading', 'Mesh']) expect(screen.getByRole('group', { name })).toBeTruthy();
   });
 
   it('R14 Shading holds the Smooth | Flat choice (Smooth by default) and the Angle slider, which reads Off at 180; Mesh holds Wireframe', () => {
@@ -64,9 +64,9 @@ describe('ViewportSettingsPanel', () => {
     expect(hdri.getByRole('combobox', { name: 'HDRI' }).textContent).toContain('Studio (built-in)');
   });
 
-  it('R14 Metal and Roughness each hold a Strength and a Contrast slider', () => {
+  it('R14 Metal, Roughness and Normal each hold a Strength and a Contrast slider', () => {
     panel();
-    for (const name of ['Metal', 'Roughness']) {
+    for (const name of ['Metal', 'Roughness', 'Normal']) {
       expect(group(name).getByRole('slider', { name: 'Strength' })).toBeTruthy();
       expect(group(name).getByRole('slider', { name: 'Contrast' })).toBeTruthy();
     }
@@ -76,7 +76,7 @@ describe('ViewportSettingsPanel', () => {
     panel();
     const names = [...screen.getAllByRole('slider'), ...screen.getAllByRole('switch')].map((control) => control.getAttribute('aria-label') ?? control.closest('label')?.textContent ?? '');
     expect(names.length).toBeGreaterThan(8);
-    for (const name of names) expect(name).not.toMatch(/light|metal|rough/i);
+    for (const name of names) expect(name).not.toMatch(/light|metal|rough|normal/i);
     for (const slider of screen.getAllByRole('slider')) {
       const row = slider.closest('.ui-slider');
       expect(row?.getAttribute('data-layout')).toBe('row');
@@ -85,9 +85,11 @@ describe('ViewportSettingsPanel', () => {
   });
 
   it('R14 each control shows its current value', () => {
-    panel({ ...DEFAULT_VIEWPORT_SETTINGS, environmentIntensity: 1.5, environmentRotationDeg: 90, wireframe: true, mapAdjust: { metalStrength: 2, metalContrast: 0.5, roughStrength: 1, roughContrast: 1 } });
+    panel({ ...DEFAULT_VIEWPORT_SETTINGS, environmentIntensity: 1.5, environmentRotationDeg: 90, wireframe: true, mapAdjust: { metalStrength: 2, metalContrast: 0.5, roughStrength: 1, roughContrast: 1, normalStrength: 1.75, normalContrast: 0.25 } });
     expect(screen.getByText('1.50')).toBeTruthy();
     expect(screen.getByText('90°')).toBeTruthy();
+    expect((group('Normal').getByRole('slider', { name: 'Strength' }) as HTMLInputElement).value).toBe('1.75');
+    expect((group('Normal').getByRole('slider', { name: 'Contrast' }) as HTMLInputElement).value).toBe('0.25');
     expect((group('Metal').getByRole('slider', { name: 'Strength' }) as HTMLInputElement).value).toBe('2');
     expect((group('Metal').getByRole('slider', { name: 'Contrast' }) as HTMLInputElement).value).toBe('0.5');
     expect(screen.getByRole('switch', { name: 'Wireframe' }).getAttribute('aria-checked')).toBe('true');
@@ -102,9 +104,13 @@ describe('ViewportSettingsPanel', () => {
     expect(onChange).toHaveBeenLastCalledWith({ environmentRotationDeg: 120 });
   });
 
-  it('R14 a Metal or Roughness slider reports the whole adjustment with that value changed', () => {
+  it('R14 a Metal, Roughness or Normal slider reports the whole adjustment with that value changed', () => {
     const onChange = vi.fn();
     panel(DEFAULT_VIEWPORT_SETTINGS, onChange);
+    fireEvent.change(group('Normal').getByRole('slider', { name: 'Strength' }), { target: { value: '2' } });
+    expect(onChange).toHaveBeenLastCalledWith({ mapAdjust: { ...DEFAULT_VIEWPORT_SETTINGS.mapAdjust, normalStrength: 2 } });
+    fireEvent.change(group('Normal').getByRole('slider', { name: 'Contrast' }), { target: { value: '0.5' } });
+    expect(onChange).toHaveBeenLastCalledWith({ mapAdjust: { ...DEFAULT_VIEWPORT_SETTINGS.mapAdjust, normalContrast: 0.5 } });
     fireEvent.change(group('Roughness').getByRole('slider', { name: 'Contrast' }), { target: { value: '2.5' } });
     expect(onChange).toHaveBeenLastCalledWith({ mapAdjust: { ...DEFAULT_VIEWPORT_SETTINGS.mapAdjust, roughContrast: 2.5 } });
     fireEvent.change(group('Metal').getByRole('slider', { name: 'Strength' }), { target: { value: '1.5' } });
@@ -118,6 +124,12 @@ describe('ViewportSettingsPanel', () => {
     expect(onChange).toHaveBeenLastCalledWith({ wireframe: true });
     await userEvent.click(screen.getByRole('switch', { name: 'Auto rotate' }));
     expect(onChange).toHaveBeenLastCalledWith({ autoRotate: true });
+  });
+
+  it('R24 the popover has no Grid switch: the corner button is the only control for the grid', () => {
+    panel(DEFAULT_VIEWPORT_SETTINGS, vi.fn());
+    expect(screen.queryByRole('switch', { name: 'Grid' })).toBeNull();
+    expect(screen.getByRole('switch', { name: 'Wireframe' })).toBeTruthy();
   });
 
   it('R14 choosing an HDRI from the list reports its id', async () => {

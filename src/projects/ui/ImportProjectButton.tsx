@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Button } from '../../ui-kit';
+import { Button, Icon } from '../../ui-kit';
 
 /** What the Import control shows and can do; the app's import hook supplies it (projects R12). */
 export interface ProjectImportState {
@@ -10,12 +10,23 @@ export interface ProjectImportState {
   start(file: File): Promise<void>;
 }
 
-// Projects R12: picks a project zip and starts the import; busy with a percentage while it runs, then the result line or the typed error.
-export function ImportProjectButton({ state }: { state: ProjectImportState }): React.JSX.Element {
-  const input = useRef<HTMLInputElement>(null);
+/** The progress, result and error lines of an import (projects R12); the list shows them under its header, the Storage page under its button. */
+export function ImportProjectStatus({ state }: { state: ProjectImportState }): React.JSX.Element {
   return (
-    <div>
-      <Button loading={state.importing} onClick={() => input.current?.click()}>
+    <>
+      {state.importing && state.progress !== null && <p role="status">Importing… {Math.round(state.progress * 100)}%</p>}
+      {!state.importing && state.message !== null && <p role="status">{state.message}</p>}
+      {state.error !== null && <p role="alert">{state.error}</p>}
+    </>
+  );
+}
+
+// Projects R12: picks a project zip and starts the import; busy while it runs. With `showStatus` (the default) the result lines follow the button.
+export function ImportProjectButton({ state, showStatus = true }: { state: ProjectImportState; showStatus?: boolean }): React.JSX.Element {
+  const input = useRef<HTMLInputElement>(null);
+  const button = (
+    <>
+      <Button loading={state.importing} icon={<Icon name="upload" />} title="Import project" onClick={() => input.current?.click()}>
         Import project
       </Button>
       <input
@@ -30,9 +41,13 @@ export function ImportProjectButton({ state }: { state: ProjectImportState }): R
           if (file) void state.start(file);
         }}
       />
-      {state.importing && state.progress !== null && <p role="status">Importing… {Math.round(state.progress * 100)}%</p>}
-      {!state.importing && state.message !== null && <p role="status">{state.message}</p>}
-      {state.error !== null && <p role="alert">{state.error}</p>}
+    </>
+  );
+  if (!showStatus) return button;
+  return (
+    <div>
+      {button}
+      <ImportProjectStatus state={state} />
     </div>
   );
 }

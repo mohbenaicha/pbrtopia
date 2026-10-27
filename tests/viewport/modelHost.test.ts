@@ -1,4 +1,4 @@
-import { Scene, ShaderMaterial, type Mesh } from 'three';
+import { Raycaster, Scene, ShaderMaterial, type Mesh, type MeshBasicMaterial, type MeshStandardMaterial } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { createCameraRig } from '../../src/viewport/cameraRig';
 import { createModelHost } from '../../src/viewport/modelHost';
@@ -22,6 +22,34 @@ const meshesIn = (scene: Scene): Mesh[] => {
   });
   return found;
 };
+
+const flashMeshesIn = (scene: Scene): Mesh[] => {
+  const found: Mesh[] = [];
+  scene.traverse((object) => {
+    if ((object as Mesh).isMesh && object.userData['isFlashOverlay'] === true) found.push(object as Mesh);
+  });
+  return found;
+};
+
+describe('model host: grid bounds and the lit sliders', () => {
+  it('R24 the box of a loaded model goes to onBounds, and null when it is removed', async () => {
+    const onBounds = vi.fn();
+    const host = createModelHost({ scene: new Scene(), rig: createCameraRig(1), invalidate: vi.fn(), onFramed: vi.fn(), onBounds, settings: DEFAULT_VIEWPORT_SETTINGS });
+    await host.load(buildTriangleGlb());
+    expect(onBounds).toHaveBeenLastCalledWith(expect.objectContaining({ isBox3: true }));
+    host.unload();
+    expect(onBounds).toHaveBeenLastCalledWith(null);
+  });
+
+  it('R14 the shown model\'s own materials are patched to read the Metal and Roughness sliders, and unpatched when it is removed', async () => {
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    const material = meshesIn(scene)[0]!.material as unknown as { customProgramCacheKey(): string };
+    expect(material.customProgramCacheKey()).toContain('lit-look-adjust');
+    host.unload();
+    expect(material.customProgramCacheKey()).not.toContain('lit-look-adjust');
+  });
+});
 
 describe('model host: flat and smooth shading', () => {
   const materialOf = (scene: Scene): { flatShading: boolean } => meshesIn(scene)[0]!.material as unknown as { flatShading: boolean };
@@ -185,20 +213,47 @@ describe('model host', () => {
     expect(overlayMaterials[0]).not.toBe(projection);
   });
 
-  it('R17 a flash material shows on top of the projection material and taking it away shows the projection material again', async () => {
+  it('R16 a flash material is laid over the projection material, which stays on the model; taking it away leaves the projection material alone', async () => {
     const { scene, host } = setup();
     await host.load(buildTriangleGlb());
     const projection = new ShaderMaterial();
     const flash = new ShaderMaterial();
     host.setProjectionMaterial(projection);
     host.setFlashMaterial(flash);
-    expect(meshesIn(scene)[0]!.material).toBe(flash);
+    expect(meshesIn(scene)[0]!.material).toBe(projection);
+    expect(flashMeshesIn(scene).map((mesh) => mesh.material)).toEqual([flash]);
     host.setFlashMaterial(null);
     expect(meshesIn(scene)[0]!.material).toBe(projection);
+    expect(flashMeshesIn(scene)).toHaveLength(0);
     host.setProjectionMaterial(null);
     host.setFlashMaterial(flash);
     host.setFlashMaterial(null);
     expect(((meshesIn(scene)[0]!.material) as ShaderMaterial).isShaderMaterial).toBeUndefined();
+  });
+
+  it('R16 the flash copies of the meshes are never picked, share the geometry, and the same material set again adds no second copy', async () => {
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    const flash = new ShaderMaterial();
+    host.setFlashMaterial(flash);
+    host.setFlashMaterial(flash);
+    const [copy] = flashMeshesIn(scene);
+    expect(flashMeshesIn(scene)).toHaveLength(1);
+    expect(copy!.geometry).toBe(meshesIn(scene)[0]!.geometry);
+    const hits: unknown[] = [];
+    copy!.raycast(new Raycaster(), hits as never);
+    expect(hits).toHaveLength(0);
+  });
+
+  it('R16 a flash changing to another material, or the model being removed, leaves no copy behind', async () => {
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    const other = new ShaderMaterial();
+    host.setFlashMaterial(new ShaderMaterial());
+    host.setFlashMaterial(other);
+    expect(flashMeshesIn(scene).map((mesh) => mesh.material)).toEqual([other]);
+    host.unload();
+    expect(flashMeshesIn(scene)).toHaveLength(0);
   });
 
   it('R17 the model root is reported while a model is shown and not after it is removed', async () => {
@@ -236,5 +291,68 @@ describe('model host', () => {
     expect(invalidate).toHaveBeenCalled();
     expect(meshesIn(scene)[0]!.material).toBe(look);
     expect((look as ShaderMaterial).uniforms['uStrength']!.value).toBe(2);
+  });
+});
+
+describe('model host: material pictures', () => {
+  const bitmap = (): ImageBitmap => ({ width: 2, height: 2, close: vi.fn() }) as unknown as ImageBitmap;
+  const sourceOf = (scene: Scene): MeshStandardMaterial => meshesIn(scene)[0]!.material as MeshStandardMaterial;
+
+  it('textures R13 a picture set on a slot shows on the lit material and asks for a redraw; null puts the file\'s map back', async () => {
+    const { scene, host, invalidate } = setup();
+    await host.load(buildTriangleGlb());
+    const material = sourceOf(scene);
+    invalidate.mockClear();
+    host.setMaterialPicture(0, 'albedo', { id: 'p1', bitmap: bitmap() });
+    expect(material.map).not.toBeNull();
+    expect(invalidate).toHaveBeenCalled();
+    host.setMaterialPicture(0, 'albedo', null);
+    expect(material.map).toBeNull();
+  });
+
+  it('textures R13 the flat looks pick the new picture up too, without a rebuild by the caller', async () => {
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    host.setShadingMode('albedo');
+    const before = meshesIn(scene)[0]!.material as MeshBasicMaterial;
+    expect(before.map).toBeNull();
+    host.setMaterialPicture(0, 'albedo', { id: 'p1', bitmap: bitmap() });
+    const after = meshesIn(scene)[0]!.material as MeshBasicMaterial;
+    expect(after.isMeshBasicMaterial).toBe(true);
+    expect(after.map).not.toBeNull(); // a look of its own, built from the changed source
+    host.setShadingMode('lit');
+    expect(sourceOf(scene).map).toBe(after.map);
+  });
+
+  it('textures R13 with a projection material set the picture is still stored, and shows when the projection material is cleared', async () => {
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    const projection = new ShaderMaterial();
+    host.setProjectionMaterial(projection);
+    host.setMaterialPicture(0, 'normal', { id: 'n1', bitmap: bitmap() });
+    expect(meshesIn(scene)[0]!.material).toBe(projection);
+    host.setProjectionMaterial(null);
+    expect(sourceOf(scene).normalMap).not.toBeNull();
+  });
+
+  it('textures R13 a picture handed over when no model is shown is closed and nothing breaks', () => {
+    const { host } = setup();
+    const stray = bitmap();
+    host.setMaterialPicture(0, 'albedo', { id: 'p1', bitmap: stray });
+    expect(stray.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('textures R13 removing or replacing the model puts the originals back and frees the pictures; the next model starts with none', async () => {
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    const picture = bitmap();
+    host.setMaterialPicture(0, 'albedo', { id: 'p1', bitmap: picture });
+    await host.load(buildTriangleGlb());
+    expect(picture.close).toHaveBeenCalledTimes(1);
+    expect(sourceOf(scene).map).toBeNull();
+    const second = bitmap();
+    host.setMaterialPicture(0, 'albedo', { id: 'p1', bitmap: second });
+    host.unload();
+    expect(second.close).toHaveBeenCalledTimes(1);
   });
 });

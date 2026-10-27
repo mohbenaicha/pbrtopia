@@ -32,6 +32,12 @@
   color: var(--accent-text);
 }
 
+.ui-icon-button[data-compact] {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+
 .ui-icon-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;

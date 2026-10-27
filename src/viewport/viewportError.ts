@@ -1,4 +1,4 @@
-export type ViewportErrorCode = 'unsupported-compression' | 'not-glb' | 'parse-failed' | 'webgl-unavailable';
+export type ViewportErrorCode = 'unsupported-compression' | 'not-glb' | 'parse-failed' | 'webgl-unavailable' | 'export-failed' | 'picture-unreadable';
 
 interface ViewportError {
   code: ViewportErrorCode;

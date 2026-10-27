@@ -4,6 +4,17 @@
   gap: var(--space-2);
 }
 
+.ui-disclosure__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ui-disclosure__bar > .ui-disclosure__header {
+  flex: 1;
+  min-width: 0;
+}
+
 .ui-disclosure__header {
   display: flex;
   align-items: center;
@@ -19,6 +30,14 @@
   text-align: left;
   cursor: pointer;
   transition: background var(--transition-fast);
+}
+
+.ui-disclosure__header[data-tone='active'] {
+  color: var(--text-active);
+}
+
+.ui-disclosure__header[data-tone='previous'] {
+  color: var(--text-previous);
 }
 
 .ui-disclosure__header:hover:not(:disabled) {

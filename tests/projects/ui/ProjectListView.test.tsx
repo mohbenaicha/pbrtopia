@@ -83,13 +83,55 @@ describe('ProjectListView', () => {
     expect(onOpen).toHaveBeenCalledWith('b');
   });
 
-  it('projects R8 the header shows what the app puts there, and a notice that can be dismissed', async () => {
+  it('projects R8 a notice shows above the list and can be dismissed', async () => {
     const onDismissNotice = vi.fn();
-    await showList([], { headerActions: <button type="button">New project</button>, notice: 'That project no longer exists.', onDismissNotice });
-    expect(screen.getByRole('button', { name: 'New project' })).toBeTruthy();
+    await showList([], { notice: 'That project no longer exists.', onDismissNotice });
     expect(screen.getByRole('status').textContent).toContain('That project no longer exists.');
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(onDismissNotice).toHaveBeenCalled();
+  });
+
+  describe('layout', () => {
+    const createActions = (large: boolean) => <button type="button">{large ? 'Create (large)' : 'Create'}</button>;
+    const headerActions = <button type="button">Settings</button>;
+
+    it('projects R14 the title is "Projects" and the create actions and the header actions sit together in one group', async () => {
+      await showList([summary('a', 'Orc helmet')], { createActions, headerActions });
+      const group = screen.getByRole('group', { name: 'Project actions' });
+      expect(screen.getByRole('heading', { level: 1, name: 'Projects' })).toBeTruthy();
+      expect(within(group).getByRole('button', { name: 'Create' })).toBeTruthy();
+      expect(within(group).getByRole('button', { name: 'Settings' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Create (large)' })).toBeNull();
+    });
+
+    it('projects R14 with no project the page shows a centred empty state with the large create actions, and only Settings stays in the header', async () => {
+      await showList([], { createActions, headerActions });
+      const empty = await screen.findByTestId('empty-state');
+      expect(empty.textContent).toContain('No projects yet.');
+      expect(within(empty).getByRole('button', { name: 'Create (large)' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Create' })).toBeNull();
+      expect(within(screen.getByRole('group', { name: 'Project actions' })).getByRole('button', { name: 'Settings' })).toBeTruthy();
+      expect(screen.queryByRole('checkbox', { name: 'Select all' })).toBeNull();
+    });
+
+    it('projects R14 the status slot (the import result) shows under the header', async () => {
+      await showList([], { createActions, status: <p>Imported Orc helmet.</p> });
+      expect(screen.getByText('Imported Orc helmet.')).toBeTruthy();
+    });
+
+    it('projects R14 Select all sits in a toolbar row of its own when there are projects', async () => {
+      await showList([summary('a', 'Orc helmet')], { createActions });
+      expect(screen.getByRole('toolbar', { name: 'Select projects' }).contains(screen.getByRole('checkbox', { name: 'Select all' }))).toBe(true);
+    });
+
+    it('projects R14 the actions on a card are icon buttons with a name and a tooltip and no visible text', async () => {
+      await showList([summary('a', 'Orc helmet')]);
+      for (const name of ['Open', 'Rename', 'Delete']) {
+        const button = within(cardOf('Orc helmet')).getByRole('button', { name });
+        expect(button.getAttribute('title')).toBe(name);
+        expect(button.textContent).toBe('');
+      }
+    });
   });
 
   describe('rename', () => {

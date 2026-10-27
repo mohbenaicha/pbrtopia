@@ -21,6 +21,20 @@ describe('SegmentedControl', () => {
     expect(screen.getByRole('radio', { name: 'Shaded' }).getAttribute('aria-checked')).toBe('false');
   });
 
+  it('R22 an option with a short form shows it, and keeps the full label as its name and tooltip', () => {
+    render(<SegmentedControl label="Shading mode" options={[{ value: 'albedo', label: 'Albedo', short: 'A' }]} value="albedo" onChange={() => undefined} />);
+    const radio = screen.getByRole('radio', { name: 'Albedo' });
+    expect(radio.textContent).toBe('A');
+    expect(radio.getAttribute('title')).toBe('Albedo');
+  });
+
+  it('R22 an option with a hover icon draws it hidden from the accessibility tree, beside its text', () => {
+    render(<SegmentedControl label="Shading mode" options={[{ value: 'albedo', label: 'Albedo', short: 'A', hoverIcon: <svg data-testid="eye" /> }]} value="albedo" onChange={() => undefined} />);
+    const radio = screen.getByRole('radio', { name: 'Albedo' });
+    expect(radio.querySelector('[data-testid="eye"]')?.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(radio.querySelector('.ui-segmented__text')?.textContent).toBe('A');
+  });
+
   it('R22 clicking an option reports its value', async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();

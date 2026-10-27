@@ -1,5 +1,6 @@
-export { AtlasPreview } from './ui/AtlasPreview';
 export { GeneratePanel } from './ui/GeneratePanel';
+export { makeImagePreview } from './makeImagePreview';
+export { runLogStore, type RunLogActions, type RunLogRecord, type RunLogState } from './runLogStore';
 export type { UvOptions } from './ui/UvOptionsDialog';
 export { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
 export { listAtlasSizes } from './catalog/atlasSizes';
@@ -15,6 +16,7 @@ export {
   type RunError,
   type SavedPanelSettings,
   type RunStep,
+  type UnwrapState,
 } from './generateStore';
 export { createImageGenerator, createPromptEnhancer } from './providers/createProviders';
 export type { GeneratedImage, GenerateRequest, ImageGenerator } from './providers/ImageGenerator';

@@ -21,6 +21,7 @@ function fakeViewport() {
     on: events.on,
     snapToAxis: vi.fn(),
     setProjection: vi.fn(),
+    resetView: vi.fn(),
   };
   return { viewport, rig, events };
 }
@@ -28,24 +29,47 @@ function fakeViewport() {
 const stackOrder = (name: string): number => Number(screen.getByRole('button', { name }).style.zIndex);
 
 describe('ViewportCorner', () => {
-  it('R11 it holds the gizmo, then the gear and the camera icon, with the stable test ids', () => {
+  it('R11 it holds the gizmo, then the gear, the camera icon, Reset view and the grid toggle, with the stable test ids', () => {
     const { viewport } = fakeViewport();
-    render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} />);
-    const ids = ['viewport-gizmo', 'viewport-gear', 'viewport-camera'];
-    const found = screen.getAllByTestId(/^viewport-(gizmo|gear|camera)$/).map((element) => element.getAttribute('data-testid'));
+    render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} gridShown onGridShownChange={() => undefined} />);
+    const ids = ['viewport-gizmo', 'viewport-gear', 'viewport-camera', 'viewport-reset', 'viewport-grid'];
+    const found = screen.getAllByTestId(/^viewport-(gizmo|gear|camera|reset|grid)$/).map((element) => element.getAttribute('data-testid'));
     expect(found).toEqual(ids);
     expect(screen.getByTestId('viewport-gear').getAttribute('aria-label')).toBe('Viewport settings');
+    expect(screen.getByTestId('viewport-reset').getAttribute('aria-label')).toBe('Reset view');
+  });
+
+  it('R11 Reset view asks the viewport to reset the camera', async () => {
+    const { viewport } = fakeViewport();
+    render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} gridShown onGridShownChange={() => undefined} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Reset view' }));
+    expect(viewport.resetView).toHaveBeenCalledTimes(1);
+  });
+
+  it('R24 the grid toggle shows pressed while the grid is shown and asks for the opposite on a click', async () => {
+    const { viewport } = fakeViewport();
+    const onGridShownChange = vi.fn();
+    const { rerender } = render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} gridShown onGridShownChange={onGridShownChange} />);
+    const toggle = screen.getByTestId('viewport-grid');
+    expect(toggle.getAttribute('aria-label')).toBe('Grid');
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    await userEvent.click(toggle);
+    expect(onGridShownChange).toHaveBeenLastCalledWith(false);
+    rerender(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} gridShown={false} onGridShownChange={onGridShownChange} />);
+    expect(screen.getByTestId('viewport-grid').getAttribute('aria-pressed')).toBe('false');
+    await userEvent.click(screen.getByTestId('viewport-grid'));
+    expect(onGridShownChange).toHaveBeenLastCalledWith(true);
   });
 
   it('R14 the gear asks to open the settings, shows pressed while they are open, and the panel appears under it', async () => {
     const { viewport } = fakeViewport();
     const onSettingsOpenChange = vi.fn();
-    const { rerender } = render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={onSettingsOpenChange} settingsPanel={<p>panel</p>} />);
+    const { rerender } = render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={onSettingsOpenChange} settingsPanel={<p>panel</p>} gridShown onGridShownChange={() => undefined} />);
     expect(screen.getByTestId('viewport-gear').getAttribute('aria-pressed')).toBe('false');
     expect(screen.queryByRole('dialog')).toBeNull();
     await userEvent.click(screen.getByTestId('viewport-gear'));
     expect(onSettingsOpenChange).toHaveBeenLastCalledWith(true);
-    rerender(<ViewportCorner viewport={viewport} settingsOpen onSettingsOpenChange={onSettingsOpenChange} settingsPanel={<p>panel</p>} />);
+    rerender(<ViewportCorner viewport={viewport} settingsOpen onSettingsOpenChange={onSettingsOpenChange} settingsPanel={<p>panel</p>} gridShown onGridShownChange={() => undefined} />);
     expect(screen.getByTestId('viewport-gear').getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('dialog', { name: 'Viewport settings' }).textContent).toBe('panel');
   });
@@ -53,7 +77,7 @@ describe('ViewportCorner', () => {
   it('R14 clicking the gear while the settings are open asks to close them, and so do Escape and a click elsewhere', async () => {
     const { viewport } = fakeViewport();
     const onSettingsOpenChange = vi.fn();
-    render(<ViewportCorner viewport={viewport} settingsOpen onSettingsOpenChange={onSettingsOpenChange} settingsPanel={<p>panel</p>} />);
+    render(<ViewportCorner viewport={viewport} settingsOpen onSettingsOpenChange={onSettingsOpenChange} settingsPanel={<p>panel</p>} gridShown onGridShownChange={() => undefined} />);
     await userEvent.click(screen.getByTestId('viewport-gear'));
     expect(onSettingsOpenChange).toHaveBeenLastCalledWith(false);
     await userEvent.keyboard('{Escape}');
@@ -64,7 +88,7 @@ describe('ViewportCorner', () => {
 
   it('R12 the camera icon follows the viewport projection and asks for the other one', async () => {
     const { viewport, events } = fakeViewport();
-    render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} />);
+    render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} gridShown onGridShownChange={() => undefined} />);
     await userEvent.click(screen.getByTestId('viewport-camera'));
     expect(viewport.setProjection).toHaveBeenLastCalledWith('orthographic');
 
@@ -77,14 +101,14 @@ describe('ViewportCorner', () => {
 
   it('R13 a gizmo click goes to snapToAxis', async () => {
     const { viewport } = fakeViewport();
-    render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} />);
+    render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} gridShown onGridShownChange={() => undefined} />);
     await userEvent.click(screen.getByRole('button', { name: 'View from +X' }));
     expect(viewport.snapToAxis).toHaveBeenCalledWith('+x');
   });
 
   it('R13 the gizmo turns with the camera', () => {
     const { viewport, rig, events } = fakeViewport();
-    render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} />);
+    render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} gridShown onGridShownChange={() => undefined} />);
     expect(stackOrder('View from +Z')).toBeGreaterThan(stackOrder('View from -X'));
     rig.placeCamera(new Vector3(-1, 0, 0), 3);
     act(() => events.emit('camera-change'));

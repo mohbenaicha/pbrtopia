@@ -1,5 +1,7 @@
 .ui-segmented {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   gap: var(--space-1);
   padding: var(--space-1);
   border-radius: var(--radius-group);
@@ -8,8 +10,9 @@
 
 .ui-segmented__option {
   flex: 1 1 auto;
+  min-width: 0;
   min-height: calc(var(--control-height) - var(--space-1));
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-3);
   border: none;
   border-radius: var(--radius-control);
   background: transparent;
@@ -21,6 +24,29 @@
 .ui-segmented__option:hover:not(:disabled):not([data-selected]) {
   background: var(--bg-hover);
   color: var(--text);
+}
+
+.ui-segmented__option {
+  position: relative;
+}
+
+.ui-segmented__hover-icon {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+/* the eye replaces the letter while the option is hovered or focused, so it reads as show / hide */
+.ui-segmented__option[data-hover-icon]:hover:not(:disabled) .ui-segmented__text,
+.ui-segmented__option[data-hover-icon]:focus-visible .ui-segmented__text {
+  visibility: hidden;
+}
+
+.ui-segmented__option[data-hover-icon]:hover:not(:disabled) .ui-segmented__hover-icon,
+.ui-segmented__option[data-hover-icon]:focus-visible .ui-segmented__hover-icon {
+  display: flex;
 }
 
 .ui-segmented__option:focus-visible {

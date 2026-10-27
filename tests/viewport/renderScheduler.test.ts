@@ -77,6 +77,30 @@ describe('renderScheduler', () => {
     expect(draw).toHaveBeenCalledTimes(1);
   });
 
+  it('R29 drawNow draws at once, takes over a pending frame so there is one draw, and leaves no frame behind', () => {
+    const clock = createManualClock();
+    const draw = vi.fn();
+    const scheduler = createRenderScheduler(draw, clock);
+    scheduler.invalidate();
+    scheduler.drawNow();
+    expect(draw).toHaveBeenCalledTimes(1);
+    expect(clock.pendingFrames()).toBe(0);
+    clock.tick();
+    expect(draw).toHaveBeenCalledTimes(1);
+  });
+
+  it('R29 drawNow draws nothing while paused or after dispose', () => {
+    const clock = createManualClock();
+    const draw = vi.fn();
+    const scheduler = createRenderScheduler(draw, clock);
+    scheduler.pause();
+    scheduler.drawNow();
+    scheduler.resume();
+    scheduler.dispose();
+    scheduler.drawNow();
+    expect(draw).not.toHaveBeenCalled();
+  });
+
   it('R18 dispose cancels the pending frame and ignores later invalidates', () => {
     const clock = createManualClock();
     const draw = vi.fn();

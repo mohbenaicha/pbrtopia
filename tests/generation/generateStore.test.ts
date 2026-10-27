@@ -155,20 +155,13 @@ describe('generateStore: restoring a project\'s saved settings (R22) and the not
   });
 });
 
-describe('generateStore: the atlas docked while a run goes (R10)', () => {
-  it('R10 a run starts without an atlas, holds the one set, and drops it on failure and on clear', () => {
-    const store = createGenerateStore();
-    const atlas = new Blob(['atlas']);
-    store.getState().setAtlasPreview(atlas);
-    store.getState().beginRun();
-    expect(store.getState().atlasPreview).toBeNull();
-    store.getState().setAtlasPreview(atlas);
-    expect(store.getState().atlasPreview).toBe(atlas);
-    store.getState().failRun({ category: 'server', retryable: true, message: 'x' });
-    expect(store.getState().atlasPreview).toBeNull();
-    store.getState().setAtlasPreview(atlas);
-    store.getState().clearRun();
-    expect(store.getState().atlasPreview).toBeNull();
+describe('generateStore: the atlas and the enhanced prompt live in the run log, not here (R28)', () => {
+  it('R28 the run state holds no atlas preview and no enhanced prompt', () => {
+    const state = createGenerateStore().getState();
+    expect(state).not.toHaveProperty('atlasPreview');
+    expect(state).not.toHaveProperty('enhancedPrompt');
+    expect(state).not.toHaveProperty('setAtlasPreview');
+    expect(state).not.toHaveProperty('setEnhancedPrompt');
   });
 });
 
@@ -331,7 +324,6 @@ describe('generateStore: scene, keys and enhancer inputs (R6)', () => {
     expect(store.getState()).toMatchObject({ step: 'enhance', fraction: 0.4 });
     store.getState().setStep('generate', 7); // out of range is clamped
     expect(store.getState().fraction).toBe(1);
-    store.getState().setEnhancedPrompt('A stone with moss on the left.');
     store.getState().clearRun();
     expect(store.getState()).toMatchObject({ status: 'idle', step: null, fraction: 0, error: null });
   });

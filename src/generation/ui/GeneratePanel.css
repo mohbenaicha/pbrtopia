@@ -1,8 +1,17 @@
 .generate-panel {
   display: flex;
   flex-direction: column;
+}
+
+.generate-panel__page {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
+}
+
+.generate-panel__page[hidden] {
+  display: none;
 }
 
 .generate-panel__field {
@@ -34,6 +43,11 @@
 .generate-panel__prompt:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+.generate-panel__prompt[data-drop-target] {
+  border-color: var(--accent);
+  background: var(--bg-hover);
 }
 
 .generate-panel__actions {
@@ -203,8 +217,24 @@
   font-size: var(--font-size-small);
 }
 
-.run-error__details,
-.enhanced-prompt {
+.progress-steps__link {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.progress-steps__link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.run-error__details {
   margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;

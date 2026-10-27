@@ -79,8 +79,6 @@ export interface GenerateState {
   step: RunStep | null;
   fraction: number;
   error: RunError | null;
-  enhancedPrompt: string | null;
-  atlasPreview: Blob | null; // the captured atlas, docked in the viewport while a run is going (R10)
   notice: string | null; // a plain message that is not a failure (R19: the set is saved but could not be opened)
   unwrap: UnwrapState;
   setPrompt: (prompt: string) => void;
@@ -99,8 +97,6 @@ export interface GenerateState {
   setSceneState: (scene: SceneState) => void;
   beginRun: () => void;
   setStep: (step: RunStep, fraction: number) => void;
-  setEnhancedPrompt: (text: string | null) => void;
-  setAtlasPreview: (atlas: Blob | null) => void;
   failRun: (error: RunError) => void;
   clearRun: () => void;
   beginUnwrap: () => void;
@@ -165,8 +161,6 @@ export function createGenerateStore() {
       step: null,
       fraction: 0,
       error: null,
-      enhancedPrompt: null,
-      atlasPreview: null,
       notice: null,
       unwrap: IDLE_UNWRAP,
       setPrompt: (prompt) => set({ prompt }),
@@ -208,12 +202,10 @@ export function createGenerateStore() {
       setEnhancer: (enhancer) => set({ enhancer }),
       setMaxTextureSize: (maxTextureSize) => resettle({ maxTextureSize }),
       setSceneState: ({ hasModel, hasUvs, readOnly = false, setOpen = false, setBusy = false }) => set({ hasModel, hasUvs, readOnly, setOpen, setBusy }),
-      beginRun: () => set({ status: 'running', step: 'capture', fraction: 0, error: null, enhancedPrompt: null, atlasPreview: null, notice: null }),
+      beginRun: () => set({ status: 'running', step: 'capture', fraction: 0, error: null, notice: null }),
       setStep: (step, fraction) => set({ step, fraction: clamp01(fraction) }),
-      setEnhancedPrompt: (enhancedPrompt) => set({ enhancedPrompt }),
-      setAtlasPreview: (atlasPreview) => set({ atlasPreview }),
-      failRun: (error) => set({ status: 'failed', error, atlasPreview: null }),
-      clearRun: () => set({ status: 'idle', step: null, fraction: 0, error: null, atlasPreview: null }),
+      failRun: (error) => set({ status: 'failed', error }),
+      clearRun: () => set({ status: 'idle', step: null, fraction: 0, error: null }),
       beginUnwrap: () => set({ unwrap: { status: 'running', fraction: 0, error: null } }),
       setUnwrapProgress: (fraction) => set({ unwrap: { ...get().unwrap, fraction: clamp01(fraction) } }),
       failUnwrap: (error) => set({ unwrap: { status: 'failed', fraction: 0, error } }),

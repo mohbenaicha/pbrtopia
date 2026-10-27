@@ -1,4 +1,4 @@
-export type StoreErrorCode = 'not-found' | 'quota-exceeded' | 'locked-by-other-tab' | 'schema-too-new' | 'corrupt' | 'storage-unavailable' | 'aborted';
+export type StoreErrorCode = 'not-found' | 'quota-exceeded' | 'locked-by-other-tab' | 'schema-too-new' | 'schema-too-old' | 'corrupt' | 'storage-unavailable' | 'aborted';
 
 export interface StoreError {
   code: StoreErrorCode;

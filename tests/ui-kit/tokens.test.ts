@@ -24,6 +24,12 @@ describe('tokens.css', () => {
     for (const [token, value] of Object.entries(palette)) expect(valueOf(token), token).toBe(value);
   });
 
+  it('textures R2 and R3 define the active (green) and previous (blue) heading colours', () => {
+    expect(valueOf('text-active')).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(valueOf('text-previous')).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(valueOf('text-active')).not.toBe(valueOf('text-previous'));
+  });
+
   it('R2 defines the radii: control 8px, group 11px, dialog 14px, panel 0', () => {
     expect(valueOf('radius-control')).toBe('8px');
     expect(valueOf('radius-group')).toBe('11px');

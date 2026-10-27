@@ -77,3 +77,51 @@ describe('ProgressSteps (R10)', () => {
     expect(screen.queryByRole('button', { name: /Cancel/ })).toBeNull();
   });
 });
+
+describe('ProgressSteps: the link to the log row (R27)', () => {
+  const link = () => screen.queryByRole('button', { name: 'View log' });
+  const itemsWithLink = () => screen.getAllByRole('listitem').filter((item) => within(item).queryByRole('button', { name: 'View log' }) !== null).map((item) => item.textContent);
+
+  function setupWithLink(step: RunStep, failed = false) {
+    const onViewLog = vi.fn();
+    render(<ProgressSteps step={step} fraction={0} failed={failed} onCancel={vi.fn()} onViewLog={onViewLog} />);
+    return { onViewLog };
+  }
+
+  it('R27 there is no link until the Enhancing prompt step is done', () => {
+    setupWithLink('capture');
+    expect(link()).toBeNull();
+    cleanup();
+    setupWithLink('enhance');
+    expect(link()).toBeNull();
+  });
+
+  it('R27 once Enhancing prompt is done its item, and only that item, shows View log', () => {
+    for (const step of ['generate', 'validate'] as const) {
+      cleanup();
+      setupWithLink(step);
+      expect(itemsWithLink()).toEqual(['Enhancing promptView log']);
+    }
+  });
+
+  it('R27 clicking the link reports it', () => {
+    const { onViewLog } = setupWithLink('generate');
+    fireEvent.click(screen.getByRole('button', { name: 'View log' }));
+    expect(onViewLog).toHaveBeenCalledTimes(1);
+  });
+
+  it('R27 after a failure the failed step shows the link as well', () => {
+    setupWithLink('generate', true);
+    expect(itemsWithLink()).toEqual(['Enhancing promptView log', 'Generating imageView log']);
+  });
+
+  it('R27 a failure in the Enhancing prompt step shows one link, on that item', () => {
+    setupWithLink('enhance', true);
+    expect(itemsWithLink()).toEqual(['Enhancing promptView log']);
+  });
+
+  it('R27 without a log row to point at there is no link', () => {
+    setup('generate');
+    expect(link()).toBeNull();
+  });
+});

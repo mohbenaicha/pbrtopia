@@ -9,6 +9,7 @@ interface ShadingModes {
   applyMaterial(root: Object3D, material: Material): void; // one material over the whole model; apply() puts the looks back
   setFlatShading(root: Object3D, flat: boolean): void; // the lit look of each mesh shows faceted when flat, and always when the mesh has no normals
   derivedMaterialCount(): number;
+  refresh(root: Object3D): void; // a source material changed (a picture was laid over it): puts the originals back and drops the looks derived from the old state, so the next apply() builds them afresh
   dispose(root: Object3D): void; // puts the original materials back and frees the derived ones
 }
 
@@ -23,7 +24,7 @@ export function createShadingModes(adjust: MapAdjustUniforms): ShadingModes {
 
   const build = (source: Material, mode: ShadingMode): Material => {
     if (mode === 'albedo') return createAlbedoLook(source);
-    if (mode === 'normal') return createNormalLook(source);
+    if (mode === 'normal') return createNormalLook(source, adjust);
     return createChannelLook(source, mode === 'rough' ? 'rough' : 'metal', adjust);
   };
 
@@ -70,15 +71,18 @@ export function createShadingModes(adjust: MapAdjustUniforms): ShadingModes {
     });
   };
 
+  const reset = (root: Object3D): void => {
+    apply(root, 'lit');
+    derived.forEach((looks) => looks.forEach((look) => look.dispose()));
+    derived.clear();
+  };
+
   return {
     apply,
     applyMaterial,
     setFlatShading,
     derivedMaterialCount: () => [...derived.values()].reduce((total, looks) => total + looks.size, 0),
-    dispose(root) {
-      apply(root, 'lit');
-      derived.forEach((looks) => looks.forEach((look) => look.dispose()));
-      derived.clear();
-    },
+    refresh: reset,
+    dispose: reset,
   };
 }

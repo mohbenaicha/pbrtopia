@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -42,5 +43,54 @@ describe('Tabs', () => {
     render(<Tabs label="Left panel" tabs={tabs} value="textures" onChange={onChange} />);
     await userEvent.click(screen.getByRole('tab', { name: 'Projections' }));
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('Tabs browser-tab look', () => {
+  const panelTabs = [
+    { value: 'generate', label: 'Generate' },
+    { value: 'debug', label: 'Debug', icon: 'bug' as const, iconOnly: true },
+  ];
+
+  it('R32 an icon-only tab draws the icon with no text, and keeps its label as tooltip and accessible name', () => {
+    render(<Tabs label="Generate panel" tabs={panelTabs} value="generate" onChange={() => undefined} />);
+    const debug = screen.getByRole('tab', { name: 'Debug' });
+    expect(debug.getAttribute('title')).toBe('Debug');
+    expect(debug.getAttribute('data-compact')).not.toBeNull();
+    expect(debug.textContent).toBe('');
+    expect(debug.querySelector('[data-icon="bug"]')).not.toBeNull();
+  });
+
+  it('R32 a plain text tab is not compact and keeps its text as its name', () => {
+    render(<Tabs label="Generate panel" tabs={panelTabs} value="generate" onChange={() => undefined} />);
+    const generate = screen.getByRole('tab', { name: 'Generate' });
+    expect(generate.getAttribute('data-compact')).toBeNull();
+    expect(generate.getAttribute('title')).toBeNull();
+  });
+
+  it('R32 a text tab that has an icon shows both the icon and its text', () => {
+    render(<Tabs label="Panel" tabs={[{ value: 'a', label: 'Alpha', icon: 'grid' as const }]} value="a" onChange={() => undefined} />);
+    const alpha = screen.getByRole('tab', { name: 'Alpha' });
+    expect(alpha.textContent).toBe('Alpha');
+    expect(alpha.querySelector('[data-icon="grid"]')).not.toBeNull();
+    expect(alpha.getAttribute('title')).toBeNull();
+  });
+
+  it('R32 arrow keys still move between an icon-only tab and a text tab', async () => {
+    const onChange = vi.fn();
+    render(<Tabs label="Generate panel" tabs={panelTabs} value="generate" onChange={onChange} />);
+    screen.getByRole('tab', { name: 'Generate' }).focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(onChange).toHaveBeenCalledWith('debug');
+  });
+
+  it('R32 the stylesheet draws the curves from the --radius-tab token with no colour literal, and the token exists', () => {
+    const css = readFileSync('src/ui-kit/Tabs.css', 'utf8');
+    expect(css).toContain('var(--radius-tab)');
+    expect(css).toContain('var(--bg-page)');
+    expect(css).toContain('var(--bg-panel)');
+    expect(css).toMatch(/radial-gradient/);
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(/);
+    expect(readFileSync('src/ui-kit/tokens.css', 'utf8')).toMatch(/--radius-tab:\s*\d+px/);
   });
 });

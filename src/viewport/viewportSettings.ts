@@ -1,11 +1,9 @@
 import type { Projection } from './cameraRig';
 
-export interface MapAdjust {
-  metalStrength: number;
-  metalContrast: number;
-  roughStrength: number;
-  roughContrast: number;
-}
+// Every strength and contrast slider of the Material section. The defaults, the clamping and the shared uniforms are all made from this list.
+export const MAP_ADJUST_KEYS = ['metalStrength', 'metalContrast', 'roughStrength', 'roughContrast', 'normalStrength', 'normalContrast'] as const;
+export type MapAdjustKey = (typeof MAP_ADJUST_KEYS)[number];
+export type MapAdjust = Record<MapAdjustKey, number>;
 
 // The viewport settings of data-model.md; stored globally by `projects/`, edited by the gear popover and Settings > Viewport.
 export interface ViewportSettings {
@@ -18,6 +16,7 @@ export interface ViewportSettings {
   wireframe: boolean;
   flatShading: boolean; // false = Smooth
   smoothAngleDeg: number; // 0-180, the auto-smooth crease angle; 180 = Off (the model's own normals)
+  grid: boolean; // the ground grid under the model
   mapAdjust: MapAdjust; // each 0-3
 }
 
@@ -31,7 +30,8 @@ export const DEFAULT_VIEWPORT_SETTINGS: ViewportSettings = {
   wireframe: false,
   flatShading: false,
   smoothAngleDeg: 180,
-  mapAdjust: { metalStrength: 1, metalContrast: 1, roughStrength: 1, roughContrast: 1 },
+  grid: true,
+  mapAdjust: Object.fromEntries(MAP_ADJUST_KEYS.map((key) => [key, 1])) as MapAdjust,
 };
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
@@ -57,11 +57,7 @@ export function clampViewportSettings(raw: unknown): ViewportSettings {
     wireframe: booleanOr(given['wireframe'], defaults.wireframe),
     flatShading: booleanOr(given['flatShading'], defaults.flatShading),
     smoothAngleDeg: numberOr(given['smoothAngleDeg'], defaults.smoothAngleDeg, 0, 180),
-    mapAdjust: {
-      metalStrength: numberOr(adjust['metalStrength'], defaults.mapAdjust.metalStrength, 0, 3),
-      metalContrast: numberOr(adjust['metalContrast'], defaults.mapAdjust.metalContrast, 0, 3),
-      roughStrength: numberOr(adjust['roughStrength'], defaults.mapAdjust.roughStrength, 0, 3),
-      roughContrast: numberOr(adjust['roughContrast'], defaults.mapAdjust.roughContrast, 0, 3),
-    },
+    grid: booleanOr(given['grid'], defaults.grid),
+    mapAdjust: Object.fromEntries(MAP_ADJUST_KEYS.map((key) => [key, numberOr(adjust[key], defaults.mapAdjust[key], 0, 3)])) as MapAdjust,
   };
 }

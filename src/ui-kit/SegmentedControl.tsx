@@ -1,9 +1,11 @@
-import { useRef, type KeyboardEvent } from 'react';
+import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import './SegmentedControl.css';
 
 export interface SegmentOption<T extends string> {
   value: T;
-  label: string;
+  label: string; // the full name: the accessible name, and the tooltip when a short form is shown
+  short?: string; // shown in place of the label
+  hoverIcon?: ReactNode; // replaces the text while the option is hovered or focused
   disabled?: boolean;
 }
 
@@ -60,9 +62,16 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
             disabled={disabled || option.disabled === true}
             className="ui-segmented__option"
             data-selected={selected ? '' : undefined}
+            data-hover-icon={option.hoverIcon === undefined ? undefined : ''}
+            {...(option.short === undefined ? {} : { title: option.label, 'aria-label': option.label })}
             onClick={() => choose(option.value)}
           >
-            {option.label}
+            <span className="ui-segmented__text">{option.short ?? option.label}</span>
+            {option.hoverIcon !== undefined && (
+              <span className="ui-segmented__hover-icon" aria-hidden="true">
+                {option.hoverIcon}
+              </span>
+            )}
           </button>
         );
       })}

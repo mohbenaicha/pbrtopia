@@ -1,0 +1,65 @@
+.debug-tab__empty {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.debug-tab__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.run-log-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-1) var(--space-1);
+}
+
+.run-log-row__part {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.run-log-row__part figcaption,
+.run-log-row__caption {
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.run-log-row__picture {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+}
+
+.run-log-row__text,
+.run-log-row__details {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  font-size: var(--font-size-small);
+}
+
+.run-log-row__details {
+  color: var(--text-dim);
+}
+
+.run-log-row__error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-input);
+  border-radius: var(--radius-control);
+  color: var(--error);
+}

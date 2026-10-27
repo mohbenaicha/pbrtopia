@@ -11,18 +11,27 @@ function refuse(code: ViewportErrorCode, message: string): GlbInspection {
   return { ok: false, code, message };
 }
 
+/** The extensions a GLB names, used or required (textures R15: a download must not drop one unnoticed); null when its JSON chunk cannot be read. */
+export function extensionsOfGlb(glb: ArrayBuffer): string[] | null {
+  if (glb.byteLength < 20) return null;
+  const view = new DataView(glb);
+  const length = view.getUint32(12, true);
+  if (view.getUint32(16, true) !== JSON_CHUNK || 20 + length > glb.byteLength) return null;
+  try {
+    const declared = JSON.parse(new TextDecoder().decode(new Uint8Array(glb, 20, length))) as { extensionsUsed?: unknown; extensionsRequired?: unknown };
+    return [declared.extensionsUsed, declared.extensionsRequired].flatMap((list) => (Array.isArray(list) ? list.filter((name): name is string => typeof name === 'string') : []));
+  } catch {
+    return null;
+  }
+}
+
 // Reads only the GLB header and its JSON chunk, so a wrong or compressed file is named before the loader runs.
 export function inspectGlb(glb: ArrayBuffer): GlbInspection {
   const view = new DataView(glb);
   if (glb.byteLength < 20 || view.getUint32(0, true) !== GLB_MAGIC) return refuse('not-glb', 'This is not a GLB file. Export the model as a single .glb.');
   if (view.getUint32(16, true) !== JSON_CHUNK || 20 + view.getUint32(12, true) > glb.byteLength) return refuse('parse-failed', 'This GLB file is damaged.');
-  let declared: { extensionsUsed?: unknown; extensionsRequired?: unknown };
-  try {
-    declared = JSON.parse(new TextDecoder().decode(new Uint8Array(glb, 20, view.getUint32(12, true)))) as typeof declared;
-  } catch {
-    return refuse('parse-failed', 'This GLB file is damaged.');
-  }
-  const named = [declared.extensionsUsed, declared.extensionsRequired].flatMap((list) => (Array.isArray(list) ? list : []));
+  const named = extensionsOfGlb(glb);
+  if (named === null) return refuse('parse-failed', 'This GLB file is damaged.');
   const unsupported = UNSUPPORTED_EXTENSIONS.find((extension) => named.includes(extension));
   if (unsupported !== undefined) return refuse('unsupported-compression', `This model uses ${unsupported}, which is not supported. Export it without compression.`);
   return { ok: true };

@@ -4,10 +4,12 @@ import './base.css';
 
 export { Button } from './Button';
 export { Checkbox } from './Checkbox';
+export { ConfirmDialog } from './ConfirmDialog';
 export { Dialog } from './Dialog';
-export { Disclosure } from './Disclosure';
+export { Disclosure, useDisclosureOpen } from './Disclosure';
 export { Icon } from './Icon';
 export { IconButton } from './IconButton';
+export { LoadingOverlay } from './LoadingOverlay';
 export { Popover } from './Popover';
 export { SegmentedControl, type SegmentOption } from './SegmentedControl';
 export { Select, type SelectOption } from './Select';

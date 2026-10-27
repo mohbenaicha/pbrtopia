@@ -1,4 +1,4 @@
-import { Button, Dialog } from '../../ui-kit';
+import { ConfirmDialog } from '../../ui-kit';
 import type { ProjectSummary } from '../records/projectRecords';
 
 interface ConfirmDeleteDialogProps {
@@ -14,20 +14,16 @@ export function ConfirmDeleteDialog({ projects, progress, confirm, cancel }: Con
   const single = projects.length === 1 ? projects[0] : undefined;
   const effect = 'The model, textures, projection sets and thumbnail are removed from this browser. This cannot be undone.';
   return (
-    <Dialog
+    <ConfirmDialog
       open={projects.length > 0}
       title={single ? 'Delete this project?' : `Delete ${projects.length} projects?`}
-      onClose={cancel}
-      dismissible={!deleting}
-      actions={
-        <>
-          <Button variant="ghost" disabled={deleting} onClick={cancel}>Cancel</Button>
-          <Button variant="danger" loading={deleting} onClick={confirm}>Delete</Button>
-        </>
-      }
+      confirmLabel="Delete"
+      busy={deleting}
+      {...(progress !== null && { status: `Deleted ${progress.done} of ${progress.total}` })}
+      onConfirm={confirm}
+      onCancel={cancel}
     >
       <p>{single ? `"${single.name}": ${effect}` : `${projects.length} projects: ${effect}`}</p>
-      {progress !== null && <p role="status">{`Deleted ${progress.done} of ${progress.total}`}</p>}
-    </Dialog>
+    </ConfirmDialog>
   );
 }

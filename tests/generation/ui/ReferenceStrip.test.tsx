@@ -54,6 +54,11 @@ describe('ReferenceStrip (R2)', () => {
     expect(screen.getByRole('status').textContent).toMatch(/up to 13 references/);
   });
 
+  it('R2 the remove button is a compact badge, not a full-size control over the preview', () => {
+    setup();
+    expect(screen.getByRole('button', { name: 'Remove a.png' }).hasAttribute('data-compact')).toBe(true);
+  });
+
   it('R2 releases the object URLs when a thumbnail goes away', () => {
     const { unmount } = render(<ReferenceStrip references={[image('a')]} notice={null} onFiles={vi.fn()} onRemove={vi.fn()} />);
     unmount();

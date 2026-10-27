@@ -1,0 +1,66 @@
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg-page) 62%, transparent);
+  backdrop-filter: blur(1.5px);
+  pointer-events: auto; /* the veil blocks the mouse from reaching what is under it */
+}
+
+.loading-overlay__card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  min-width: 180px;
+  max-width: 320px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
+  color: var(--text);
+  box-shadow: var(--shadow-overlay);
+}
+
+.loading-overlay__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.loading-overlay__detail {
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.loading-overlay__bar {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--bg-hover);
+}
+
+.loading-overlay__fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.loading-overlay__bar[data-indeterminate] .loading-overlay__fill {
+  width: 30%;
+  animation: loading-overlay-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes loading-overlay-slide {
+  from {
+    margin-left: 0;
+  }
+
+  to {
+    margin-left: 70%;
+  }
+}

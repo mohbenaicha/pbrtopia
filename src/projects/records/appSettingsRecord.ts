@@ -13,6 +13,12 @@ export interface CatalogCacheRecord {
   openai: Record<string, unknown>[];
 }
 
+// The side panel widths the user dragged to; null is the default width. `app/` clamps them when they are used.
+export interface PanelWidthsRecord {
+  leftPx: number | null;
+  rightPx: number | null;
+}
+
 // App-wide settings. `viewport` is the viewport's own settings object, kept as stored and clamped by `app/` when used.
 export interface AppSettingsRecord {
   schemaVersion: number;
@@ -20,9 +26,17 @@ export interface AppSettingsRecord {
   enhancer: EnhancerChoiceRecord | null;
   catalog: CatalogCacheRecord | null;
   viewport: Record<string, unknown>;
+  panels: PanelWidthsRecord;
 }
 
-export const DEFAULT_APP_SETTINGS: AppSettingsRecord = { schemaVersion: CURRENT_SCHEMA_VERSION, lastOpenProjectId: null, enhancer: null, catalog: null, viewport: {} };
+export const DEFAULT_APP_SETTINGS: AppSettingsRecord = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  lastOpenProjectId: null,
+  enhancer: null,
+  catalog: null,
+  viewport: {},
+  panels: { leftPx: null, rightPx: null },
+};
 
 const nonEmptyText = (value: unknown): string | null => (typeof value === 'string' && value !== '' ? value : null);
 
@@ -44,6 +58,13 @@ function readCatalog(value: unknown): CatalogCacheRecord | null {
   return { fetchedAt, gemini: structuredClone(gemini), openai: structuredClone(openai) };
 }
 
+const finiteNumberOrNull = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);
+
+function readPanels(value: unknown): PanelWidthsRecord {
+  if (!isRawRecord(value)) return { leftPx: null, rightPx: null };
+  return { leftPx: finiteNumberOrNull(value['leftPx']), rightPx: finiteNumberOrNull(value['rightPx']) };
+}
+
 /** Reads stored settings leniently: every part that is missing or wrong falls back to its default, so settings never block the app. */
 export function readAppSettings(raw: unknown): AppSettingsRecord {
   const stored: RawRecord = isRawRecord(raw) ? raw : {};
@@ -53,5 +74,6 @@ export function readAppSettings(raw: unknown): AppSettingsRecord {
     enhancer: readEnhancer(stored['enhancer']),
     catalog: readCatalog(stored['catalog']),
     viewport: isRawRecord(stored['viewport']) ? structuredClone(stored['viewport']) : {},
+    panels: readPanels(stored['panels']),
   };
 }

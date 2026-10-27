@@ -2,7 +2,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: clip; /* unlike hidden, clip can never be scrolled, not even by focus or scrollIntoView from the popover inside */
   background: var(--bg-page);
 }
 

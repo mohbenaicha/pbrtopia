@@ -11,13 +11,15 @@ export type { ListViewStore } from './useProjectList';
 interface ProjectListViewProps {
   store: ListViewStore;
   onOpen: (projectId: string) => void;
-  headerActions?: ReactNode; // e.g. the New project button, put here by the app
+  createActions?: (large: boolean) => ReactNode; // New project and Import project, put here by the app: in the header, or large in the empty state
+  headerActions?: ReactNode; // what stays in the header whatever the list holds (Settings)
+  status?: ReactNode; // a line under the header, e.g. the import result
   notice?: string | null;
   onDismissNotice?: () => void;
 }
 
 // The stored projects as cards: open, rename, delete one, select several, delete the selection after confirming.
-export function ProjectListView({ store, onOpen, headerActions, notice = null, onDismissNotice }: ProjectListViewProps): React.JSX.Element {
+export function ProjectListView({ store, onOpen, createActions, headerActions, status, notice = null, onDismissNotice }: ProjectListViewProps): React.JSX.Element {
   const { load, reload, rename, remove } = useProjectList(store);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -26,6 +28,7 @@ export function ProjectListView({ store, onOpen, headerActions, notice = null, o
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const projects = load.state === 'ready' ? load.projects : [];
+  const isEmpty = load.state === 'ready' && projects.length === 0;
   const pending = projects.filter((project) => toDelete.includes(project.id));
 
   const setPicked = (id: string, picked: boolean): void =>
@@ -54,8 +57,12 @@ export function ProjectListView({ store, onOpen, headerActions, notice = null, o
       )}
       <header className="project-list__header">
         <h1>Projects</h1>
-        {headerActions}
+        <div className="project-list__actions" role="group" aria-label="Project actions">
+          {!isEmpty && createActions?.(false)}
+          {headerActions}
+        </div>
       </header>
+      {status !== undefined && <div className="project-list__status">{status}</div>}
       {deleteError !== null && <p role="alert" className="project-list__error">{deleteError}</p>}
       {load.state === 'loading' && <p className="project-list__message">Loading projects</p>}
       {load.state === 'failed' && (
@@ -63,9 +70,14 @@ export function ProjectListView({ store, onOpen, headerActions, notice = null, o
           {load.message} <Button onClick={() => void reload()}>Retry</Button>
         </div>
       )}
-      {load.state === 'ready' && projects.length === 0 && <p className="project-list__message">No projects yet.</p>}
+      {isEmpty && (
+        <section className="project-list__empty" data-testid="empty-state">
+          <p className="project-list__message">No projects yet.</p>
+          <div className="project-list__empty-actions">{createActions?.(true)}</div>
+        </section>
+      )}
       {projects.length > 0 && (
-        <div className="project-list__toolbar">
+        <div className="project-list__toolbar" role="toolbar" aria-label="Select projects">
           <Checkbox label="Select all" checked={selected.size === projects.length} onChange={(all) => setSelected(all ? new Set(projects.map((project) => project.id)) : new Set())} />
           {selected.size > 0 && <SelectionBar count={selected.size} deleteSelected={() => setToDelete([...selected])} clear={() => setSelected(new Set())} />}
         </div>

@@ -84,6 +84,164 @@ describe('collectTextureInfos', () => {
     expect(infos.map((info) => [info.channel, info.width, info.height])).toEqual([['albedo', 32, 16]]);
   });
 
+  it('viewport-layout R6 an occlusion map is listed as the occlusion picture, after the metal one', () => {
+    const material = new MeshStandardMaterial({ name: 'orm' });
+    material.aoMap = pictureOf(32, 32);
+    material.map = pictureOf(32, 32, SRGBColorSpace);
+    material.metalnessMap = pictureOf(32, 32);
+    expect(collectTextureInfos(meshOf(material)).map((info) => info.channel)).toEqual(['albedo', 'metal', 'occlusion']);
+  });
+
+  it('viewport-layout R6 the roughness, metal and occlusion cards say which channel of which file they show; albedo and normal say nothing', () => {
+    const material = new MeshStandardMaterial({ name: 'orm' });
+    for (const key of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap'] as const) material[key] = pictureOf(8, 8);
+    const shows = Object.fromEntries(collectTextureInfos(meshOf(material)).map((info) => [info.channel, info.shows]));
+    expect(shows).toEqual({
+      albedo: undefined,
+      normal: undefined,
+      rough: 'Roughness: green channel of metallicRoughness',
+      metal: 'Metal: blue channel of metallicRoughness',
+      occlusion: 'Occlusion: red channel',
+    });
+  });
+
+  describe('channel previews', () => {
+    // One pixel of a packed ORM picture: R = occlusion 200, G = roughness 100, B = metal 50.
+    function stubCanvas() {
+      const written: Uint8ClampedArray[] = [];
+      const pixel = new Uint8ClampedArray([200, 100, 50, 255]);
+      class FakeCanvas {
+        getContext() {
+          return {
+            drawImage: vi.fn(),
+            getImageData: () => ({ data: new Uint8ClampedArray(pixel), width: 1, height: 1 }),
+            putImageData: (image: { data: Uint8ClampedArray }) => written.push(new Uint8ClampedArray(image.data)),
+          };
+        }
+        convertToBlob = async () => new Blob(['png'], { type: 'image/png' });
+      }
+      vi.stubGlobal('OffscreenCanvas', FakeCanvas);
+      return written;
+    }
+
+    const packed = (): MeshStandardMaterial => {
+      const material = new MeshStandardMaterial({ name: 'orm' });
+      const picture = new Texture({ width: 1, height: 1 } as unknown as HTMLImageElement);
+      material.roughnessMap = picture;
+      material.metalnessMap = picture;
+      material.aoMap = picture;
+      return material;
+    };
+
+    it('viewport-layout R6 a packed ORM picture gives three different greys: roughness from green, metal from blue, occlusion from red', async () => {
+      const written = stubCanvas();
+      const infos = collectTextureInfos(meshOf(packed()));
+      for (const channel of ['rough', 'metal', 'occlusion']) await infos.find((info) => info.channel === channel)!.preview!();
+      expect(written.map((data) => [...data])).toEqual([
+        [100, 100, 100, 255],
+        [50, 50, 50, 255],
+        [200, 200, 200, 255],
+      ]);
+    });
+
+    it('viewport-layout R6 the stored bytes of a picture stay the whole picture; only the preview is one channel', async () => {
+      const written = stubCanvas();
+      const [rough] = collectTextureInfos(meshOf(packed()));
+      await rough!.bytes();
+      expect(written).toEqual([]);
+    });
+
+    it('viewport-layout R6 albedo and normal have no separate preview', () => {
+      const material = new MeshStandardMaterial();
+      material.map = pictureOf(8, 8, SRGBColorSpace);
+      material.normalMap = pictureOf(8, 8);
+      for (const info of collectTextureInfos(meshOf(material))) expect(info.preview).toBeUndefined();
+    });
+  });
+
+  describe('thumbnails', () => {
+    function stubSizedCanvas() {
+      const constructed: number[][] = [];
+      const drawImage = vi.fn();
+      const written: Uint8ClampedArray[] = [];
+      class FakeCanvas {
+        constructor(width: number, height: number) {
+          constructed.push([width, height]);
+        }
+        getContext() {
+          return {
+            drawImage,
+            getImageData: () => ({ data: new Uint8ClampedArray([200, 100, 50, 255]) }),
+            putImageData: (image: { data: Uint8ClampedArray }) => written.push(new Uint8ClampedArray(image.data)),
+          };
+        }
+        convertToBlob = async () => new Blob(['png'], { type: 'image/png' });
+      }
+      vi.stubGlobal('OffscreenCanvas', FakeCanvas);
+      return { constructed, drawImage, written };
+    }
+
+    const materialWith = (width: number, height: number): MeshStandardMaterial => {
+      const material = new MeshStandardMaterial({ name: 'skin' });
+      material.map = pictureOf(width, height, SRGBColorSpace);
+      return material;
+    };
+
+    it('viewport-layout R6 a thumbnail is the picture reduced to 256 pixels on its longest side, keeping the proportions', async () => {
+      const { constructed, drawImage } = stubSizedCanvas();
+      const [info] = collectTextureInfos(meshOf(materialWith(2048, 1024)));
+      await info!.thumbnail();
+      expect(constructed).toEqual([[256, 128]]);
+      expect(drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0, 256, 128);
+    });
+
+    it('viewport-layout R6 a picture already small is never enlarged for its thumbnail', async () => {
+      const { constructed } = stubSizedCanvas();
+      const [info] = collectTextureInfos(meshOf(materialWith(40, 30)));
+      await info!.thumbnail();
+      expect(constructed).toEqual([[40, 30]]);
+    });
+
+    it('viewport-layout R6 a thumbnail is made once: asking again gives the same picture without drawing', async () => {
+      const { constructed } = stubSizedCanvas();
+      const [info] = collectTextureInfos(meshOf(materialWith(2048, 2048)));
+      const first = await info!.thumbnail();
+      const second = await info!.thumbnail();
+      expect(second).toBe(first);
+      expect(constructed).toHaveLength(1);
+    });
+
+    it('viewport-layout R6 a thumbnail that failed is tried again on the next request', async () => {
+      stubSizedCanvas();
+      const [info] = collectTextureInfos(meshOf(materialWith(512, 512)));
+      let fail = true;
+      vi.stubGlobal(
+        'OffscreenCanvas',
+        class {
+          getContext() {
+            return { drawImage: vi.fn() };
+          }
+          convertToBlob = async () => {
+            if (fail) throw new Error('no memory');
+            return new Blob(['png']);
+          };
+        },
+      );
+      await expect(info!.thumbnail()).rejects.toThrow('no memory');
+      fail = false;
+      await expect(info!.thumbnail()).resolves.toBeInstanceOf(Blob);
+    });
+
+    it('viewport-layout R6 a channel thumbnail reads its channel from the reduced picture, not the full one', async () => {
+      const { written } = stubSizedCanvas();
+      const material = new MeshStandardMaterial({ name: 'orm' });
+      material.roughnessMap = pictureOf(4096, 4096);
+      const infos = collectTextureInfos(meshOf(material));
+      await infos.find((info) => info.channel === 'rough')!.thumbnail();
+      expect(written.map((data) => [...data])).toEqual([[100, 100, 100, 255]]);
+    });
+  });
+
   it('viewport-layout R6 the picture bytes are made only on request, as a PNG of the texture size', async () => {
     const drawImage = vi.fn();
     const convertToBlob = vi.fn(async (options: { type: string }) => new Blob(['png'], { type: options.type }));

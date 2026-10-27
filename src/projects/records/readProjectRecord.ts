@@ -1,6 +1,7 @@
 import type { MeshRecord, UnwrapReport } from '../../projection/engine';
 import { FieldProblem, readBlobKey, readChoice, readCount, readDuration, readList, readNonEmptyText, readObject, readOptional, readText, readTimestamp, type RawRecord } from './fieldReaders';
-import { CURRENT_SCHEMA_VERSION, normalizeProjectName, type GenerateSettingsRecord, type ProjectRecord, type ReferenceImageRecord, type TextureRecord } from './projectRecords';
+import { readPictures, readSlots } from './pictureRecords';
+import { PROJECT_SCHEMA_VERSION, normalizeProjectName, type GenerateSettingsRecord, type ProjectRecord, type ReferenceImageRecord } from './projectRecords';
 
 function readUnwrap(value: unknown, path: string): UnwrapReport {
   const raw = readObject(value, path);
@@ -27,22 +28,6 @@ function readMesh(value: unknown, path: string): MeshRecord {
   const unwrap = readOptional(raw['unwrap'], (present) => readUnwrap(present, `${path}.unwrap`));
   if (unwrap) mesh.unwrap = unwrap;
   return mesh;
-}
-
-function readTexture(value: unknown, path: string): TextureRecord {
-  const raw = readObject(value, path);
-  const texture: TextureRecord = {
-    materialName: readText(raw['materialName'], `${path}.materialName`),
-    channel: readChoice(raw['channel'], `${path}.channel`, ['albedo', 'normal', 'rough', 'metal'] as const),
-    blobKey: readBlobKey(raw['blobKey'], `${path}.blobKey`),
-    width: readCount(raw['width'], `${path}.width`, 1),
-    height: readCount(raw['height'], `${path}.height`, 1),
-    colorSpace: readChoice(raw['colorSpace'], `${path}.colorSpace`, ['srgb', 'linear'] as const),
-    source: readChoice(raw['source'], `${path}.source`, ['file', 'baked'] as const),
-  };
-  const setId = readOptional(raw['setId'], (present) => readNonEmptyText(present, `${path}.setId`));
-  if (setId !== undefined) texture.setId = setId;
-  return texture;
 }
 
 function readReferenceImage(value: unknown, path: string): ReferenceImageRecord {
@@ -77,17 +62,19 @@ function readProjectName(value: unknown): string {
   return name;
 }
 
-// Reads a version-1 project from stored JSON. Unknown fields are dropped; a wrong or missing value throws a FieldProblem naming it.
+// Reads a current-version project from stored JSON. Unknown fields are dropped; a wrong or missing value throws a FieldProblem naming it (slots are the exception: bad ones are ignored).
 export function readProjectRecord(raw: RawRecord): ProjectRecord {
+  const pictures = readPictures(raw['pictures'], 'pictures');
   const record: ProjectRecord = {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
+    schemaVersion: PROJECT_SCHEMA_VERSION,
     id: readNonEmptyText(raw['id'], 'id'),
     name: readProjectName(raw['name']),
     createdAt: readTimestamp(raw['createdAt'], 'createdAt'),
     updatedAt: readTimestamp(raw['updatedAt'], 'updatedAt'),
     mesh: readMesh(raw['mesh'], 'mesh'),
     modelBlobKey: readBlobKey(raw['modelBlobKey'], 'modelBlobKey'),
-    textures: readList(raw['textures'], 'textures', readTexture),
+    pictures,
+    slots: readSlots(raw['slots'], pictures),
     generate: readGenerateSettings(raw['generate'], 'generate'),
     setIds: readList(raw['setIds'], 'setIds', readNonEmptyText),
   };

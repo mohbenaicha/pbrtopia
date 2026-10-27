@@ -15,12 +15,21 @@ type SourceMaterial = Material & {
   alphaTest?: number;
 };
 
+// The skeleton and morph chunks are three's own, so a skinned or morphed model is drawn in its pose, not collapsed to its bind pose.
 const VERTEX_SHADER = `
+#include <common>
+#include <skinning_pars_vertex>
+#include <morphtarget_pars_vertex>
 uniform mat3 uUvTransform;
 varying vec2 vUv;
 void main() {
   vUv = (uUvTransform * vec3(uv, 1.0)).xy;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  #include <skinbase_vertex>
+  #include <begin_vertex>
+  #include <morphinstance_vertex>
+  #include <morphtarget_vertex>
+  #include <skinning_vertex>
+  #include <project_vertex>
 }`;
 
 // The map value times the material factor, then strength and contrast: clamp((v * strength - 0.5) * contrast + 0.5). Written straight to the screen so the grey shown is the number stored.
@@ -39,13 +48,19 @@ void main() {
   gl_FragColor = vec4(vec3(value), 1.0);
 }`;
 
-// The stored normal map as it is, or the flat normal (128, 128, 255) when the material has none.
+// The stored normal map, or the flat normal (128, 128, 255) when the material has none, read as a vector from -1 to 1: x and y times the strength (the tilt), the whole vector times the contrast, clamped, shown as a colour again.
+// At strength 1 and contrast 1 the colour is the one stored. The Shaded view tilts its normal with the same x and y (litLook).
 const NORMAL_FRAGMENT_SHADER = `
 uniform sampler2D uMap;
 uniform bool uHasMap;
+uniform float uStrength;
+uniform float uContrast;
 varying vec2 vUv;
 void main() {
-  gl_FragColor = uHasMap ? vec4(texture2D(uMap, vUv).rgb, 1.0) : vec4(128.0 / 255.0, 128.0 / 255.0, 1.0, 1.0);
+  vec3 n = (uHasMap ? texture2D(uMap, vUv).rgb : vec3(128.0 / 255.0, 128.0 / 255.0, 1.0)) * 2.0 - 1.0;
+  n.xy *= uStrength;
+  n = clamp(n * uContrast, -1.0, 1.0);
+  gl_FragColor = vec4(n * 0.5 + 0.5, 1.0);
 }`;
 
 function uvTransformOf(texture: Texture | null | undefined): Matrix3 {
@@ -79,8 +94,8 @@ export function createAlbedoLook(source: SourceMaterial): MeshBasicMaterial {
   });
 }
 
-export function createNormalLook(source: SourceMaterial): ShaderMaterial {
-  return shaderLook(source, source.normalMap, NORMAL_FRAGMENT_SHADER, {});
+export function createNormalLook(source: SourceMaterial, adjust: MapAdjustUniforms): ShaderMaterial {
+  return shaderLook(source, source.normalMap, NORMAL_FRAGMENT_SHADER, { uStrength: adjust.normalStrength, uContrast: adjust.normalContrast });
 }
 
 // Roughness is the green channel of its map and metalness the blue one (glTF), each times the material's own factor.

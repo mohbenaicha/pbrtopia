@@ -1,4 +1,5 @@
-import { Mesh, MeshBasicMaterial, type Object3D } from 'three';
+import { MeshBasicMaterial, type Mesh, type Object3D } from 'three';
+import { createOverlayMesh } from './overlayMesh';
 
 export interface WireframeOverlay {
   setVisible(visible: boolean): void;
@@ -31,9 +32,7 @@ export function createWireframeOverlay(root: Object3D): WireframeOverlay {
         if (isModelMesh(object) && !covered.has(object)) targets.push(object);
       });
       for (const mesh of targets) {
-        const wire = new Mesh(mesh.geometry, material);
-        wire.userData['isWireframeOverlay'] = true;
-        wire.raycast = () => undefined; // never picked
+        const wire = createOverlayMesh(mesh, material);
         mesh.add(wire);
         overlays.push(wire);
         covered.add(mesh);

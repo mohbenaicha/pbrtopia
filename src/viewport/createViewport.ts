@@ -1,7 +1,9 @@
 import { NeutralToneMapping, Quaternion, Scene, WebGLRenderer, type Material, type OrthographicCamera, type PerspectiveCamera } from 'three';
 import { captureThumbnail, type ThumbnailSpec } from './captureThumbnail';
 import { createMaterialFlash } from './materialFlash';
+import type { OverrideChannel, OverridePicture } from './materialPictures';
 import { createSurfacePicker } from './pickSurface';
+import { createViewportGrid } from './viewportGrid';
 import { createViewportHandle, type ViewportHandle } from './viewportHandle';
 import { createCameraRig, viewDirectionForAxis, type CameraRig, type Projection, type ViewAxis } from './cameraRig';
 import { runCameraTransition } from './cameraTransition';
@@ -29,6 +31,7 @@ export interface Viewport {
   loadModelAsset(glb: ArrayBuffer): Promise<ViewportResult<ModelAsset>>; // replaces the shown model; on failure the old one stays
   unloadModel(): void;
   setShadingMode(mode: ShadingMode): void; // remembered while a projection material is set
+  setMaterialPicture(materialIndex: number, channel: OverrideChannel, picture: OverridePicture | null): void; // lays a picture over one channel of one of the model's materials, null takes it off; the viewport owns the bitmap
   setProjectionMaterial(material: Material | null): void; // replaces the model's look until cleared; the caller owns and disposes the material
   flashMaterial(material: Material): Promise<void>; // shows the material over the model three times, then the normal look; resolves when done
   captureThumbnail(spec?: ThumbnailSpec): Promise<Blob>; // the current view cropped to the thumbnail shape
@@ -50,7 +53,12 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
   const rig = createCameraRig(1);
   rig.resetView();
   const events = createViewportEvents();
-  const drawFrame = createFrameRenderer(renderer, scene, rig);
+  const grid = createViewportGrid({ scene, rig });
+  const drawScene = createFrameRenderer(renderer, scene, rig);
+  const drawFrame = (): void => {
+    grid.update();
+    drawScene();
+  };
   const scheduler = createRenderScheduler(drawFrame);
 
   const canvas = renderer.domElement;
@@ -69,7 +77,7 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     rig.setAspect(width / height);
-    scheduler.invalidate();
+    scheduler.drawNow(); // setSize cleared the canvas: drawn again before the browser paints, never one frame later
   };
 
   const observer = new ResizeObserver(() => resizeTo(container.clientWidth, container.clientHeight));
@@ -115,6 +123,7 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     rig,
     invalidate: scheduler.invalidate,
     settings: options.settings ?? DEFAULT_VIEWPORT_SETTINGS,
+    onBounds: grid.setBounds,
     onFramed: () => {
       orbit.applyDistanceLimits();
       orbit.controls.update();
@@ -142,6 +151,7 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
   const applySettings = (patch: Partial<ViewportSettings>): void => {
     models.setSettings(patch);
     const settings = models.settings();
+    grid.setVisible(settings.grid);
     setProjection(settings.projection);
     environment.applySettings(settings);
   };
@@ -161,8 +171,13 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     unloadModel: models.unload,
     setShadingMode: models.setShadingMode,
     setProjectionMaterial: models.setProjectionMaterial,
+    setMaterialPicture: models.setMaterialPicture,
     flashMaterial: flash.start,
-    captureThumbnail: (spec) => captureThumbnail(drawFrame, canvas, spec),
+    captureThumbnail(spec) {
+      const picture = captureThumbnail(() => grid.drawWithoutGrid(drawFrame), canvas, spec);
+      scheduler.invalidate(); // the canvas keeps the grid-less picture until it is drawn again
+      return picture;
+    },
     setSettings: applySettings,
     invalidate: scheduler.invalidate,
     resetView() {
@@ -197,6 +212,7 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
       handle.dispose();
       environment.dispose();
       models.dispose();
+      grid.dispose();
       orbit.dispose();
       observer.disconnect();
       stopWatchingPixelRatio();

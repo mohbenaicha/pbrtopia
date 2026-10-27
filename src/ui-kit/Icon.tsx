@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import openProjectUrl from './icons/open-project.png';
 import orthographicUrl from './icons/orthographic.png';
 import perspectiveUrl from './icons/perspective.png';
+import projectsListUrl from './icons/projects.png';
 import { LINE_ICON_PATHS, type LineIconName } from './lineIcons';
 import './Icon.css';
 
@@ -10,10 +11,11 @@ const IMAGE_ICON_URLS = {
   perspective: perspectiveUrl,
   orthographic: orthographicUrl,
   'open-project': openProjectUrl,
+  'projects-list': projectsListUrl,
 } as const;
 
 type ImageIconName =keyof typeof IMAGE_ICON_URLS;
-type IconName =ImageIconName | LineIconName;
+export type IconName = ImageIconName | LineIconName;
 
 const isImageIcon = (name: IconName): name is ImageIconName => name in IMAGE_ICON_URLS;
 

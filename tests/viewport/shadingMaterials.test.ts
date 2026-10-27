@@ -5,6 +5,19 @@ import { createAlbedoLook, createChannelLook, createNormalLook } from '../../src
 
 const pictureOf = (): Texture => new Texture({ width: 4, height: 4 } as unknown as HTMLImageElement);
 
+describe('the shader looks on a skinned or morphed model', () => {
+  it('viewport-layout R15 the normal and the roughness/metal looks move vertices with the skeleton and the morph targets, so the model keeps its posed size', () => {
+    const source = new MeshStandardMaterial();
+    const looks = [createNormalLook(source, createMapAdjustUniforms()), createChannelLook(source, 'rough', createMapAdjustUniforms()), createChannelLook(source, 'metal', createMapAdjustUniforms())];
+    for (const look of looks) {
+      for (const chunk of ['skinbase_vertex', 'skinning_pars_vertex', 'skinning_vertex', 'morphtarget_pars_vertex', 'morphtarget_vertex', 'project_vertex']) {
+        expect(look.vertexShader, chunk).toContain(`#include <${chunk}>`);
+      }
+      expect(look.vertexShader.indexOf('#include <skinning_vertex>')).toBeLessThan(look.vertexShader.indexOf('#include <project_vertex>'));
+    }
+  });
+});
+
 describe('createAlbedoLook', () => {
   it('viewport-layout R15 is an unlit copy of the colour map and colour that ignores tone mapping', () => {
     const source = new MeshStandardMaterial({ color: new Color(0.2, 0.4, 0.6), map: pictureOf() });
@@ -36,7 +49,7 @@ describe('createAlbedoLook', () => {
 describe('createNormalLook', () => {
   it('viewport-layout R15 shows the stored normal map as it is, with the map bound and no tone mapping', () => {
     const normalMap = pictureOf();
-    const look = createNormalLook(new MeshStandardMaterial({ normalMap, side: DoubleSide }));
+    const look = createNormalLook(new MeshStandardMaterial({ normalMap, side: DoubleSide }), createMapAdjustUniforms());
     expect(look).toBeInstanceOf(ShaderMaterial);
     expect(look.uniforms.uMap!.value).toBe(normalMap);
     expect(look.uniforms.uHasMap!.value).toBe(true);
@@ -45,23 +58,37 @@ describe('createNormalLook', () => {
   });
 
   it('viewport-layout R15 a material without a normal map falls back to the flat normal (128, 128, 255)', () => {
-    const look = createNormalLook(new MeshStandardMaterial());
+    const look = createNormalLook(new MeshStandardMaterial(), createMapAdjustUniforms());
     expect(look.uniforms.uHasMap!.value).toBe(false);
     expect(look.uniforms.uMap!.value).toBeNull();
-    expect(look.fragmentShader).toContain('vec4(128.0 / 255.0, 128.0 / 255.0, 1.0, 1.0)');
+    expect(look.fragmentShader).toContain('vec3(128.0 / 255.0, 128.0 / 255.0, 1.0)');
+  });
+
+  it('viewport-layout R14 the Normal strength scales the x and y of the normal and the contrast scales the whole normal, from the shared slider uniforms', () => {
+    const adjust = createMapAdjustUniforms();
+    const look = createNormalLook(new MeshStandardMaterial({ normalMap: pictureOf() }), adjust);
+    expect(look.uniforms.uStrength).toBe(adjust.normalStrength);
+    expect(look.uniforms.uContrast).toBe(adjust.normalContrast);
+    adjust.normalStrength.value = 2.5;
+    expect(look.uniforms.uStrength!.value).toBe(2.5);
+    const strengthAt = look.fragmentShader.indexOf('n.xy *= uStrength;');
+    const contrastAt = look.fragmentShader.indexOf('clamp(n * uContrast, -1.0, 1.0)');
+    expect(strengthAt).toBeGreaterThan(-1);
+    expect(contrastAt).toBeGreaterThan(strengthAt);
+    expect(look.fragmentShader).toContain('n * 0.5 + 0.5');
   });
 
   it('viewport-layout R15 carries the map UV transform of the texture (offset and repeat), identity when there is no map', () => {
     const normalMap = pictureOf();
     normalMap.repeat.set(2, 3);
     normalMap.offset.set(0.5, 0.25);
-    const look = createNormalLook(new MeshStandardMaterial({ normalMap }));
+    const look = createNormalLook(new MeshStandardMaterial({ normalMap }), createMapAdjustUniforms());
     const elements = look.uniforms.uUvTransform!.value.elements;
     expect(elements[0]).toBeCloseTo(2, 6);
     expect(elements[4]).toBeCloseTo(3, 6);
     expect(elements[6]).toBeCloseTo(0.5, 6);
     expect(elements[7]).toBeCloseTo(0.25, 6);
-    const flat = createNormalLook(new MeshStandardMaterial());
+    const flat = createNormalLook(new MeshStandardMaterial(), createMapAdjustUniforms());
     expect(flat.uniforms.uUvTransform!.value.elements).toEqual([1, 0, 0, 0, 1, 0, 0, 0, 1]);
   });
 });

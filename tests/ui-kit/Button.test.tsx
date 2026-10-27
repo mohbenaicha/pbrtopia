@@ -53,6 +53,22 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'C' }).dataset['variant']).toBe('ghost');
     expect(screen.getByRole('button', { name: 'D' }).dataset['variant']).toBe('secondary'); // the default is not the accent
   });
+
+  it('R22 a button can carry a tooltip', () => {
+    render(<Button title="Import project">Import</Button>);
+    expect(screen.getByRole('button', { name: 'Import' }).getAttribute('title')).toBe('Import project');
+  });
+
+  it('R22 a large button is marked for styling and the default size is not', () => {
+    render(
+      <>
+        <Button size="large">Big</Button>
+        <Button>Plain</Button>
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Big' }).dataset['size']).toBe('large');
+    expect(screen.getByRole('button', { name: 'Plain' }).dataset['size']).toBeUndefined();
+  });
 });
 
 describe('IconButton', () => {
@@ -75,6 +91,30 @@ describe('IconButton', () => {
     render(<IconButton label="Reset" icon={<Icon name="reset" />} disabled onClick={onClick} />);
     await user.click(screen.getByRole('button', { name: 'Reset' }));
     expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('R22 a disabled icon button with a reason keeps its name and gives the reason as tooltip and description', () => {
+    render(<IconButton label="Export project" icon={<Icon name="download" />} disabled disabledReason="Exit projection mode to export." onClick={() => undefined} />);
+    const button = screen.getByRole('button', { name: 'Export project' });
+    expect(button.getAttribute('title')).toBe('Export project: Exit projection mode to export.');
+    expect(button.getAttribute('aria-description')).toBe('Exit projection mode to export.');
+  });
+
+  it('R22 an enabled icon button ignores a reason it was given', () => {
+    render(<IconButton label="Export project" icon={<Icon name="download" />} disabledReason="Exit projection mode to export." onClick={() => undefined} />);
+    const button = screen.getByRole('button', { name: 'Export project' });
+    expect(button.getAttribute('title')).toBe('Export project');
+    expect(button.getAttribute('aria-description')).toBeNull();
+  });
+
+  it('R22 a loading icon button ignores clicks, is announced as busy and keeps its name', async () => {
+    const onClick = vi.fn();
+    const user = userEvent.setup();
+    render(<IconButton label="Export project" icon={<Icon name="download" />} loading onClick={onClick} />);
+    const button = screen.getByRole('button', { name: 'Export project' });
+    await user.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+    expect(button.getAttribute('aria-busy')).toBe('true');
   });
 });
 

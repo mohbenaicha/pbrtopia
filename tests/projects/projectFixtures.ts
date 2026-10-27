@@ -1,9 +1,9 @@
 import type { ProjectRecord } from '../../src/projects/records/projectRecords';
 
-// A complete version-1 project: a generated-UV mesh, textures from the file and a bake, generate settings with a reference, and two sets.
+// A complete version-2 project: a generated-UV mesh, one baked picture applied to a material, generate settings with a reference, and two sets.
 export function sampleProjectRecord(overrides: Partial<ProjectRecord> = {}): ProjectRecord {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: '3f0b2f6e-8c2a-4a57-9a43-0d6f3b1f7a11',
     name: 'Skarrik helmet',
     createdAt: '2026-10-18T09:30:00.000Z',
@@ -17,11 +17,8 @@ export function sampleProjectRecord(overrides: Partial<ProjectRecord> = {}): Pro
       unwrap: { options: { resolution: 2048, paddingTexels: 3 }, vertsBefore: 19000, vertsAfter: 21034, ms: 840, library: 'xatlas-three', libraryVersion: '0.1.0' },
     },
     modelBlobKey: 'model.glb',
-    textures: [
-      { materialName: 'Body', channel: 'albedo', blobKey: 'textures/Body-albedo.png', width: 2048, height: 2048, colorSpace: 'srgb', source: 'file' },
-      { materialName: 'Body', channel: 'normal', blobKey: 'textures/Body-normal.png', width: 2048, height: 2048, colorSpace: 'linear', source: 'file' },
-      { materialName: 'Body', channel: 'albedo', blobKey: 'sets/set-1/bake.png', width: 4096, height: 4096, colorSpace: 'srgb', source: 'baked', setId: 'set-1' },
-    ],
+    pictures: [{ id: 'pic-1', channel: 'albedo', blobKey: 'pictures/pic-1.png', width: 4096, height: 4096, createdAt: '2026-10-18T10:00:00.000Z', origin: { kind: 'bake', setId: 'set-1' } }],
+    slots: [{ materialIndex: 0, materialName: 'Body', channel: 'albedo', pictureId: 'pic-1' }],
     generate: {
       prompt: 'weathered green armour with gold trim',
       referenceImages: [{ id: 'ref-1', blobKey: 'refs/ref-1.png', name: 'armour.png', width: 800, height: 600 }],

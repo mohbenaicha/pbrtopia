@@ -1,4 +1,4 @@
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial, type Material } from 'three';
+import { BoxGeometry, Bone, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, Skeleton, SkinnedMesh, Uint16BufferAttribute, type Material } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { createWireframeOverlay } from '../../src/viewport/wireframeOverlay';
 
@@ -9,6 +9,51 @@ function twoMeshModel() {
   root.add(a, b);
   return { root, a, b };
 }
+
+describe('wireframe overlay on a posed model', () => {
+  function skinnedModel() {
+    const geometry = new BoxGeometry();
+    const count = geometry.getAttribute('position').count;
+    geometry.setAttribute('skinIndex', new Uint16BufferAttribute(new Uint16Array(count * 4), 4));
+    geometry.setAttribute('skinWeight', new Float32BufferAttribute(new Float32Array(count * 4).fill(0.25), 4));
+    const bone = new Bone();
+    const skeleton = new Skeleton([bone]);
+    const mesh = new SkinnedMesh(geometry, new MeshBasicMaterial());
+    mesh.add(bone);
+    mesh.bind(skeleton);
+    mesh.morphTargetInfluences = [0.5];
+    mesh.morphTargetDictionary = { smile: 0 };
+    const root = new Group();
+    root.add(mesh);
+    return { root, mesh, skeleton };
+  }
+
+  it('R30 the overlay of a skinned mesh is skinned with the same skeleton and bind matrix, so it keeps the pose', () => {
+    const { root, mesh, skeleton } = skinnedModel();
+    const overlay = createWireframeOverlay(root);
+    overlay.setVisible(true);
+    const wire = overlay.meshes()[0] as SkinnedMesh;
+    expect(wire.isSkinnedMesh).toBe(true);
+    expect(wire.skeleton).toBe(skeleton);
+    expect(wire.bindMatrix.equals(mesh.bindMatrix)).toBe(true);
+  });
+
+  it('R30 the overlay follows the morph weights of its mesh, even when they change later', () => {
+    const { root, mesh } = skinnedModel();
+    const overlay = createWireframeOverlay(root);
+    overlay.setVisible(true);
+    const wire = overlay.meshes()[0]!;
+    expect(wire.morphTargetInfluences).toBe(mesh.morphTargetInfluences);
+    expect(wire.morphTargetDictionary).toBe(mesh.morphTargetDictionary);
+  });
+
+  it('R30 an ordinary mesh keeps an ordinary overlay', () => {
+    const { root } = twoMeshModel();
+    const overlay = createWireframeOverlay(root);
+    overlay.setVisible(true);
+    expect((overlay.meshes()[0] as SkinnedMesh).isSkinnedMesh).toBeUndefined();
+  });
+});
 
 describe('wireframe overlay', () => {
   it('R14 it adds one wireframe child per mesh only while visible', () => {

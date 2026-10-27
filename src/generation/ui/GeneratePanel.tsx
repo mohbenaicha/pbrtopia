@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore, type StoreApi } from 'zustand';
+import { Tabs } from '../../ui-kit';
 import { listAtlasSizes } from '../catalog/atlasSizes';
 import { optionsForModel } from '../catalog/optionsForModel';
 import { describeGenerateAvailability } from '../generateAvailability';
 import { findCatalogModel, generateStore, type GenerateState, type ReferenceImage } from '../generateStore';
+import { runLogStore, type RunLogState } from '../runLogStore';
 import { AtlasSizeSelect } from './AtlasSizeSelect';
 import { ChannelToggle } from './ChannelToggle';
-import { EnhancedPromptBlock } from './EnhancedPromptBlock';
+import { DebugTab } from './DebugTab';
 import { GenerateButton } from './GenerateButton';
 import { ModelSelect } from './ModelSelect';
 import { ProgressSteps } from './ProgressSteps';
@@ -19,22 +21,33 @@ import { UnwrapStatusBlock } from './UnwrapStatusBlock';
 import { UvOptionsDialog, type UvOptions } from './UvOptionsDialog';
 import './GeneratePanel.css';
 
+type PanelTab = 'generate' | 'debug';
+
 interface GeneratePanelProps {
+  projectId: string; // whose run log the Debug tab shows
   onGenerate: () => void;
   onGenerateUv: (options: UvOptions) => void;
   onCancel: () => void; // Cancel in the step list (R10)
   onRetry: () => void; // Retry in the error block (R9)
   store?: StoreApi<GenerateState>;
+  logStore?: StoreApi<RunLogState>;
   readImageFile?: (file: File) => Promise<ReferenceImage>;
   today?: string; // YYYY-MM-DD; defaults to the current date
 }
 
-// R1: the Generate panel: prompt, references, channel, model, resolution, quality, Generate and the debug-projection button.
-// The handlers run the flows (G9, G10); this panel only shows state and reports clicks.
-export function GeneratePanel({ onGenerate, onGenerateUv, onCancel, onRetry, store = generateStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
+const carriesFiles = (event: React.DragEvent): boolean => Array.from(event.dataTransfer.types).includes('Files');
+
+// R1, R23: the Generate panel: a Generate tab (prompt, references, channel, model, resolution, quality, Generate) and a Debug tab (the run log).
+// The handlers run the flows (G9, G10); this panel only shows state and reports clicks. Both tabs stay mounted so a visit to the other loses nothing.
+export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, onRetry, store = generateStore, logStore = runLogStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
   const state = useStore(store);
+  const records = useStore(logStore, (log) => log.records);
+  const activeId = useStore(logStore, (log) => log.activeId);
+  const [tab, setTab] = useState<PanelTab>('generate');
+  const [reveal, setReveal] = useState<{ id: string | null; count: number }>({ id: null, count: 0 });
   const [notice, setNotice] = useState<string | null>(null);
   const [uvDialogOpen, setUvDialogOpen] = useState(false);
+  const [dropTarget, setDropTarget] = useState(false);
   const mounted = useRef(true);
   const model = findCatalogModel(state.catalog, state.provider, state.modelId);
   const options = model === null ? { resolutions: [], qualityLevels: [] } : optionsForModel(model, state.maxTextureSize);
@@ -47,6 +60,17 @@ export function GeneratePanel({ onGenerate, onGenerateUv, onCancel, onRetry, sto
   }, []);
   // A refusal belongs to the model it was made under.
   useEffect(() => setNotice(null), [state.provider, state.modelId]);
+  // R23: a failed run shows its error on the Generate tab.
+  useEffect(() => {
+    if (state.status === 'failed') setTab('generate');
+  }, [state.status]);
+
+  // R27: the step list points at the latest run's row, when that row is this project's.
+  const activeRow = records.find((record) => record.id === activeId && record.projectId === projectId);
+  const viewLog = activeRow === undefined ? undefined : () => {
+    setReveal((previous) => ({ id: activeRow.id, count: previous.count + 1 }));
+    setTab('debug');
+  };
 
   const addFiles = async (files: File[]): Promise<void> => {
     const settled = await Promise.allSettled(files.map((file) => readFile(file)));
@@ -69,23 +93,52 @@ export function GeneratePanel({ onGenerate, onGenerateUv, onCancel, onRetry, sto
 
   return (
     <section className="generate-panel" aria-label="Generate">
-      <label className="generate-panel__field">
-        <span className="generate-panel__label">Prompt</span>
-        <textarea className="generate-panel__prompt" rows={5} value={state.prompt} onChange={(event) => state.setPrompt(event.target.value)} />
-      </label>
-      <ReferenceStrip references={state.references} notice={notice} onFiles={(files) => void addFiles(files)} onRemove={state.removeReference} />
-      <ChannelToggle />
-      <ModelSelect catalog={state.catalog} hasKey={state.hasKey} provider={state.provider} modelId={state.modelId} today={today} onSelect={state.selectModel} />
-      <ResolutionSelect options={options.resolutions} experimental={model?.experimentalResolutions ?? []} value={state.resolutionKey} onChange={state.setResolution} />
-      <AtlasSizeSelect options={listAtlasSizes(state.maxTextureSize)} value={state.atlasKey} onChange={state.setAtlasKey} />
-      <QualitySelect levels={options.qualityLevels} value={state.quality} onChange={state.setQuality} />
-      {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} onCancel={onCancel} />}
-      {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} />}
-      {state.notice !== null && <p className="generate-panel__notice" role="status">{state.notice}</p>}
-      <UnwrapStatusBlock unwrap={state.unwrap} onDismissError={state.clearUnwrap} />
-      <div className="generate-panel__actions">
-        {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />}      </div>
-      <EnhancedPromptBlock text={state.enhancedPrompt} />
+      <Tabs
+        label="Generate panel"
+        tabs={[{ value: 'generate', label: 'Generate' }, { value: 'debug', label: 'Debug', icon: 'bug', iconOnly: true }]}
+        value={tab}
+        onChange={setTab}
+      />
+      <div className="generate-panel__page" role="tabpanel" aria-label="Generate fields" hidden={tab !== 'generate'}>
+        <label className="generate-panel__field">
+          <span className="generate-panel__label">Prompt</span>
+          <textarea
+            className="generate-panel__prompt"
+            rows={5}
+            value={state.prompt}
+            data-drop-target={dropTarget ? '' : undefined}
+            onChange={(event) => state.setPrompt(event.target.value)}
+            onDragEnter={(event) => carriesFiles(event) && setDropTarget(true)}
+            onDragOver={(event) => {
+              if (carriesFiles(event)) event.preventDefault(); // without this the browser refuses the drop
+            }}
+            onDragLeave={() => setDropTarget(false)}
+            onDrop={(event) => {
+              setDropTarget(false);
+              const files = Array.from(event.dataTransfer.files);
+              if (files.length === 0) return; // selected text dropped in: the field handles it
+              event.preventDefault();
+              void addFiles(files);
+            }}
+          />
+        </label>
+        <ReferenceStrip references={state.references} notice={notice} onFiles={(files) => void addFiles(files)} onRemove={state.removeReference} />
+        <ChannelToggle />
+        <ModelSelect catalog={state.catalog} hasKey={state.hasKey} provider={state.provider} modelId={state.modelId} today={today} onSelect={state.selectModel} />
+        <ResolutionSelect options={options.resolutions} experimental={model?.experimentalResolutions ?? []} value={state.resolutionKey} onChange={state.setResolution} />
+        <AtlasSizeSelect options={listAtlasSizes(state.maxTextureSize)} value={state.atlasKey} onChange={state.setAtlasKey} />
+        <QualitySelect levels={options.qualityLevels} value={state.quality} onChange={state.setQuality} />
+        {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} onCancel={onCancel} {...(viewLog === undefined ? {} : { onViewLog: viewLog })} />}
+        {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} />}
+        {state.notice !== null && <p className="generate-panel__notice" role="status">{state.notice}</p>}
+        <UnwrapStatusBlock unwrap={state.unwrap} onDismissError={state.clearUnwrap} />
+        <div className="generate-panel__actions">
+          {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />}
+        </div>
+      </div>
+      <div className="generate-panel__page" role="tabpanel" aria-label="Run log" hidden={tab !== 'debug'}>
+        <DebugTab projectId={projectId} records={records} revealId={reveal.id} revealCount={reveal.count} onRemove={logStore.getState().remove} />
+      </div>
       <UvOptionsDialog
         open={uvDialogOpen}
         onCancel={() => setUvDialogOpen(false)}

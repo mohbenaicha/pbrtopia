@@ -100,6 +100,22 @@ describe('shading modes', () => {
     expect(modes.derivedMaterialCount()).toBe(built + 2); // only the albedo pair was added
   });
 
+  it('textures R13 refresh drops the derived looks so the next apply copies the source material as it now is', () => {
+    const { root, first, shared } = sceneWithTwoMaterials();
+    const modes = createShadingModes(createMapAdjustUniforms());
+    modes.apply(root, 'albedo');
+    const stale = materialOf(first) as MeshBasicMaterial;
+    const disposeStale = vi.spyOn(stale, 'dispose');
+    const picture = new DataTexture(new Uint8Array([1, 2, 3, 255]), 1, 1);
+    shared.map = picture;
+    modes.refresh(root);
+    expect(materialOf(first)).toBe(shared); // the originals are back until the caller applies a look
+    expect(modes.derivedMaterialCount()).toBe(0);
+    expect(disposeStale).toHaveBeenCalledTimes(1);
+    modes.apply(root, 'albedo');
+    expect((materialOf(first) as MeshBasicMaterial).map).toBe(picture);
+  });
+
   it('R15 the metal and rough sliders change uniforms on the existing materials and build none', () => {
     const { root, first } = sceneWithTwoMaterials();
     const adjust = createMapAdjustUniforms();
@@ -117,6 +133,20 @@ describe('shading modes', () => {
     expect(metal.uniforms['uContrast']!.value).toBe(3);
     expect(modes.derivedMaterialCount()).toBe(built);
     expect(materialOf(first)).toBe(metal);
+  });
+
+  it('viewport-layout R14 the Normal sliders change uniforms on the existing normal look and build none', () => {
+    const { root, first } = sceneWithTwoMaterials();
+    const adjust = createMapAdjustUniforms();
+    const modes = createShadingModes(adjust);
+    modes.apply(root, 'normal');
+    const normal = materialOf(first) as ShaderMaterial;
+    const built = modes.derivedMaterialCount();
+    setMapAdjust(adjust, { normalStrength: 2, normalContrast: 0.5 });
+    expect(normal.uniforms['uStrength']!.value).toBe(2);
+    expect(normal.uniforms['uContrast']!.value).toBe(0.5);
+    expect(modes.derivedMaterialCount()).toBe(built);
+    expect(materialOf(first)).toBe(normal);
   });
 
   it('R15 the factors of the original material feed the rough and metal looks', () => {

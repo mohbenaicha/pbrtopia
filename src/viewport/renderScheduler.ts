@@ -5,6 +5,7 @@ export interface FrameClock {
 
 interface RenderScheduler {
   invalidate(): void; // ask for a draw on the next animation frame
+  drawNow(): void; // draw in this step, taking over a waiting frame: for a resize, which clears the canvas and must not be painted empty
   pause(): void; // draw nothing until resume (context lost)
   resume(): void; // draw once now, then only on invalidate
   dispose(): void;
@@ -31,6 +32,11 @@ export function createRenderScheduler(draw: () => void, clock: FrameClock = wind
 
   return {
     invalidate: schedule,
+    drawNow() {
+      if (paused || disposed) return;
+      cancel();
+      draw();
+    },
     pause() {
       paused = true;
       cancel();

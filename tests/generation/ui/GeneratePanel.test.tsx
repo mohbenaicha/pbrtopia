@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { findKnownModel } from '../../../src/generation/catalog/knownModels';
 import type { ProviderModelRecord } from '../../../src/generation/catalog/modelTypes';
 import { createGenerateStore, type ReferenceImage } from '../../../src/generation/generateStore';
+import { createRunLogStore } from '../../../src/generation/runLogStore';
 import { GeneratePanel } from '../../../src/generation/ui/GeneratePanel';
 
 const known = (provider: 'gemini' | 'openai', id: string): ProviderModelRecord => {
@@ -33,7 +34,7 @@ function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void 
   prepare(store);
   const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn() };
   const readImageFile = vi.fn(async (file: File): Promise<ReferenceImage> => ({ id: `${file.name}:${file.size}`, name: file.name, width: 8, height: 8, blob: file }));
-  const view = render(<GeneratePanel store={store} readImageFile={readImageFile} today="2026-10-19" {...props} />);
+  const view = render(<GeneratePanel projectId="p1" store={store} logStore={createRunLogStore()} readImageFile={readImageFile} today="2026-10-19" {...props} />);
   const combo = (name: string): HTMLElement => screen.getByRole('combobox', { name });
   const optionsOf = (name: string): string[] => {
     fireEvent.click(combo(name));
@@ -58,6 +59,25 @@ describe('GeneratePanel: fields (R1, R3)', () => {
     const { store } = setup();
     fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), { target: { value: 'weathered bronze' } });
     expect(store.getState().prompt).toBe('weathered bronze');
+  });
+
+  it('R2 image files dropped on the prompt field are added as references like chosen files', async () => {
+    const { store, readImageFile } = setup();
+    const file = new File(['x'], 'drop.png', { type: 'image/png' });
+    fireEvent.drop(screen.getByRole('textbox', { name: 'Prompt' }), { dataTransfer: { files: [file], types: ['Files'] } });
+    await waitFor(() => expect(store.getState().references.map((reference) => reference.name)).toEqual(['drop.png']));
+    expect(readImageFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('R2 a drop with no file is left to the field, and files dragged over show that the field accepts them', () => {
+    setup();
+    const prompt = screen.getByRole('textbox', { name: 'Prompt' });
+    const textDrop = fireEvent.drop(prompt, { dataTransfer: { files: [], types: ['text/plain'] } });
+    expect(textDrop).toBe(true); // not default-prevented
+    fireEvent.dragEnter(prompt, { dataTransfer: { files: [], types: ['Files'] } });
+    expect(prompt.hasAttribute('data-drop-target')).toBe(true);
+    fireEvent.dragLeave(prompt, { dataTransfer: { files: [], types: ['Files'] } });
+    expect(prompt.hasAttribute('data-drop-target')).toBe(false);
   });
 
   it('R1 the panel has no debug button (the debug view is the mode toolbar\'s switch)', () => {
@@ -182,7 +202,7 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     try {
       const store = createGenerateStore();
-      const panel = <GeneratePanel store={store} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />;
+      const panel = <GeneratePanel projectId="p1" store={store} logStore={createRunLogStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />;
       const { rerender } = render(panel);
       expect(warn).toHaveBeenCalledTimes(1);
       expect(String(warn.mock.calls[0]?.[0])).toMatch(/Known models last checked/);
@@ -198,7 +218,7 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.stubEnv('DEV', false);
     try {
-      render(<GeneratePanel store={createGenerateStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />);
+      render(<GeneratePanel projectId="p1" store={createGenerateStore()} logStore={createRunLogStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />);
       expect(warn).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllEnvs();

@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { findKnownModel } from '../../../src/generation/catalog/knownModels';
 import { createGenerateStore } from '../../../src/generation/generateStore';
+import { createRunLogStore } from '../../../src/generation/runLogStore';
 import { GeneratePanel } from '../../../src/generation/ui/GeneratePanel';
 
 beforeEach(() => {
@@ -21,7 +22,7 @@ function setup() {
   s.setSceneState({ hasModel: true, hasUvs: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
   const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(),onCancel: vi.fn(), onRetry: vi.fn() };
-  render(<GeneratePanel store={store} readImageFile={vi.fn()} today="2026-10-19" {...props} />);
+  render(<GeneratePanel projectId="p1" store={store} logStore={createRunLogStore()} readImageFile={vi.fn()} today="2026-10-19" {...props} />);
   return { store, props };
 }
 
@@ -140,14 +141,13 @@ describe('GeneratePanel: a failed run (R9)', () => {
   });
 });
 
-describe('GeneratePanel: the enhanced prompt (R12)', () => {
-  it('R12 shows the enhanced prompt once there is one, and keeps it after the run is cleared', () => {
+describe('GeneratePanel: what moved to the run log (R28)', () => {
+  it('R28 the panel has no Enhanced prompt block during or after a run', () => {
     const { store } = setup();
-    expect(screen.queryByText('Enhanced prompt')).toBeNull();
     act(() => store.getState().beginRun());
-    act(() => store.getState().setEnhancedPrompt('A stone with moss on the left.'));
-    expect(screen.getByText('A stone with moss on the left.')).toBeTruthy();
+    act(() => store.getState().setStep('generate', 0.2));
+    expect(screen.queryByRole('button', { name: 'Enhanced prompt' })).toBeNull();
     act(() => store.getState().clearRun());
-    expect(screen.getByText('A stone with moss on the left.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Enhanced prompt' })).toBeNull();
   });
 });

@@ -1,20 +1,10 @@
 import type { MeshRecord } from '../../projection/engine';
+import type { PictureRecord, SlotRecord } from './pictureRecords';
 
+// The version of the set and settings records. The project record has its own, below: it moved to 2 with pictures and slots (specs/app/textures).
 export const CURRENT_SCHEMA_VERSION = 1;
+export const PROJECT_SCHEMA_VERSION = 2;
 export const MAX_PROJECT_NAME_LENGTH = 120;
-
-export type TextureChannel = 'albedo' | 'normal' | 'rough' | 'metal';
-
-export interface TextureRecord {
-  materialName: string;
-  channel: TextureChannel;
-  blobKey: string; // path inside the project folder
-  width: number;
-  height: number;
-  colorSpace: 'srgb' | 'linear';
-  source: 'file' | 'baked';
-  setId?: string; // the set a baked texture came from
-}
 
 export interface ReferenceImageRecord {
   id: string;
@@ -44,7 +34,8 @@ export interface ProjectRecord {
   updatedAt: string;
   mesh: MeshRecord;
   modelBlobKey: string;
-  textures: TextureRecord[];
+  pictures: PictureRecord[]; // generated pictures, oldest first
+  slots: SlotRecord[]; // overrides only
   generate: GenerateSettingsRecord;
   setIds: string[]; // newest last
   activeSetId?: string; // the set last open in projection mode
@@ -58,6 +49,7 @@ export interface ProjectSummary {
   updatedAt: string;
   thumbnailKey?: string;
   triangleCount: number;
+  unreadable?: string; // why the project cannot be opened (a record of an older version); it can still be deleted
 }
 
 // Free text, trimmed, 1 to 120 characters; null when it cannot be used as a name.

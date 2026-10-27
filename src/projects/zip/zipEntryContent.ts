@@ -1,4 +1,5 @@
-import { CURRENT_SCHEMA_VERSION } from '../records/projectRecords';
+import { OLDEST_READABLE_PROJECT_VERSION, SCHEMA_TOO_OLD_MESSAGE } from '../records/migrateProjectRecord';
+import { PROJECT_SCHEMA_VERSION } from '../records/projectRecords';
 import type { ZipEntry } from './readZipEntries';
 import { reject, shorten } from './zipRejection';
 import { APP_NAME, ZIP_LIMITS, type ExportManifest } from './zipFormat';
@@ -29,7 +30,8 @@ export function readManifestEntry(entry: ZipEntry): ExportManifest {
   if (raw['app'] !== APP_NAME) reject('This zip was not made by Texture Lab.');
   const version = raw['schemaVersion'];
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) reject('The zip\'s manifest has no valid version.');
-  if ((version as number) > CURRENT_SCHEMA_VERSION) reject('This zip was made by a newer version of Texture Lab.', 'schema-too-new');
+  if ((version as number) < OLDEST_READABLE_PROJECT_VERSION) reject(SCHEMA_TOO_OLD_MESSAGE, 'schema-too-old');
+  if ((version as number) > PROJECT_SCHEMA_VERSION) reject('This zip was made by a newer version of Texture Lab.', 'schema-too-new');
   const files = raw['files'];
   if (typeof raw['projectId'] !== 'string' || !Array.isArray(files) || files.length > ZIP_LIMITS.maxEntries) reject('The zip\'s manifest is damaged.');
   for (const file of files as unknown[]) {

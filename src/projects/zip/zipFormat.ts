@@ -37,14 +37,11 @@ export function classifyEntryPath(path: string): EntryKind | null {
   return null;
 }
 
-/** Every file the records point to, each once: the model, textures (baked too), reference images, and each set's returned image and bake. */
+/** Every file the records point to, each once: the model, pictures, reference images, and each set's returned image. */
 export function referencedBlobKeys(project: ProjectRecord, sets: readonly SavedSetRecord[]): string[] {
   const keys = new Set<string>([project.modelBlobKey]);
-  for (const texture of project.textures) keys.add(texture.blobKey);
+  for (const picture of project.pictures) keys.add(picture.blobKey);
   for (const reference of project.generate.referenceImages) keys.add(reference.blobKey);
-  for (const set of sets) {
-    keys.add(set.returnedImage.blobKey);
-    if (set.baked) keys.add(set.baked.textureKey);
-  }
+  for (const set of sets) keys.add(set.returnedImage.blobKey);
   return [...keys];
 }

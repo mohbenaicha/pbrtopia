@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Button, Checkbox } from '../../ui-kit';
+import { Checkbox, Icon, IconButton } from '../../ui-kit';
 import type { ProjectSummary } from '../records/projectRecords';
 import { RenameField } from './RenameField';
 import { useThumbnailUrl } from './useThumbnailUrl';
@@ -25,10 +25,11 @@ export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, 
   useEffect(() => {
     // leaving the rename field must not drop the keyboard focus: it goes back to this card's Rename button
     if (wasRenaming.current && !renaming) {
-      Array.from(card.current?.querySelectorAll('button') ?? []).find((button) => button.textContent === 'Rename')?.focus();
+      Array.from(card.current?.querySelectorAll('button') ?? []).find((button) => button.getAttribute('aria-label') === 'Rename')?.focus();
     }
     wasRenaming.current = renaming;
   }, [renaming]);
+  const unreadable = summary.unreadable === undefined ? {} : { disabled: true, disabledReason: summary.unreadable }; // a project of an older version: it can only be deleted (textures R22)
   const changed = new Date(summary.updatedAt).toLocaleDateString('en-US', { dateStyle: 'medium' });
   return (
     <li ref={card} className="project-card" data-testid="project-card" data-selected={selected ? '' : undefined}>
@@ -41,11 +42,11 @@ export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, 
       ) : (
         <>
           <h2 className="project-card__name">{summary.name}</h2>
-          <p className="project-card__meta">{`${summary.triangleCount.toLocaleString('en-US')} triangles · ${changed}`}</p>
+          <p className="project-card__meta">{summary.unreadable ?? `${summary.triangleCount.toLocaleString('en-US')} triangles · ${changed}`}</p>
           <div className="project-card__actions">
-            <Button variant="primary" onClick={open}>Open</Button>
-            <Button variant="ghost" onClick={startRename}>Rename</Button>
-            <Button variant="ghost" onClick={remove}>Delete</Button>
+            <IconButton label="Open" icon={<Icon name="open-project" />} {...unreadable} onClick={open} />
+            <IconButton label="Rename" icon={<Icon name="pencil" />} {...unreadable} onClick={startRename} />
+            <IconButton label="Delete" icon={<Icon name="trash" />} onClick={remove} />
           </div>
         </>
       )}

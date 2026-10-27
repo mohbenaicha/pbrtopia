@@ -1,4 +1,4 @@
-import type { Mesh } from 'three';
+import { Texture, type Mesh, type MeshStandardMaterial } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { loadModelAsset } from '../../src/viewport/loadModelAsset';
 import { buildGlbFromJsonText, buildTriangleGlb } from './glbBuilder';
@@ -29,6 +29,29 @@ describe('loadModelAsset (projects R9)', () => {
     expect(await loadModelAsset(empty)).toMatchObject({ ok: false, error: { code: 'parse-failed' } });
   });
 
+  it('textures R13 the materials keep what the file gave them: loading lays no picture over them', async () => {
+    const result = await loadModelAsset(buildTriangleGlb());
+    if (!result.ok) throw new Error('load failed');
+    let material!: MeshStandardMaterial;
+    result.value.root.traverse((object) => {
+      if ((object as Mesh).isMesh) material = (object as Mesh).material as MeshStandardMaterial;
+    });
+    expect(material.map).toBeNull();
+  });
+
+  it('textures R13 the asset lists its materials in order with their names (an unnamed one is Material N), and keeps those very materials', async () => {
+    const two = '{"asset":{"version":"2.0"},"scene":0,"scenes":[{"nodes":[0]}],"nodes":[{"mesh":0}],"meshes":[{"primitives":[{"attributes":{"POSITION":0},"material":0},{"attributes":{"POSITION":0},"material":1}]}],"materials":[{"name":"Body"},{}],"accessors":[{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3","min":[0,0,0],"max":[2,2,0]}],"bufferViews":[{"buffer":0,"byteLength":36}],"buffers":[{"byteLength":36}]}';
+    const result = await loadModelAsset(buildGlbFromJsonText(two, new Uint8Array(new Float32Array([0, 0, 0, 2, 0, 0, 0, 2, 0]).buffer)));
+    if (!result.ok) throw new Error('load failed');
+    expect(result.value.materials).toEqual([{ index: 0, name: 'Body' }, { index: 1, name: 'Material 1' }]);
+    expect(result.value.sourceMaterials.map((material) => material.name)).toEqual(['Body', '']);
+    const onMeshes: unknown[] = [];
+    result.value.root.traverse((object) => {
+      if ((object as Mesh).isMesh) onMeshes.push((object as Mesh).material);
+    });
+    expect(result.value.sourceMaterials).toEqual(onMeshes);
+  });
+
   it('Additional-tests dispose releases the geometry and materials once and can be called twice', async () => {
     const result = await loadModelAsset(buildTriangleGlb());
     if (!result.ok) throw new Error('load failed');
@@ -42,5 +65,18 @@ describe('loadModelAsset (projects R9)', () => {
     result.value.dispose();
     expect(disposeGeometry).toHaveBeenCalledTimes(1);
     expect(disposeMaterial).toHaveBeenCalledTimes(1);
+  });
+
+  it('textures R13 dispose closes the decoded bitmaps of the file\'s own textures, once, and leaves other images alone', async () => {
+    const result = await loadModelAsset(buildTriangleGlb());
+    if (!result.ok) throw new Error('load failed');
+    const material = result.value.sourceMaterials[0] as MeshStandardMaterial;
+    const bitmap = { width: 2, height: 2, close: vi.fn() };
+    const element = { width: 2, height: 2 };
+    material.map = new Texture(bitmap as never);
+    material.normalMap = new Texture(element as never);
+    result.value.dispose();
+    result.value.dispose();
+    expect(bitmap.close).toHaveBeenCalledTimes(1);
   });
 });

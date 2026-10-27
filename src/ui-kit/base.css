@@ -5,6 +5,40 @@
   box-sizing: border-box;
 }
 
+/* R26: one thin scrollbar for every scroll area: a gold thumb, no track colour, no arrows. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--number) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: var(--number);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 html,
 body {
   margin: 0;

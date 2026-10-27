@@ -9,6 +9,8 @@
   --text: #ece8e1;
   --text-dim: #96928a;
   --text-hint: #5f5c56;
+  --text-active: #6fcf7a;   /* the Active section heading (textures R2) */
+  --text-previous: #6aa8f5; /* the Previously generated section heading (textures R3) */
 
   --accent: #f08a24;
   --accent-hover: #ffa443;
@@ -24,6 +26,7 @@
   --radius-group: 11px;
   --radius-dialog: 14px;
   --radius-panel: 0;
+  --radius-tab: 10px; /* the top corners of a tab and the concave curves that join the chosen tab to its panel (R32) */
 
   --space-1: 4px;
   --space-2: 8px;
@@ -41,6 +44,7 @@
 
   --focus-ring: 2px solid var(--accent);
   --backdrop: rgba(0, 0, 0, 0.6);
+  --surface-over-picture: rgba(16, 16, 18, 0.85); /* behind the buttons laid over a picture (textures R4) */
   --shadow-overlay: 0 10px 30px rgba(0, 0, 0, 0.5);
   --transition-fast: 120ms ease;
 }

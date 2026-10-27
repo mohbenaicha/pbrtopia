@@ -1,18 +1,34 @@
+/* R32: browser-style tabs. The strip is a darker band; the chosen tab has the fill of the panel below it and two concave flares at its lower
+   corners, so tab and panel read as one piece. The flares are quarter-circle gradients: transparent inside the curve (the band shows through),
+   the panel colour outside it. */
 .ui-tabs {
   display: flex;
+  align-items: flex-end;
   gap: var(--space-1);
+  padding: var(--space-2) var(--space-3) 0;
+  background: var(--bg-page);
 }
 
 .ui-tabs__tab {
+  position: relative;
+  display: inline-flex;
   flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
   min-height: var(--control-height);
   padding: 0 var(--space-3);
   border: none;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-tab) var(--radius-tab) 0 0;
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.ui-tabs__tab[data-compact] {
+  flex: 0 0 auto;
 }
 
 .ui-tabs__tab:hover:not(:disabled):not([data-selected]) {
@@ -22,13 +38,34 @@
 
 .ui-tabs__tab:focus-visible {
   outline: var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .ui-tabs__tab[data-selected] {
-  background: var(--bg-button);
+  z-index: 1;
+  background: var(--bg-panel);
   color: var(--accent);
   font-weight: 600;
+}
+
+.ui-tabs__tab[data-selected]::before,
+.ui-tabs__tab[data-selected]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: var(--radius-tab);
+  height: var(--radius-tab);
+  pointer-events: none;
+}
+
+.ui-tabs__tab[data-selected]::before {
+  left: calc(var(--radius-tab) * -1);
+  background: radial-gradient(circle at 0 0, transparent var(--radius-tab), var(--bg-panel) calc(var(--radius-tab) + 0.5px));
+}
+
+.ui-tabs__tab[data-selected]::after {
+  right: calc(var(--radius-tab) * -1);
+  background: radial-gradient(circle at 100% 0, transparent var(--radius-tab), var(--bg-panel) calc(var(--radius-tab) + 0.5px));
 }
 
 .ui-tabs__tab:disabled {
