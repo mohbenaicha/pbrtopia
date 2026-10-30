@@ -19,11 +19,16 @@ export interface PanelWidthsRecord {
   rightPx: number | null;
 }
 
+// The longest side, in px, that a picture sent to a provider may have (settings R14, generate R29).
+export type ImageMaxPx = 512 | 1024 | 2048;
+
 // App-wide settings. `viewport` is the viewport's own settings object, kept as stored and clamped by `app/` when used.
 export interface AppSettingsRecord {
   schemaVersion: number;
   lastOpenProjectId: string | null;
   enhancer: EnhancerChoiceRecord | null;
+  enhancerImageMaxPx: ImageMaxPx; // the size cap of the atlas the prompt enhancer sees
+  referenceImageMaxPx: ImageMaxPx | null; // the size cap of the references sent to the image model; null = Original size
   catalog: CatalogCacheRecord | null;
   viewport: Record<string, unknown>;
   panels: PanelWidthsRecord;
@@ -33,6 +38,8 @@ export const DEFAULT_APP_SETTINGS: AppSettingsRecord = {
   schemaVersion: CURRENT_SCHEMA_VERSION,
   lastOpenProjectId: null,
   enhancer: null,
+  enhancerImageMaxPx: 1024,
+  referenceImageMaxPx: 1024,
   catalog: null,
   viewport: {},
   panels: { leftPx: null, rightPx: null },
@@ -46,6 +53,8 @@ function readEnhancer(value: unknown): EnhancerChoiceRecord | null {
   const provider = value['provider'];
   return modelId !== null && (provider === 'gemini' || provider === 'openai') ? { provider, modelId } : null;
 }
+
+const readImageMaxPx = (value: unknown): ImageMaxPx | null => (value === 512 || value === 1024 || value === 2048 ? value : null);
 
 const readModelEntries = (value: unknown): Record<string, unknown>[] | null => (Array.isArray(value) ? value.filter(isRawRecord) : null);
 
@@ -72,6 +81,8 @@ export function readAppSettings(raw: unknown): AppSettingsRecord {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     lastOpenProjectId: nonEmptyText(stored['lastOpenProjectId']),
     enhancer: readEnhancer(stored['enhancer']),
+    enhancerImageMaxPx: readImageMaxPx(stored['enhancerImageMaxPx']) ?? DEFAULT_APP_SETTINGS.enhancerImageMaxPx,
+    referenceImageMaxPx: stored['referenceImageMaxPx'] === null ? null : (readImageMaxPx(stored['referenceImageMaxPx']) ?? DEFAULT_APP_SETTINGS.referenceImageMaxPx),
     catalog: readCatalog(stored['catalog']),
     viewport: isRawRecord(stored['viewport']) ? structuredClone(stored['viewport']) : {},
     panels: readPanels(stored['panels']),

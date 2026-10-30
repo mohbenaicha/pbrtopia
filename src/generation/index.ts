@@ -1,5 +1,6 @@
 export { GeneratePanel } from './ui/GeneratePanel';
 export { makeImagePreview } from './makeImagePreview';
+export { scaleImageToMaxSide } from './imageScaling/scaleImageToMaxSide';
 export { runLogStore, type RunLogActions, type RunLogRecord, type RunLogState } from './runLogStore';
 export type { UvOptions } from './ui/UvOptionsDialog';
 export { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
