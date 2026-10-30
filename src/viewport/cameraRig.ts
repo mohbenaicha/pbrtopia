@@ -8,6 +8,11 @@ const FIT_MARGIN = 1.1;
 const POLE_OFFSET = 1e-4; // looks along Y from just off the axis so the Y-up orbit controls stay well defined
 const RESET_YAW = 0.6;
 const RESET_PITCH = 0.25;
+// Near plane (mode R20): a share of the orbit distance, so a close-up does not clip, kept between two shares of the model radius.
+const NEAR_DISTANCE_SHARE = 0.02;
+const NEAR_MIN_SHARE = 1e-4;
+const NEAR_MAX_SHARE = 0.005;
+const MIN_DISTANCE_SHARE = 0.001; // the closest the orbit camera may get to its target, as a share of the radius
 
 // Direction from the target to the camera for an axis view. Top has screen-up -Z, bottom +Z, the other four +Y.
 export function viewDirectionForAxis(axis: ViewAxis): Vector3 {
@@ -66,6 +71,11 @@ export function createCameraRig(initialAspect: number): CameraRig {
     orthographic.right = width / 2;
     orthographic.top = height / 2;
     orthographic.bottom = -height / 2;
+    const near = Math.min(NEAR_MAX_SHARE * radius, Math.max(NEAR_MIN_SHARE * radius, NEAR_DISTANCE_SHARE * distance()));
+    if (perspective.near !== near) {
+      perspective.near = near;
+      perspective.updateProjectionMatrix();
+    }
     orthographic.near = perspective.near;
     orthographic.far = perspective.far;
     orthographic.updateProjectionMatrix();
@@ -104,7 +114,7 @@ export function createCameraRig(initialAspect: number): CameraRig {
       syncOrthographic();
     },
     distance,
-    distanceLimits: () => ({ min: 0.02 * radius, max: 100 * radius }),
+    distanceLimits: () => ({ min: MIN_DISTANCE_SHARE * radius, max: 100 * radius }),
     homeDistance: fitDistance,
     homeCenter: () => home.clone(),
     placeCamera,
@@ -117,9 +127,8 @@ export function createCameraRig(initialAspect: number): CameraRig {
       radius = sphere.radius > 0 ? sphere.radius : 1;
       target.copy(sphere.center);
       home.copy(sphere.center);
-      perspective.near = 0.005 * radius;
       perspective.far = 200 * radius;
-      perspective.updateProjectionMatrix();
+      perspective.updateProjectionMatrix(); // placeCamera below sets the near plane
       placeCamera(direction, fitDistance());
     },
     resetView() {

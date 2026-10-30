@@ -101,6 +101,26 @@ describe('cameraRig', () => {
     expect(small.distanceLimits().max).toBeGreaterThan(small.distance());
   });
 
+  it('mode R20 the closest allowed distance is 0.001 of the framed radius', () => {
+    const rig = createCameraRig(1);
+    rig.frameBounds(new Box3(new Vector3(-10, -10, -10), new Vector3(10, 10, 10)));
+    expect(rig.distanceLimits().min).toBeCloseTo(0.001 * rig.radius, 9);
+  });
+
+  it('mode R20 the near plane follows the distance to the target, between 1e-4 and 5e-3 of the radius', () => {
+    const rig = createCameraRig(1);
+    rig.frameBounds(new Box3(new Vector3(-10, -10, -10), new Vector3(10, 10, 10)));
+    const direction = new Vector3(0, 0, 1);
+    rig.placeCamera(direction, rig.homeDistance());
+    expect(rig.perspective.near).toBeCloseTo(0.005 * rig.radius, 9); // far away: the old fixed value
+    rig.placeCamera(direction, 0.1 * rig.radius);
+    expect(rig.perspective.near).toBeCloseTo(0.02 * 0.1 * rig.radius, 9);
+    rig.placeCamera(direction, rig.distanceLimits().min);
+    expect(rig.perspective.near).toBeCloseTo(1e-4 * rig.radius, 9);
+    expect(rig.perspective.near).toBeLessThan(rig.distance()); // the surface at the target is in front of the near plane
+    expect(rig.orthographic.near).toBe(rig.perspective.near);
+  });
+
   it('R16 before any model the radius is 1', () => {
     expect(createCameraRig(1).radius).toBe(1);
   });

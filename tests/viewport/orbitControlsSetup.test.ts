@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 import { Box3, MOUSE, Vector3 } from 'three';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createCameraRig } from '../../src/viewport/cameraRig';
 import { createOrbitControls } from '../../src/viewport/orbitControlsSetup';
 
-function setup(onResetView: () => void = () => undefined) {
+function setup() {
   const rig = createCameraRig(1);
   rig.placeCamera(new Vector3(0, 0, 1), 5);
   const canvas = document.createElement('canvas');
   document.body.append(canvas);
-  return { rig, canvas, setup: createOrbitControls(rig, canvas, onResetView) };
+  return { rig, canvas, setup: createOrbitControls(rig, canvas) };
 }
 
 describe('createOrbitControls', () => {
@@ -30,6 +30,12 @@ describe('createOrbitControls', () => {
     orbit.dispose();
   });
 
+  it('mode R20 the wheel zooms toward the point under the pointer', () => {
+    const { setup: orbit } = setup();
+    expect(orbit.controls.zoomToCursor).toBe(true);
+    orbit.dispose();
+  });
+
   it('viewport-layout R16 the zoom limits come from the rig, and applyDistanceLimits picks up a changed framing', () => {
     const { rig, setup: orbit } = setup();
     const first = rig.distanceLimits();
@@ -42,19 +48,12 @@ describe('createOrbitControls', () => {
     orbit.dispose();
   });
 
-  it('viewport-layout R16 a double-click on the canvas resets the view', () => {
-    const onResetView = vi.fn();
-    const { canvas, setup: orbit } = setup(onResetView);
-    canvas.dispatchEvent(new MouseEvent('dblclick'));
-    expect(onResetView).toHaveBeenCalledTimes(1);
+  it('viewport-layout R16 a double-click on the canvas leaves the camera where it is', () => {
+    const { rig, canvas, setup: orbit } = setup();
+    rig.placeCamera(new Vector3(1, 0, 0), 2);
+    const before = rig.perspective.position.clone();
+    canvas.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, button: 0 }));
+    expect(rig.perspective.position.equals(before)).toBe(true);
     orbit.dispose();
-  });
-
-  it('viewport-layout R16 after dispose a double-click no longer resets the view', () => {
-    const onResetView = vi.fn();
-    const { canvas, setup: orbit } = setup(onResetView);
-    orbit.dispose();
-    canvas.dispatchEvent(new MouseEvent('dblclick'));
-    expect(onResetView).not.toHaveBeenCalled();
   });
 });

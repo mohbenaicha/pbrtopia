@@ -106,7 +106,7 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     scheduler.invalidate();
   };
   let cancelTransition = (): void => undefined;
-  const orbit = createOrbitControls(rig, canvas, () => viewport.resetView());
+  const orbit = createOrbitControls(rig, canvas);
   orbit.controls.addEventListener('change', onCameraMoved);
   orbit.controls.addEventListener('start', () => cancelTransition());
 

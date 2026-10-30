@@ -34,37 +34,37 @@ function setup() {
   };
 }
 
-const PULSE_MS = 600;
+const PULSE_MS = 500;
 const material = new MeshBasicMaterial({ transparent: true });
 
 describe('material flash', () => {
-  it('R16 it lays the material over the look at opacity 0 and raises and lowers the opacity smoothly three times, then takes it away and finishes', async () => {
+  it('R16 it lays the material over the look at opacity 0 and raises and lowers the opacity smoothly once, then takes it away and finishes', async () => {
     const { flash, shown, advance } = setup();
     const done = vi.fn();
     void flash.start(material).then(done);
     expect(shown).toEqual([{ material, opacity: 0 }]);
-    for (let step = 0; step < 18; step += 1) advance(100); // three pulses of 600 ms in 100 ms steps
+    for (let step = 0; step < 10; step += 1) advance(50); // one pulse of 500 ms in 50 ms steps
     const levels = shown.slice(1, -1).map((entry) => entry.opacity);
     const peaks = levels.filter((level, index) => level > (levels[index - 1] ?? 0) && level >= (levels[index + 1] ?? 0));
     expect(shown.slice(0, -1).every((entry) => entry.material === material)).toBe(true);
     expect(Math.max(...levels)).toBeCloseTo(1, 5);
     expect(Math.min(...levels)).toBeGreaterThanOrEqual(0);
-    expect(peaks).toHaveLength(3);
+    expect(peaks).toHaveLength(1);
     expect(shown[shown.length - 1]).toEqual({ material: null, opacity: 0 });
     await Promise.resolve();
     expect(done).toHaveBeenCalledTimes(1);
   });
 
-  it('R16 the opacity follows a smooth curve: no step between two frames 16 ms apart is bigger than a tenth', () => {
+  it('R16 the opacity follows a smooth curve: no step between two frames 16 ms apart is bigger than 0.11', () => {
     const { flash, shown, advance } = setup();
     void flash.start(material);
     for (let step = 0; step < 100; step += 1) advance(16);
     const levels = shown.filter((entry) => entry.material !== null).map((entry) => entry.opacity);
     const biggestStep = Math.max(...levels.slice(1).map((level, index) => Math.abs(level - levels[index]!)));
-    expect(biggestStep).toBeLessThan(0.1);
+    expect(biggestStep).toBeLessThan(0.11);
   });
 
-  it('R16 one pulse lasts 600 ms: opacity 0 at the start, 1 half way, 0 again at the end of the pulse', () => {
+  it('R16 one pulse lasts 500 ms: opacity 0 at the start, 1 half way, 0 again at the end of the pulse', () => {
     const { flash, shown, advance } = setup();
     void flash.start(material);
     advance(PULSE_MS / 2);
@@ -86,7 +86,7 @@ describe('material flash', () => {
   it('R16 a slow frame skips ahead to where the timeline is rather than replaying the pulses', () => {
     const { flash, shown, advance } = setup();
     void flash.start(material);
-    advance(PULSE_MS * 2 + PULSE_MS / 2); // one late frame, half way through the last pulse
+    advance(PULSE_MS / 2); // one late frame, half way through the pulse
     expect(shown[shown.length - 1]!.opacity).toBeCloseTo(1, 5);
     expect(shown).toHaveLength(2);
     advance(PULSE_MS); // past the end

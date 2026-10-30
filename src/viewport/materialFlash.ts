@@ -1,8 +1,8 @@
 import type { Material } from 'three';
 import type { FrameClock } from './renderScheduler';
 
-const FLASH_COUNT = 3;
-const PULSE_MS = 600; // one pulse: the opacity rises from 0 to 1 and falls back to 0, slowly enough to follow
+const FLASH_COUNT = 1;
+const PULSE_MS = 500; // one pulse: the opacity rises from 0 to 1 and falls back to 0
 
 interface MaterialFlash {
   start(material: Material): Promise<void>; // resolves when the pulses are over or were replaced or cancelled
@@ -16,7 +16,7 @@ interface MaterialFlashOptions {
   now?: () => number;
 }
 
-// Pulses a translucent material over the model three times by moving its opacity. Frames run only while a flash is going, and a late
+// Pulses a translucent material over the model once by moving its opacity. Frames run only while a flash is going, and a late
 // frame skips ahead to where the timeline is.
 export function createMaterialFlash({ show, clock = window, now = () => performance.now() }: MaterialFlashOptions): MaterialFlash {
   let running: { material: Material; startedAt: number; finish: () => void } | undefined;
