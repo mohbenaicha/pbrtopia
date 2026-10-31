@@ -33,7 +33,7 @@
 
 .generate-panel__prompt {
   resize: vertical;
-  min-height: 96px;
+  min-height: 192px;
   padding: var(--space-2) var(--space-3);
   background: var(--bg-input);
   border: 1px solid var(--bg-hover);
@@ -120,13 +120,6 @@
   font-size: var(--font-size-small);
 }
 
-.reference-strip__enlarged {
-  display: block;
-  max-width: 100%;
-  max-height: 70vh;
-  margin: 0 auto;
-}
-
 .progress-steps {
   display: flex;
   flex-direction: column;
@@ -210,6 +203,7 @@
 .run-error__message,
 .run-error__hint {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .run-error__hint {

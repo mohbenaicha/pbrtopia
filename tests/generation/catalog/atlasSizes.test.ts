@@ -12,7 +12,7 @@ describe('atlasSizes (generate R16)', () => {
     expect(listAtlasSizes(1023)).toEqual([]);
   });
 
-  it('R16 the default is 2K', () => {
-    expect(DEFAULT_ATLAS_KEY).toBe('2K');
+  it('R16 the default is 1K', () => {
+    expect(DEFAULT_ATLAS_KEY).toBe('1K');
   });
 });

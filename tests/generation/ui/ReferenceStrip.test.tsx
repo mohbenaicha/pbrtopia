@@ -49,6 +49,20 @@ describe('ReferenceStrip (R2)', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('R2 the enlarged image is the large viewer with Download in its top-right, saving the image under its own name with its size shown', () => {
+    const saved: string[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      saved.push(this.download);
+    });
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Enlarge b.png' }));
+    expect(screen.getByRole('dialog', { name: 'b.png' }).querySelector('.ui-dialog__header')).not.toBeNull();
+    expect(screen.getByText('Size: 64 x 64')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Download b.png' }));
+    expect(saved).toEqual(['b.png']);
+    vi.restoreAllMocks();
+  });
+
   it('R2 shows why a reference was refused', () => {
     setup([image('a')], 'This model takes at most 14 images in total and one is the atlas, so up to 13 references.');
     expect(screen.getByRole('status').textContent).toMatch(/up to 13 references/);

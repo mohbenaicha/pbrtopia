@@ -164,7 +164,9 @@
   padding: 0 var(--space-3);
   font-size: var(--font-size-heading);
   font-weight: 600;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-card__meta {

@@ -123,7 +123,7 @@ describe('GeneratePanel: a failed run (R9)', () => {
     const { store } = setup();
     fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), { target: { value: 'keep me' } });
     fail(store);
-    expect(store.getState()).toMatchObject({ prompt: 'keep me', modelId: 'gemini-nano-banana-2.1', resolutionKey: '2K' });
+    expect(store.getState()).toMatchObject({ prompt: 'keep me', modelId: 'gemini-nano-banana-2.1', resolutionKey: '1K' });
   });
 
   it('R9 a cancelled run shows no error', () => {

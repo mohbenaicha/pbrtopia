@@ -7,6 +7,14 @@ import { Disclosure } from '../../src/ui-kit';
 afterEach(cleanup);
 
 describe('Disclosure', () => {
+  it('viewport-layout R34 the heading text is in its own cut-off element that carries the full text as its tooltip', () => {
+    const long = '__meshy_uv_placeholder____meshy_uv_placeholder____meshy_uv_placeholder__';
+    render(<Disclosure title={`Original ${long}`} open={false} onOpenChange={() => undefined}>body</Disclosure>);
+    const text = screen.getByText(`Original ${long}`);
+    expect(text.className).toBe('ui-disclosure__title');
+    expect(text.getAttribute('title')).toBe(`Original ${long}`);
+  });
+
   it('R22 it is a button that says whether its section is open, and the open section is a region named by it', () => {
     const { rerender } = render(<Disclosure title="Skin" open={false} onOpenChange={() => undefined}>body</Disclosure>);
     expect(screen.getByRole('button', { name: 'Skin' }).getAttribute('aria-expanded')).toBe('false');

@@ -64,9 +64,11 @@ describe('knownModels', () => {
       if (entry.qualityLevels.length > 0) expect(entry.qualityLevels, entry.id).toContain(entry.defaultQuality);
       else expect(entry.defaultQuality, entry.id).toBeUndefined();
     }
-    expect(findKnownModel('gemini', 'gemini-nano-banana-2.1')?.defaultQuality).toBe('medium');
+    expect(findKnownModel('gemini', 'gemini-nano-banana-2.1')?.defaultQuality).toBe('minimal');
     expect(findKnownModel('gemini', 'gemini-3.1-flash-image')?.defaultQuality).toBe('minimal');
-    expect(findKnownModel('openai', 'gpt-image-2.5-flare')?.defaultQuality).toBe('auto');
+    expect(findKnownModel('openai', 'gpt-image-2.5-flare')?.defaultQuality).toBe('low');
+    expect(findKnownModel('openai', 'gpt-image-2.5-sunburst')?.defaultQuality).toBe('low');
+    expect(findKnownModel('openai', 'gpt-image-2')?.defaultQuality).toBe('low');
   });
 
   it('R4 text models have the vision-text role and no sizes; image models have the image role and at least one size', () => {

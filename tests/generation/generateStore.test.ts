@@ -29,10 +29,40 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
     expect(s).toMatchObject({ prompt: '', channel: 'albedo', provider: null, modelId: null, resolutionKey: null, quality: null, references: [] });
   });
 
-  it('R4 choosing a model sets 2K when it is offered, with the model default quality', () => {
+  it('R4 choosing a model sets its smallest size, with the model default quality', () => {
     const store = setup();
     store.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
-    expect(store.getState()).toMatchObject({ provider: 'gemini', modelId: 'gemini-nano-banana-2.1', resolutionKey: '2K', quality: 'medium' });
+    expect(store.getState()).toMatchObject({ provider: 'gemini', modelId: 'gemini-nano-banana-2.1', resolutionKey: '1K', quality: 'minimal' });
+  });
+
+  it('R4 with no model saved, the list having GPT Image 2.5 Sunburst chooses it, at its smallest size and low quality', () => {
+    const store = setup();
+    expect(store.getState()).toMatchObject({ provider: 'openai', modelId: 'gpt-image-2.5-sunburst', resolutionKey: '1K', quality: 'low' });
+  });
+
+  it('R4 a list without Sunburst chooses nothing, and Sunburst is chosen when the list gets it', () => {
+    const store = createGenerateStore();
+    store.getState().setMaxTextureSize(8192);
+    store.getState().setCatalog({ gemini: [NANO], openai: [] });
+    expect(store.getState()).toMatchObject({ provider: null, modelId: null });
+    store.getState().setCatalog({ gemini: [NANO], openai: [SUNBURST] });
+    expect(store.getState().modelId).toBe('gpt-image-2.5-sunburst');
+  });
+
+  it('R4 a model chosen by the user or a saved project is never replaced by the default', () => {
+    const store = setup();
+    store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
+    store.getState().setCatalog({ gemini: [NANO, FLASH, LITE], openai: [SUNBURST] });
+    expect(store.getState().modelId).toBe('gemini-3.1-flash-image');
+    store.getState().restoreSettings({ prompt: '', references: [], provider: 'gemini', modelId: 'gemini-nano-banana-2.1', resolutionKey: null, atlasKey: '1K', quality: null });
+    expect(store.getState()).toMatchObject({ modelId: 'gemini-nano-banana-2.1', resolutionKey: '1K', quality: 'minimal' });
+  });
+
+  it('R4 a project saved with no model gets the default model when restored', () => {
+    const store = setup();
+    store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
+    store.getState().restoreSettings({ prompt: '', references: [], provider: null, modelId: null, resolutionKey: null, atlasKey: '1K', quality: null });
+    expect(store.getState()).toMatchObject({ provider: 'openai', modelId: 'gpt-image-2.5-sunburst' });
   });
 
   it('R4 a model that offers only 1K gets 1K', () => {
@@ -57,7 +87,7 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
     store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
     expect(store.getState().quality).toBe('minimal');
     store.getState().selectModel('openai', 'gpt-image-2.5-sunburst');
-    expect(store.getState().quality).toBe('auto');
+    expect(store.getState().quality).toBe('low');
   });
 
   it('R4 a size the GPU cannot make is not offered and not chosen', () => {
@@ -65,7 +95,7 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
     store.getState().setMaxTextureSize(2048);
     store.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
     store.getState().setResolution('4K');
-    expect(store.getState().resolutionKey).toBe('2K');
+    expect(store.getState().resolutionKey).toBe('1K');
   });
 
   it('R5 setResolution and setQuality ignore a value the selected model does not offer', () => {
@@ -73,7 +103,7 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
     store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
     store.getState().setQuality('xhigh');
     store.getState().setResolution('2.8K');
-    expect(store.getState()).toMatchObject({ resolutionKey: '2K', quality: 'minimal' });
+    expect(store.getState()).toMatchObject({ resolutionKey: '1K', quality: 'minimal' });
   });
 
   it('R4 an unverified model is selectable but has no size and no level', () => {
@@ -166,31 +196,31 @@ describe('generateStore: the atlas and the enhanced prompt live in the run log, 
 });
 
 describe('generateStore: atlas size, separate from the output size (R16)', () => {
-  it('R16 starts at 2K with no model chosen', () => {
-    expect(createGenerateStore().getState().atlasKey).toBe('2K');
+  it('R16 starts at 1K with no model chosen', () => {
+    expect(createGenerateStore().getState().atlasKey).toBe('1K');
   });
 
-  it('R16 a model that offers only 1K as output still gets the 2K atlas', () => {
+  it('R16 the atlas size is 1K whatever output size the model offers', () => {
     const store = setup();
     store.getState().selectModel('gemini', 'gemini-3.1-flash-lite-image');
-    expect(store.getState()).toMatchObject({ resolutionKey: '1K', atlasKey: '2K' });
+    expect(store.getState()).toMatchObject({ resolutionKey: '1K', atlasKey: '1K' });
   });
 
   it('R16 changing the output size or the model never changes the atlas size', () => {
     const store = setup();
     store.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
-    store.getState().setAtlasKey('1K');
+    store.getState().setAtlasKey('4K');
     store.getState().setResolution('4K');
     store.getState().selectModel('gemini', 'gemini-3.1-flash-lite-image');
     store.getState().selectModel('openai', 'gpt-image-2.5-sunburst');
-    expect(store.getState().atlasKey).toBe('1K');
+    expect(store.getState().atlasKey).toBe('4K');
   });
 
   it('R16 changing the atlas size never changes the output size', () => {
     const store = setup();
     store.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
     store.getState().setResolution('4K');
-    store.getState().setAtlasKey('1K');
+    store.getState().setAtlasKey('2K');
     expect(store.getState().resolutionKey).toBe('4K');
   });
 
@@ -200,15 +230,15 @@ describe('generateStore: atlas size, separate from the output size (R16)', () =>
     expect(store.getState().atlasKey).toBe('4K');
   });
 
-  it('R16 a size the GPU cannot make is not chosen, and a chosen one it can no longer make falls back to 2K', () => {
+  it('R16 a size the GPU cannot make is not chosen, and a chosen one it can no longer make falls back to 1K', () => {
     const store = setup();
     store.getState().setMaxTextureSize(2048);
     store.getState().setAtlasKey('4K');
+    expect(store.getState().atlasKey).toBe('1K');
+    store.getState().setAtlasKey('2K');
     expect(store.getState().atlasKey).toBe('2K');
-    store.getState().setMaxTextureSize(8192);
-    store.getState().setAtlasKey('4K');
-    store.getState().setMaxTextureSize(2048);
-    expect(store.getState().atlasKey).toBe('2K');
+    store.getState().setMaxTextureSize(1024);
+    expect(store.getState().atlasKey).toBe('1K');
   });
 
   it('R16 a GPU limited to 1K gets the 1K atlas', () => {

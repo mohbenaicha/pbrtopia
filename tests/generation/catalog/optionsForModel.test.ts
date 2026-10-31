@@ -60,10 +60,10 @@ describe('chooseQualityLevel', () => {
   });
 
   it('R5 a level the model lacks is replaced by that model\'s default, with no folding to a near level', () => {
-    expect(chooseQualityLevel(known('openai', 'gpt-image-2'), 'xhigh')).toBe('medium');
+    expect(chooseQualityLevel(known('openai', 'gpt-image-2'), 'xhigh')).toBe('low');
     expect(chooseQualityLevel(known('gemini', 'gemini-3.1-flash-image'), 'medium')).toBe('minimal');
-    expect(chooseQualityLevel(known('openai', 'gpt-image-2.5-flare'), 'minimal')).toBe('auto');
-    expect(chooseQualityLevel(known('gemini', 'gemini-nano-banana-2.1'), '')).toBe('medium');
+    expect(chooseQualityLevel(known('openai', 'gpt-image-2.5-flare'), 'minimal')).toBe('low');
+    expect(chooseQualityLevel(known('gemini', 'gemini-nano-banana-2.1'), '')).toBe('minimal');
   });
 
   it('R5 a model with no levels gives null', () => {

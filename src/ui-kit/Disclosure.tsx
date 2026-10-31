@@ -28,7 +28,7 @@ export function Disclosure({ title, open, onOpenChange, disabled = false, keepMo
   const header = (
     <button type="button" id={buttonId} className="ui-disclosure__header" data-tone={tone} aria-expanded={open} aria-controls={open ? regionId : undefined} disabled={disabled} onClick={() => onOpenChange(!open)}>
       <span className="ui-disclosure__arrow" data-open={open ? '' : undefined} aria-hidden="true" />
-      {title}
+      <span className="ui-disclosure__title" title={title}>{title}</span>
     </button>
   );
   return (

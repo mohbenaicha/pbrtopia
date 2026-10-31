@@ -1,6 +1,7 @@
 import { createStore } from 'zustand';
 import type { Provider } from '../keys';
 import { DEFAULT_ATLAS_KEY, listAtlasSizes, type AtlasKey } from './catalog/atlasSizes';
+import { DEFAULT_IMAGE_MODEL } from './catalog/knownModels';
 import { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
 import type { ProviderModelRecord, ResolutionKey } from './catalog/modelTypes';
 import type { ProviderErrorCategory } from './providers/providerTypes';
@@ -112,17 +113,17 @@ export const findCatalogModel = (catalog: ModelCatalog, provider: Provider | nul
   provider === null || modelId === null ? null : (catalog[provider].find((model) => model.id === modelId) ?? null);
 const findModel = findCatalogModel;
 
-// R4, R5: the output size and level for a model: the current ones when the model offers them, else 2K, else the first size; else the model's default level.
+// R4, R5: the output size and level for a model: the current ones when the model offers them, else the smallest size; else the model's default level.
 function settleSelection(catalog: ModelCatalog, maxTextureSize: number, provider: Provider, modelId: string, current: Selection): Selection {
   const info = findModel(catalog, provider, modelId);
   if (info === null) return NO_SELECTION;
   const { resolutions } = optionsForModel(info, maxTextureSize);
   const keys = resolutions.map((option) => option.key);
-  const resolutionKey = current.resolutionKey !== null && keys.includes(current.resolutionKey) ? current.resolutionKey : keys.includes('2K') ? '2K' : (keys[0] ?? null);
+  const resolutionKey = current.resolutionKey !== null && keys.includes(current.resolutionKey) ? current.resolutionKey : (keys[0] ?? null);
   return { provider, modelId, resolutionKey, quality: chooseQualityLevel(info, current.quality ?? '') };
 }
 
-// R16: the atlas size stays unless the device cannot make it; then 2K, else the largest the device can make. A device size not yet known (0) changes nothing.
+// R16: the atlas size stays unless the device cannot make it; then the default (1K), else the largest the device can make. A device size not yet known (0) changes nothing.
 function settleAtlasKey(current: AtlasKey, maxTextureSize: number): AtlasKey {
   const keys = listAtlasSizes(maxTextureSize).map((option) => option.key);
   if (keys.length === 0 || keys.includes(current)) return current;
@@ -139,7 +140,9 @@ export function createGenerateStore() {
       const next = { ...get(), ...patch };
       const { provider, modelId } = next;
       // A chosen model that the list lacks stays chosen (a saved choice survives a list that is still loading); it settles when it is listed.
-      const settled = provider !== null && modelId !== null && findModel(next.catalog, provider, modelId) !== null ? settleSelection(next.catalog, next.maxTextureSize, provider, modelId, next) : {};
+      // With no model chosen, the default model (R4) is taken as soon as the list has it.
+      const wanted = provider !== null && modelId !== null ? { provider, id: modelId } : DEFAULT_IMAGE_MODEL;
+      const settled = findModel(next.catalog, wanted.provider, wanted.id) !== null ? settleSelection(next.catalog, next.maxTextureSize, wanted.provider, wanted.id, next) : {};
       set({ ...patch, atlasKey: settleAtlasKey(next.atlasKey, next.maxTextureSize), ...settled });
     };
     return {

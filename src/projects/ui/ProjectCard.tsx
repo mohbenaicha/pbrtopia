@@ -41,7 +41,7 @@ export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, 
         <RenameField initialName={summary.name} save={saveName} cancel={cancelRename} />
       ) : (
         <>
-          <h2 className="project-card__name">{summary.name}</h2>
+          <h2 className="project-card__name" title={summary.name}>{summary.name}</h2>
           <p className="project-card__meta">{summary.unreadable ?? `${summary.triangleCount.toLocaleString('en-US')} triangles · ${changed}`}</p>
           <div className="project-card__actions">
             <IconButton label="Open" icon={<Icon name="open-project" />} {...unreadable} onClick={open} />

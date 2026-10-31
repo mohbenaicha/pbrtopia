@@ -17,7 +17,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-1) var(--space-1);
+  padding: var(--space-1) 0 0; /* the panel around it (viewport-layout R34) already pads the row */
 }
 
 .run-log-row__part {
@@ -27,7 +27,6 @@
   margin: 0;
 }
 
-.run-log-row__part figcaption,
 .run-log-row__caption {
   color: var(--text-dim);
   font-size: var(--font-size-small);
@@ -39,6 +38,65 @@
   height: auto;
   border-radius: var(--radius-control);
   background: var(--bg-input);
+}
+
+/* A picture: the label is a bold caption over its bottom and Download is over its top-right corner, both only while the pointer is on it or a button has focus (generate R24). */
+.run-log-row__frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+}
+
+.run-log-row__enlarge {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+}
+
+.run-log-row__enlarge:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.run-log-row__label {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-over-picture);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.run-log-row__download {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+}
+
+.run-log-row__download .ui-icon-button {
+  width: 26px;
+  height: 26px;
+  background: var(--surface-over-picture);
+}
+
+.run-log-row__label,
+.run-log-row__download {
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.run-log-row__frame:hover .run-log-row__label,
+.run-log-row__frame:hover .run-log-row__download,
+.run-log-row__frame:focus-within .run-log-row__label,
+.run-log-row__frame:focus-within .run-log-row__download {
+  opacity: 1;
 }
 
 .run-log-row__text,

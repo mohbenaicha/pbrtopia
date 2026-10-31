@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Dialog, Icon, IconButton } from '../../ui-kit';
+import { Button, Icon, IconButton, ImageViewer, saveBlobAsFile } from '../../ui-kit';
 import type { ReferenceImage } from '../generateStore';
 
 interface ReferenceStripProps {
@@ -33,9 +33,19 @@ function Thumbnail({ reference, onEnlarge, onRemove }: { reference: ReferenceIma
   );
 }
 
-function EnlargedImage({ reference }: { reference: ReferenceImage }): React.JSX.Element {
+// R2: the large image viewer (viewport-layout R33); Download saves the picture under its own name.
+function EnlargedImage({ reference, onClose }: { reference: ReferenceImage; onClose: () => void }): React.JSX.Element {
   const url = useObjectUrl(reference.blob);
-  return <img className="reference-strip__enlarged" src={url} alt={reference.name} />;
+  return (
+    <ImageViewer
+      title={reference.name}
+      src={url ?? null}
+      details={[`Size: ${reference.width} x ${reference.height}`]}
+      downloadLabel={`Download ${reference.name}`}
+      onDownload={() => saveBlobAsFile(reference.blob, reference.name)}
+      onClose={onClose}
+    />
+  );
 }
 
 // R2: the reference images: add, remove, click to enlarge. The refusal text comes from the panel, which knows the model's cap.
@@ -65,9 +75,7 @@ export function ReferenceStrip({ references, notice, onFiles, onRemove }: Refere
       />
       <Button icon={<Icon name="plus" size={14} />} onClick={() => input.current?.click()}>Add images</Button>
       {notice !== null && <p className="reference-strip__notice" role="status">{notice}</p>}
-      <Dialog open={enlarged !== null} title={enlarged?.name ?? ''} onClose={() => setEnlarged(null)} actions={<Button onClick={() => setEnlarged(null)}>Close</Button>}>
-        {enlarged !== null && <EnlargedImage reference={enlarged} />}
-      </Dialog>
+      {enlarged !== null && <EnlargedImage reference={enlarged} onClose={() => setEnlarged(null)} />}
     </div>
   );
 }

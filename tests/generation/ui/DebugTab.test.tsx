@@ -185,3 +185,52 @@ describe('DebugTab: opening a row from the step list (R27)', () => {
     expect(header(/Model A/).getAttribute('aria-expanded')).toBe('false');
   });
 });
+
+describe('DebugTab: the pictures (R24, viewport-layout R33)', () => {
+  const clicked: { name: string }[] = [];
+  beforeEach(() => {
+    clicked.length = 0;
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      clicked.push({ name: this.download });
+    });
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  const openRow = (patch: Partial<RunLogRecord> = {}): void => {
+    show([record({ atlas: new Blob(['atlas'], { type: 'image/png' }), imagePreview: new Blob(['image'], { type: 'image/jpeg' }), ...patch })]);
+    fireEvent.click(header(/Gemini/));
+  };
+
+  it('R24 each picture has a Download button over its corner that saves it as atlas.<ext> or generated.<ext>', () => {
+    openRow();
+    fireEvent.click(screen.getByRole('button', { name: 'Download Atlas' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Download Generated image' }));
+    expect(clicked.map((entry) => entry.name)).toEqual(['atlas.png', 'generated.jpg']);
+  });
+
+  it('R24 the label of a picture is a caption inside its frame, not a line under it', () => {
+    openRow();
+    const frame = screen.getByRole('button', { name: 'Enlarge Atlas' }).closest('figure')!;
+    const caption = within(frame).getByText('Atlas');
+    expect(caption.tagName).toBe('FIGCAPTION');
+    expect(screen.getByRole('button', { name: 'Enlarge Atlas' }).nextElementSibling).toBe(caption); // the caption follows the picture inside the same frame
+    expect(frame.contains(within(frame).getByRole('button', { name: 'Download Atlas' }))).toBe(true);
+  });
+
+  it('R24 a click on a picture opens it in the large viewer with Download, and Close puts the row back', () => {
+    openRow();
+    fireEvent.click(screen.getByRole('button', { name: 'Enlarge Generated image' }));
+    const viewer = screen.getByRole('dialog', { name: 'Generated image' });
+    fireEvent.click(within(viewer).getByRole('button', { name: 'Download Generated image' }));
+    expect(clicked.map((entry) => entry.name)).toEqual(['generated.jpg']);
+    fireEvent.click(within(viewer).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('R24 the viewer shows the picture already made for the row and makes no second address', () => {
+    openRow();
+    const before = created.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Enlarge Atlas' }));
+    expect(created).toHaveLength(before);
+  });
+});

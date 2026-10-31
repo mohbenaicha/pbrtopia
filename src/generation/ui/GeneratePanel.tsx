@@ -104,7 +104,7 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
           <span className="generate-panel__label">Prompt</span>
           <textarea
             className="generate-panel__prompt"
-            rows={5}
+            rows={10}
             value={state.prompt}
             data-drop-target={dropTarget ? '' : undefined}
             onChange={(event) => state.setPrompt(event.target.value)}

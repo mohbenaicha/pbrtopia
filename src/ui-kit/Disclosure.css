@@ -1,13 +1,42 @@
+/* One panel (viewport-layout R34): the heading, its buttons and the opened content share the panel's background and outline. */
 .ui-disclosure {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--bg-button);
 }
 
 .ui-disclosure__bar {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  padding-right: var(--space-2);
+}
+
+.ui-disclosure__bar {
+  border-radius: var(--radius-control);
+  transition: background var(--transition-fast);
+}
+
+/* The whole heading row lights up, buttons included; a button under the pointer is a step darker so it still reads as its own target. */
+.ui-disclosure__bar:hover:not(:has(.ui-disclosure__header:disabled)) {
+  background: var(--bg-hover);
+}
+
+.ui-disclosure__bar .ui-icon-button {
+  background: transparent;
+}
+
+.ui-disclosure__bar .ui-icon-button:hover:not(:disabled) {
+  background: var(--bg-button);
+}
+
+.ui-disclosure__bar > .ui-disclosure__header:hover:not(:disabled) {
+  background: transparent;
+}
+
+.ui-disclosure__body {
+  padding: var(--space-1) var(--space-3) var(--space-3);
 }
 
 .ui-disclosure__bar > .ui-disclosure__header {
@@ -23,7 +52,7 @@
   padding: 0 var(--space-3);
   border: none;
   border-radius: var(--radius-control);
-  background: var(--bg-button);
+  background: transparent;
   color: var(--text);
   font: inherit;
   font-weight: 600;
@@ -52,6 +81,14 @@
 .ui-disclosure__header:focus-visible {
   outline: var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* A heading too long for its row is cut with an ellipsis (viewport-layout R34, R27). */
+.ui-disclosure__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ui-disclosure__arrow {

@@ -55,6 +55,11 @@ describe('GeneratePanel: fields (R1, R3)', () => {
     expect(screen.getByRole('button', { name: 'Generate' })).toBeTruthy();
   });
 
+  it('R1 the prompt field starts ten lines tall', () => {
+    setup();
+    expect(screen.getByRole('textbox', { name: 'Prompt' }).getAttribute('rows')).toBe('10');
+  });
+
   it('R1 typing in the prompt writes the store', () => {
     const { store } = setup();
     fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), { target: { value: 'weathered bronze' } });
@@ -125,8 +130,8 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     const { store, combo } = setup((s) => s.getState().setHasKey('openai', true));
     fireEvent.click(combo('Model'));
     fireEvent.click(screen.getByRole('option', { name: 'OpenAI: GPT Image 2.5 Sunburst' }));
-    expect(store.getState()).toMatchObject({ provider: 'openai', modelId: 'gpt-image-2.5-sunburst', resolutionKey: '2K' });
-    expect(combo('Resolution').textContent).toMatch(/2K/);
+    expect(store.getState()).toMatchObject({ provider: 'openai', modelId: 'gpt-image-2.5-sunburst', resolutionKey: '1K' });
+    expect(combo('Resolution').textContent).toMatch(/1K/);
   });
 
   it('R4 Gemini offers 1K, 2K and 4K and OpenAI offers 1K, 2K and 2.8K = 2880', () => {
@@ -149,19 +154,23 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     expect(store.getState().resolutionKey).toBe('4K');
   });
 
-  it('R16 the Atlas size dropdown lists 1K, 2K and 4K, starts at 2K and sets only the atlas key in the store', () => {
+  it('R16 the Atlas size dropdown lists 1K, 2K and 4K, starts at 1K and sets only the atlas key in the store', () => {
     const { store, combo, optionsOf } = setup();
     expect(optionsOf('Atlas size').map((label) => label.split(' ')[0])).toEqual(['1K', '2K', '4K']);
-    expect(combo('Atlas size').textContent).toMatch(/2K/);
+    expect(combo('Atlas size').textContent).toMatch(/1K/);
     fireEvent.click(combo('Atlas size'));
-    fireEvent.click(screen.getByRole('option', { name: /^1K/ }));
-    expect(store.getState()).toMatchObject({ atlasKey: '1K', resolutionKey: '2K' });
-    expect(combo('Resolution').textContent).toMatch(/2K/);
+    fireEvent.click(screen.getByRole('option', { name: /^2K/ }));
+    expect(store.getState()).toMatchObject({ atlasKey: '2K', resolutionKey: '1K' });
+    expect(combo('Resolution').textContent).toMatch(/1K/);
   });
 
-  it('R16 the Atlas size dropdown does not follow the model: Flash Lite (output 1K only) keeps the 2K atlas', () => {
-    const { combo } = setup((store) => store.getState().selectModel('gemini', 'gemini-3.1-flash-lite-image'));
-    expect(combo('Atlas size').textContent).toMatch(/2K/);
+  it('R16 the Atlas size dropdown does not follow the model: a chosen 4K atlas stays when the model offers only a 1K output', () => {
+    const { combo, store } = setup((s) => {
+      s.getState().setAtlasKey('4K');
+      s.getState().selectModel('gemini', 'gemini-3.1-flash-lite-image');
+    });
+    expect(store.getState().atlasKey).toBe('4K');
+    expect(combo('Atlas size').textContent).toMatch(/4K/);
   });
 
   it('R5 the quality dropdown lists exactly the levels of the selected model', () => {

@@ -1,6 +1,6 @@
 import { Disclosure, Icon, IconButton } from '../../ui-kit';
 import type { RunLogRecord, RunOutcome } from '../runLogStore';
-import { useObjectUrl } from './useObjectUrl';
+import { RunLogPicture } from './RunLogPicture';
 
 interface RunLogRowProps {
   record: RunLogRecord;
@@ -20,14 +20,12 @@ function formatClock(startedAt: number): string {
 
 // R24: the opened body of a row. Its own component so the picture addresses exist only while the row is open.
 function RunLogBody({ record }: { record: RunLogRecord }): React.JSX.Element {
-  const atlasUrl = useObjectUrl(record.atlas);
-  const imageUrl = useObjectUrl(record.imagePreview);
   return (
     <div className="run-log-row__body">
-      {atlasUrl !== null && <figure className="run-log-row__part"><figcaption>Atlas</figcaption><img className="run-log-row__picture" src={atlasUrl} alt="Atlas sent to the model" /></figure>}
+      {record.atlas !== null && <RunLogPicture blob={record.atlas} label="Atlas" alt="Atlas sent to the model" fileStem="atlas" />}
       <div className="run-log-row__part"><span className="run-log-row__caption">Prompt</span><p className="run-log-row__text">{record.prompt}</p></div>
       {record.enhancedPrompt !== null && <div className="run-log-row__part"><span className="run-log-row__caption">Enhanced prompt</span><p className="run-log-row__text">{record.enhancedPrompt}</p></div>}
-      {imageUrl !== null && <figure className="run-log-row__part"><figcaption>Generated image</figcaption><img className="run-log-row__picture" src={imageUrl} alt="Generated image" /></figure>}
+      {record.imagePreview !== null && <RunLogPicture blob={record.imagePreview} label="Generated image" alt="Generated image" fileStem="generated" />}
       {record.errorMessage !== null && (
         <div className="run-log-row__error" role="alert">
           <p className="run-log-row__text">{record.errorMessage}</p>

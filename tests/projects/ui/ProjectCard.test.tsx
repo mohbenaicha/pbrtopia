@@ -30,6 +30,7 @@ describe('ProjectCard', () => {
   it('projects R7 the card names the project and gives its triangle count and the day of the last change', () => {
     show();
     expect(screen.getByRole('heading', { name: 'Orc helmet' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Orc helmet' }).getAttribute('title')).toBe('Orc helmet'); // viewport-layout R34: cut with an ellipsis, the full name as tooltip
     expect(screen.getByText(/^20,812 triangles · Oct 18, 2026$/)).toBeTruthy();
   });
 
