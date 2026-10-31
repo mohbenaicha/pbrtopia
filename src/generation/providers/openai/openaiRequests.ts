@@ -1,7 +1,6 @@
 import type { ResolutionKey } from '../../catalog/modelTypes';
 import type { EncodedImage } from '../base64';
 import { makeProviderError } from '../classifyProviderError';
-import { buildEnhancerText } from '../enhancerInstructions';
 import type { ProviderError, Result } from '../providerTypes';
 
 export const OPENAI_EDITS_URL = 'https://api.openai.com/v1/images/edits';
@@ -47,7 +46,7 @@ export function buildOpenAiEnhanceBody(input: { model: string; prompt: string; a
       {
         role: 'user',
         content: [
-          { type: 'input_text', text: buildEnhancerText(input.prompt) },
+          { type: 'input_text', text: input.prompt },
           { type: 'input_image', image_url: `data:${input.atlas.mimeType};base64,${input.atlas.base64}`, detail: 'auto' },
         ],
       },

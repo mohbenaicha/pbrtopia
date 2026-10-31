@@ -23,6 +23,9 @@ export { createImageGenerator, createPromptEnhancer } from './providers/createPr
 export type { GeneratedImage, GenerateRequest, ImageGenerator } from './providers/ImageGenerator';
 export type { PromptEnhancer } from './providers/PromptEnhancer';
 export type { ProviderError, ProviderErrorCategory, Result } from './providers/providerTypes';
+export { buildEnhancerText } from './prompts/buildEnhancerText';
+export { buildImagePrompt } from './prompts/buildImagePrompt';
+export { hasRecipe, recipeForChannel, type MapRecipe, type RecipeChannel } from './prompts/mapRecipes';
 export { discoverModels } from './catalog/discoverModels';
 export { KNOWN_MODELS } from './catalog/knownModels';
 export type { ProviderModelRecord } from './catalog/modelTypes';

@@ -58,11 +58,10 @@ describe('buildGeminiImageBody (R7)', () => {
 });
 
 describe('buildGeminiEnhanceBody (R8)', () => {
-  it('R8 carries the enhancer instruction with the user prompt, then the atlas, and no response_format', () => {
-    const body = buildGeminiEnhanceBody({ model: 'gemini-3.8-flash', prompt: 'weathered steel', atlas, level: null });
+  it('R33 carries the built enhancer text exactly as given, then the atlas, and no response_format', () => {
+    const body = buildGeminiEnhanceBody({ model: 'gemini-3.8-flash', prompt: 'built enhancer text', atlas, level: null });
     expect(body.model).toBe('gemini-3.8-flash');
-    expect(body.input[0]).toMatchObject({ type: 'text' });
-    expect((body.input[0] as { text: string }).text).toContain('weathered steel');
+    expect(body.input[0]).toEqual({ type: 'text', text: 'built enhancer text' });
     expect(body.input[1]).toEqual({ type: 'image', mime_type: 'image/png', data: 'ATLAS' });
     expect('response_format' in body).toBe(false);
   });

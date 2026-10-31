@@ -1,14 +1,16 @@
 import { SegmentedControl } from '../../ui-kit';
+import { hasRecipe } from '../prompts/mapRecipes';
 
 type Channel = 'albedo' | 'normal' | 'roughness' | 'metalness';
 
-// R3: albedo is the only channel in v1; the others are shown so the plan is visible, and cannot be chosen.
-const OPTIONS: { value: Channel; label: string; disabled?: boolean }[] = [
+// R3, R30: a channel can be chosen when it has a prompt recipe (albedo only for now); the others are shown so the plan is visible.
+const CHANNELS: { value: Channel; label: string }[] = [
   { value: 'albedo', label: 'Albedo' },
-  { value: 'normal', label: 'Normal', disabled: true },
-  { value: 'roughness', label: 'Roughness', disabled: true },
-  { value: 'metalness', label: 'Metalness', disabled: true },
+  { value: 'normal', label: 'Normal' },
+  { value: 'roughness', label: 'Roughness' },
+  { value: 'metalness', label: 'Metalness' },
 ];
+const OPTIONS = CHANNELS.map((channel) => ({ ...channel, disabled: !hasRecipe(channel.value) }));
 
 export function ChannelToggle(): React.JSX.Element {
   return <SegmentedControl label="Channel" options={OPTIONS} value="albedo" onChange={() => undefined} />;

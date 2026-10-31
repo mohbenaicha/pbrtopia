@@ -1,7 +1,6 @@
 import type { ResolutionKey } from '../../catalog/modelTypes';
 import type { EncodedImage } from '../base64';
 import { makeProviderError } from '../classifyProviderError';
-import { buildEnhancerText } from '../enhancerInstructions';
 import type { ProviderError, Result } from '../providerTypes';
 
 export const GEMINI_INTERACTIONS_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
@@ -44,7 +43,7 @@ export function buildGeminiImageBody(input: { model: string; prompt: string; res
 export function buildGeminiEnhanceBody(input: { model: string; prompt: string; atlas: EncodedImage; level: string | null }): GeminiEnhanceBody {
   return {
     model: input.model,
-    input: [{ type: 'text', text: buildEnhancerText(input.prompt) }, imagePart(input.atlas)],
+    input: [{ type: 'text', text: input.prompt }, imagePart(input.atlas)],
     ...(input.level === null ? {} : { generation_config: { thinking_level: input.level } }),
   };
 }

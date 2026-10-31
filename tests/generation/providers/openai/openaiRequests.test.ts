@@ -64,14 +64,13 @@ describe('buildOpenAiImageForm (R7)', () => {
 });
 
 describe('buildOpenAiEnhanceBody (R8)', () => {
-  it('R8 sends one user message with the instruction text and the atlas as a data URL', () => {
-    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-astra', prompt: 'weathered steel', atlas: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: null });
+  it('R33 sends one user message with the built enhancer text exactly as given and the atlas as a data URL', () => {
+    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-astra', prompt: 'built enhancer text', atlas: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: null });
     expect(body.model).toBe('gpt-6-astra');
     expect(body.input).toHaveLength(1);
     const message = body.input[0];
     expect(message?.role).toBe('user');
-    expect(message?.content[0]).toMatchObject({ type: 'input_text' });
-    expect((message?.content[0] as { text: string }).text).toContain('weathered steel');
+    expect(message?.content[0]).toEqual({ type: 'input_text', text: 'built enhancer text' });
     expect(message?.content[1]).toEqual({ type: 'input_image', image_url: 'data:image/png;base64,QVRMQVM=', detail: 'auto' });
   });
 
