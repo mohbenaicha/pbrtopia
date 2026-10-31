@@ -54,14 +54,14 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
     store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
     store.getState().setCatalog({ gemini: [NANO, FLASH, LITE], openai: [SUNBURST] });
     expect(store.getState().modelId).toBe('gemini-3.1-flash-image');
-    store.getState().restoreSettings({ prompt: '', references: [], provider: 'gemini', modelId: 'gemini-nano-banana-2.1', resolutionKey: null, atlasKey: '1K', atlasRender: 'grey', quality: null });
+    store.getState().restoreSettings({ prompt: '', references: [], provider: 'gemini', modelId: 'gemini-nano-banana-2.1', resolutionKey: null, atlasKey: '1K', atlasRender: 'grey', tileBorder: true, quality: null });
     expect(store.getState()).toMatchObject({ modelId: 'gemini-nano-banana-2.1', resolutionKey: '1K', quality: 'minimal' });
   });
 
   it('R4 a project saved with no model gets the default model when restored', () => {
     const store = setup();
     store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
-    store.getState().restoreSettings({ prompt: '', references: [], provider: null, modelId: null, resolutionKey: null, atlasKey: '1K', atlasRender: 'grey', quality: null });
+    store.getState().restoreSettings({ prompt: '', references: [], provider: null, modelId: null, resolutionKey: null, atlasKey: '1K', atlasRender: 'grey', tileBorder: true, quality: null });
     expect(store.getState()).toMatchObject({ provider: 'openai', modelId: 'gpt-image-2.5-sunburst' });
   });
 
@@ -150,7 +150,7 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
 });
 
 describe('generateStore: restoring a project\'s saved settings (R22) and the notice (R19)', () => {
-  const saved = { prompt: 'saved prompt', references: [image('r1')], provider: 'gemini' as const, modelId: 'gemini-3.1-flash-image', resolutionKey: '4K' as const, atlasKey: '4K' as const, atlasRender: 'grey' as const, quality: 'high' };
+  const saved = { prompt: 'saved prompt', references: [image('r1')], provider: 'gemini' as const, modelId: 'gemini-3.1-flash-image', resolutionKey: '4K' as const, atlasKey: '4K' as const, atlasRender: 'grey' as const, tileBorder: true, quality: 'high' };
 
   it('R22 restoreSettings sets the prompt, references, model, sizes and quality, and settles them against the list', () => {
     const store = setup();
@@ -360,7 +360,7 @@ describe('generateStore: scene, keys and enhancer inputs (R6)', () => {
 });
 
 describe('generateStore: atlas render (R37)', () => {
-  const saved = { prompt: '', references: [], provider: null, modelId: null, resolutionKey: null, atlasKey: '1K' as const, quality: null };
+  const saved = { prompt: '', references: [], provider: null, modelId: null, resolutionKey: null, atlasKey: '1K' as const, tileBorder: true, quality: null };
 
   it('R37 starts on the grey render and setAtlasRender changes it', () => {
     const store = createGenerateStore();
@@ -386,5 +386,38 @@ describe('generateStore: atlas render (R37)', () => {
     expect(store.getState().atlasRender).toBe('viewport');
     store.getState().restoreSettings({ ...saved, atlasRender: 'grey' });
     expect(store.getState().atlasRender).toBe('grey');
+  });
+});
+
+describe('generateStore: tile borders (R40)', () => {
+  const saved = { prompt: '', references: [], provider: null, modelId: null, resolutionKey: null, atlasKey: '1K' as const, atlasRender: 'grey' as const, quality: null };
+
+  it('R40 starts with the tile borders on and setTileBorder changes it', () => {
+    const store = createGenerateStore();
+    expect(store.getState().tileBorder).toBe(true);
+    store.getState().setTileBorder(false);
+    expect(store.getState().tileBorder).toBe(false);
+    store.getState().setTileBorder(true);
+    expect(store.getState().tileBorder).toBe(true);
+  });
+
+  it('R40 neither the model, the sizes nor the render change the setting', () => {
+    const store = createGenerateStore();
+    store.getState().setMaxTextureSize(8192);
+    store.getState().setCatalog({ gemini: [NANO, FLASH], openai: [] });
+    store.getState().setTileBorder(false);
+    store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
+    store.getState().setResolution('2K');
+    store.getState().setAtlasKey('4K');
+    store.getState().setAtlasRender('wireframe');
+    expect(store.getState().tileBorder).toBe(false);
+  });
+
+  it('R40 restoreSettings takes the saved setting', () => {
+    const store = createGenerateStore();
+    store.getState().restoreSettings({ ...saved, tileBorder: false });
+    expect(store.getState().tileBorder).toBe(false);
+    store.getState().restoreSettings({ ...saved, tileBorder: true });
+    expect(store.getState().tileBorder).toBe(true);
   });
 });

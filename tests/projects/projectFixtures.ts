@@ -28,6 +28,7 @@ export function sampleProjectRecord(overrides: Partial<ProjectRecord> = {}): Pro
       resolutionKey: '2K',
       atlasKey: '2K',
       atlasRender: 'grey',
+      tileBorder: true,
       quality: 'medium',
     },
     setIds: ['set-1', 'set-2'],

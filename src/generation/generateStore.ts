@@ -55,6 +55,7 @@ export interface SavedPanelSettings {
   resolutionKey: ResolutionKey | null;
   atlasKey: AtlasKey;
   atlasRender: AtlasRender;
+  tileBorder: boolean;
   quality: string | null;
 }
 
@@ -67,6 +68,7 @@ export interface GenerateState {
   resolutionKey: ResolutionKey | null; // the output size asked of the model (R4)
   atlasKey: AtlasKey; // the size of the atlas sent in (R16); independent of the model and the output size
   atlasRender: AtlasRender; // how the atlas snapshots are drawn (R37); independent of everything else in the panel
+  tileBorder: boolean; // a white border around every atlas tile (R40)
   quality: string | null;
   // fed by app/
   catalog: ModelCatalog;
@@ -94,6 +96,7 @@ export interface GenerateState {
   setResolution: (key: ResolutionKey) => void;
   setAtlasKey: (key: AtlasKey) => void;
   setAtlasRender: (render: AtlasRender) => void;
+  setTileBorder: (on: boolean) => void;
   setQuality: (level: string) => void;
   setCatalog: (catalog: ModelCatalog) => void;
   setHasKey: (provider: Provider, has: boolean) => void;
@@ -156,6 +159,7 @@ export function createGenerateStore() {
       ...NO_SELECTION,
       atlasKey: DEFAULT_ATLAS_KEY,
       atlasRender: DEFAULT_ATLAS_RENDER,
+      tileBorder: true,
       catalog: { gemini: [], openai: [] },
       hasKey: { gemini: false, openai: false },
       enhancer: null,
@@ -201,6 +205,7 @@ export function createGenerateStore() {
         if (listAtlasSizes(get().maxTextureSize).some((option) => option.key === key)) set({ atlasKey: key });
       },
       setAtlasRender: (atlasRender) => set({ atlasRender }),
+      setTileBorder: (tileBorder) => set({ tileBorder }),
       setQuality: (level) => {
         const { catalog, provider, modelId, maxTextureSize } = get();
         const info = findModel(catalog, provider, modelId);

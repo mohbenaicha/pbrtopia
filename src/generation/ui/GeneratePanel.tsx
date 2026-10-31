@@ -161,6 +161,8 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
           onAtlasKeyChange={state.setAtlasKey}
           atlasRender={state.atlasRender}
           onAtlasRenderChange={state.setAtlasRender}
+          tileBorder={state.tileBorder}
+          onTileBorderChange={state.setTileBorder}
           previewing={previewing}
           previewBlockedReason={describePreviewBlock(state)}
           onPreview={() => void previewAtlas()}

@@ -21,6 +21,11 @@ export function readText(value: unknown, path: string): string {
   return value;
 }
 
+export function readFlag(value: unknown, path: string): boolean {
+  if (typeof value !== 'boolean') throw new FieldProblem(path);
+  return value;
+}
+
 export function readNonEmptyText(value: unknown, path: string): string {
   if (typeof value !== 'string' || value === '') throw new FieldProblem(path);
   return value;

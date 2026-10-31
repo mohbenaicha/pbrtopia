@@ -421,6 +421,23 @@ describe('GeneratePanel: Additional settings (R36 to R39)', () => {
     expect(combo('Atlas render').textContent).toMatch(/Current viewport/);
   });
 
+  it('R40 Tile borders sits after Atlas render, starts ticked, is only in the opened section and writes the store', () => {
+    const { store, combo } = setup();
+    const box = screen.getByRole('checkbox', { name: 'Tile borders' }) as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    expect(combo('Atlas render').compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(box);
+    expect(store.getState().tileBorder).toBe(false);
+    expect(box.checked).toBe(false);
+    fireEvent.click(box);
+    expect(store.getState().tileBorder).toBe(true);
+  });
+
+  it('R40 the Tile borders box is not drawn while the section is closed', () => {
+    setup(undefined, false);
+    expect(screen.queryByRole('checkbox', { name: 'Tile borders' })).toBeNull();
+  });
+
   it('R38 the eye button calls onPreviewAtlas and opens the image viewer with the atlas it returns', async () => {
     const { props } = setup();
     fireEvent.click(screen.getByRole('button', { name: 'Preview atlas' }));

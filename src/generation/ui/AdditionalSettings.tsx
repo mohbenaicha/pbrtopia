@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Disclosure, Icon, IconButton } from '../../ui-kit';
+import { Checkbox, Disclosure, Icon, IconButton } from '../../ui-kit';
 import type { AtlasRender } from '../atlasRender';
 import type { AtlasKey, AtlasSizeOption } from '../catalog/atlasSizes';
 import { AtlasRenderSelect } from './AtlasRenderSelect';
@@ -12,13 +12,15 @@ interface AdditionalSettingsProps {
   onAtlasKeyChange: (key: AtlasKey) => void;
   atlasRender: AtlasRender;
   onAtlasRenderChange: (render: AtlasRender) => void;
+  tileBorder: boolean;
+  onTileBorderChange: (on: boolean) => void;
   previewing: boolean; // the preview atlas is being built (R38)
   previewBlockedReason: string | null; // why the preview cannot be asked for now, or null
   onPreview: () => void;
 }
 
-// R36: the closed-at-first section under Quality. Atlas size (R16), then Atlas render (R37) with the eye button that previews the atlas (R38).
-export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atlasRender, onAtlasRenderChange, previewing, previewBlockedReason, onPreview }: AdditionalSettingsProps): React.JSX.Element {
+// R36: the closed-at-first section under Quality. Atlas size (R16), then Atlas render (R37) with the eye button that previews the atlas (R38), then Tile borders (R40).
+export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atlasRender, onAtlasRenderChange, tileBorder, onTileBorderChange, previewing, previewBlockedReason, onPreview }: AdditionalSettingsProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   return (
     <Disclosure title="Additional settings" open={open} onOpenChange={setOpen} keepMounted>
@@ -37,6 +39,7 @@ export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atl
             onClick={onPreview}
           />
         </div>
+        <Checkbox label="Tile borders" checked={tileBorder} onChange={onTileBorderChange} />
       </div>
     </Disclosure>
   );
