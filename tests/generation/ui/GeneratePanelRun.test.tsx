@@ -21,7 +21,7 @@ function setup() {
   s.setHasKey('gemini', true);
   s.setSceneState({ hasModel: true, hasUvs: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
-  const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(),onCancel: vi.fn(), onRetry: vi.fn() };
+  const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(),onCancel: vi.fn(), onRetry: vi.fn(), onPreviewAtlas: vi.fn() };
   render(<GeneratePanel projectId="p1" store={store} logStore={createRunLogStore()} readImageFile={vi.fn()} today="2026-10-19" {...props} />);
   return { store, props };
 }

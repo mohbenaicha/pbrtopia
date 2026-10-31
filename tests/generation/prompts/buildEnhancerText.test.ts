@@ -25,3 +25,12 @@ describe('buildEnhancerText', () => {
     expect(text.indexOf(recipe.enhancerFocus)).toBeLessThan(text.indexOf('User prompt:'));
   });
 });
+
+describe('buildEnhancerText: the atlas render (R39)', () => {
+  it('R39 the viewport render puts its own focus in the request, and not the grey one', () => {
+    const viewport = recipeForChannel('albedo', 'viewport');
+    const text = buildEnhancerText(viewport, 'a rusty robot');
+    expect(text).toBe(`${ENHANCER_INSTRUCTION}\n\n${viewport.enhancerFocus}\n\nUser prompt:\na rusty robot`);
+    expect(text).not.toContain(recipeForChannel('albedo', 'grey').enhancerFocus);
+  });
+});

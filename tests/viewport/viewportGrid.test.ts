@@ -132,3 +132,20 @@ describe('viewport grid', () => {
     expect(scene.children).not.toContain(grid.object);
   });
 });
+
+describe('viewport grid: hide (generate R37)', () => {
+  it('generate R37 hide() takes the grid out of a picture and the function it returns puts it back as it was', () => {
+    const { grid } = setup();
+    const restore = grid.hide();
+    expect(grid.object.visible).toBe(false);
+    restore();
+    expect(grid.object.visible).toBe(true);
+  });
+
+  it('generate R37 a grid that was switched off stays off after hide() and its restore', () => {
+    const { grid } = setup();
+    grid.setVisible(false);
+    grid.hide()();
+    expect(grid.object.visible).toBe(false);
+  });
+});

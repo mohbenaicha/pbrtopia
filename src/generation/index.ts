@@ -5,6 +5,7 @@ export { runLogStore, type RunLogActions, type RunLogRecord, type RunLogState } 
 export type { UvOptions } from './ui/UvOptionsDialog';
 export { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
 export { listAtlasSizes } from './catalog/atlasSizes';
+export type { AtlasRender } from './atlasRender';
 export { describeGenerateAvailability, pickEnhancerModel, type GenerateAvailability } from './generateAvailability';
 export {
   createGenerateStore,

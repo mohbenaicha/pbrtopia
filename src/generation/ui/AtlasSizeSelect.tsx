@@ -15,6 +15,7 @@ export function AtlasSizeSelect({ options, value, onChange }: AtlasSizeSelectPro
       options={options.map((option) => ({ value: option.key, label: `${option.key} (${option.sizePx} px)` }))}
       value={value}
       emptyText="No atlas sizes on this device"
+      opensUp
       onChange={(key) => onChange(key as AtlasKey)}
     />
   );

@@ -16,3 +16,4 @@ export { HDRI_CHOICES } from './hdriCatalog';
 export type { ViewportHandle } from './viewportHandle';
 export type { SurfaceHit } from './pickSurface';
 export type { ThumbnailSpec } from './captureThumbnail';
+export type { SnapshotLook } from './snapshotLook';

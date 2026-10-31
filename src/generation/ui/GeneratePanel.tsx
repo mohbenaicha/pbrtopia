@@ -6,7 +6,8 @@ import { optionsForModel } from '../catalog/optionsForModel';
 import { describeGenerateAvailability } from '../generateAvailability';
 import { findCatalogModel, generateStore, type GenerateState, type ReferenceImage } from '../generateStore';
 import { runLogStore, type RunLogState } from '../runLogStore';
-import { AtlasSizeSelect } from './AtlasSizeSelect';
+import { AdditionalSettings } from './AdditionalSettings';
+import { AtlasPreviewViewer } from './AtlasPreviewViewer';
 import { ChannelToggle } from './ChannelToggle';
 import { DebugTab } from './DebugTab';
 import { GenerateButton } from './GenerateButton';
@@ -29,17 +30,29 @@ interface GeneratePanelProps {
   onGenerateUv: (options: UvOptions) => void;
   onCancel: () => void; // Cancel in the step list (R10)
   onRetry: () => void; // Retry in the error block (R9)
+  onPreviewAtlas: () => Promise<{ ok: true; value: Blob } | { ok: false; error: string }>; // the eye button (R38): the atlas of the current settings, or why it could not be made
   store?: StoreApi<GenerateState>;
   logStore?: StoreApi<RunLogState>;
   readImageFile?: (file: File) => Promise<ReferenceImage>;
   today?: string; // YYYY-MM-DD; defaults to the current date
 }
 
+// R38: why the atlas cannot be previewed now, or null.
+function describePreviewBlock(state: GenerateState): string | null {
+  if (state.status === 'running') return 'A run is in progress.';
+  if (!state.hasModel) return 'Open a project with a model first.';
+  if (!state.hasUvs) return 'The model has no UVs yet.';
+  return null;
+}
+
+// Resolves after the browser has drawn the next frame (a task queued from inside a frame callback runs after that frame is painted).
+const afterNextPaint = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+
 const carriesFiles = (event: React.DragEvent): boolean => Array.from(event.dataTransfer.types).includes('Files');
 
 // R1, R23: the Generate panel: a Generate tab (prompt, references, channel, model, resolution, quality, Generate) and a Debug tab (the run log).
 // The handlers run the flows (G9, G10); this panel only shows state and reports clicks. Both tabs stay mounted so a visit to the other loses nothing.
-export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, onRetry, store = generateStore, logStore = runLogStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
+export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, onRetry, onPreviewAtlas, store = generateStore, logStore = runLogStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
   const state = useStore(store);
   const records = useStore(logStore, (log) => log.records);
   const activeId = useStore(logStore, (log) => log.activeId);
@@ -48,6 +61,8 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
   const [notice, setNotice] = useState<string | null>(null);
   const [uvDialogOpen, setUvDialogOpen] = useState(false);
   const [dropTarget, setDropTarget] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewPng, setPreviewPng] = useState<Blob | null>(null);
   const mounted = useRef(true);
   const model = findCatalogModel(state.catalog, state.provider, state.modelId);
   const options = model === null ? { resolutions: [], qualityLevels: [] } : optionsForModel(model, state.maxTextureSize);
@@ -91,6 +106,19 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
     setNotice(messages.length > 0 ? messages.join(' ') : null);
   };
 
+  // R38: asks the app for the atlas of the current settings and shows it; a failure is the panel notice, not a run error.
+  const previewAtlas = async (): Promise<void> => {
+    if (previewing) return;
+    setPreviewing(true);
+    store.getState().setNotice(null);
+    await afterNextPaint(); // the capture holds the main thread for a while: the busy state must be on screen first
+    const outcome = await onPreviewAtlas();
+    if (!mounted.current) return;
+    setPreviewing(false);
+    if (outcome.ok) setPreviewPng(outcome.value);
+    else store.getState().setNotice(outcome.error);
+  };
+
   return (
     <section className="generate-panel" aria-label="Generate">
       <Tabs
@@ -126,8 +154,17 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
         <ChannelToggle />
         <ModelSelect catalog={state.catalog} hasKey={state.hasKey} provider={state.provider} modelId={state.modelId} today={today} onSelect={state.selectModel} />
         <ResolutionSelect options={options.resolutions} experimental={model?.experimentalResolutions ?? []} value={state.resolutionKey} onChange={state.setResolution} />
-        <AtlasSizeSelect options={listAtlasSizes(state.maxTextureSize)} value={state.atlasKey} onChange={state.setAtlasKey} />
         <QualitySelect levels={options.qualityLevels} value={state.quality} onChange={state.setQuality} />
+        <AdditionalSettings
+          atlasSizes={listAtlasSizes(state.maxTextureSize)}
+          atlasKey={state.atlasKey}
+          onAtlasKeyChange={state.setAtlasKey}
+          atlasRender={state.atlasRender}
+          onAtlasRenderChange={state.setAtlasRender}
+          previewing={previewing}
+          previewBlockedReason={describePreviewBlock(state)}
+          onPreview={() => void previewAtlas()}
+        />
         {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} onCancel={onCancel} {...(viewLog === undefined ? {} : { onViewLog: viewLog })} />}
         {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} />}
         {state.notice !== null && <p className="generate-panel__notice" role="status">{state.notice}</p>}
@@ -139,6 +176,7 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
       <div className="generate-panel__page" role="tabpanel" aria-label="Run log" hidden={tab !== 'debug'}>
         <DebugTab projectId={projectId} records={records} revealId={reveal.id} revealCount={reveal.count} onRemove={logStore.getState().remove} />
       </div>
+      {previewPng !== null && <AtlasPreviewViewer png={previewPng} onClose={() => setPreviewPng(null)} />}
       <UvOptionsDialog
         open={uvDialogOpen}
         onCancel={() => setUvDialogOpen(false)}

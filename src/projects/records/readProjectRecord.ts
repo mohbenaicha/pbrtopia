@@ -51,6 +51,7 @@ function readGenerateSettings(value: unknown, path: string): GenerateSettingsRec
     modelId: readText(raw['modelId'], `${path}.modelId`),
     resolutionKey: readChoice(raw['resolutionKey'], `${path}.resolutionKey`, ['1K', '2K', '2.8K', '4K'] as const),
     atlasKey: raw['atlasKey'] === undefined ? '2K' : readChoice(raw['atlasKey'], `${path}.atlasKey`, ['1K', '2K', '4K'] as const), // absent in projects saved before generate R16
+    atlasRender: raw['atlasRender'] === undefined ? 'grey' : readChoice(raw['atlasRender'], `${path}.atlasRender`, ['grey', 'wireframe', 'viewport'] as const), // absent in projects saved before generate R37
     quality: readNonEmptyText(raw['quality'], `${path}.quality`), // any level a model offers (generate spec R5); an unknown one is kept and the panel falls back
   };
 }

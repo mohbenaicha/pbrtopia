@@ -23,7 +23,7 @@ function setup(projectId = 'p1') {
   s.setSceneState({ hasModel: true, hasUvs: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
   const logStore = createRunLogStore();
-  render(<GeneratePanel projectId={projectId} store={store} logStore={logStore} readImageFile={vi.fn()} today="2026-10-19" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />);
+  render(<GeneratePanel projectId={projectId} store={store} logStore={logStore} readImageFile={vi.fn()} today="2026-10-19" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} onPreviewAtlas={vi.fn()} />);
   return { store, logStore };
 }
 

@@ -28,3 +28,52 @@ describe('mapRecipes', () => {
     expect(recipe.enhancerFocus).toMatch(/lighting, shadows, shine or reflections/);
   });
 });
+
+describe('mapRecipes: the atlas render (R39)', () => {
+  it('R39 with the grey render the albedo focus keeps the grey sentence', () => {
+    const focus = recipeForChannel('albedo', 'grey').enhancerFocus;
+    expect(focus).toMatch(/plain grey renders/);
+    expect(focus).toMatch(/never report the grey/);
+  });
+
+  it('R39 with the viewport render the focus says the snapshots show the model as the viewport did, and drops the grey sentence', () => {
+    const focus = recipeForChannel('albedo', 'viewport').enhancerFocus;
+    expect(focus).not.toMatch(/plain grey renders/);
+    expect(focus).not.toMatch(/never report the grey/);
+    expect(focus).toMatch(/as it looked in the user's viewport/);
+    expect(focus).toMatch(/wireframe/);
+  });
+
+  it('R39 both focuses keep the no-lighting wording and the user decides colours when the two disagree', () => {
+    for (const render of ['grey', 'viewport'] as const) {
+      const focus = recipeForChannel('albedo', render).enhancerFocus;
+      expect(focus, render).toMatch(/Say nothing about lighting, shadows, shine or reflections/);
+      expect(focus, render).toMatch(/colours, materials and patterns come from the user's prompt/);
+    }
+  });
+
+  it('R39 the render changes only the enhancer focus: the text before and after are the same', () => {
+    const grey = recipeForChannel('albedo', 'grey');
+    const viewport = recipeForChannel('albedo', 'viewport');
+    expect(viewport.textBefore).toBe(grey.textBefore);
+    expect(viewport.textAfter).toBe(grey.textAfter);
+  });
+});
+
+describe('mapRecipes: the wireframe render (R39)', () => {
+  it('R39 the wireframe focus says the snapshots are grey with thin dark wireframe lines that only show the geometry', () => {
+    const focus = recipeForChannel('albedo', 'wireframe').enhancerFocus;
+    expect(focus).toMatch(/plain grey renders/);
+    expect(focus).toMatch(/wireframe/);
+    expect(focus).toMatch(/only show the geometry/);
+    expect(focus).toMatch(/never report the grey, its shading or the lines as a colour, a pattern or surface detail/);
+    expect(focus).toMatch(/Say nothing about lighting, shadows, shine or reflections/);
+    expect(focus).toMatch(/colours, materials and patterns come from the user's prompt/);
+  });
+
+  it('R39 the three renders have three different focuses and the same text before and after', () => {
+    const recipes = (['grey', 'wireframe', 'viewport'] as const).map((render) => recipeForChannel('albedo', render));
+    expect(new Set(recipes.map((recipe) => recipe.enhancerFocus)).size).toBe(3);
+    expect(new Set(recipes.map((recipe) => recipe.textAfter)).size).toBe(1);
+  });
+});

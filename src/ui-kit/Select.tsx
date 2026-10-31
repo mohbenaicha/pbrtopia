@@ -18,10 +18,11 @@ interface SelectProps {
   emptyText?: string; // shown, with the select disabled, when there are no options
   error?: string;
   hideLabel?: boolean; // the label stays the accessible name but is not drawn, for a select under a heading that already says it
+  opensUp?: boolean; // the list opens above the box, for a select near the bottom of a panel where a list below would cover the controls under it
 }
 
 // A dropdown that draws its own list so it matches the rest of the UI. Focus stays on the box; the list is driven by the keyboard or the mouse.
-export function Select({ label, options, value, onChange, disabled = false, emptyText = 'Nothing to choose', error, hideLabel = false }: SelectProps): React.JSX.Element {
+export function Select({ label, options, value, onChange, disabled = false, emptyText = 'Nothing to choose', error, hideLabel = false, opensUp = false }: SelectProps): React.JSX.Element {
   const id = useId();
   const region = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -83,7 +84,7 @@ export function Select({ label, options, value, onChange, disabled = false, empt
           <Icon name="chevron-down" size={14} />
         </button>
         {open && (
-          <ul className="ui-select__list" role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`}>
+          <ul className="ui-select__list" data-opens-up={opensUp ? '' : undefined} role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`}>
             {options.map((option, index) => (
               <li
                 key={option.value}

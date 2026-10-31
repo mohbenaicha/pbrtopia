@@ -1,6 +1,7 @@
 import { createStore } from 'zustand';
 import type { Provider } from '../keys';
 import { DEFAULT_ATLAS_KEY, listAtlasSizes, type AtlasKey } from './catalog/atlasSizes';
+import { DEFAULT_ATLAS_RENDER, type AtlasRender } from './atlasRender';
 import { DEFAULT_IMAGE_MODEL } from './catalog/knownModels';
 import { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
 import type { ProviderModelRecord, ResolutionKey } from './catalog/modelTypes';
@@ -53,6 +54,7 @@ export interface SavedPanelSettings {
   modelId: string | null;
   resolutionKey: ResolutionKey | null;
   atlasKey: AtlasKey;
+  atlasRender: AtlasRender;
   quality: string | null;
 }
 
@@ -64,6 +66,7 @@ export interface GenerateState {
   modelId: string | null;
   resolutionKey: ResolutionKey | null; // the output size asked of the model (R4)
   atlasKey: AtlasKey; // the size of the atlas sent in (R16); independent of the model and the output size
+  atlasRender: AtlasRender; // how the atlas snapshots are drawn (R37); independent of everything else in the panel
   quality: string | null;
   // fed by app/
   catalog: ModelCatalog;
@@ -90,6 +93,7 @@ export interface GenerateState {
   selectModel: (provider: Provider, modelId: string) => void;
   setResolution: (key: ResolutionKey) => void;
   setAtlasKey: (key: AtlasKey) => void;
+  setAtlasRender: (render: AtlasRender) => void;
   setQuality: (level: string) => void;
   setCatalog: (catalog: ModelCatalog) => void;
   setHasKey: (provider: Provider, has: boolean) => void;
@@ -151,6 +155,7 @@ export function createGenerateStore() {
       channel: 'albedo',
       ...NO_SELECTION,
       atlasKey: DEFAULT_ATLAS_KEY,
+      atlasRender: DEFAULT_ATLAS_RENDER,
       catalog: { gemini: [], openai: [] },
       hasKey: { gemini: false, openai: false },
       enhancer: null,
@@ -195,6 +200,7 @@ export function createGenerateStore() {
       setAtlasKey: (key) => {
         if (listAtlasSizes(get().maxTextureSize).some((option) => option.key === key)) set({ atlasKey: key });
       },
+      setAtlasRender: (atlasRender) => set({ atlasRender }),
       setQuality: (level) => {
         const { catalog, provider, modelId, maxTextureSize } = get();
         const info = findModel(catalog, provider, modelId);

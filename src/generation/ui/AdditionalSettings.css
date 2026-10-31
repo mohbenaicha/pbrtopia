@@ -1,0 +1,16 @@
+.additional-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.additional-settings__render {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.additional-settings__render-select {
+  flex: 1;
+  min-width: 0;
+}

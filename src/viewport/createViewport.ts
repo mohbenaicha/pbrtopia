@@ -19,6 +19,7 @@ import { createRenderScheduler } from './renderScheduler';
 import type { ShadingMode } from './shadingModes';
 import type { ViewportResult } from './viewportError';
 import { createViewportEvents, type ViewportEvents } from './viewportEvents';
+import { createSnapshotLook, type SnapshotLook } from './snapshotLook';
 import { DEFAULT_VIEWPORT_SETTINGS, type ViewportSettings } from './viewportSettings';
 
 // The part of the contract in specs/app/viewport-layout/contracts.md that exists so far; later tasks add the environment, picking and slots.
@@ -35,6 +36,7 @@ export interface Viewport {
   setProjectionMaterial(material: Material | null): void; // replaces the model's look until cleared; the caller owns and disposes the material
   flashMaterial(material: Material): Promise<void>; // shows the material over the model three times, then the normal look; resolves when done
   captureThumbnail(spec?: ThumbnailSpec): Promise<Blob>; // the current view cropped to the thumbnail shape
+  snapshotLook(): SnapshotLook; // generate R37: the scene as shown, for the atlas snapshots of the "Current viewport" render
   setSettings(patch: Partial<ViewportSettings>): void;
   invalidate(): void;
   resetView(): void;
@@ -178,6 +180,7 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
       scheduler.invalidate(); // the canvas keeps the grid-less picture until it is drawn again
       return picture;
     },
+    snapshotLook: () => createSnapshotLook(scene, grid.hide),
     setSettings: applySettings,
     invalidate: scheduler.invalidate,
     resetView() {

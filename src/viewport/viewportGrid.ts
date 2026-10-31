@@ -92,6 +92,7 @@ export interface ViewportGrid {
   setBounds(box: Box3 | null): void; // the model's box: the grid sits at its lowest point and takes its cell size from its longest side; null for no model
   update(): void; // follows the orbit target and the visible extent; call before each draw
   drawWithoutGrid(draw: () => void): void; // for the picture of a thumbnail: the grid is never part of it
+  hide(): () => void; // takes the grid out of pictures made over several calls (the atlas snapshots); the function returned puts it back as it was
   dispose(): void;
 }
 
@@ -155,6 +156,14 @@ export function createViewportGrid({ scene, rig }: { scene: Scene; rig: CameraRi
   };
   update();
 
+  const hide = (): (() => void) => {
+    const before = object.visible;
+    object.visible = false;
+    return () => {
+      object.visible = before;
+    };
+  };
+
   return {
     object,
     setVisible(visible) {
@@ -174,14 +183,14 @@ export function createViewportGrid({ scene, rig }: { scene: Scene; rig: CameraRi
     },
     update,
     drawWithoutGrid(draw) {
-      const before = object.visible;
-      object.visible = false;
+      const putBack = hide();
       try {
         draw();
       } finally {
-        object.visible = before;
+        putBack();
       }
     },
+    hide,
     dispose() {
       scene.remove(object);
       floorGeometry.dispose();

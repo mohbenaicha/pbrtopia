@@ -20,7 +20,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void = () => undefined) {
+function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void = () => undefined, openAdditional = true) {
   const store = createGenerateStore();
   const s = store.getState();
   s.setMaxTextureSize(8192);
@@ -32,9 +32,10 @@ function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void 
   s.setSceneState({ hasModel: true, hasUvs: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
   prepare(store);
-  const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn() };
+  const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn(), onPreviewAtlas: vi.fn(async () => ({ ok: true as const, value: new Blob(['atlas'], { type: 'image/png' }) })) };
   const readImageFile = vi.fn(async (file: File): Promise<ReferenceImage> => ({ id: `${file.name}:${file.size}`, name: file.name, width: 8, height: 8, blob: file }));
   const view = render(<GeneratePanel projectId="p1" store={store} logStore={createRunLogStore()} readImageFile={readImageFile} today="2026-10-19" {...props} />);
+  if (openAdditional) fireEvent.click(screen.getByRole('button', { name: 'Additional settings' }));
   const combo = (name: string): HTMLElement => screen.getByRole('combobox', { name });
   const optionsOf = (name: string): string[] => {
     fireEvent.click(combo(name));
@@ -211,7 +212,7 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     try {
       const store = createGenerateStore();
-      const panel = <GeneratePanel projectId="p1" store={store} logStore={createRunLogStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />;
+      const panel = <GeneratePanel projectId="p1" store={store} logStore={createRunLogStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} onPreviewAtlas={vi.fn()} />;
       const { rerender } = render(panel);
       expect(warn).toHaveBeenCalledTimes(1);
       expect(String(warn.mock.calls[0]?.[0])).toMatch(/Known models last checked/);
@@ -227,7 +228,7 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.stubEnv('DEV', false);
     try {
-      render(<GeneratePanel projectId="p1" store={createGenerateStore()} logStore={createRunLogStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} />);
+      render(<GeneratePanel projectId="p1" store={createGenerateStore()} logStore={createRunLogStore()} readImageFile={vi.fn()} today="2099-01-01" onGenerate={vi.fn()} onGenerateUv={vi.fn()} onCancel={vi.fn()} onRetry={vi.fn()} onPreviewAtlas={vi.fn()} />);
       expect(warn).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllEnvs();
@@ -388,5 +389,89 @@ describe('GeneratePanel: Generate button (R6, R15)', () => {
     const { store } = setup((s) => s.getState().setSceneState({ hasModel: true, hasUvs: false }));
     act(() => store.getState().setSceneState({ hasModel: true, hasUvs: true }));
     expect(screen.getByRole('button', { name: 'Generate' })).toBeTruthy();
+  });
+});
+
+describe('GeneratePanel: Additional settings (R36 to R39)', () => {
+  it('R36 the panel lists Model, Resolution and Quality, then a closed Additional settings section that holds neither atlas control', () => {
+    setup(undefined, false);
+    const names = screen.getAllByRole('combobox').map((element) => element.getAttribute('aria-label') ?? element.textContent ?? '');
+    expect(names.length).toBeGreaterThanOrEqual(3);
+    const header = screen.getByRole('button', { name: 'Additional settings' });
+    expect(header.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('combobox', { name: 'Atlas size' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'Atlas render' })).toBeNull();
+    const quality = screen.getByRole('combobox', { name: 'Quality' });
+    expect(quality.compareDocumentPosition(header) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('R36 opening the section shows Atlas size and then Atlas render', () => {
+    const { combo } = setup();
+    expect(screen.getByRole('button', { name: 'Additional settings' }).getAttribute('aria-expanded')).toBe('true');
+    expect(combo('Atlas size').compareDocumentPosition(combo('Atlas render')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('R37 Atlas render offers Default (grey) and Current viewport, starts on the default and writes the store', () => {
+    const { store, combo, optionsOf } = setup();
+    expect(optionsOf('Atlas render')).toEqual(['Default (grey)', 'Wireframe', 'Current viewport']);
+    expect(combo('Atlas render').textContent).toMatch(/Default \(grey\)/);
+    fireEvent.click(combo('Atlas render'));
+    fireEvent.click(screen.getByRole('option', { name: 'Current viewport' }));
+    expect(store.getState().atlasRender).toBe('viewport');
+    expect(combo('Atlas render').textContent).toMatch(/Current viewport/);
+  });
+
+  it('R38 the eye button calls onPreviewAtlas and opens the image viewer with the atlas it returns', async () => {
+    const { props } = setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Preview atlas' }));
+    await waitFor(() => expect(props.onPreviewAtlas).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: /atlas/i })).toBeTruthy());
+    expect(screen.getByRole('button', { name: /download/i })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog', { name: /atlas/i })).toBeNull();
+  });
+
+  it('R38 while the atlas is being built the button is busy and a second press does nothing', async () => {
+    let finish: (value: { ok: true; value: Blob }) => void = () => undefined;
+    const { props } = setup();
+    props.onPreviewAtlas.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    const button = screen.getByRole('button', { name: 'Preview atlas' });
+    fireEvent.click(button);
+    await waitFor(() => expect(button.getAttribute('aria-busy')).toBe('true'));
+    fireEvent.click(button);
+    await waitFor(() => expect(props.onPreviewAtlas).toHaveBeenCalledTimes(1));
+    fireEvent.click(button);
+    expect(props.onPreviewAtlas).toHaveBeenCalledTimes(1);
+    await act(async () => finish({ ok: true, value: new Blob(['atlas'], { type: 'image/png' }) }));
+    await waitFor(() => expect(button.getAttribute('aria-busy')).toBeNull());
+  });
+
+  it('R38 a failed build is shown as the panel notice and no viewer opens', async () => {
+    const { props } = setup();
+    props.onPreviewAtlas.mockResolvedValue({ ok: false, error: 'The graphics context was lost.' } as never);
+    fireEvent.click(screen.getByRole('button', { name: 'Preview atlas' }));
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('The graphics context was lost.'));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('R38 the eye button is disabled while a run is active, with no model and with no UVs', () => {
+    setup((store) => store.getState().beginRun());
+    expect((screen.getByRole('button', { name: 'Preview atlas' }) as HTMLButtonElement).disabled).toBe(true);
+    cleanup();
+    setup((store) => store.getState().setSceneState({ hasModel: false, hasUvs: false }));
+    expect((screen.getByRole('button', { name: 'Preview atlas' }) as HTMLButtonElement).disabled).toBe(true);
+    cleanup();
+    setup((store) => store.getState().setSceneState({ hasModel: true, hasUvs: false }));
+    expect((screen.getByRole('button', { name: 'Preview atlas' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe('GeneratePanel: the preview shows it is busy before the capture starts (R38)', () => {
+  it('R38 the busy state is on screen before onPreviewAtlas is called, so the capture cannot hold it back', async () => {
+    const { props } = setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Preview atlas' }));
+    expect(screen.getByRole('button', { name: 'Preview atlas' }).getAttribute('aria-busy')).toBe('true');
+    expect(props.onPreviewAtlas).not.toHaveBeenCalled();
+    await waitFor(() => expect(props.onPreviewAtlas).toHaveBeenCalledTimes(1));
   });
 });
