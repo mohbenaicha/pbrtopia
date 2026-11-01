@@ -6,6 +6,8 @@ export type { UvOptions } from './ui/UvOptionsDialog';
 export { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
 export { listAtlasSizes } from './catalog/atlasSizes';
 export type { AtlasRender } from './atlasRender';
+export { buildEnhancerKey, buildPanelEnhancerKey, isSameEnhancerKey, type EnhancerKey, type EnhancerSnapshot } from './enhancerSnapshot';
+export { fingerprintImage } from './fingerprintImage';
 export { describeGenerateAvailability, pickEnhancerModel, type GenerateAvailability } from './generateAvailability';
 export {
   createGenerateStore,

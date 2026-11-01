@@ -421,3 +421,29 @@ describe('generateStore: tile borders (R40)', () => {
     expect(store.getState().tileBorder).toBe(true);
   });
 });
+
+describe('generateStore: the enhancer snapshot (R41)', () => {
+  const snapshot = {
+    key: { provider: 'gemini' as const, modelId: 'gemini-3.8-flash', level: 'low', text: 'text', atlasSizePx: 2048, atlasRender: 'grey' as const, tileBorder: true },
+    atlasFingerprint: 'fp',
+    enhancedPrompt: 'kept',
+  };
+
+  it('R41 starts without a snapshot; setEnhancerSnapshot sets and clears it', () => {
+    const store = createGenerateStore();
+    expect(store.getState().enhancerSnapshot).toBeNull();
+    store.getState().setEnhancerSnapshot(snapshot);
+    expect(store.getState().enhancerSnapshot).toBe(snapshot);
+    store.getState().setEnhancerSnapshot(null);
+    expect(store.getState().enhancerSnapshot).toBeNull();
+  });
+
+  it('R41 a run starting or failing, a new prompt and restoreSettings leave the snapshot alone (the panel compares keys)', () => {
+    const store = setup();
+    store.getState().setEnhancerSnapshot(snapshot);
+    store.getState().beginRun();
+    store.getState().failRun({ category: 'server', retryable: true, message: 'x' });
+    store.getState().setPrompt('another');
+    expect(store.getState().enhancerSnapshot).toBe(snapshot);
+  });
+});

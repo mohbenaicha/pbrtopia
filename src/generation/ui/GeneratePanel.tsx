@@ -3,6 +3,7 @@ import { useStore, type StoreApi } from 'zustand';
 import { Tabs } from '../../ui-kit';
 import { listAtlasSizes } from '../catalog/atlasSizes';
 import { optionsForModel } from '../catalog/optionsForModel';
+import { buildPanelEnhancerKey, isSameEnhancerKey } from '../enhancerSnapshot';
 import { describeGenerateAvailability } from '../generateAvailability';
 import { findCatalogModel, generateStore, type GenerateState, type ReferenceImage } from '../generateStore';
 import { runLogStore, type RunLogState } from '../runLogStore';
@@ -10,6 +11,7 @@ import { AdditionalSettings } from './AdditionalSettings';
 import { AtlasPreviewViewer } from './AtlasPreviewViewer';
 import { ChannelToggle } from './ChannelToggle';
 import { DebugTab } from './DebugTab';
+import { EnhancedPromptNotice } from './EnhancedPromptNotice';
 import { GenerateButton } from './GenerateButton';
 import { ModelSelect } from './ModelSelect';
 import { ProgressSteps } from './ProgressSteps';
@@ -66,6 +68,8 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
   const mounted = useRef(true);
   const model = findCatalogModel(state.catalog, state.provider, state.modelId);
   const options = model === null ? { resolutions: [], qualityLevels: [] } : optionsForModel(model, state.maxTextureSize);
+  const panelKey = state.enhancerSnapshot === null || state.status === 'running' ? null : buildPanelEnhancerKey(state);
+  const reusesEnhancedPrompt = state.enhancerSnapshot !== null && panelKey !== null && isSameEnhancerKey(state.enhancerSnapshot.key, panelKey); // R41
 
   useEffect(() => {
     mounted.current = true;
@@ -150,6 +154,7 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
             }}
           />
         </label>
+        {reusesEnhancedPrompt && <EnhancedPromptNotice onEnhanceAgain={() => state.setEnhancerSnapshot(null)} />}
         <ReferenceStrip references={state.references} notice={notice} onFiles={(files) => void addFiles(files)} onRemove={state.removeReference} />
         <ChannelToggle />
         <ModelSelect catalog={state.catalog} hasKey={state.hasKey} provider={state.provider} modelId={state.modelId} today={today} onSelect={state.selectModel} />

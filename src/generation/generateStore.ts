@@ -2,6 +2,7 @@ import { createStore } from 'zustand';
 import type { Provider } from '../keys';
 import { DEFAULT_ATLAS_KEY, listAtlasSizes, type AtlasKey } from './catalog/atlasSizes';
 import { DEFAULT_ATLAS_RENDER, type AtlasRender } from './atlasRender';
+import type { EnhancerSnapshot } from './enhancerSnapshot';
 import { DEFAULT_IMAGE_MODEL } from './catalog/knownModels';
 import { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
 import type { ProviderModelRecord, ResolutionKey } from './catalog/modelTypes';
@@ -86,10 +87,12 @@ export interface GenerateState {
   fraction: number;
   error: RunError | null;
   notice: string | null; // a plain message that is not a failure (R19: the set is saved but could not be opened)
+  enhancerSnapshot: EnhancerSnapshot | null; // R41: the last enhancer call of the open project; in memory only, not part of the saved settings
   unwrap: UnwrapState;
   setPrompt: (prompt: string) => void;
   restoreSettings: (settings: SavedPanelSettings) => void;
   setNotice: (notice: string | null) => void;
+  setEnhancerSnapshot: (snapshot: EnhancerSnapshot | null) => void;
   addReferences: (images: ReferenceImage[]) => { added: number; refused: number };
   removeReference: (id: string) => void;
   selectModel: (provider: Provider, modelId: string) => void;
@@ -174,6 +177,7 @@ export function createGenerateStore() {
       fraction: 0,
       error: null,
       notice: null,
+      enhancerSnapshot: null,
       unwrap: IDLE_UNWRAP,
       setPrompt: (prompt) => set({ prompt }),
       restoreSettings: (settings) => {
@@ -181,6 +185,7 @@ export function createGenerateStore() {
         resettle({});
       },
       setNotice: (notice) => set({ notice }),
+      setEnhancerSnapshot: (enhancerSnapshot) => set({ enhancerSnapshot }),
       addReferences: (images) => {
         const { references, catalog, provider, modelId } = get();
         const known = new Set(references.map((reference) => reference.id));

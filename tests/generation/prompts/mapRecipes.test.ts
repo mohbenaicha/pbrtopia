@@ -60,6 +60,14 @@ describe('mapRecipes: the atlas render (R39)', () => {
   });
 });
 
+describe('mapRecipes: the depth renders (R39)', () => {
+  it('R39 the depth and depth + wireframe renders use the focus of the grey render, with no new wording yet', () => {
+    const grey = recipeForChannel('albedo', 'grey');
+    expect(recipeForChannel('albedo', 'depth')).toEqual(grey);
+    expect(recipeForChannel('albedo', 'depth-wireframe')).toEqual(grey);
+  });
+});
+
 describe('mapRecipes: the wireframe render (R39)', () => {
   it('R39 the wireframe focus says the snapshots are grey with thin dark wireframe lines that only show the geometry', () => {
     const focus = recipeForChannel('albedo', 'wireframe').enhancerFocus;

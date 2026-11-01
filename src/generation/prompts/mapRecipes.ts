@@ -16,8 +16,11 @@ const ALBEDO_FOCUS_START = "The shape of the object and where each feature lies 
 const ALBEDO_FOCUS_END = 'Say nothing about lighting, shadows, shine or reflections.';
 
 // R39: the focus follows how the snapshots were drawn. With the viewport render, what the pictures show is really on the model.
+const GREY_FOCUS = `${ALBEDO_FOCUS_START} The snapshots are plain grey renders, so never report the grey or its shading as a colour. ${ALBEDO_FOCUS_END}`;
 const ALBEDO_FOCUS: Record<AtlasRender, string> = {
-  grey: `${ALBEDO_FOCUS_START} The snapshots are plain grey renders, so never report the grey or its shading as a colour. ${ALBEDO_FOCUS_END}`,
+  grey: GREY_FOCUS,
+  depth: GREY_FOCUS, // no wording of its own yet (R39)
+  'depth-wireframe': GREY_FOCUS,
   wireframe: `${ALBEDO_FOCUS_START} The snapshots are plain grey renders with the mesh's wireframe drawn over them as thin dark lines; the lines only show the geometry, so never report the grey, its shading or the lines as a colour, a pattern or surface detail. ${ALBEDO_FOCUS_END}`,
   viewport: `${ALBEDO_FOCUS_START} The snapshots show the model as it looked in the user's viewport, so the colours, textures or wireframe lines they show are really on the model and may be described; where they disagree with the user's prompt, the prompt decides. ${ALBEDO_FOCUS_END}`,
 };

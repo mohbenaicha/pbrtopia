@@ -413,7 +413,7 @@ describe('GeneratePanel: Additional settings (R36 to R39)', () => {
 
   it('R37 Atlas render offers Default (grey) and Current viewport, starts on the default and writes the store', () => {
     const { store, combo, optionsOf } = setup();
-    expect(optionsOf('Atlas render')).toEqual(['Default (grey)', 'Wireframe', 'Current viewport']);
+    expect(optionsOf('Atlas render')).toEqual(['Default (grey)', 'Wireframe', 'Depth', 'Depth + wireframe', 'Current viewport']);
     expect(combo('Atlas render').textContent).toMatch(/Default \(grey\)/);
     fireEvent.click(combo('Atlas render'));
     fireEvent.click(screen.getByRole('option', { name: 'Current viewport' }));
