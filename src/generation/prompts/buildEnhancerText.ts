@@ -1,9 +1,17 @@
 import { ENHANCER_INSTRUCTION } from './framePrompt';
 import type { MapRecipe } from './mapRecipes';
 
+// Custom R15: the extra instruction of the overview in Custom, whose answer is shared by sheets that show other sides than the overview does.
+const WHOLE_OBJECT_INSTRUCTION =
+  'Describe the whole object, not only the side that is visible in these views, so the description also suits views from the back, the top and below.';
+
+export type EnhancerScope = 'atlas' | 'object';
+
 // R33: the text part of an enhancer request: the shared instruction and the recipe's focus, then the user's prompt under its label.
-export function buildEnhancerText(recipe: MapRecipe, userPrompt: string): string {
-  const head = `${ENHANCER_INSTRUCTION}\n\n${recipe.enhancerFocus}`;
+// The 'object' scope (custom R15) adds the whole-object instruction after the shared one.
+export function buildEnhancerText(recipe: MapRecipe, userPrompt: string, scope: EnhancerScope = 'atlas'): string {
+  const instruction = scope === 'object' ? `${ENHANCER_INSTRUCTION} ${WHOLE_OBJECT_INSTRUCTION}` : ENHANCER_INSTRUCTION;
+  const head = `${instruction}\n\n${recipe.enhancerFocus}`;
   const prompt = userPrompt.trim();
   return prompt === '' ? head : `${head}\n\nUser prompt:\n${prompt}`;
 }

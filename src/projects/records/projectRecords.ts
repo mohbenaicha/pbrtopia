@@ -1,4 +1,5 @@
 import type { MeshRecord } from '../../projection/engine';
+import type { CustomPlanStoredRecord, NamedPlanStoredRecord } from './customPlanRecords';
 import type { PictureRecord, SlotRecord } from './pictureRecords';
 
 // The version of the set and settings records. The project record has its own, below: it moved to 2 with pictures and slots (specs/app/textures).
@@ -26,6 +27,9 @@ export interface GenerateSettingsRecord {
   atlasRender: 'grey' | 'wireframe' | 'depth' | 'depth-wireframe' | 'viewport'; // how the atlas snapshots are drawn (generate R37)
   tileBorder: boolean; // a white border around every atlas tile (generate R40)
   quality: string; // a level name from the chosen model's list (minimal, low, medium, high, xhigh, ...); never empty
+  mode: 'standard' | 'custom'; // custom R28: absent in older projects, which read as standard
+  customPlan: CustomPlanStoredRecord | null; // the confirmed plan; null until the first Confirm
+  customSetups: NamedPlanStoredRecord[]; // saved setups, oldest first
 }
 
 export interface ProjectRecord {

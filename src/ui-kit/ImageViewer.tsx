@@ -68,8 +68,8 @@ export function ImageViewer({ title, src, failed = false, details = [], onDownlo
       onClose={onClose}
       headerActions={
         <>
-          {onDownload !== undefined && <IconButton label={downloadLabel} icon={<Icon name="download" size={16} />} onClick={onDownload} />}
-          <IconButton label="Close" icon={<Icon name="close" size={16} />} onClick={onClose} />
+          {onDownload !== undefined && <IconButton label={downloadLabel} icon={<Icon name="download" />} onClick={onDownload} />}
+          <IconButton label="Close" icon={<Icon name="close" />} onClick={onClose} />
         </>
       }
     >

@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type KeyboardEvent } from 'react';
+import { Fragment, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { describedBy, FieldMessage } from './FieldMessage';
 import { Icon } from './Icon';
 import { useDismiss } from './useDismiss';
@@ -7,6 +7,7 @@ import './Select.css';
 export interface SelectOption {
   value: string;
   label: string;
+  group?: string; // a heading drawn above the first option of each run of options with the same group
 }
 
 interface SelectProps {
@@ -86,18 +87,20 @@ export function Select({ label, options, value, onChange, disabled = false, empt
         {open && (
           <ul className="ui-select__list" data-opens-up={opensUp ? '' : undefined} role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`}>
             {options.map((option, index) => (
-              <li
-                key={option.value}
-                id={`${id}-option-${index}`}
-                role="option"
-                aria-selected={option.value === value}
-                className="ui-select__option"
-                data-highlighted={index === highlighted ? '' : undefined}
-                onPointerEnter={() => setHighlighted(index)}
-                onClick={() => choose(index)}
-              >
-                {option.label}
-              </li>
+              <Fragment key={option.value}>
+                {option.group !== undefined && option.group !== options[index - 1]?.group && <li role="presentation" className="ui-select__heading">{option.group}</li>}
+                <li
+                  id={`${id}-option-${index}`}
+                  role="option"
+                  aria-selected={option.value === value}
+                  className="ui-select__option"
+                  data-highlighted={index === highlighted ? '' : undefined}
+                  onPointerEnter={() => setHighlighted(index)}
+                  onClick={() => choose(index)}
+                >
+                  {option.label}
+                </li>
+              </Fragment>
             ))}
           </ul>
         )}

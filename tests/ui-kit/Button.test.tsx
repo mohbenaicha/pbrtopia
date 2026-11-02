@@ -6,6 +6,21 @@ import { Button, IconButton, Icon } from '../../src/ui-kit';
 
 afterEach(cleanup);
 
+describe('Button: pressed', () => {
+  it('a button given pressed reports it as aria-pressed; without it the attribute is absent', () => {
+    render(
+      <>
+        <Button pressed>On</Button>
+        <Button pressed={false}>Off</Button>
+        <Button>Plain</Button>
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'On' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Off' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: 'Plain' }).hasAttribute('aria-pressed')).toBe(false);
+  });
+});
+
 describe('Button', () => {
   it('R22 a button calls onClick on click and on Enter and Space', async () => {
     const onClick = vi.fn();

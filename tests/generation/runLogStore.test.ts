@@ -135,6 +135,42 @@ describe('runLogStore', () => {
     expect(store.getState().records.map((record) => record.projectId)).toEqual(['b', 'a']);
   });
 
+  it('custom R27 a new row has no sheet pictures; setSheetPicture adds the snapshot and the image of a sheet in sheet order', () => {
+    const store = createRunLogStore();
+    const id = store.getState().begin(init());
+    expect(store.getState().records[0]?.sheets).toEqual([]);
+    const snapshot = blob('snap-1');
+    const image = blob('img-1');
+    store.getState().setSheetPicture(id, { index: 1, label: 'Left, Right' }, 'snapshot', snapshot);
+    store.getState().setSheetPicture(id, { index: 0, label: 'Front' }, 'snapshot', blob('snap-0'));
+    store.getState().setSheetPicture(id, { index: 1, label: 'Left, Right' }, 'image', image);
+    const sheets = store.getState().records[0]?.sheets;
+    expect(sheets?.map((sheet) => sheet.index)).toEqual([0, 1]);
+    expect(sheets?.[1]).toEqual({ index: 1, label: 'Left, Right', snapshot, image });
+    expect(sheets?.[0]).toMatchObject({ label: 'Front', image: null });
+  });
+
+  it('custom R27 a second picture of the same kind replaces the first', () => {
+    const store = createRunLogStore();
+    const id = store.getState().begin(init());
+    const sheet = { index: 0, label: 'Front' };
+    store.getState().setSheetPicture(id, sheet, 'image', blob('old'));
+    const fresh = blob('new');
+    store.getState().setSheetPicture(id, sheet, 'image', fresh);
+    expect(store.getState().records[0]?.sheets).toHaveLength(1);
+    expect(store.getState().records[0]?.sheets[0]?.image).toBe(fresh);
+  });
+
+  it('custom R18 resuming a row keeps the sheet pictures already there', () => {
+    const store = createRunLogStore();
+    const id = store.getState().begin(init());
+    const image = blob('kept');
+    store.getState().setSheetPicture(id, { index: 0, label: 'Front' }, 'image', image);
+    store.getState().finish(id, 'failed', { message: 'x' });
+    store.getState().resume(id);
+    expect(store.getState().records[0]?.sheets[0]?.image).toBe(image);
+  });
+
   it('R25 an action given an unknown id changes nothing', () => {
     const store = createRunLogStore();
     store.getState().begin(init());
@@ -142,6 +178,7 @@ describe('runLogStore', () => {
     store.getState().setAtlas('missing', blob('x'));
     store.getState().setEnhancedPrompt('missing', 'x');
     store.getState().setImage('missing', blob('x'));
+    store.getState().setSheetPicture('missing', { index: 0, label: 'Front' }, 'image', blob('x'));
     store.getState().finish('missing', 'failed', { message: 'x' });
     store.getState().resume('missing');
     store.getState().remove('missing');

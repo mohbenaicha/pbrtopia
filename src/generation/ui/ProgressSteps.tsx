@@ -7,6 +7,7 @@ interface ProgressStepsProps {
   failed: boolean; // the current step is the one that failed
   onCancel: () => void;
   onViewLog?: () => void; // R27: opens the run's log row; absent when there is no row to point at
+  imageCount?: number; // custom R16: images the run requests; above 1 the generate step's fraction is the share finished and its label counts them
 }
 
 const STEPS: { step: RunStep; label: string }[] = [
@@ -19,9 +20,10 @@ const STEPS: { step: RunStep; label: string }[] = [
 // R10: the four steps with a check on finished ones and a progress bar on the current one, and Cancel. After a failure (R9) the failed step is marked
 // and Cancel goes away. Once the image step has started the provider may bill the request even if it is cancelled, and the button says so.
 // R27: the Enhancing prompt item, once done, and the failed item link to the run's log row.
-export function ProgressSteps({ step, fraction, failed, onCancel, onViewLog }: ProgressStepsProps): React.JSX.Element {
+export function ProgressSteps({ step, fraction, failed, onCancel, onViewLog, imageCount = 1 }: ProgressStepsProps): React.JSX.Element {
   const current = STEPS.findIndex((entry) => entry.step === step);
   const percent = Math.round(Math.min(1, Math.max(0, fraction)) * 100);
+  const labelOf = (entry: (typeof STEPS)[number]): string => (entry.step === 'generate' && step === 'generate' && imageCount > 1 ? `${entry.label} (${Math.round(Math.min(1, Math.max(0, fraction)) * imageCount)} of ${imageCount})` : entry.label);
   return (
     <div className="progress-steps">
       <ol className="progress-steps__list" aria-label="Progress">
@@ -30,7 +32,7 @@ export function ProgressSteps({ step, fraction, failed, onCancel, onViewLog }: P
           return (
             <li key={entry.step} className="progress-steps__item" data-state={state}>
               <span className="progress-steps__mark" aria-hidden="true">{state === 'done' && <Icon name="check" size={12} />}{state === 'failed' && <Icon name="close" size={12} />}</span>
-              {entry.label}
+              {labelOf(entry)}
               {onViewLog !== undefined && (state === 'failed' || (state === 'done' && entry.step === 'enhance')) && (
                 <button type="button" className="progress-steps__link" onClick={onViewLog}>View log</button>
               )}

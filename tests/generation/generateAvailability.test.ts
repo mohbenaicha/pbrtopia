@@ -220,3 +220,53 @@ describe('describeGenerateAvailability (R6, R15)', () => {
     expect(describeGenerateAvailability(store.getState()).action).toBe('generate');
   });
 });
+
+describe('describeGenerateAvailability: custom plan models (custom R7, R13)', () => {
+  const sheet = (cameras: number[], modelId = 'gemini-nano-banana-2.1') => ({ cameras, settings: { provider: 'gemini' as const, modelId, resolutionKey: '1K' as const, quality: null } });
+  const picture = (id: string) => ({ id, name: id, width: 8, height: 8, blob: new Blob([id]) });
+  const customStore = (limit: number | undefined, catalogEdit?: (model: ProviderModelRecord) => ProviderModelRecord) => {
+    const store = readyStore();
+    const base = known('gemini', 'gemini-nano-banana-2.1');
+    const withLimit = limit === undefined ? base : { ...base, maxReferenceImages: limit };
+    const nano = catalogEdit === undefined ? withLimit : catalogEdit(withLimit);
+    store.getState().setCatalog({ gemini: [nano, known('gemini', 'gemini-3.8-flash')], openai: [] });
+    store.getState().setMode('custom');
+    store.getState().confirmCustomPlan({ sheets: [sheet([0, 1]), sheet([2, 3])], aux: null });
+    return store;
+  };
+
+  it('custom R7 a sheet whose model has no canvas at its resolution disables Generate and says so with the image number', () => {
+    const store = customStore(undefined, (model) => {
+      const without = { ...model };
+      delete without.canvases;
+      return without;
+    });
+    expect(describeNow(store)).toMatchObject({ enabled: false, reason: 'Image 1: This image model offers no image size for custom generation. Choose another.' });
+  });
+
+  it('custom R13 references that fit the lead model are fine; one more than fits disables Generate with the limit', () => {
+    const store = customStore(undefined);
+    store.getState().addReferences([picture('a'), picture('b')]);
+    store.getState().setCatalog({ gemini: [{ ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 3 }, known('gemini', 'gemini-3.8-flash')], openai: [] });
+    expect(describeNow(store)).toMatchObject({ enabled: true });
+    const crowded = customStore(undefined);
+    crowded.getState().addReferences([picture('a'), picture('b'), picture('c')]);
+    crowded.getState().setCatalog({ gemini: [{ ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 3 }, known('gemini', 'gemini-3.8-flash')], openai: [] });
+    expect(describeNow(crowded)).toMatchObject({ enabled: false, reason: "Too many reference images for image 1's model (2 at most)." });
+  });
+
+  it('custom R13 a follower whose model takes fewer than two images is refused with its image number', () => {
+    const store = customStore(undefined);
+    const nano = { ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 1 };
+    store.getState().setCatalog({ gemini: [nano, known('gemini', 'gemini-3.8-flash')], openai: [] });
+    expect(describeNow(store).reason).toBe('Image 2: This image model takes too few reference images to follow the first image.');
+  });
+
+  it('custom R13 Add images in Custom is limited by the lead sheet model, not the Standard one', () => {
+    const store = customStore(3);
+    store.getState().setCatalog({ gemini: [{ ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 3 }, known('gemini', 'gemini-3-pro-image'), known('gemini', 'gemini-3.8-flash')], openai: [] });
+    store.getState().selectModel('gemini', 'gemini-3-pro-image');
+    const outcome = store.getState().addReferences([picture('a'), picture('b'), picture('c')]);
+    expect(outcome).toEqual({ added: 2, refused: 1 });
+  });
+});

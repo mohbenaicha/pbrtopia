@@ -44,6 +44,7 @@ describe('enhancerSnapshot: the key of an enhancer call (R41)', () => {
       atlasSizePx: 2048,
       atlasRender: 'grey',
       tileBorder: true,
+      overviewCameras: [],
     });
   });
 
@@ -92,6 +93,34 @@ describe('enhancerSnapshot: the key of the panel (R41)', () => {
     store.getState().selectModel('gemini', 'gemini-3-pro-image');
     store.getState().setResolution('2K');
     expect(isSameEnhancerKey(before, buildPanelEnhancerKey(store.getState())!)).toBe(true);
+  });
+
+  it('custom R15 the whole-object wording is part of the key, so a Standard answer is never reused for Custom', () => {
+    expect(isSameEnhancerKey(buildEnhancerKey(run()), buildEnhancerKey(run({ scope: 'object' })))).toBe(false);
+  });
+
+  it('custom R15 R41 in Custom mode the panel key is the overview key: 1024 px, whole-object wording, and the Atlas size does not matter', () => {
+    const store = panel();
+    store.getState().setMode('custom');
+    const state = store.getState();
+    expect(buildPanelEnhancerKey(state)).toEqual(buildEnhancerKey(run({ atlasSizePx: 1024, scope: 'object', atlasRender: state.atlasRender, tileBorder: state.tileBorder })));
+    const before = buildPanelEnhancerKey(state)!;
+    store.getState().setAtlasKey('1K');
+    expect(isSameEnhancerKey(before, buildPanelEnhancerKey(store.getState())!)).toBe(true);
+  });
+
+  it('custom R15 R41 the custom key names the cameras the overview shows: another assigned camera changes it, a settings change does not, and a run with the same cameras has the same key', () => {
+    const settings = { provider: 'gemini' as const, modelId: 'gemini-nano-banana-2.1', resolutionKey: '1K' as const, quality: null };
+    const store = panel();
+    store.getState().setMode('custom');
+    store.getState().confirmCustomPlan({ sheets: [{ cameras: [1, 0], settings }, { cameras: [2], settings }], aux: null });
+    const before = buildPanelEnhancerKey(store.getState())!;
+    const state = store.getState();
+    expect(isSameEnhancerKey(before, buildEnhancerKey(run({ atlasSizePx: 1024, scope: 'object', overviewCameras: [0, 1, 2], atlasRender: state.atlasRender, tileBorder: state.tileBorder })))).toBe(true);
+    store.getState().confirmCustomPlan({ sheets: [{ cameras: [0, 1], settings: { ...settings, resolutionKey: '2K' } }, { cameras: [2], settings }], aux: { settings } });
+    expect(isSameEnhancerKey(before, buildPanelEnhancerKey(store.getState())!)).toBe(true);
+    store.getState().confirmCustomPlan({ sheets: [{ cameras: [0, 1], settings }, { cameras: [3], settings }], aux: null });
+    expect(isSameEnhancerKey(before, buildPanelEnhancerKey(store.getState())!)).toBe(false);
   });
 
   it('R41 the panel key is null without an enhancer model or without a usable atlas size', () => {

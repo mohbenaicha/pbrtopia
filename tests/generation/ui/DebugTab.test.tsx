@@ -28,6 +28,7 @@ const record = (patch: Partial<RunLogRecord> = {}): RunLogRecord => ({
   atlas: new Blob(['atlas']),
   enhancedPrompt: 'A mossy grey stone, moss on the left.',
   imagePreview: new Blob(['image']),
+  sheets: [],
   errorMessage: null,
   errorDetails: null,
   ...patch,
@@ -232,5 +233,54 @@ describe('DebugTab: the pictures (R24, viewport-layout R33)', () => {
     const before = created.length;
     fireEvent.click(screen.getByRole('button', { name: 'Enlarge Atlas' }));
     expect(created).toHaveLength(before);
+  });
+});
+
+describe('DebugTab: a custom run row (custom R27)', () => {
+  const sheet = (index: number, label: string, withImage = true) => ({
+    index,
+    label,
+    snapshot: new Blob([`snap-${index}`], { type: 'image/png' }),
+    image: withImage ? new Blob([`img-${index}`], { type: 'image/png' }) : null,
+  });
+  const customRow = (sheets: RunLogRecord['sheets']): RunLogRecord => record({ modelLabel: 'Custom', atlas: null, imagePreview: null, sheets });
+  const open = (sheets: RunLogRecord['sheets']): void => {
+    show([customRow(sheets)]);
+    fireEvent.click(header(/Custom/));
+  };
+
+  it('custom R27 the snapshots are one grid and the returned images another, in sheet order, each cell captioned by its cameras', () => {
+    open([sheet(0, 'Front'), sheet(1, 'Left, Right'), sheet(2, 'Aux')]);
+    const snapshots = screen.getByRole('group', { name: 'Snapshots' });
+    const images = screen.getByRole('group', { name: 'Returned images' });
+    expect(within(snapshots).getAllByRole('figure').map((cell) => cell.textContent)).toEqual(['Front', 'Left, Right', 'Aux']);
+    expect(within(images).getAllByRole('figure').map((cell) => cell.textContent)).toEqual(['Front', 'Left, Right', 'Aux']);
+    expect(screen.queryByRole('button', { name: 'Enlarge Atlas' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Enlarge Generated image' })).toBeNull();
+  });
+
+  it('custom R27 the grid has ceil(sqrt(n)) columns', () => {
+    open([sheet(0, 'A'), sheet(1, 'B'), sheet(2, 'C'), sheet(3, 'D'), sheet(4, 'E')]);
+    expect(screen.getByRole('group', { name: 'Snapshots' }).style.gridTemplateColumns).toBe('repeat(3, 1fr)');
+  });
+
+  it('custom R27 a sheet without a returned image is left out of the returned images grid only', () => {
+    open([sheet(0, 'Front'), sheet(1, 'Back', false)]);
+    expect(within(screen.getByRole('group', { name: 'Snapshots' })).getAllByRole('figure')).toHaveLength(2);
+    expect(within(screen.getByRole('group', { name: 'Returned images' })).getAllByRole('figure')).toHaveLength(1);
+  });
+
+  it('custom R27 a click enlarges one picture and Download saves it under the sheet\'s number', () => {
+    const clicked: string[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      clicked.push(this.download);
+    });
+    open([sheet(0, 'Front'), sheet(1, 'Left, Right')]);
+    const images = screen.getByRole('group', { name: 'Returned images' });
+    fireEvent.click(within(images).getByRole('button', { name: 'Enlarge Left, Right' }));
+    const viewer = screen.getByRole('dialog', { name: 'Left, Right' });
+    fireEvent.click(within(viewer).getByRole('button', { name: 'Download Left, Right' }));
+    expect(clicked).toEqual(['image-2.png']);
+    vi.restoreAllMocks();
   });
 });

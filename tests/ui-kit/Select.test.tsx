@@ -33,6 +33,22 @@ describe('Select', () => {
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
+  it('R22 options with a group are listed under a heading for the group, one heading per run of the same group, and headings are not options', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    const grouped = [
+      { value: 'a', label: 'Default', group: 'Presets' },
+      { value: 'b', label: '2-2-2', group: 'Presets' },
+      { value: 'c', label: 'Orc head', group: 'Saved setups' },
+    ];
+    render(<Select label="Layout preset" options={grouped} value="a" onChange={onChange} />);
+    await user.click(screen.getByRole('combobox', { name: 'Layout preset' }));
+    expect(screen.getAllByRole('option')).toHaveLength(3);
+    expect(screen.getAllByText(/^(Presets|Saved setups)$/).map((heading) => heading.textContent)).toEqual(['Presets', 'Saved setups']);
+    await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+    expect(onChange).toHaveBeenCalledWith('c');
+  });
+
   it('R22 keyboard: ArrowDown opens, arrows move, Enter chooses, Escape closes without choosing', async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();

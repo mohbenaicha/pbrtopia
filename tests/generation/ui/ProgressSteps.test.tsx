@@ -13,6 +13,25 @@ function setup(step: RunStep, fraction = 0, failed = false) {
   return { onCancel, items, states: items.map((item) => item.getAttribute('data-state')) };
 }
 
+describe('ProgressSteps: a run of several images (custom R16)', () => {
+  const label = (imageCount: number, step: RunStep, fraction: number) => {
+    render(<ProgressSteps step={step} fraction={fraction} failed={false} imageCount={imageCount} onCancel={vi.fn()} />);
+    return within(screen.getByRole('list', { name: 'Progress' })).getAllByRole('listitem').map((item) => item.textContent);
+  };
+
+  it('custom R16 the Generating image label counts the finished images ("2 of 5") while that step runs', () => {
+    expect(label(5, 'generate', 0.4)[2]).toBe('Generating image (2 of 5)');
+    cleanup();
+    expect(label(5, 'generate', 0)[2]).toBe('Generating image (0 of 5)');
+  });
+
+  it('custom R16 other steps and a run of one image keep the plain labels', () => {
+    expect(label(5, 'capture', 0.5)[2]).toBe('Generating image');
+    cleanup();
+    expect(label(1, 'generate', 0.5)[2]).toBe('Generating image');
+  });
+});
+
 describe('ProgressSteps (R10)', () => {
   it('R10 lists Capturing views, Enhancing prompt, Generating image and Validating in that order', () => {
     const { items } = setup('capture');

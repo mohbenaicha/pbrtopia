@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { findKnownModel } from '../../../src/generation/catalog/knownModels';
 import { createGenerateStore } from '../../../src/generation/generateStore';
@@ -112,7 +112,7 @@ describe('GeneratePanel: a failed run (R9)', () => {
     const { store, props } = setup();
     fail(store);
     expect(screen.getByRole('alert').textContent).toContain('It failed.');
-    expect(screen.getAllByRole('listitem').map((item) => item.getAttribute('data-state'))).toEqual(['done', 'done', 'failed', 'pending']);
+    expect(within(screen.getByRole('list', { name: 'Progress' })).getAllByRole('listitem').map((item) => item.getAttribute('data-state'))).toEqual(['done', 'done', 'failed', 'pending']);
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(props.onRetry).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }));

@@ -73,6 +73,28 @@ describe('ReferenceStrip (R2)', () => {
     expect(screen.getByRole('button', { name: 'Remove a.png' }).hasAttribute('data-compact')).toBe(true);
   });
 
+  it('R2 there is no Add images button: the strip ends in a + tile with the tooltip "Add reference image" that opens the file chooser', () => {
+    const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => undefined);
+    setup();
+    expect(screen.queryByRole('button', { name: 'Add images' })).toBeNull();
+    const tile = screen.getByRole('button', { name: 'Add reference image' });
+    expect(tile.getAttribute('title')).toBe('Add reference image');
+    const items = screen.getAllByRole('listitem');
+    expect(items[items.length - 1]!.contains(tile)).toBe(true);
+    fireEvent.click(tile);
+    expect(click).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
+  });
+
+  it('R2 an empty strip says "You can add images as references" beside the + tile; with an image the line is gone', () => {
+    setup([]);
+    expect(screen.getByText('You can add images as references')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add reference image' })).toBeTruthy();
+    cleanup();
+    setup([image('a')]);
+    expect(screen.queryByText('You can add images as references')).toBeNull();
+  });
+
   it('R2 releases the object URLs when a thumbnail goes away', () => {
     const { unmount } = render(<ReferenceStrip references={[image('a')]} notice={null} onFiles={vi.fn()} onRemove={vi.fn()} />);
     unmount();

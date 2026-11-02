@@ -1,3 +1,4 @@
+import type { Canvas } from '../catalog/canvasRules';
 import type { ResolutionKey } from '../catalog/modelTypes';
 import type { CallContext, ProviderError, Result } from './providerTypes';
 
@@ -8,6 +9,7 @@ export interface GenerateRequest {
   references: Blob[];
   resolutionKey: ResolutionKey;
   sizePx: number; // the square side the key stands for
+  canvas?: Canvas; // custom generation R12: the shape of the answer (one of the model's canvases); a square of sizePx when absent
   quality: string | null; // the provider's own level; null when the model has none
 }
 

@@ -26,7 +26,7 @@ export function ImportProjectButton({ state, showStatus = true }: { state: Proje
   const input = useRef<HTMLInputElement>(null);
   const button = (
     <>
-      <Button loading={state.importing} icon={<Icon name="upload" />} title="Import project" onClick={() => input.current?.click()}>
+      <Button loading={state.importing} icon={<Icon name="upload" size={26} />} title="Import project" onClick={() => input.current?.click()}>
         Import project
       </Button>
       <input

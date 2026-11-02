@@ -17,27 +17,31 @@ interface AdditionalSettingsProps {
   previewing: boolean; // the preview atlas is being built (R38)
   previewBlockedReason: string | null; // why the preview cannot be asked for now, or null
   onPreview: () => void;
+  custom: boolean; // custom R12: no Atlas size and no atlas preview (the sheets are sized per sheet)
 }
 
 // R36: the closed-at-first section under Quality. Atlas size (R16), then Atlas render (R37) with the eye button that previews the atlas (R38), then Tile borders (R40).
-export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atlasRender, onAtlasRenderChange, tileBorder, onTileBorderChange, previewing, previewBlockedReason, onPreview }: AdditionalSettingsProps): React.JSX.Element {
+// In Custom (custom R12) Atlas size and the eye are left out; the render and the borders apply to every sheet.
+export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atlasRender, onAtlasRenderChange, tileBorder, onTileBorderChange, previewing, previewBlockedReason, onPreview, custom }: AdditionalSettingsProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   return (
     <Disclosure title="Additional settings" open={open} onOpenChange={setOpen} keepMounted>
       <div className="additional-settings">
-        <AtlasSizeSelect options={atlasSizes} value={atlasKey} onChange={onAtlasKeyChange} />
+        {!custom && <AtlasSizeSelect options={atlasSizes} value={atlasKey} onChange={onAtlasKeyChange} />}
         <div className="additional-settings__render">
           <div className="additional-settings__render-select">
             <AtlasRenderSelect value={atlasRender} onChange={onAtlasRenderChange} />
           </div>
-          <IconButton
-            label="Preview atlas"
-            icon={<Icon name="eye" size={16} />}
-            loading={previewing}
-            disabled={previewBlockedReason !== null}
-            {...(previewBlockedReason === null ? {} : { disabledReason: previewBlockedReason })}
-            onClick={onPreview}
-          />
+          {!custom && (
+            <IconButton
+              label="Preview atlas"
+              icon={<Icon name="eye" />}
+              loading={previewing}
+              disabled={previewBlockedReason !== null}
+              {...(previewBlockedReason === null ? {} : { disabledReason: previewBlockedReason })}
+              onClick={onPreview}
+            />
+          )}
         </div>
         <Checkbox label="Tile borders" checked={tileBorder} onChange={onTileBorderChange} />
       </div>

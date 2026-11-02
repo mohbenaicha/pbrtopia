@@ -2,6 +2,7 @@
   position: relative;
   width: 104px;
   height: 104px;
+  isolation: isolate; /* the discs order themselves by depth inside the gizmo and never above a panel laid over the viewport */
   pointer-events: none; /* only the discs take the mouse, so the canvas behind keeps orbit and zoom */
 }
 

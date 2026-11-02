@@ -11,6 +11,7 @@ export { Icon } from './Icon';
 export { IconButton } from './IconButton';
 export { ImageViewer } from './ImageViewer';
 export { LoadingOverlay } from './LoadingOverlay';
+export { useDismiss } from './useDismiss';
 export { Popover } from './Popover';
 export { SegmentedControl, type SegmentOption } from './SegmentedControl';
 export { saveBlobAsFile } from './saveBlobAsFile';

@@ -29,6 +29,8 @@
 
 .ui-tabs__tab[data-compact] {
   flex: 0 0 auto;
+  width: var(--control-height); /* square, whatever the icon's size (R36) */
+  padding: 0;
 }
 
 .ui-tabs__tab:hover:not(:disabled):not([data-selected]) {

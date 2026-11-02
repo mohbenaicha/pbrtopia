@@ -64,7 +64,7 @@ export function Tabs<T extends string>({ label, tabs, value, onChange }: TabsPro
             {...(tab.iconOnly === true ? { title: tab.label, 'aria-label': tab.label } : {})}
             onClick={() => choose(tab.value)}
           >
-            {tab.icon !== undefined && <Icon name={tab.icon} size={16} />}
+            {tab.icon !== undefined && <Icon name={tab.icon} />}
             {tab.iconOnly === true ? null : tab.label}
           </button>
         );

@@ -14,6 +14,40 @@ function setup(error: RunError) {
   return { onRetry };
 }
 
+describe('RunErrorBlock: Keep without (custom R29)', () => {
+  const setupKeep = (failed: number[], error: RunError = server) => {
+    const onKeepWithout = vi.fn();
+    render(<RunErrorBlock error={error} onRetry={vi.fn()} failedSheets={failed} onKeepWithout={onKeepWithout} />);
+    return { onKeepWithout };
+  };
+
+  it('custom R29 one failed image other than the first offers "Keep without image 3" beside Retry', () => {
+    const { onKeepWithout } = setupKeep([2]);
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep without image 3' }));
+    expect(onKeepWithout).toHaveBeenCalledTimes(1);
+  });
+
+  it('custom R29 several failed images fold into one action', () => {
+    setupKeep([2, 3]);
+    expect(screen.getAllByRole('button', { name: /Keep without/ })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Keep without images 3, 4' })).toBeTruthy();
+  });
+
+  it('custom R29 it is not offered when the first image failed or nothing failed', () => {
+    setupKeep([0, 2]);
+    expect(screen.queryByRole('button', { name: /Keep without/ })).toBeNull();
+    cleanup();
+    setupKeep([]);
+    expect(screen.queryByRole('button', { name: /Keep without/ })).toBeNull();
+  });
+
+  it('custom R29 it is offered also when the error cannot be retried', () => {
+    setupKeep([1], { category: 'moderation', retryable: false, message: 'Blocked.' });
+    expect(screen.getByRole('button', { name: 'Keep without image 2' })).toBeTruthy();
+  });
+});
+
 describe('RunErrorBlock (R9)', () => {
   it('R9 shows the fixed message as an alert', () => {
     setup(server);

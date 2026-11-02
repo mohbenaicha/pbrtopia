@@ -1,3 +1,4 @@
+import { isOpenAiCanvas, type Canvas } from '../../catalog/canvasRules';
 import type { ResolutionKey } from '../../catalog/modelTypes';
 import type { EncodedImage } from '../base64';
 import { makeProviderError } from '../classifyProviderError';
@@ -20,14 +21,16 @@ interface OpenAiEnhanceBody {
 
 const extensionOf = (blob: Blob): string => (blob.type.startsWith('image/') && blob.type.length > 6 ? blob.type.slice(6) : 'png');
 
-// R7: the multipart form for one image edit: model, prompt, square size, quality (left out when the model has none), a PNG output, then
-// the atlas and the references under the image field. A size OpenAI has no name for is refused here, before anything is sent.
-export function buildOpenAiImageForm(input: { model: string; prompt: string; resolutionKey: ResolutionKey; sizePx: number; quality: string | null; atlas: Blob; references: Blob[] }): Result<FormData, ProviderError> {
+// R7: the multipart form for one image edit: model, prompt, size (square, or the canvas of custom R12), quality (left out when the model
+// has none), a PNG output, then the atlas and the references under the image field. A size or canvas OpenAI has no name for is refused
+// here, before anything is sent.
+export function buildOpenAiImageForm(input: { model: string; prompt: string; resolutionKey: ResolutionKey; sizePx: number; quality: string | null; atlas: Blob; references: Blob[]; canvas?: Canvas }): Result<FormData, ProviderError> {
   if (!OPENAI_SIZES.has(input.resolutionKey)) return { ok: false, error: makeProviderError('bad-request') };
+  if (input.canvas !== undefined && !isOpenAiCanvas(input.canvas)) return { ok: false, error: makeProviderError('bad-request') };
   const form = new FormData();
   form.append('model', input.model);
   form.append('prompt', input.prompt);
-  form.append('size', `${input.sizePx}x${input.sizePx}`);
+  form.append('size', input.canvas === undefined ? `${input.sizePx}x${input.sizePx}` : `${input.canvas.width}x${input.canvas.height}`);
   if (input.quality !== null) form.append('quality', input.quality);
   form.append('output_format', 'png');
   form.append(IMAGE_FIELD, new File([input.atlas], 'atlas.png', { type: 'image/png' }));

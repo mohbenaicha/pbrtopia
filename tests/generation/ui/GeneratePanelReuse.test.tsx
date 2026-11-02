@@ -47,6 +47,21 @@ describe('GeneratePanel: the reuse line (R41)', () => {
     expect(screen.getByRole('button', { name: 'Enhance again' })).toBeTruthy();
   });
 
+  it('custom R15 R41 in Custom the line goes when the plan\'s assigned cameras change, because the overview picture would differ', () => {
+    const { store } = setup();
+    const settings = { provider: 'gemini' as const, modelId: 'gemini-nano-banana-2.1', resolutionKey: '1K' as const, quality: null };
+    act(() => {
+      store.getState().setMode('custom');
+      store.getState().confirmCustomPlan({ sheets: [{ cameras: [0, 1], settings }], aux: null });
+    });
+    const key = buildPanelEnhancerKey(store.getState());
+    if (key === null) throw new Error('no key');
+    act(() => store.getState().setEnhancerSnapshot({ key, atlasFingerprint: 'fp', enhancedPrompt: 'A scuffed steel plate.' }));
+    expect(screen.queryByText(NOTICE)).not.toBeNull();
+    act(() => store.getState().confirmCustomPlan({ sheets: [{ cameras: [0, 1, 2], settings }], aux: null }));
+    expect(screen.queryByText(NOTICE)).toBeNull();
+  });
+
   it('R41 changing the image model keeps the line', () => {
     const { store, snapshot } = setup();
     act(() => store.getState().setEnhancerSnapshot(snapshot));

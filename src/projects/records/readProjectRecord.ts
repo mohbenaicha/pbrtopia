@@ -1,5 +1,6 @@
 import type { MeshRecord, UnwrapReport } from '../../projection/engine';
 import { FieldProblem, readBlobKey, readChoice, readCount, readDuration, readFlag, readList, readNonEmptyText, readObject, readOptional, readText, readTimestamp, type RawRecord } from './fieldReaders';
+import { readCustomPlan, readCustomSetups } from './customPlanRecords';
 import { readPictures, readSlots } from './pictureRecords';
 import { PROJECT_SCHEMA_VERSION, normalizeProjectName, type GenerateSettingsRecord, type ProjectRecord, type ReferenceImageRecord } from './projectRecords';
 
@@ -54,6 +55,9 @@ function readGenerateSettings(value: unknown, path: string): GenerateSettingsRec
     atlasRender: raw['atlasRender'] === undefined ? 'grey' : readChoice(raw['atlasRender'], `${path}.atlasRender`, ['grey', 'wireframe', 'depth', 'depth-wireframe', 'viewport'] as const), // absent in projects saved before generate R37
     tileBorder: raw['tileBorder'] === undefined ? true : readFlag(raw['tileBorder'], `${path}.tileBorder`), // absent in projects saved before generate R40
     quality: readNonEmptyText(raw['quality'], `${path}.quality`), // any level a model offers (generate spec R5); an unknown one is kept and the panel falls back
+    mode: raw['mode'] === undefined ? 'standard' : readChoice(raw['mode'], `${path}.mode`, ['standard', 'custom'] as const), // absent in projects saved before custom generation (custom R28)
+    customPlan: raw['customPlan'] === undefined || raw['customPlan'] === null ? null : readCustomPlan(raw['customPlan'], `${path}.customPlan`),
+    customSetups: raw['customSetups'] === undefined ? [] : readCustomSetups(raw['customSetups'], `${path}.customSetups`),
   };
 }
 

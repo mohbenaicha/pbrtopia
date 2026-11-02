@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { Button, Icon, IconButton, ImageViewer, saveBlobAsFile } from '../../ui-kit';
+import { useRef, useState } from 'react';
+import { Icon, IconButton, ImageViewer, saveBlobAsFile } from '../../ui-kit';
 import type { ReferenceImage } from '../generateStore';
+import { useObjectUrl } from './useObjectUrl';
 
 interface ReferenceStripProps {
   references: ReferenceImage[];
@@ -9,22 +10,12 @@ interface ReferenceStripProps {
   onRemove: (id: string) => void;
 }
 
-function useObjectUrl(blob: Blob): string | undefined {
-  const [url, setUrl] = useState<string>();
-  useEffect(() => {
-    const created = URL.createObjectURL(blob);
-    setUrl(created);
-    return () => URL.revokeObjectURL(created);
-  }, [blob]);
-  return url;
-}
-
 function Thumbnail({ reference, onEnlarge, onRemove }: { reference: ReferenceImage; onEnlarge: () => void; onRemove: () => void }): React.JSX.Element {
   const url = useObjectUrl(reference.blob);
   return (
     <li className="reference-strip__item">
       <button type="button" className="reference-strip__thumb" aria-label={`Enlarge ${reference.name}`} onClick={onEnlarge}>
-        <img src={url} alt={reference.name} />
+        <img src={url ?? undefined} alt={reference.name} />
       </button>
       <span className="reference-strip__remove">
         <IconButton label={`Remove ${reference.name}`} icon={<Icon name="close" size={10} />} compact onClick={onRemove} />
@@ -59,6 +50,12 @@ export function ReferenceStrip({ references, notice, onFiles, onRemove }: Refere
         {references.map((reference) => (
           <Thumbnail key={reference.id} reference={reference} onEnlarge={() => setEnlarged(reference)} onRemove={() => onRemove(reference.id)} />
         ))}
+        <li className="reference-strip__add-item">
+          <button type="button" className="reference-strip__add" aria-label="Add reference image" title="Add reference image" onClick={() => input.current?.click()}>
+            <Icon name="plus" size={20} />
+          </button>
+          {references.length === 0 && <span className="reference-strip__hint">You can add images as references</span>}
+        </li>
       </ul>
       <input
         ref={input}
@@ -73,7 +70,6 @@ export function ReferenceStrip({ references, notice, onFiles, onRemove }: Refere
           if (files.length > 0) onFiles(files);
         }}
       />
-      <Button icon={<Icon name="plus" size={14} />} onClick={() => input.current?.click()}>Add images</Button>
       {notice !== null && <p className="reference-strip__notice" role="status">{notice}</p>}
       {enlarged !== null && <EnlargedImage reference={enlarged} onClose={() => setEnlarged(null)} />}
     </div>

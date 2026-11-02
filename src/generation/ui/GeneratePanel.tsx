@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore, type StoreApi } from 'zustand';
-import { Tabs } from '../../ui-kit';
+import { Icon, IconButton, Tabs } from '../../ui-kit';
 import { listAtlasSizes } from '../catalog/atlasSizes';
 import { optionsForModel } from '../catalog/optionsForModel';
+import { countImages } from '../custom/planEditing';
 import { buildPanelEnhancerKey, isSameEnhancerKey } from '../enhancerSnapshot';
 import { describeGenerateAvailability } from '../generateAvailability';
 import { findCatalogModel, generateStore, type GenerateState, type ReferenceImage } from '../generateStore';
@@ -33,6 +34,9 @@ interface GeneratePanelProps {
   onCancel: () => void; // Cancel in the step list (R10)
   onRetry: () => void; // Retry in the error block (R9)
   onPreviewAtlas: () => Promise<{ ok: true; value: Blob } | { ok: false; error: string }>; // the eye button (R38): the atlas of the current settings, or why it could not be made
+  onSetUpCustom?: () => void; // the gear beside Generate (custom R1): opens the setup overlay
+  setupLocked?: boolean; // the setup overlay is open (custom R30): everything but Additional settings is inert
+  onKeepWithout?: () => void; // Keep without image N in the error block (custom R29)
   store?: StoreApi<GenerateState>;
   logStore?: StoreApi<RunLogState>;
   readImageFile?: (file: File) => Promise<ReferenceImage>;
@@ -54,7 +58,7 @@ const carriesFiles = (event: React.DragEvent): boolean => Array.from(event.dataT
 
 // R1, R23: the Generate panel: a Generate tab (prompt, references, channel, model, resolution, quality, Generate) and a Debug tab (the run log).
 // The handlers run the flows (G9, G10); this panel only shows state and reports clicks. Both tabs stay mounted so a visit to the other loses nothing.
-export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, onRetry, onPreviewAtlas, store = generateStore, logStore = runLogStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
+export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, onRetry, onPreviewAtlas, onSetUpCustom, setupLocked = false, onKeepWithout, store = generateStore, logStore = runLogStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
   const state = useStore(store);
   const records = useStore(logStore, (log) => log.records);
   const activeId = useStore(logStore, (log) => log.activeId);
@@ -125,41 +129,54 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
 
   return (
     <section className="generate-panel" aria-label="Generate">
-      <Tabs
-        label="Generate panel"
-        tabs={[{ value: 'generate', label: 'Generate' }, { value: 'debug', label: 'Debug', icon: 'bug', iconOnly: true }]}
-        value={tab}
-        onChange={setTab}
-      />
+      <div className="generate-panel__locked" inert={setupLocked}>
+        <Tabs
+          label="Generate panel"
+          tabs={[{ value: 'generate', label: 'Generate' }, { value: 'debug', label: 'Debug', icon: 'bug', iconOnly: true }]}
+          value={tab}
+          onChange={setTab}
+        />
+      </div>
       <div className="generate-panel__page" role="tabpanel" aria-label="Generate fields" hidden={tab !== 'generate'}>
-        <label className="generate-panel__field">
-          <span className="generate-panel__label">Prompt</span>
-          <textarea
-            className="generate-panel__prompt"
-            rows={10}
-            value={state.prompt}
-            data-drop-target={dropTarget ? '' : undefined}
-            onChange={(event) => state.setPrompt(event.target.value)}
-            onDragEnter={(event) => carriesFiles(event) && setDropTarget(true)}
-            onDragOver={(event) => {
-              if (carriesFiles(event)) event.preventDefault(); // without this the browser refuses the drop
-            }}
-            onDragLeave={() => setDropTarget(false)}
-            onDrop={(event) => {
-              setDropTarget(false);
-              const files = Array.from(event.dataTransfer.files);
-              if (files.length === 0) return; // selected text dropped in: the field handles it
-              event.preventDefault();
-              void addFiles(files);
-            }}
+        <div className="generate-panel__locked" inert={setupLocked}>
+          <label className="generate-panel__field">
+            <span className="generate-panel__label">Prompt</span>
+            <textarea
+              className="generate-panel__prompt"
+              rows={10}
+              value={state.prompt}
+              data-drop-target={dropTarget ? '' : undefined}
+              onChange={(event) => state.setPrompt(event.target.value)}
+              onDragEnter={(event) => carriesFiles(event) && setDropTarget(true)}
+              onDragOver={(event) => {
+                if (carriesFiles(event)) event.preventDefault(); // without this the browser refuses the drop
+              }}
+              onDragLeave={() => setDropTarget(false)}
+              onDrop={(event) => {
+                setDropTarget(false);
+                const files = Array.from(event.dataTransfer.files);
+                if (files.length === 0) return; // selected text dropped in: the field handles it
+                event.preventDefault();
+                void addFiles(files);
+              }}
+            />
+          </label>
+          {reusesEnhancedPrompt && <EnhancedPromptNotice onEnhanceAgain={() => state.setEnhancerSnapshot(null)} />}
+          <ReferenceStrip
+            references={state.references}
+            notice={notice}
+            onFiles={(files) => void addFiles(files)}
+            onRemove={state.removeReference}
           />
-        </label>
-        {reusesEnhancedPrompt && <EnhancedPromptNotice onEnhanceAgain={() => state.setEnhancerSnapshot(null)} />}
-        <ReferenceStrip references={state.references} notice={notice} onFiles={(files) => void addFiles(files)} onRemove={state.removeReference} />
-        <ChannelToggle />
-        <ModelSelect catalog={state.catalog} hasKey={state.hasKey} provider={state.provider} modelId={state.modelId} today={today} onSelect={state.selectModel} />
-        <ResolutionSelect options={options.resolutions} experimental={model?.experimentalResolutions ?? []} value={state.resolutionKey} onChange={state.setResolution} />
-        <QualitySelect levels={options.qualityLevels} value={state.quality} onChange={state.setQuality} />
+          <ChannelToggle />
+          {state.mode === 'standard' && (
+            <>
+              <ModelSelect catalog={state.catalog} hasKey={state.hasKey} provider={state.provider} modelId={state.modelId} today={today} onSelect={state.selectModel} />
+              <ResolutionSelect options={options.resolutions} experimental={model?.experimentalResolutions ?? []} value={state.resolutionKey} onChange={state.setResolution} />
+              <QualitySelect levels={options.qualityLevels} value={state.quality} onChange={state.setQuality} />
+            </>
+          )}
+        </div>
         <AdditionalSettings
           atlasSizes={listAtlasSizes(state.maxTextureSize)}
           atlasKey={state.atlasKey}
@@ -171,16 +188,20 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
           previewing={previewing}
           previewBlockedReason={describePreviewBlock(state)}
           onPreview={() => void previewAtlas()}
+          custom={state.mode === 'custom'}
         />
-        {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} onCancel={onCancel} {...(viewLog === undefined ? {} : { onViewLog: viewLog })} />}
-        {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} />}
-        {state.notice !== null && <p className="generate-panel__notice" role="status">{state.notice}</p>}
-        <UnwrapStatusBlock unwrap={state.unwrap} onDismissError={state.clearUnwrap} />
-        <div className="generate-panel__actions">
-          {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />}
+        <div className="generate-panel__locked" inert={setupLocked}>
+          {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} imageCount={state.mode === 'custom' && state.customPlan !== null ? countImages(state.customPlan) : 1} onCancel={onCancel} {...(viewLog === undefined ? {} : { onViewLog: viewLog })} />}
+          {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} failedSheets={state.failedSheets} {...(onKeepWithout === undefined ? {} : { onKeepWithout })} />}
+          {state.notice !== null && <p className="generate-panel__notice" role="status">{state.notice}</p>}
+          <UnwrapStatusBlock unwrap={state.unwrap} onDismissError={state.clearUnwrap} />
+          <div className="generate-panel__actions">
+            {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />}
+            <IconButton label="Custom setup" icon={<Icon name="gear" />} disabled={state.status === 'running'} onClick={() => { state.setMode('custom'); onSetUpCustom?.(); }} />
+          </div>
         </div>
       </div>
-      <div className="generate-panel__page" role="tabpanel" aria-label="Run log" hidden={tab !== 'debug'}>
+      <div className="generate-panel__page" role="tabpanel" aria-label="Run log" hidden={tab !== 'debug'} inert={setupLocked}>
         <DebugTab projectId={projectId} records={records} revealId={reveal.id} revealCount={reveal.count} onRemove={logStore.getState().remove} />
       </div>
       {previewPng !== null && <AtlasPreviewViewer png={previewPng} onClose={() => setPreviewPng(null)} />}

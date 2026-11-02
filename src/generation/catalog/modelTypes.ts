@@ -1,4 +1,5 @@
 import type { Provider } from '../../keys';
+import type { CanvasRule } from './canvasRules';
 
 export type ResolutionKey = '1K' | '2K' | '2.8K' | '4K';
 
@@ -21,6 +22,7 @@ export interface ProviderModelRecord {
   maxReferenceImages?: number; // images in total including the atlas
   timeoutMs?: number;
   experimentalResolutions?: ResolutionKey[]; // sizes the provider documents as experimental
+  canvases?: CanvasRule; // custom generation R12: the shapes the model can return per resolution key (image models in the table)
   retiring?: { shutdownDate: string }; // YYYY-MM-DD
 }
 

@@ -26,6 +26,17 @@ describe('buildEnhancerText', () => {
   });
 });
 
+describe('buildEnhancerText: the whole object (custom R15)', () => {
+  it('custom R15 for the object scope the instruction also asks for the sides no view shows; the default text is unchanged', () => {
+    const whole = buildEnhancerText(recipe, 'a rusty robot', 'object');
+    expect(whole).toContain(ENHANCER_INSTRUCTION);
+    expect(whole).toMatch(/whole object, not only the side/i);
+    expect(whole.indexOf('whole object')).toBeLessThan(whole.indexOf('User prompt:'));
+    expect(buildEnhancerText(recipe, 'a rusty robot')).not.toMatch(/whole object/i);
+    expect(buildEnhancerText(recipe, 'a rusty robot', 'atlas')).toBe(buildEnhancerText(recipe, 'a rusty robot'));
+  });
+});
+
 describe('buildEnhancerText: the atlas render (R39)', () => {
   it('R39 the viewport render puts its own focus in the request, and not the grey one', () => {
     const viewport = recipeForChannel('albedo', 'viewport');

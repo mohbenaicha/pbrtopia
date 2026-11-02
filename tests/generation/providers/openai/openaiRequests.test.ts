@@ -11,7 +11,7 @@ import {
 const png = (name = 'a'): Blob => new Blob([name], { type: 'image/png' });
 const base = { model: 'gpt-image-2.5-sunburst', prompt: 'weathered steel', resolutionKey: '2K' as ResolutionKey, sizePx: 2048, quality: 'high' as string | null, atlas: png('atlas'), references: [] as Blob[] };
 
-function formOf(patch: Partial<typeof base> = {}): FormData {
+function formOf(patch: Partial<typeof base> & { canvas?: { width: number; height: number } } = {}): FormData {
   const result = buildOpenAiImageForm({ ...base, ...patch });
   if (!result.ok) throw new Error(`unexpected refusal: ${result.error.category}`);
   return result.value;
@@ -25,6 +25,18 @@ describe('buildOpenAiImageForm (R7)', () => {
     expect(form.get('size')).toBe('2048x2048');
     expect(form.get('quality')).toBe('high');
     expect(form.get('output_format')).toBe('png');
+  });
+
+  it('custom R12 a canvas replaces the square size', () => {
+    expect(formOf({ canvas: { width: 1536, height: 1024 } }).get('size')).toBe('1536x1024');
+    expect(formOf({ canvas: { width: 1024, height: 2048 } }).get('size')).toBe('1024x2048');
+  });
+
+  it('custom R12 a canvas OpenAI cannot return is refused before anything is sent', () => {
+    const refused = (width: number, height: number) => buildOpenAiImageForm({ ...base, canvas: { width, height } });
+    for (const canvas of [[1000, 1024], [4096, 1024], [4000, 1024], [256, 256], [3840, 3840], [1024, 4096]] as const) {
+      expect(refused(canvas[0], canvas[1])).toMatchObject({ ok: false, error: { category: 'bad-request', retryable: false } });
+    }
   });
 
   it('R4 the 2.8K square is 2880x2880', () => {

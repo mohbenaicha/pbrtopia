@@ -1,12 +1,14 @@
 export { GeneratePanel } from './ui/GeneratePanel';
+export { SetupOverlay } from './ui/custom/SetupOverlay';
 export { makeImagePreview } from './makeImagePreview';
 export { scaleImageToMaxSide } from './imageScaling/scaleImageToMaxSide';
-export { runLogStore, type RunLogActions, type RunLogRecord, type RunLogState } from './runLogStore';
+export { runLogStore, type RunLogActions, type RunLogRecord, type RunLogSheet, type RunLogState } from './runLogStore';
 export type { UvOptions } from './ui/UvOptionsDialog';
 export { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
 export { listAtlasSizes } from './catalog/atlasSizes';
 export type { AtlasRender } from './atlasRender';
-export { buildEnhancerKey, buildPanelEnhancerKey, isSameEnhancerKey, type EnhancerKey, type EnhancerSnapshot } from './enhancerSnapshot';
+export { buildEnhancerKey, buildPanelEnhancerKey, CUSTOM_OVERVIEW_SIZE_PX, isSameEnhancerKey, type EnhancerKey, type EnhancerSnapshot } from './enhancerSnapshot';
+export type { EnhancerScope } from './prompts/buildEnhancerText';
 export { fingerprintImage } from './fingerprintImage';
 export { describeGenerateAvailability, pickEnhancerModel, type GenerateAvailability } from './generateAvailability';
 export {
@@ -32,3 +34,11 @@ export { hasRecipe, recipeForChannel, type MapRecipe, type RecipeChannel } from 
 export { discoverModels } from './catalog/discoverModels';
 export { KNOWN_MODELS } from './catalog/knownModels';
 export type { ProviderModelRecord } from './catalog/modelTypes';
+export { listCanvases, type Canvas, type CanvasRule } from './catalog/canvasRules';
+export type { AuxSheetPlan, CoreSheetPlan, CustomPlanRecord, NamedPlanRecord, SheetSettings } from './custom/planTypes';
+export { CORE_CAMERA_COUNT, CORE_CAMERA_NAMES, MAX_CORE_SHEETS } from './custom/planTypes';
+export type { PreviewTile, SheetPreview, SnapshotTrim } from './custom/sheetPreview';
+export { addSheet, applySettingsToAll, assignCamera, countImages, describePlanProblem, removeSheet, reorderSheets, setAuxIncluded, unassignCamera, updateSheetSettings } from './custom/planEditing';
+export { retargetSettings } from './custom/sheetSettings';
+export { buildPresetPlan, buildPresetSettings, detectPreset, PRESET_NAMES, pickPresetModel, type PresetName } from './custom/presets';
+export { buildSheetImagePrompt, describeSheetCaption, type TilePlacement } from './custom/sheetPrompt';

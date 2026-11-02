@@ -424,7 +424,7 @@ describe('generateStore: tile borders (R40)', () => {
 
 describe('generateStore: the enhancer snapshot (R41)', () => {
   const snapshot = {
-    key: { provider: 'gemini' as const, modelId: 'gemini-3.8-flash', level: 'low', text: 'text', atlasSizePx: 2048, atlasRender: 'grey' as const, tileBorder: true },
+    key: { provider: 'gemini' as const, modelId: 'gemini-3.8-flash', level: 'low', text: 'text', atlasSizePx: 2048, atlasRender: 'grey' as const, tileBorder: true, overviewCameras: [] },
     atlasFingerprint: 'fp',
     enhancedPrompt: 'kept',
   };

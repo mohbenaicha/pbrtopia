@@ -22,7 +22,7 @@ interface ViewportCornerProps {
 export function ViewportCorner({ viewport, settingsOpen, onSettingsOpenChange, settingsPanel, gridShown, onGridShownChange, children }: ViewportCornerProps): React.JSX.Element {
   const { quaternion, projection } = useCameraPose(viewport);
   const gear = (
-    <IconButton testId="viewport-gear" label="Viewport settings" icon={<Icon name="gear" size={20} />} pressed={settingsOpen} onClick={() => onSettingsOpenChange(!settingsOpen)} />
+    <IconButton testId="viewport-gear" label="Viewport settings" icon={<Icon name="gear" />} pressed={settingsOpen} onClick={() => onSettingsOpenChange(!settingsOpen)} />
   );
   return (
     <div className="viewport-corner">
@@ -32,8 +32,8 @@ export function ViewportCorner({ viewport, settingsOpen, onSettingsOpenChange, s
           {settingsPanel}
         </Popover>
         <CameraToggle projection={projection} onToggle={viewport.setProjection} />
-        <IconButton testId="viewport-reset" label="Reset view" icon={<Icon name="reset" size={20} />} onClick={viewport.resetView} />
-        <IconButton testId="viewport-grid" label="Grid" icon={<Icon name="grid" size={20} />} pressed={gridShown} onClick={() => onGridShownChange(!gridShown)} />
+        <IconButton testId="viewport-reset" label="Reset view" icon={<Icon name="reset" />} onClick={viewport.resetView} />
+        <IconButton testId="viewport-grid" label="Grid" icon={<Icon name="grid" />} pressed={gridShown} onClick={() => onGridShownChange(!gridShown)} />
       </div>
       {children}
     </div>

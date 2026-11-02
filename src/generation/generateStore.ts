@@ -5,7 +5,9 @@ import { DEFAULT_ATLAS_RENDER, type AtlasRender } from './atlasRender';
 import type { EnhancerSnapshot } from './enhancerSnapshot';
 import { DEFAULT_IMAGE_MODEL } from './catalog/knownModels';
 import { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
+import { countUserReferenceSlots } from './catalog/referenceSlots';
 import type { ProviderModelRecord, ResolutionKey } from './catalog/modelTypes';
+import type { CustomPlanRecord, NamedPlanRecord } from './custom/planTypes';
 import type { ProviderErrorCategory } from './providers/providerTypes';
 
 export interface ReferenceImage {
@@ -58,7 +60,13 @@ export interface SavedPanelSettings {
   atlasRender: AtlasRender;
   tileBorder: boolean;
   quality: string | null;
+  // Custom R28: left out, the panel keeps what it has (a record saved before Custom existed is read with the defaults by the reader).
+  mode?: GenerateMode;
+  customPlan?: CustomPlanRecord | null;
+  customSetups?: NamedPlanRecord[];
 }
+
+export type GenerateMode = 'standard' | 'custom';
 
 export interface GenerateState {
   prompt: string;
@@ -71,6 +79,9 @@ export interface GenerateState {
   atlasRender: AtlasRender; // how the atlas snapshots are drawn (R37); independent of everything else in the panel
   tileBorder: boolean; // a white border around every atlas tile (R40)
   quality: string | null;
+  mode: GenerateMode; // custom R1: Standard is the one-image flow, Custom the per-image plan
+  customPlan: CustomPlanRecord | null; // the confirmed plan (R7); null until the first Confirm
+  customSetups: NamedPlanRecord[]; // saved setups, oldest first (R6)
   // fed by app/
   catalog: ModelCatalog;
   hasKey: Record<Provider, boolean>;
@@ -86,6 +97,7 @@ export interface GenerateState {
   step: RunStep | null;
   fraction: number;
   error: RunError | null;
+  failedSheets: number[]; // custom R29: the images (0-based) that failed in the last custom run
   notice: string | null; // a plain message that is not a failure (R19: the set is saved but could not be opened)
   enhancerSnapshot: EnhancerSnapshot | null; // R41: the last enhancer call of the open project; in memory only, not part of the saved settings
   unwrap: UnwrapState;
@@ -101,6 +113,10 @@ export interface GenerateState {
   setAtlasRender: (render: AtlasRender) => void;
   setTileBorder: (on: boolean) => void;
   setQuality: (level: string) => void;
+  setMode: (mode: GenerateMode) => void;
+  confirmCustomPlan: (plan: CustomPlanRecord) => void;
+  saveCustomSetup: (name: string, plan: CustomPlanRecord) => void;
+  deleteCustomSetup: (name: string) => void;
   setCatalog: (catalog: ModelCatalog) => void;
   setHasKey: (provider: Provider, has: boolean) => void;
   setEnhancer: (enhancer: EnhancerChoice | null) => void;
@@ -108,7 +124,7 @@ export interface GenerateState {
   setSceneState: (scene: SceneState) => void;
   beginRun: () => void;
   setStep: (step: RunStep, fraction: number) => void;
-  failRun: (error: RunError) => void;
+  failRun: (error: RunError, failedSheets?: number[]) => void; // custom R29: the indices of the images that failed, for Keep without
   clearRun: () => void;
   beginUnwrap: () => void;
   setUnwrapProgress: (fraction: number) => void;
@@ -140,7 +156,6 @@ function settleAtlasKey(current: AtlasKey, maxTextureSize: number): AtlasKey {
   return keys.includes(DEFAULT_ATLAS_KEY) ? DEFAULT_ATLAS_KEY : keys[keys.length - 1]!;
 }
 
-const referenceCap =(info: ProviderModelRecord | null): number => (info?.maxReferenceImages === undefined ? Infinity : Math.max(0, info.maxReferenceImages - 1));
 const IDLE_UNWRAP: UnwrapState = { status: 'idle', fraction: 0, error: null };
 const clamp01 =(value: number): number => Math.min(1, Math.max(0, value));
 
@@ -163,6 +178,9 @@ export function createGenerateStore() {
       atlasKey: DEFAULT_ATLAS_KEY,
       atlasRender: DEFAULT_ATLAS_RENDER,
       tileBorder: true,
+      mode: 'standard',
+      customPlan: null,
+      customSetups: [],
       catalog: { gemini: [], openai: [] },
       hasKey: { gemini: false, openai: false },
       enhancer: null,
@@ -176,6 +194,7 @@ export function createGenerateStore() {
       step: null,
       fraction: 0,
       error: null,
+      failedSheets: [],
       notice: null,
       enhancerSnapshot: null,
       unwrap: IDLE_UNWRAP,
@@ -187,10 +206,12 @@ export function createGenerateStore() {
       setNotice: (notice) => set({ notice }),
       setEnhancerSnapshot: (enhancerSnapshot) => set({ enhancerSnapshot }),
       addReferences: (images) => {
-        const { references, catalog, provider, modelId } = get();
+        const { references, catalog, provider, modelId, mode, customPlan } = get();
         const known = new Set(references.map((reference) => reference.id));
         const fresh = images.filter((image, index) => !known.has(image.id) && images.findIndex((other) => other.id === image.id) === index);
-        const room = Math.max(0, referenceCap(findModel(catalog, provider, modelId)) - references.length);
+        const lead = mode === 'custom' ? customPlan?.sheets[0]?.settings : undefined; // custom R13: the lead sheet's model takes the user's references
+        const limiting = lead === undefined ? findModel(catalog, provider, modelId) : findModel(catalog, lead.provider, lead.modelId);
+        const room = Math.max(0, countUserReferenceSlots(limiting) - references.length);
         const accepted = fresh.slice(0, room);
         set({ references: [...references, ...accepted] });
         return { added: accepted.length, refused: fresh.length - accepted.length };
@@ -216,15 +237,23 @@ export function createGenerateStore() {
         const info = findModel(catalog, provider, modelId);
         if (info !== null && optionsForModel(info, maxTextureSize).qualityLevels.includes(level)) set({ quality: level });
       },
+      setMode: (mode) => set((state) => (state.status === 'failed' ? { mode, status: 'idle', step: null, fraction: 0, error: null, failedSheets: [] } : { mode })), // a failed run belongs to the mode it ran in
+      confirmCustomPlan: (customPlan) => set({ customPlan }),
+      saveCustomSetup: (name, plan) => {
+        const { customSetups } = get();
+        const same = customSetups.findIndex((setup) => setup.name === name);
+        set({ customSetups: same < 0 ? [...customSetups, { name, plan }] : customSetups.map((setup, index) => (index === same ? { name, plan } : setup)) });
+      },
+      deleteCustomSetup: (name) => set({ customSetups: get().customSetups.filter((setup) => setup.name !== name) }),
       setCatalog: (catalog) => resettle({ catalog }),
       setHasKey: (provider, has) => set({ hasKey: { ...get().hasKey, [provider]: has } }),
       setEnhancer: (enhancer) => set({ enhancer }),
       setMaxTextureSize: (maxTextureSize) => resettle({ maxTextureSize }),
       setSceneState: ({ hasModel, hasUvs, readOnly = false, setOpen = false, setBusy = false }) => set({ hasModel, hasUvs, readOnly, setOpen, setBusy }),
-      beginRun: () => set({ status: 'running', step: 'capture', fraction: 0, error: null, notice: null }),
+      beginRun: () => set({ status: 'running', step: 'capture', fraction: 0, error: null, failedSheets: [], notice: null }),
       setStep: (step, fraction) => set({ step, fraction: clamp01(fraction) }),
-      failRun: (error) => set({ status: 'failed', error }),
-      clearRun: () => set({ status: 'idle', step: null, fraction: 0, error: null }),
+      failRun: (error, failedSheets = []) => set({ status: 'failed', error, failedSheets }),
+      clearRun: () => set({ status: 'idle', step: null, fraction: 0, error: null, failedSheets: [] }),
       beginUnwrap: () => set({ unwrap: { status: 'running', fraction: 0, error: null } }),
       setUnwrapProgress: (fraction) => set({ unwrap: { ...get().unwrap, fraction: clamp01(fraction) } }),
       failUnwrap: (error) => set({ unwrap: { status: 'failed', fraction: 0, error } }),

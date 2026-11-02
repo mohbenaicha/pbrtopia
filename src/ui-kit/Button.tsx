@@ -12,15 +12,17 @@ interface ButtonProps {
   icon?: ReactNode;
   title?: string; // a tooltip, for a button whose label can be hidden when space runs out
   type?: 'button' | 'submit';
+  pressed?: boolean; // for a choice among buttons: reported as aria-pressed and drawn selected
   onClick?: () => void;
   children: ReactNode;
 }
 
-export function Button({ variant = 'secondary', size = 'default', loading = false, disabled = false, icon, title, type = 'button', onClick, children }: ButtonProps): React.JSX.Element {
+export function Button({ variant = 'secondary', size = 'default', loading = false, disabled = false, icon, title, type = 'button', pressed, onClick, children }: ButtonProps): React.JSX.Element {
   return (
     <button
       type={type}
       title={title}
+      aria-pressed={pressed}
       className="ui-button"
       data-variant={variant}
       data-size={size === 'large' ? 'large' : undefined}

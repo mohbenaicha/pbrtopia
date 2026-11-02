@@ -5,11 +5,21 @@ import type { RunError } from '../generateStore';
 interface RunErrorBlockProps {
   error: RunError;
   onRetry: () => void;
+  failedSheets?: number[]; // custom R29: the images (0-based) that failed
+  onKeepWithout?: () => void;
+}
+
+// Custom R29: the label of the one action that folds the failed images ("Keep without images 3, 4"); null when the first image failed or none did.
+export function describeKeepWithout(failedSheets: number[]): string | null {
+  if (failedSheets.length === 0 || failedSheets.includes(0)) return null;
+  const numbers = failedSheets.map((index) => index + 1).sort((a, b) => a - b);
+  return `Keep without image${numbers.length === 1 ? '' : 's'} ${numbers.join(', ')}`;
 }
 
 // R9: why the run failed. The fixed message first; the provider's own text only as plain text in a collapsed block. Retry is offered where repeating the
 // same request can help; otherwise the user changes the inputs and generates again.
-export function RunErrorBlock({ error, onRetry }: RunErrorBlockProps): React.JSX.Element {
+export function RunErrorBlock({ error, onRetry, failedSheets = [], onKeepWithout }: RunErrorBlockProps): React.JSX.Element {
+  const keepLabel = onKeepWithout === undefined ? null : describeKeepWithout(failedSheets);
   const [detailsOpen, setDetailsOpen] = useState(false);
   return (
     <div className="run-error" role="alert">
@@ -21,6 +31,7 @@ export function RunErrorBlock({ error, onRetry }: RunErrorBlockProps): React.JSX
         </Disclosure>
       )}
       {error.retryable ? <Button onClick={onRetry}>Retry</Button> : <p className="run-error__hint">Change the inputs, then press Generate.</p>}
+      {keepLabel !== null && onKeepWithout !== undefined && <Button onClick={onKeepWithout}>{keepLabel}</Button>}
     </div>
   );
 }

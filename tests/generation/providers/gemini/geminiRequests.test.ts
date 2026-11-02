@@ -27,6 +27,27 @@ describe('buildGeminiImageBody (R7)', () => {
     expect(result.ok && result.value.model).toBe('gemini-3.1-flash-image');
   });
 
+  it('custom R12 a canvas sets the aspect ratio of the answer to the documented ratio it has', () => {
+    const ratioOf = (width: number, height: number) => {
+      const result = buildGeminiImageBody({ ...base, canvas: { width, height } });
+      return result.ok ? result.value.response_format.aspect_ratio : result.error.category;
+    };
+    expect(ratioOf(2048, 1365)).toBe('3:2');
+    expect(ratioOf(1365, 2048)).toBe('2:3');
+    expect(ratioOf(2048, 2048)).toBe('1:1');
+    expect(ratioOf(2048, 878)).toBe('21:9');
+    expect(ratioOf(1152, 2048)).toBe('9:16');
+  });
+
+  it('custom R12 a canvas whose shape Gemini has no ratio for is refused before anything is sent', () => {
+    expect(buildGeminiImageBody({ ...base, canvas: { width: 1024, height: 2048 } })).toMatchObject({ ok: false, error: { category: 'bad-request', retryable: false } });
+  });
+
+  it('custom R12 without a canvas the answer stays square', () => {
+    const result = buildGeminiImageBody(base);
+    expect(result.ok && result.value.response_format.aspect_ratio).toBe('1:1');
+  });
+
   it('R5 sends the chosen quality level unchanged as thinking_level', () => {
     for (const level of ['minimal', 'medium', 'high']) {
       const result = buildGeminiImageBody({ ...base, quality: level });

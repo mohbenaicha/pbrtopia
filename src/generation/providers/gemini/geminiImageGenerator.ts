@@ -12,7 +12,7 @@ export function createGeminiImageGenerator(fetchImpl: typeof fetch = fetch): Ima
       const tooBig = checkInlineSize([request.atlas, ...request.references], request.prompt);
       if (tooBig !== null) return { ok: false, error: tooBig };
       const images = await Promise.all([request.atlas, ...request.references].map(encodeImage));
-      const body = buildGeminiImageBody({ model: request.model, prompt: request.prompt, resolutionKey: request.resolutionKey, quality: request.quality, images });
+      const body = buildGeminiImageBody({ model: request.model, prompt: request.prompt, resolutionKey: request.resolutionKey, quality: request.quality, images, ...(request.canvas ? { canvas: request.canvas } : {}) });
       if (!body.ok) return body;
       const sent = await sendProviderRequest(
         { provider: 'gemini', url: GEMINI_INTERACTIONS_URL, method: 'POST', headers: { 'x-goog-api-key': ctx.apiKey, 'content-type': 'application/json' }, body: JSON.stringify(body.value) },

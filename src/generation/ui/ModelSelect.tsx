@@ -11,13 +11,14 @@ interface ModelSelectProps {
   modelId: string | null;
   today: string; // YYYY-MM-DD, for the stale-table warning
   onSelect: (provider: Provider, modelId: string) => void;
+  label?: string; // the field's name; a setup card names its image ("Image 2 model")
 }
 
 const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
 const PROVIDERS_IN_ORDER: Provider[] = ['gemini', 'openai'];
 
 // R4: the image models of the providers that have a key, written "Provider: name"; a model the table does not know is marked unverified.
-export function ModelSelect({ catalog, hasKey, provider, modelId, today, onSelect }: ModelSelectProps): React.JSX.Element {
+export function ModelSelect({ catalog, hasKey, provider, modelId, today, onSelect, label = 'Model' }: ModelSelectProps): React.JSX.Element {
   // The table is checked once when the picker first appears, in development builds only.
   useEffect(() => {
     if (import.meta.env.DEV) warnAboutStaleKnownModels(KNOWN_MODELS, today);
@@ -30,7 +31,7 @@ export function ModelSelect({ catalog, hasKey, provider, modelId, today, onSelec
 
   return (
     <Select
-      label="Model"
+      label={label}
       options={options}
       value={value}
       emptyText="Add a key in Settings to list models"

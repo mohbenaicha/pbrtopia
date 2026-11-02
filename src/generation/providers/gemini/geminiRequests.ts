@@ -1,3 +1,4 @@
+import { findGeminiAspectRatio, type Canvas } from '../../catalog/canvasRules';
 import type { ResolutionKey } from '../../catalog/modelTypes';
 import type { EncodedImage } from '../base64';
 import { makeProviderError } from '../classifyProviderError';
@@ -12,7 +13,7 @@ type GeminiPart = { type: 'text'; text: string } | { type: 'image'; mime_type: s
 interface GeminiImageBody {
   model: string;
   input: GeminiPart[];
-  response_format: { type: 'image'; mime_type: 'image/jpeg'; aspect_ratio: '1:1'; image_size: string };
+  response_format: { type: 'image'; mime_type: 'image/jpeg'; aspect_ratio: string; image_size: string };
   generation_config?: { thinking_level: string };
 }
 
@@ -24,16 +25,19 @@ interface GeminiEnhanceBody {
 
 const imagePart = (image: EncodedImage): GeminiPart => ({ type: 'image', mime_type: image.mimeType, data: image.base64 });
 
-// R7: the Interactions body for one image: prompt, atlas, references. The output is a JPEG (the only format the API offers) and always a
-// square, because without an aspect ratio the answer is 1408x768. A size Gemini has no name for is refused here, before anything is sent.
-export function buildGeminiImageBody(input: { model: string; prompt: string; resolutionKey: ResolutionKey; quality: string | null; images: EncodedImage[] }): Result<GeminiImageBody, ProviderError> {
+// R7: the Interactions body for one image: prompt, atlas, references. The output is a JPEG (the only format the API offers) and a
+// square unless a canvas is given (custom R12), because without an aspect ratio the answer is 1408x768. A size or a canvas shape Gemini
+// has no name for is refused here, before anything is sent.
+export function buildGeminiImageBody(input: { model: string; prompt: string; resolutionKey: ResolutionKey; quality: string | null; images: EncodedImage[]; canvas?: Canvas }): Result<GeminiImageBody, ProviderError> {
   if (!GEMINI_SIZES.has(input.resolutionKey)) return { ok: false, error: makeProviderError('bad-request') };
+  const aspectRatio = input.canvas === undefined ? '1:1' : findGeminiAspectRatio(input.canvas);
+  if (aspectRatio === undefined) return { ok: false, error: makeProviderError('bad-request') };
   return {
     ok: true,
     value: {
       model: input.model,
       input: [{ type: 'text', text: input.prompt }, ...input.images.map(imagePart)],
-      response_format: { type: 'image', mime_type: 'image/jpeg', aspect_ratio: '1:1', image_size: input.resolutionKey },
+      response_format: { type: 'image', mime_type: 'image/jpeg', aspect_ratio: aspectRatio, image_size: input.resolutionKey },
       ...(input.quality === null ? {} : { generation_config: { thinking_level: input.quality } }),
     },
   };

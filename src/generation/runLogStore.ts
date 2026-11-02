@@ -13,8 +13,17 @@ export interface RunLogRecord {
   atlas: Blob | null;
   enhancedPrompt: string | null;
   imagePreview: Blob | null; // at most 1024 px on the long side
+  sheets: RunLogSheet[]; // custom R27: a custom run's snapshots and returned images by sheet; empty for a standard run
   errorMessage: string | null;
   errorDetails: string | null; // the provider's own text, shown as plain text
+}
+
+// Custom R27: one image of a custom run: what was sent for it and what came back, captioned by its camera names.
+export interface RunLogSheet {
+  index: number;
+  label: string;
+  snapshot: Blob | null;
+  image: Blob | null;
 }
 
 export interface RunLogError {
@@ -35,6 +44,7 @@ export interface RunLogActions {
   setAtlas: (id: string, atlas: Blob) => void;
   setEnhancedPrompt: (id: string, text: string) => void;
   setImage: (id: string, preview: Blob) => void;
+  setSheetPicture: (id: string, sheet: { index: number; label: string }, kind: 'snapshot' | 'image', preview: Blob) => void;
   finish: (id: string, outcome: Exclude<RunOutcome, 'running'>, error?: RunLogError) => void;
   remove: (id: string) => void;
 }
@@ -69,7 +79,7 @@ export function createRunLogStore() {
       activeId: null,
       begin: (start) => {
         const id = crypto.randomUUID();
-        const record: RunLogRecord = { id, ...start, outcome: 'running', atlas: null, enhancedPrompt: null, imagePreview: null, errorMessage: null, errorDetails: null };
+        const record: RunLogRecord = { id, ...start, outcome: 'running', atlas: null, enhancedPrompt: null, imagePreview: null, sheets: [], errorMessage: null, errorDetails: null };
         set((state) => ({ records: trimToLimit([record, ...state.records]), activeId: id }));
         return id;
       },
@@ -82,6 +92,13 @@ export function createRunLogStore() {
       setAtlas: (id, atlas) => update(id, { atlas }),
       setEnhancedPrompt: (id, enhancedPrompt) => update(id, { enhancedPrompt }),
       setImage: (id, imagePreview) => update(id, { imagePreview }),
+      setSheetPicture: (id, { index, label }, kind, preview) => {
+        const record = get().records.find((candidate) => candidate.id === id);
+        if (record === undefined) return;
+        const current = record.sheets.find((sheet) => sheet.index === index) ?? { index, label, snapshot: null, image: null };
+        const next: RunLogSheet = { ...current, label, [kind]: preview };
+        update(id, { sheets: [...record.sheets.filter((sheet) => sheet.index !== index), next].sort((a, b) => a.index - b.index) });
+      },
       finish: (id, outcome, error) => {
         if (!get().records.some((record) => record.id === id)) return;
         update(id, { outcome, errorMessage: error?.message ?? null, errorDetails: error?.details ?? null });
