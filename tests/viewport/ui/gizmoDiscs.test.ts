@@ -21,6 +21,12 @@ describe('computeGizmoDiscs', () => {
     expect(discs.filter((disc) => disc.positive).map((disc) => disc.label).sort()).toEqual(['X', 'Y', 'Z']);
   });
 
+  it('R13 the letters follow Blender Z-up naming: the vertical axis disc shows Z and the depth axis disc shows Y', () => {
+    const labelOf = (axis: string): string => discAt(new Quaternion(), axis).label;
+    expect([labelOf('+x'), labelOf('+y'), labelOf('+z')]).toEqual(['X', 'Z', 'Y']);
+    expect([labelOf('-y'), labelOf('-z')]).toEqual(['Z', 'Y']);
+  });
+
   it('R13 turning the camera to the +X side puts +Z on the left and -Z on the right', () => {
     const onPositiveX = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2);
     expect(discAt(onPositiveX, '+z').x).toBeCloseTo(-40);

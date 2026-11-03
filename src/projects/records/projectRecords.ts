@@ -40,6 +40,7 @@ export interface ProjectRecord {
   updatedAt: string;
   mesh: MeshRecord;
   modelBlobKey: string;
+  originalModelBlobKey?: string; // the model as it was before the first mesh edit (mesh edit R26); absent until then. Store-owned like modelBlobKey.
   pictures: PictureRecord[]; // generated pictures, oldest first
   slots: SlotRecord[]; // overrides only
   generate: GenerateSettingsRecord;

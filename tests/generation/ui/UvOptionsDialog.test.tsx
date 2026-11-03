@@ -13,6 +13,18 @@ function setup(open = true) {
 const padding = (): HTMLInputElement => screen.getByLabelText('Padding (texels)') as HTMLInputElement;
 const confirm = (): HTMLButtonElement => screen.getByRole('button', { name: 'Generate UV' }) as HTMLButtonElement;
 
+describe('UvOptionsDialog notice (mesh edit R32)', () => {
+  it('mesh edit R32 says what the unwrap will do when the model has hidden parts', () => {
+    render(<UvOptionsDialog open notice="Hidden parts will be shown." onCancel={vi.fn()} onConfirm={vi.fn()} />);
+    expect(screen.getByText('Hidden parts will be shown.')).toBeTruthy();
+  });
+
+  it('mesh edit R32 shows no notice when there is none', () => {
+    setup();
+    expect(screen.queryByText('Hidden parts will be shown.')).toBeNull();
+  });
+});
+
 describe('UvOptionsDialog (R15)', () => {
   it('R15 renders nothing while closed', () => {
     setup(false);

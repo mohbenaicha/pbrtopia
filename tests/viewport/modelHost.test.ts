@@ -80,6 +80,22 @@ describe('model host: flat and smooth shading', () => {
     expect(materialOf(scene).flatShading).toBe(true);
   });
 
+  it('mesh edit R2 R18 an angle chosen while the geometry is locked leaves the meshes alone and is applied when it is unlocked', async () => {
+    vi.useFakeTimers();
+    const { scene, host } = setup();
+    await host.load(buildTriangleGlb());
+    const [mesh] = meshesIn(scene);
+    const original = mesh!.geometry;
+    host.lockGeometry(true);
+    host.setSettings({ smoothAngleDeg: 30 });
+    vi.advanceTimersByTime(250);
+    expect(mesh!.geometry).toBe(original);
+    host.lockGeometry(false);
+    vi.advanceTimersByTime(250);
+    expect(mesh!.geometry).not.toBe(original);
+    vi.useRealTimers();
+  });
+
   it('R14 an angle below 180 rebuilds the normals after the throttle, and 180 puts the model\'s own geometry back', async () => {
     vi.useFakeTimers();
     const { scene, host } = setup();

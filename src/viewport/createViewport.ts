@@ -37,6 +37,11 @@ export interface Viewport {
   flashMaterial(material: Material): Promise<void>; // shows the material over the model three times, then the normal look; resolves when done
   captureThumbnail(spec?: ThumbnailSpec): Promise<Blob>; // the current view cropped to the thumbnail shape
   snapshotLook(): SnapshotLook; // generate R37: the scene as shown, for the atlas snapshots of the "Current viewport" render
+  modelAsset(): ModelAsset | undefined; // the shown model with its meshes (mesh edit)
+  lockModelGeometry(locked: boolean): void; // auto smooth stops swapping the meshes' geometry while true (mesh edit); unlocking applies the current angle
+  refreshModelGeometry(): void; // the meshes' geometry was swapped by the caller: overlays that share it are built again (mesh edit)
+  setOverlayPass(pass: (() => void) | null): void; // drawn after every frame of the scene, on top of it (mesh edit's selection outline)
+  setCameraControlsEnabled(enabled: boolean): void; // off while a gizmo or keyboard transform drag runs (mesh edit)
   setSettings(patch: Partial<ViewportSettings>): void;
   invalidate(): void;
   resetView(): void;
@@ -57,9 +62,11 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
   const events = createViewportEvents();
   const grid = createViewportGrid({ scene, rig });
   const drawScene = createFrameRenderer(renderer, scene, rig);
+  let overlayPass: (() => void) | null = null;
   const drawFrame = (): void => {
     grid.update();
     drawScene();
+    overlayPass?.();
   };
   const scheduler = createRenderScheduler(drawFrame);
 
@@ -181,6 +188,16 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
       return picture;
     },
     snapshotLook: () => createSnapshotLook(scene, grid.hide),
+    modelAsset: models.asset,
+    refreshModelGeometry: models.refreshGeometry,
+    lockModelGeometry: models.lockGeometry,
+    setOverlayPass(pass) {
+      overlayPass = pass;
+      scheduler.invalidate();
+    },
+    setCameraControlsEnabled(enabled) {
+      orbit.controls.enabled = enabled;
+    },
     setSettings: applySettings,
     invalidate: scheduler.invalidate,
     resetView() {

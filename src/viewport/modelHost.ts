@@ -30,6 +30,9 @@ interface ModelHost {
   setSettings(patch: Partial<ViewportSettings>): void;
   settings(): ViewportSettings;
   root(): Object3D | undefined; // the shown model, for picking
+  asset(): ModelAsset | undefined; // the shown model with its meshes (mesh edit)
+  lockGeometry(locked: boolean): void; // while locked auto smooth leaves the meshes' geometry alone (the mesh edit mode owns it); unlocking applies the current angle
+  refreshGeometry(): void; // the caller swapped the meshes' geometry: the wireframe overlay and the faceted flag follow it
   dispose(): void;
 }
 
@@ -43,6 +46,7 @@ export function createModelHost({ scene, rig, invalidate, onFramed, onBounds, se
   const smoothing = createModelSmoothing();
   let current: { asset: ModelAsset; overlay: WireframeOverlay; flash: FlashOverlay; pictures: MaterialPictures } | undefined;
   let projectionMaterial: Material | null = null;
+  let geometryLocked = false;
 
   // What the model shows: the projection material, else the chosen shading mode. A flash is laid over either, not swapped in.
   const showLook = (): void => {
@@ -125,13 +129,20 @@ export function createModelHost({ scene, rig, invalidate, onFramed, onBounds, se
       else picture?.bitmap.close(); // no model to show it on
     },
     root: () => current?.asset.root,
+    asset: () => current?.asset,
+    refreshGeometry: showRebuiltGeometry,
+    lockGeometry(locked) {
+      geometryLocked = locked;
+      if (locked) smoothing.cancel(); // a request already waiting would swap the geometry under the mode
+      if (!locked && current) smoothing.request(current.asset.root, settings.smoothAngleDeg, showRebuiltGeometry);
+    },
     setSettings(patch) {
       const before = settings;
       settings = clampViewportSettings({ ...settings, ...patch, mapAdjust: { ...settings.mapAdjust, ...patch.mapAdjust } });
       setMapAdjust(adjust, settings.mapAdjust);
       current?.overlay.setVisible(settings.wireframe);
       if (current && settings.flatShading !== before.flatShading) modes.setFlatShading(current.asset.root, settings.flatShading);
-      if (current && settings.smoothAngleDeg !== before.smoothAngleDeg) smoothing.request(current.asset.root, settings.smoothAngleDeg, showRebuiltGeometry);
+      if (current && !geometryLocked && settings.smoothAngleDeg !== before.smoothAngleDeg) smoothing.request(current.asset.root, settings.smoothAngleDeg, showRebuiltGeometry);
       invalidate();
     },
     settings: () => settings,

@@ -15,11 +15,12 @@ interface ViewportCornerProps {
   settingsPanel: ReactNode; // the content of the popover under the gear
   gridShown: boolean;
   onGridShownChange: (shown: boolean) => void;
+  moreButtons?: ReactNode; // icon buttons after the grid toggle (the app puts Edit mesh there)
   children?: ReactNode; // drawn under the buttons (the app puts the model's counts there)
 }
 
 // Top-right of the viewport: the axis gizmo, and under it the icon buttons two by two: the settings gear (with its popover), the camera, Reset view and the grid toggle; then whatever the caller adds.
-export function ViewportCorner({ viewport, settingsOpen, onSettingsOpenChange, settingsPanel, gridShown, onGridShownChange, children }: ViewportCornerProps): React.JSX.Element {
+export function ViewportCorner({ viewport, settingsOpen, onSettingsOpenChange, settingsPanel, gridShown, onGridShownChange, moreButtons, children }: ViewportCornerProps): React.JSX.Element {
   const { quaternion, projection } = useCameraPose(viewport);
   const gear = (
     <IconButton testId="viewport-gear" label="Viewport settings" icon={<Icon name="gear" />} pressed={settingsOpen} onClick={() => onSettingsOpenChange(!settingsOpen)} />
@@ -34,6 +35,7 @@ export function ViewportCorner({ viewport, settingsOpen, onSettingsOpenChange, s
         <CameraToggle projection={projection} onToggle={viewport.setProjection} />
         <IconButton testId="viewport-reset" label="Reset view" icon={<Icon name="reset" />} onClick={viewport.resetView} />
         <IconButton testId="viewport-grid" label="Grid" icon={<Icon name="grid" />} pressed={gridShown} onClick={() => onGridShownChange(!gridShown)} />
+        {moreButtons}
       </div>
       {children}
     </div>

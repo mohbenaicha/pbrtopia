@@ -37,6 +37,7 @@ interface GeneratePanelProps {
   onSetUpCustom?: () => void; // the gear beside Generate (custom R1): opens the setup overlay
   setupLocked?: boolean; // the setup overlay is open (custom R30): everything but Additional settings is inert
   onKeepWithout?: () => void; // Keep without image N in the error block (custom R29)
+  uvNotice?: string; // shown in the Generate UV dialog (mesh edit R32)
   store?: StoreApi<GenerateState>;
   logStore?: StoreApi<RunLogState>;
   readImageFile?: (file: File) => Promise<ReferenceImage>;
@@ -58,7 +59,7 @@ const carriesFiles = (event: React.DragEvent): boolean => Array.from(event.dataT
 
 // R1, R23: the Generate panel: a Generate tab (prompt, references, channel, model, resolution, quality, Generate) and a Debug tab (the run log).
 // The handlers run the flows (G9, G10); this panel only shows state and reports clicks. Both tabs stay mounted so a visit to the other loses nothing.
-export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, onRetry, onPreviewAtlas, onSetUpCustom, setupLocked = false, onKeepWithout, store = generateStore, logStore = runLogStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
+export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, onRetry, onPreviewAtlas, onSetUpCustom, setupLocked = false, onKeepWithout, uvNotice, store = generateStore, logStore = runLogStore, readImageFile: readFile = readImageFile, today = new Date().toISOString().slice(0, 10) }: GeneratePanelProps): React.JSX.Element {
   const state = useStore(store);
   const records = useStore(logStore, (log) => log.records);
   const activeId = useStore(logStore, (log) => log.activeId);
@@ -207,6 +208,7 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
       {previewPng !== null && <AtlasPreviewViewer png={previewPng} onClose={() => setPreviewPng(null)} />}
       <UvOptionsDialog
         open={uvDialogOpen}
+        {...(uvNotice === undefined ? {} : { notice: uvNotice })}
         onCancel={() => setUvDialogOpen(false)}
         onConfirm={(uvOptions) => {
           setUvDialogOpen(false);

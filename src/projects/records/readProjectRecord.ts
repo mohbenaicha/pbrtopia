@@ -86,6 +86,8 @@ export function readProjectRecord(raw: RawRecord): ProjectRecord {
   };
   const activeSetId = readOptional(raw['activeSetId'], (present) => readNonEmptyText(present, 'activeSetId'));
   if (activeSetId !== undefined) record.activeSetId = activeSetId;
+  const originalModelBlobKey = readOptional(raw['originalModelBlobKey'], (present) => readBlobKey(present, 'originalModelBlobKey'));
+  if (originalModelBlobKey !== undefined) record.originalModelBlobKey = originalModelBlobKey;
   const thumbnailKey = readOptional(raw['thumbnailKey'], (present) => readBlobKey(present, 'thumbnailKey'));
   if (thumbnailKey !== undefined) record.thumbnailKey = thumbnailKey;
   return record;

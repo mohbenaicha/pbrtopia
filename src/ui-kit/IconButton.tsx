@@ -6,6 +6,7 @@ interface IconButtonProps {
   label: string; // the accessible name and the tooltip
   icon: ReactNode;
   pressed?: boolean; // for a toggle: reported as aria-pressed and drawn selected
+  expanded?: boolean; // for a button that opens a panel: reported as aria-expanded and drawn selected while it is open
   disabled?: boolean;
   disabledReason?: string; // why it is disabled: added to the tooltip and given as the description
   loading?: boolean; // ignores clicks, shows a spinner, announced as busy
@@ -14,7 +15,7 @@ interface IconButtonProps {
   testId?: string; // a stable hook for the end-to-end tests
 }
 
-export function IconButton({ label, icon, pressed, disabled = false, disabledReason, loading = false, compact = false, onClick, testId }: IconButtonProps): React.JSX.Element {
+export function IconButton({ label, icon, pressed, expanded, disabled = false, disabledReason, loading = false, compact = false, onClick, testId }: IconButtonProps): React.JSX.Element {
   const reason = disabled ? disabledReason : undefined;
   return (
     <button
@@ -25,7 +26,8 @@ export function IconButton({ label, icon, pressed, disabled = false, disabledRea
       aria-busy={loading ? true : undefined}
       title={reason === undefined ? label : `${label}: ${reason}`}
       aria-pressed={pressed}
-      data-pressed={pressed ? '' : undefined}
+      aria-expanded={expanded}
+      data-pressed={pressed || expanded ? '' : undefined}
       data-compact={compact ? '' : undefined}
       data-testid={testId}
       disabled={disabled}

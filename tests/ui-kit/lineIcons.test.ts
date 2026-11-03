@@ -3,7 +3,7 @@ import { LINE_ICON_PATHS } from '../../src/ui-kit/lineIcons';
 
 describe('LINE_ICON_PATHS', () => {
   it('viewport-layout R3 offers the icons the app draws with one line set', () => {
-    expect(Object.keys(LINE_ICON_PATHS).sort()).toEqual(['apply', 'arrow-right', 'bug', 'check', 'chevron-down', 'chevron-right', 'close', 'download', 'eye', 'gear', 'grid', 'model-download', 'pencil', 'plus', 'projects', 'reset', 'save', 'trash', 'upload']);
+    expect(Object.keys(LINE_ICON_PATHS).sort()).toEqual(['apply', 'arrow-right', 'bug', 'check', 'chevron-down', 'chevron-right', 'close', 'download', 'edit-mesh', 'eye', 'eye-off', 'gear', 'grid', 'merge', 'model-download', 'move', 'pencil', 'plus', 'projects', 'redo', 'reset', 'rotate', 'save', 'scale', 'select-box', 'select-lasso', 'trash', 'undo', 'upload']);
   });
 
   it('textures R6 and R16 offer the apply and model-download icons', () => {

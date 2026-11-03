@@ -11,6 +11,7 @@ interface UvOptionsDialogProps {
   open: boolean;
   onCancel: () => void;
   onConfirm: (options: UvOptions) => void;
+  notice?: string; // what the unwrap will do beyond the options, e.g. that hidden parts are shown (mesh edit R32)
 }
 
 const SIZES: { value: string; label: string }[] = [
@@ -27,7 +28,7 @@ const parsePadding = (text: string): number | null => {
   return value <= MAX_PADDING ? value : null;
 };
 
-function UvOptionsForm({ onCancel, onConfirm }: Omit<UvOptionsDialogProps, 'open'>): React.JSX.Element {
+function UvOptionsForm({ onCancel, onConfirm, notice }: Omit<UvOptionsDialogProps, 'open'>): React.JSX.Element {
   const [resolution, setResolution] = useState('2048');
   const [padding, setPadding] = useState('3');
   const parsed = parsePadding(padding);
@@ -43,6 +44,7 @@ function UvOptionsForm({ onCancel, onConfirm }: Omit<UvOptionsDialogProps, 'open
         </>
       }
     >
+      {notice !== undefined && <p>{notice}</p>}
       <Select label="Atlas resolution" options={SIZES} value={resolution} onChange={setResolution} />
       <TextInput label="Padding (texels)" value={padding} onChange={setPadding} {...(parsed === null ? { error: PADDING_ERROR } : {})} />
     </Dialog>
@@ -50,6 +52,6 @@ function UvOptionsForm({ onCancel, onConfirm }: Omit<UvOptionsDialogProps, 'open
 }
 
 // R15: the options asked before the unwrap runs. The form is mounted only while open, so every opening starts from the defaults (2K, 3 texels).
-export function UvOptionsDialog({ open, onCancel, onConfirm }: UvOptionsDialogProps): React.JSX.Element | null {
-  return open ? <UvOptionsForm onCancel={onCancel} onConfirm={onConfirm} /> : null;
+export function UvOptionsDialog({ open, onCancel, onConfirm, notice }: UvOptionsDialogProps): React.JSX.Element | null {
+  return open ? <UvOptionsForm onCancel={onCancel} onConfirm={onConfirm} {...(notice === undefined ? {} : { notice })} /> : null;
 }

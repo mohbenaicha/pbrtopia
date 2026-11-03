@@ -7,7 +7,7 @@ export { Checkbox } from './Checkbox';
 export { ConfirmDialog } from './ConfirmDialog';
 export { Dialog } from './Dialog';
 export { Disclosure, useDisclosureOpen } from './Disclosure';
-export { Icon } from './Icon';
+export { Icon, type IconName } from './Icon';
 export { IconButton } from './IconButton';
 export { ImageViewer } from './ImageViewer';
 export { LoadingOverlay } from './LoadingOverlay';
