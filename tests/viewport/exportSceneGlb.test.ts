@@ -24,6 +24,16 @@ describe('exportSceneGlb (mesh edit R25)', () => {
     expect(result.ok).toBe(true);
   });
 
+  it('mesh edit R25 keeping the source pictures on a scene with none to keep (no images in the file) falls back to the usual export and succeeds', async () => {
+    const result = await exportSceneGlb(sceneWithOnePlane(), buildTriangleGlb(), { keepSourceImages: true });
+    expect(result.ok).toBe(true);
+  });
+
+  it('mesh edit R1 R25 an extension the source declares that the exporter cannot write refuses the save also when pictures are kept', async () => {
+    const result = await exportSceneGlb(sceneWithOnePlane(), buildTriangleGlb({ extensionsUsed: ['VENDOR_made_up'] }), { keepSourceImages: true });
+    expect(result).toMatchObject({ ok: false, lostExtensions: ['VENDOR_made_up'] });
+  });
+
   it('mesh edit R1 R25 an extension the source declares that the exporter writes only when the scene needs it does not stop the save', async () => {
     const result = await exportSceneGlb(sceneWithOnePlane(), buildTriangleGlb({ extensionsUsed: ['KHR_materials_emissive_strength'] }));
     expect(result.ok).toBe(true);

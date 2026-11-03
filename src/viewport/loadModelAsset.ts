@@ -4,6 +4,7 @@ import { flagsFromRanges, MESH_EDIT_KEY, readHiddenMarks } from '../meshEdit/mod
 import { removeHiddenTriangles } from '../meshEdit/model/removeHiddenTriangles';
 import { inspectGlb } from './inspectGlb';
 import { allMaterialsOf, collectTextureInfos, type ModelTextureRecord } from './modelTextures';
+import { tagSourceImages } from './sourceImageTags';
 import type { ViewportResult } from './viewportError';
 
 /** One mesh of the model as loaded: what is drawn can lack hidden triangles (mesh edit R30), `full` never does. */
@@ -54,7 +55,9 @@ export async function loadModelAsset(glb: ArrayBuffer, options: LoadModelAssetOp
 
   let root: Object3D;
   try {
-    root = (await new GLTFLoader().parseAsync(glb, '')).scene;
+    const loader = new GLTFLoader();
+    loader.register(tagSourceImages); // mesh edit R25: Apply writes the file's own pictures back as they were
+    root = (await loader.parseAsync(glb, '')).scene;
   } catch (error) {
     return { ok: false, error: { code: 'parse-failed', message: `This model could not be read${error instanceof Error ? `: ${error.message}` : '.'}` } };
   }

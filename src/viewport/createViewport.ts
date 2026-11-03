@@ -11,7 +11,7 @@ import { watchContextLoss } from './contextLoss';
 import type { ModelAsset } from './loadModelAsset';
 import { createEnvironment } from './environment';
 import { createEnvironmentLoader } from './environmentLoader';
-import { createModelHost } from './modelHost';
+import { createModelHost, type GeometryReplacement } from './modelHost';
 import { createOrbitControls } from './orbitControlsSetup';
 import { watchPixelRatio } from './pixelRatio';
 import { createFrameRenderer } from './renderFrame';
@@ -38,6 +38,7 @@ export interface Viewport {
   captureThumbnail(spec?: ThumbnailSpec): Promise<Blob>; // the current view cropped to the thumbnail shape
   snapshotLook(): SnapshotLook; // generate R37: the scene as shown, for the atlas snapshots of the "Current viewport" render
   modelAsset(): ModelAsset | undefined; // the shown model with its meshes (mesh edit)
+  replaceModelGeometry(replacements: readonly GeometryReplacement[]): boolean; // mesh edit Apply: the edited geometry goes into the shown model in place; false (nothing changed) when it cannot
   lockModelGeometry(locked: boolean): void; // auto smooth stops swapping the meshes' geometry while true (mesh edit); unlocking applies the current angle
   refreshModelGeometry(): void; // the meshes' geometry was swapped by the caller: overlays that share it are built again (mesh edit)
   setOverlayPass(pass: (() => void) | null): void; // drawn after every frame of the scene, on top of it (mesh edit's selection outline)
@@ -189,6 +190,7 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     },
     snapshotLook: () => createSnapshotLook(scene, grid.hide),
     modelAsset: models.asset,
+    replaceModelGeometry: models.replaceGeometry,
     refreshModelGeometry: models.refreshGeometry,
     lockModelGeometry: models.lockGeometry,
     setOverlayPass(pass) {

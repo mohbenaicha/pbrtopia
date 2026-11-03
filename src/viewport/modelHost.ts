@@ -1,4 +1,5 @@
-import { Box3, type Material, type Object3D, type Scene } from 'three';
+import { Box3, Sphere, type BufferGeometry, type Material, type Object3D, type Scene } from 'three';
+import { removeHiddenTriangles } from '../meshEdit/model/removeHiddenTriangles';
 import type { CameraRig } from './cameraRig';
 import { loadModelAsset, type ModelAsset } from './loadModelAsset';
 import { createFlashOverlay, type FlashOverlay } from './flashOverlay';
@@ -20,8 +21,16 @@ interface ModelHostOptions {
   settings: ViewportSettings;
 }
 
+/** The geometry one mesh of the shown model takes over: every triangle, and the hidden flags per triangle (undefined = none hidden). */
+export interface GeometryReplacement {
+  ordinal: number;
+  full: BufferGeometry;
+  hidden: Uint8Array | undefined;
+}
+
 interface ModelHost {
   load(glb: ArrayBuffer): Promise<ViewportResult<ModelAsset>>;
+  replaceGeometry(replacements: readonly GeometryReplacement[]): boolean; // swaps edited geometry into the shown model without loading it again, as loading the saved file would draw it; false (nothing changed) when no model is shown or a mesh is unknown
   unload(): void;
   setShadingMode(mode: ShadingMode): void;
   setProjectionMaterial(material: Material | null): void; // replaces the look while set; the shading mode is kept and comes back on clearing
@@ -108,6 +117,34 @@ export function createModelHost({ scene, rig, invalidate, onFramed, onBounds, se
       onFramed();
       invalidate();
       return result;
+    },
+    replaceGeometry(replacements) {
+      if (!current) return false;
+      const { asset, flash } = current;
+      const records = replacements.map((replacement) => asset.meshes.find((candidate) => candidate.ordinal === replacement.ordinal));
+      if (records.some((record) => record === undefined)) return false;
+      flash.show(null); // its copies share the geometry that is about to go
+      smoothing.cancel();
+      smoothing.dispose(asset.root); // forgets the old geometry the creased copies were built from
+      replacements.forEach((replacement, i) => {
+        const record = records[i]!;
+        const drawn = record.mesh.geometry;
+        const old = record.full;
+        record.full = replacement.full;
+        record.hidden = replacement.hidden;
+        record.mesh.geometry = replacement.hidden ? removeHiddenTriangles(replacement.full, replacement.hidden) : replacement.full;
+        if (drawn !== old) drawn.dispose();
+        old.dispose();
+      });
+      if (!geometryLocked) smoothing.apply(asset.root, settings.smoothAngleDeg);
+      showRebuiltGeometry();
+      const bounds = new Box3().setFromObject(asset.root);
+      const sphere = bounds.getBoundingSphere(new Sphere());
+      asset.bounds.center.copy(sphere.center);
+      asset.bounds.radius = sphere.radius;
+      onBounds?.(bounds);
+      invalidate();
+      return true;
     },
     unload,
     setShadingMode(next) {

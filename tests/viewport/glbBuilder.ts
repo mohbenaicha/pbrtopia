@@ -34,7 +34,7 @@ export function buildGlbFromJsonText(jsonText: string, binary: Uint8Array = new 
 }
 
 // A one-by-one quad whose material uses the first PNG as its colour map and the second as its normal and metal/rough map, so every texture channel is listed.
-export function buildTexturedQuadGlb(colourPng: Uint8Array, dataPng: Uint8Array): ArrayBuffer {
+export function buildTexturedQuadGlb(colourPng: Uint8Array, dataPng: Uint8Array, mimeType: 'image/png' | 'image/jpeg' = 'image/png'): ArrayBuffer {
   const positions = new Float32Array([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0]);
   const uvs = new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]);
   const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
@@ -51,7 +51,7 @@ export function buildTexturedQuadGlb(colourPng: Uint8Array, dataPng: Uint8Array)
     materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 }, metallicRoughnessTexture: { index: 1 } }, normalTexture: { index: 1 } }],
     textures: [{ source: 0, sampler: 0 }, { source: 1, sampler: 0 }],
     samplers: [{}],
-    images: [{ bufferView: 3, mimeType: 'image/png' }, { bufferView: 4, mimeType: 'image/png' }],
+    images: [{ bufferView: 3, mimeType }, { bufferView: 4, mimeType }],
     accessors: [
       { bufferView: 0, componentType: 5126, count: 4, type: 'VEC3', min: [0, 0, 0], max: [1, 1, 0] },
       { bufferView: 1, componentType: 5126, count: 4, type: 'VEC2' },
