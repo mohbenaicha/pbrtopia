@@ -42,6 +42,18 @@ describe('createOpenAiImageGenerator (R7, R14)', () => {
     for (const value of form.values()) if (typeof value === 'string') expect(value).not.toContain(KEY);
   });
 
+  it('R7 a GPT Image 2.6 model is sent complexity medium, a 2.5 model none, and a request can set its own', async () => {
+    const sentComplexity = async (patch: Partial<GenerateRequest>): Promise<FormDataEntryValue | null> => {
+      const { fetchImpl, calls } = fakeFetch(reply({ data: [{ b64_json: 'SGk=' }] }));
+      await createOpenAiImageGenerator(fetchImpl).generate(request(patch), ctx());
+      return (calls[0]?.init.body as FormData).get('complexity');
+    };
+    expect(await sentComplexity({ model: 'gpt-image-2.6-sunburst' })).toBe('medium');
+    expect(await sentComplexity({ model: 'gpt-image-2.6-flare' })).toBe('medium');
+    expect(await sentComplexity({ model: 'gpt-image-2.5-sunburst' })).toBeNull();
+    expect(await sentComplexity({ model: 'gpt-image-2.6-sunburst', complexity: 'low' })).toBe('low');
+  });
+
   it('R7 returns the generated PNG as a Blob', async () => {
     const { fetchImpl } = fakeFetch(reply({ data: [{ b64_json: 'SGk=' }] }));
     const result = await createOpenAiImageGenerator(fetchImpl).generate(request(), ctx());

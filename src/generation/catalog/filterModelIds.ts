@@ -40,7 +40,10 @@ function baseIdOf(id: string): string {
   return base;
 }
 
-const isVersionToken = (token: string): boolean => /^\d+(\.\d+)*$/.test(token);
+// A model in the shipped table is never dropped for being older than a newer release of its family.
+const isShippedTableModel = (provider: Provider, id: string): boolean => KNOWN_MODELS.some((known) => known.provider === provider && known.id === id);
+
+const isVersionToken =(token: string): boolean => /^\d+(\.\d+)*$/.test(token);
 
 // family: the id without its version numbers; version: the first version number, as numbers (empty when there is none).
 function familyOf(id: string): { family: string; version: number[] } {
@@ -84,5 +87,5 @@ export function filterModelIds(provider: Provider, listed: readonly ListedModel[
     if (best === undefined || compareVersions(candidate.version, best.version) > 0) newest.set(key, { id: candidate.id, version: candidate.version });
   }
   const winners = new Set([...newest.values()].map((entry) => entry.id));
-  return [...candidates.values()].filter((candidate) => winners.has(candidate.id)).map(({ id, role, shutdownDate }) => ({ id, role, ...(shutdownDate === undefined ? {} : { shutdownDate }) }));
+  return [...candidates.values()].filter((candidate) => winners.has(candidate.id) || isShippedTableModel(provider, candidate.id)).map(({ id, role, shutdownDate }) => ({ id, role, ...(shutdownDate === undefined ? {} : { shutdownDate }) }));
 }

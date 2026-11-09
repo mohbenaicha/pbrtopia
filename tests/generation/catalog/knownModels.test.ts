@@ -7,7 +7,7 @@ const ids = (provider: string): string[] => KNOWN_MODELS.filter((entry) => entry
 describe('knownModels', () => {
   it('R4 the shipped table is the verified table of providers.md 4.4 without the models past or at their shutdown', () => {
     expect(ids('gemini')).toEqual(['gemini-3-pro-image', 'gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-nano-banana-2.1']);
-    expect(ids('openai')).toEqual(['gpt-5.6-luna', 'gpt-6-astra', 'gpt-6-luna', 'gpt-image-2', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst']);
+    expect(ids('openai')).toEqual(['gpt-5.6-luna', 'gpt-6-astra', 'gpt-6-luna', 'gpt-image-2', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst', 'gpt-image-2.6-flare', 'gpt-image-2.6-sunburst']);
     expect(findKnownModel('openai', 'gpt-image-1')).toBeNull();
     expect(findKnownModel('gemini', 'gemini-2.5-flash-image')).toBeNull();
   });
@@ -39,6 +39,18 @@ describe('knownModels', () => {
     expect(levels('openai', 'gpt-image-2.5-sunburst')).toEqual(['low', 'medium', 'high', 'xhigh', 'max', 'auto']);
     expect(levels('openai', 'gpt-image-2.5-flare')).toEqual(['low', 'medium', 'high', 'xhigh', 'max', 'auto']);
     expect(levels('openai', 'gpt-image-2')).toEqual(['low', 'medium', 'high']);
+  });
+
+  it('R4 GPT Image 2.6 Sunburst and Flare offer the 2.5 sizes and levels, default to low, and carry complexity medium; no other row has complexity', () => {
+    for (const id of ['gpt-image-2.6-sunburst', 'gpt-image-2.6-flare']) {
+      const row = findKnownModel('openai', id);
+      expect(row?.resolutions.map((r) => r.key), id).toEqual(['1K', '2K', '2.8K']);
+      expect(row?.qualityLevels, id).toEqual(['low', 'medium', 'high', 'xhigh', 'max', 'auto']);
+      expect(row?.defaultQuality, id).toBe('low');
+      expect(row?.canvases, id).toEqual(findKnownModel('openai', 'gpt-image-2.5-sunburst')?.canvases);
+      expect(row?.defaultComplexity, id).toBe('medium');
+    }
+    expect(KNOWN_MODELS.filter((entry) => entry.defaultComplexity !== undefined)).toHaveLength(2);
   });
 
   it('R5 a model whose levels are unconfirmed (gemini-3-pro-image) and the text models offer no levels', () => {

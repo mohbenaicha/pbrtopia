@@ -47,6 +47,16 @@ describe('buildOpenAiImageForm (R7)', () => {
     for (const level of ['low', 'medium', 'high', 'xhigh', 'max', 'auto']) expect(formOf({ quality: level }).get('quality')).toBe(level);
   });
 
+  it('R7 sends complexity when the request carries one and leaves the field out otherwise', () => {
+    const form = (complexity?: string) => {
+      const result = buildOpenAiImageForm({ ...base, ...(complexity === undefined ? {} : { complexity }) });
+      if (!result.ok) throw new Error('unexpected refusal');
+      return result.value;
+    };
+    expect(form('medium').get('complexity')).toBe('medium');
+    expect(form().has('complexity')).toBe(false);
+  });
+
   it('R5 leaves quality out when the model has no levels', () => {
     expect(formOf({ quality: null }).has('quality')).toBe(false);
   });

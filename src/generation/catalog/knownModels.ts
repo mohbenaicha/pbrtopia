@@ -5,6 +5,7 @@ import type { KnownModelEntry, ResolutionOption } from './modelTypes';
 const VERIFIED_AT = '2026-10-17';
 const GEMINI_DOCS = ['ai.google.dev image-generation', 'ai.google.dev pricing'];
 const OPENAI_DOCS = ['developers.openai.com models', 'developers.openai.com pricing'];
+const OPENAI_26_DOCS = ['developers.openai.com image-generation (GPT Image 2.6)', 'research/api/gpt-image-2.6-check.md (live, 1K sunburst only)'];
 
 const GEMINI_SIZES: ResolutionOption[] = [{ key: '1K', sizePx: 1024 }, { key: '2K', sizePx: 2048 }, { key: '4K', sizePx: 4096 }];
 // OpenAI has no 4K square: the largest valid square is 2880 x 2880. 2K and 2.8K are above 2560 x 1440, which the provider calls experimental.
@@ -33,6 +34,10 @@ export const KNOWN_MODELS: readonly KnownModelEntry[] = [
   { provider: 'gemini', id: 'gemini-3.5-flash-lite', role: 'vision-text', displayName: 'Gemini 3.5 Flash Lite', verified: true, resolutions: [], qualityLevels: [], verifiedAt: VERIFIED_AT, source: ['ai.google.dev models', 'ai.google.dev pricing'] },
   { provider: 'openai', id: 'gpt-image-2.5-sunburst', role: 'image', displayName: 'GPT Image 2.5 Sunburst', verified: true, resolutions: OPENAI_SIZES, canvases: OPENAI_CANVASES, qualityLevels: OPENAI_LEVELS, defaultQuality: 'low', experimentalResolutions: ['2K', '2.8K'], verifiedAt: VERIFIED_AT, source: OPENAI_DOCS },
   { provider: 'openai', id: 'gpt-image-2.5-flare', role: 'image', displayName: 'GPT Image 2.5 Flare', verified: true, resolutions: OPENAI_SIZES, canvases: OPENAI_CANVASES, qualityLevels: OPENAI_LEVELS, defaultQuality: 'low', experimentalResolutions: ['2K', '2.8K'], verifiedAt: VERIFIED_AT, source: OPENAI_DOCS },
+  // 2.6 (2026-11-06): the model pages state no size rules of their own, so sizes, levels and canvases are the 2.5 ones; live, 1024x1024 low answered 200
+  // and an edge over 3840 was refused. Flare was not called (credit ran out); 2K, 2.8K, xhigh and max are not seen live (the cost calculator shows no price for 2.6 at max and 2880x2880). 2.6 low and medium cost about 4x and 3.3x those of 2.5: research/api/providers.md 4.4a, research/api/gpt-image-2.6-check.md.
+  { provider: 'openai', id: 'gpt-image-2.6-sunburst', role: 'image', displayName: 'GPT Image 2.6 Sunburst', verified: true, resolutions: OPENAI_SIZES, canvases: OPENAI_CANVASES, qualityLevels: OPENAI_LEVELS, defaultQuality: 'low', defaultComplexity: 'medium', experimentalResolutions: ['2K', '2.8K'], verifiedAt: '2026-11-06', source: OPENAI_26_DOCS },
+  { provider: 'openai', id: 'gpt-image-2.6-flare', role: 'image', displayName: 'GPT Image 2.6 Flare', verified: true, resolutions: OPENAI_SIZES, canvases: OPENAI_CANVASES, qualityLevels: OPENAI_LEVELS, defaultQuality: 'low', defaultComplexity: 'medium', experimentalResolutions: ['2K', '2.8K'], verifiedAt: '2026-11-06', source: OPENAI_26_DOCS },
   { provider: 'openai', id: 'gpt-image-2', role: 'image', displayName: 'GPT Image 2', verified: true, resolutions: OPENAI_SIZES, canvases: OPENAI_CANVASES, qualityLevels: ['low', 'medium', 'high'], defaultQuality: 'low', experimentalResolutions: ['2K', '2.8K'], verifiedAt: VERIFIED_AT, source: OPENAI_DOCS },
   { provider: 'openai', id: 'gpt-6-astra', role: 'vision-text', displayName: 'GPT-6 Astra', verified: true, resolutions: [], qualityLevels: [], verifiedAt: VERIFIED_AT, source: ['developers.openai.com images-vision', 'developers.openai.com pricing'] },
   { provider: 'openai', id: 'gpt-6-luna', role: 'vision-text', displayName: 'GPT-6 Luna', verified: true, resolutions: [], qualityLevels: [], enhancerLevel: 'none', verifiedAt: '2026-10-23', source: ['OpenAI models list (live, 2026-10-23)', 'research/api/live-check.md enhancer probes'] },

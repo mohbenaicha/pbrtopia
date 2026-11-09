@@ -11,6 +11,7 @@ export interface GenerateRequest {
   sizePx: number; // the square side the key stands for
   canvas?: Canvas; // custom generation R12: the shape of the answer (one of the model's canvases); a square of sizePx when absent
   quality: string | null; // the provider's own level; null when the model has none
+  complexity?: string; // OpenAI 2.6 models: low, medium or high; absent = the adapter's per-model default (medium for 2.6), not user-settable
 }
 
 export interface GeneratedImage {

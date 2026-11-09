@@ -18,6 +18,7 @@ export interface ProviderModelRecord {
   resolutions: ResolutionOption[];
   qualityLevels: string[]; // the provider's own names, in the order to show
   defaultQuality?: string; // one of qualityLevels; absent when there are none
+  defaultComplexity?: string; // OpenAI 2.6 image models: the `complexity` every request carries (low, medium or high); absent = the field is not sent; no UI control
   enhancerLevel?: string; // vision-text models: the reasoning effort (OpenAI) or thinking level (Gemini) the enhancer request carries; absent = provider default
   maxReferenceImages?: number; // images in total including the atlas
   timeoutMs?: number;

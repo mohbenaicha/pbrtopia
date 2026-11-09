@@ -81,6 +81,15 @@ describe('filterModelIds: the newest per family', () => {
     expect(kept).toEqual(['image:gpt-image-2.5-sunburst', 'image:gpt-image-2.5-flare', 'image:gpt-image-2', 'image:gpt-image-1-mini']);
   });
 
+  it('R4 a shipped-table model stays when a newer version of its family is listed', () => {
+    const kept = ids('openai', list('gpt-image-2.5-sunburst', 'gpt-image-2.6-sunburst', 'gpt-image-2.5-flare', 'gpt-image-2.6-flare'));
+    expect(kept).toEqual(['image:gpt-image-2.5-sunburst', 'image:gpt-image-2.6-sunburst', 'image:gpt-image-2.5-flare', 'image:gpt-image-2.6-flare']);
+  });
+
+  it('R4 an older id that is not in the table is still dropped beside a newer one', () => {
+    expect(ids('openai', list('gpt-image-2.4-sunburst', 'gpt-image-2.6-sunburst'))).toEqual(['image:gpt-image-2.6-sunburst']);
+  });
+
   it('R4 flash, flash-lite and pro are different families', () => {
     const kept = ids('gemini', list('gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3-pro'));
     expect(kept).toEqual(['vision-text:gemini-3.8-flash', 'vision-text:gemini-3.5-flash-lite', 'vision-text:gemini-3-pro']);
