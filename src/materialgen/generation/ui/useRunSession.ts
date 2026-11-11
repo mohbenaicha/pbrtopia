@@ -9,6 +9,7 @@ import { describeRegenerateWarning, listMapsToReplace } from '../run/describeReg
 import { recordRetry, recordRun, type RunLogRow } from '../run/runLogHistory';
 import { runGeneration } from '../run/runGeneration';
 import type { RunPorts, RunProgress, RunReport } from '../run/runTypes';
+import { useLeaveWarning } from './useLeaveWarning';
 
 export interface RegenerateConfirm {
   warning: string; // R61
@@ -63,6 +64,7 @@ export function useRunSession(inputs: Inputs): RunSession {
   const latest = useRef(inputs);
   latest.current = inputs;
   const [running, setRunning] = useState(false);
+  useLeaveWarning(running); // R76
   const [progress, setProgress] = useState<RunProgress | null>(null);
   const [result, setResult] = useState<RunReport | null>(null);
   const [runKind, setRunKind] = useState<RunMode | null>(null);

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MapsState } from '@mat/maps';
 import { parseBaseMaterials, type MasksRecord } from '@mat/masks';
@@ -30,9 +30,11 @@ describe('materialgen/app MasksControls (masks R48 R49)', () => {
     expect(loadTable).not.toHaveBeenCalled();
   });
 
-  it('R48 R49 with a masks record it shows the Feather slider, a block per component and the two buttons at the bottom', async () => {
+  it('R48 R49 with a masks record it shows the Feather slider, a swatch per component (its block after a click) and the two buttons at the bottom', async () => {
     render(<MasksControls {...ports(stored as unknown as Record<string, unknown>)} />);
-    await waitFor(() => expect(screen.getByRole('group', { name: 'Wall' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Wall' })).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Wall' }));
+    expect(screen.getByRole('group', { name: 'Wall' })).toBeTruthy();
     expect(screen.getByLabelText('Feather')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Reset all' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Re-run decomposition' })).toBeTruthy();

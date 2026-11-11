@@ -116,7 +116,7 @@ describe('materialgen/app right panel (Generate)', () => {
   });
 
   it('R18 Generate is disabled with its reason: read-only first, then an empty prompt, then the keys still loading, then the plan problem; otherwise it is enabled', () => {
-    const open = { canWrite: true, prompt: 'brick', referenceCount: 0, keysReady: true, planProblem: null };
+    const open = { canWrite: true, prompt: 'brick', referenceCount: 0, keysReady: true, planProblem: null, holdsAlbedo: true };
     expect(describeGenerateBlock({ ...open, canWrite: false, prompt: '' })).toBe('Open in another tab');
     expect(describeGenerateBlock({ ...open, prompt: '  ' })).toBe('Enter a prompt or add a reference image.');
     expect(describeGenerateBlock({ ...open, prompt: '  ', referenceCount: 1 })).toBeNull();
@@ -127,6 +127,14 @@ describe('materialgen/app right panel (Generate)', () => {
     const generate = screen.getByRole('button', { name: 'Generate' }) as HTMLButtonElement;
     expect(generate.disabled).toBe(true);
     expect(generate.title).toBe('Enter a prompt or add a reference image.');
+  });
+
+  it('R18 generation R9 a plan that does not generate Albedo needs no prompt and no reference image', () => {
+    const empty = { canWrite: true, prompt: '', referenceCount: 0, keysReady: true, planProblem: null, holdsAlbedo: false };
+    expect(describeGenerateBlock(empty)).toBeNull();
+    expect(describeGenerateBlock({ ...empty, holdsAlbedo: true })).toBe('Enter a prompt or add a reference image.');
+    expect(describeGenerateBlock({ ...empty, canWrite: false })).toBe('Open in another tab');
+    expect(describeGenerateBlock({ ...empty, planProblem: 'Nothing to generate.' })).toBe('Nothing to generate.');
   });
 
   it('R13 R18 in read-only mode every control is disabled and the reason is "Open in another tab"', () => {

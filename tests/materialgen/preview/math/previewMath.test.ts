@@ -4,6 +4,7 @@ import { displacementFor } from '../../../../src/materialgen/preview/math/displa
 import { defaultDistance } from '../../../../src/materialgen/preview/math/framing';
 import { MESH_SEGMENTS, segmentsFor } from '../../../../src/materialgen/preview/math/meshSegments';
 import { DEFAULT_POSE, DOLLY_MAX, DOLLY_MIN, dollyBy, isDefaultView, turnPose } from '../../../../src/materialgen/preview/math/turntable';
+import { orbitPlane, PLANE_DEFAULT_POSE, planeCameraDirection } from '../../../../src/materialgen/preview/math/planeOrbit';
 
 const values = (patch: Partial<typeof DEFAULT_PREVIEW_VALUES>) => ({ ...DEFAULT_PREVIEW_VALUES, ...patch });
 /** What three.js adds to a vertex for a height texel h in 0..1. */
@@ -73,6 +74,41 @@ describe('materialgen/preview R5 default distance', () => {
     const distance = defaultDistance({ halfWidth: 0.5, halfHeight: 0.5, halfDepth: 0.5 }, fov, aspect);
     const seen = visible(distance, aspect, 0.5);
     expect(Math.min(seen.width, seen.height) * 0.9).toBeGreaterThanOrEqual(0.5 - 1e-9); // 5% of the side free on both sides
+  });
+});
+
+describe('materialgen/preview R62 plane orbit view', () => {
+  it('R62 the default view is 45 degrees up from the front: the camera direction has no sideways part', () => {
+    const direction = planeCameraDirection(PLANE_DEFAULT_POSE);
+    expect(PLANE_DEFAULT_POSE).toEqual({ yaw: 0, pitch: Math.PI / 4 });
+    expect(direction.x).toBeCloseTo(0, 9);
+    expect(direction.y).toBeCloseTo(Math.SQRT1_2, 9);
+    expect(direction.z).toBeCloseTo(Math.SQRT1_2, 9);
+  });
+
+  it('R62 dragging down raises the camera and dragging right takes it round to the left', () => {
+    expect(orbitPlane(PLANE_DEFAULT_POSE, 0, 40, 400).pitch).toBeGreaterThan(Math.PI / 4);
+    expect(orbitPlane(PLANE_DEFAULT_POSE, 0, -40, 400).pitch).toBeLessThan(Math.PI / 4);
+    const right = orbitPlane(PLANE_DEFAULT_POSE, 40, 0, 400);
+    expect(right.yaw).toBeLessThan(0);
+    expect(planeCameraDirection(right).x).toBeLessThan(0);
+    expect(right.pitch).toBe(Math.PI / 4);
+  });
+
+  it('R62 the elevation stops at 5 and 85 degrees, so the camera is never beneath or straight above', () => {
+    expect(orbitPlane(PLANE_DEFAULT_POSE, 0, 100000, 400).pitch).toBeCloseTo((85 * Math.PI) / 180, 9);
+    expect(orbitPlane(PLANE_DEFAULT_POSE, 0, -100000, 400).pitch).toBeCloseTo((5 * Math.PI) / 180, 9);
+  });
+
+  it('R62 a drag of zero length returns the very same pose object, and a drag across the smaller side is half a turn', () => {
+    expect(orbitPlane(PLANE_DEFAULT_POSE, 0, 0, 400)).toBe(PLANE_DEFAULT_POSE);
+    expect(Math.abs(orbitPlane(PLANE_DEFAULT_POSE, 400, 0, 400).yaw)).toBeCloseTo(Math.PI, 9);
+  });
+
+  it('R62 R23 the plane\'s default view is the one Reset view returns to', () => {
+    expect(isDefaultView(PLANE_DEFAULT_POSE, 1, PLANE_DEFAULT_POSE)).toBe(true);
+    expect(isDefaultView(DEFAULT_POSE, 1, PLANE_DEFAULT_POSE)).toBe(false);
+    expect(isDefaultView(DEFAULT_POSE, 1)).toBe(true);
   });
 });
 

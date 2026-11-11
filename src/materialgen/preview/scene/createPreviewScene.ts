@@ -9,6 +9,7 @@ import type { ToolTransform } from '../material/toolTransform';
 import { isFlatView, type PreviewShading } from '../math/flatViews';
 import type { PreviewMaps } from '../material/previewMaps';
 import { defaultDistance } from '../math/framing';
+import { orbitPlane, PLANE_DEFAULT_POSE, planeCameraDirection } from '../math/planeOrbit';
 import { DEFAULT_POSE, dollyBy, isDefaultView, turnPose, type TurntablePose } from '../math/turntable';
 import { buildPreviewGeometry } from '../meshes/buildPreviewGeometry';
 import { halfExtentsOf } from '../meshes/halfExtentsOf';
@@ -78,8 +79,11 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
   let shading: PreviewShading = 'lit';
   let meshKind = prefs.mesh;
   let resolution = prefs.meshResolution;
-  let pose: TurntablePose = DEFAULT_POSE;
+  const homePoseOf = (kind: PreviewMesh): TurntablePose => (kind === 'plane' ? PLANE_DEFAULT_POSE : DEFAULT_POSE);
+  let pose: TurntablePose = homePoseOf(meshKind);
   let dolly = 1;
+  let facing = false; // R62, R53: the thumbnail shows the Plane square-on, not from its orbit view
+  const orbits = (): boolean => meshKind === 'plane' && !facing; // R62: the Plane lies flat and the camera moves
   let dragging = false;
   let disposed = false;
   let dragEndWaiters: Array<() => void> = [];
@@ -96,7 +100,8 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
     const extents = halfExtentsOf(mesh.geometry);
     const camera = host.rig.perspective;
     host.rig.target.set(0, 0, 0);
-    host.rig.placeCamera(LOOK_DIRECTION, defaultDistance(extents, camera.fov, camera.aspect) * dolly);
+    const direction = orbits() ? planeCameraDirection(pose) : LOOK_DIRECTION;
+    host.rig.placeCamera(new Vector3(direction.x, direction.y, direction.z), defaultDistance(extents, camera.fov, camera.aspect) * dolly);
   };
   // R2: only the Plane needs its back face; the Ball and the Material ball are closed surfaces. A change of side needs the shader built again.
   const applySide = (): void => {
@@ -112,12 +117,13 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
     mesh.material = isFlatView(shading) ? flatLooks.materialFor(shading) : preview.material;
     applySide();
   };
-  const applyPose = (): void => void group.rotation.set(pose.pitch, pose.yaw, 0);
+  const applyPose = (): void => void (orbits() ? group.rotation.set(-Math.PI / 2, 0, 0) : group.rotation.set(pose.pitch, pose.yaw, 0));
   const swapGeometry = (): void => {
     const old = mesh.geometry;
     mesh.geometry = buildPreviewGeometry(meshKind, resolution);
     old.dispose();
   };
+  applyPose(); // a scene that starts on the Plane has it lying flat from the first frame (R62)
   placeCamera();
   applySide();
 
@@ -129,7 +135,7 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
         applySide();
         toolShading.setTriplanar(triplanarRepeatsFor(next));
       }
-      pose = DEFAULT_POSE;
+      pose = homePoseOf(meshKind);
       dolly = 1;
       applyPose();
       placeCamera();
@@ -184,6 +190,7 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
       if (disposed) throw new Error('The preview was closed before the thumbnail was taken.');
       const kept = { pose, dolly, shading };
       pose = DEFAULT_POSE;
+      facing = true;
       dolly = 1;
       shading = 'lit';
       overlay.setSettings({ ...maskSettings, on: false }); // the thumbnail is the material, not the masks
@@ -197,6 +204,7 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
         return capture(); // the canvas is copied before this returns, so the user's view can come back at once
       } finally {
         ({ pose, dolly, shading } = kept);
+        facing = false;
         overlay.setSettings(maskSettings);
         toolTransform = keptTool;
         toolShading.set(keptTool);
@@ -219,10 +227,11 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
       host.invalidate();
     },
     turn(dx, dy, smallerSide) {
-      const next = turnPose(pose, dx, dy, smallerSide);
+      const next = orbits() ? orbitPlane(pose, dx, dy, smallerSide) : turnPose(pose, dx, dy, smallerSide);
       if (next === pose) return;
       pose = next;
       applyPose();
+      if (orbits()) placeCamera(); // R62: the camera moves, the Plane does not
       host.invalidate();
     },
     dolly(direction) {
@@ -233,8 +242,8 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
       host.invalidate();
     },
     resetView() {
-      if (isDefaultView(pose, dolly)) return;
-      pose = DEFAULT_POSE;
+      if (isDefaultView(pose, dolly, homePoseOf(meshKind))) return;
+      pose = homePoseOf(meshKind);
       dolly = 1;
       applyPose();
       placeCamera();

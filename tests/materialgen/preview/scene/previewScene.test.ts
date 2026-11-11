@@ -185,6 +185,91 @@ describe('materialgen/preview R49 frames on demand', () => {
   });
 });
 
+describe('materialgen/preview R62 plane orbit', () => {
+  const flat = (host: PreviewHost): number[] => {
+    const rotation = host.scene.getObjectByName('previewGroup')!.rotation;
+    return [rotation.x, rotation.y, rotation.z];
+  };
+
+  it('R62 the plane lies flat and the camera looks down at it at 45 degrees from the front', () => {
+    const { host, scene } = make({ mesh: 'plane' });
+    expect(flat(host)).toEqual([-Math.PI / 2, 0, 0]);
+    const { x, y, z } = host.camera.position;
+    expect(x).toBeCloseTo(0, 6);
+    expect(y).toBeCloseTo(z, 6);
+    expect(y).toBeGreaterThan(0);
+    expect(scene.view()).toMatchObject({ mesh: 'plane', yaw: 0, pitch: Math.PI / 4, dolly: 1 });
+  });
+
+  it('R62 a drag moves only the camera: the plane keeps its rotation, the distance stays, and one frame is asked for', () => {
+    const { host, scene } = make({ mesh: 'plane' });
+    const distance = host.camera.position.length();
+    (host.invalidate as ReturnType<typeof vi.fn>).mockClear();
+    scene.turn(60, 30, 400);
+    expect(flat(host)).toEqual([-Math.PI / 2, 0, 0]);
+    expect(host.camera.position.length()).toBeCloseTo(distance, 6);
+    expect(host.camera.position.x).not.toBeCloseTo(0, 3);
+    expect(host.invalidate).toHaveBeenCalledTimes(1);
+    scene.turn(0, 0, 400);
+    expect(host.invalidate).toHaveBeenCalledTimes(1);
+  });
+
+  it('R62 the camera never goes below the plane or straight above it', () => {
+    const { host, scene } = make({ mesh: 'plane' });
+    scene.turn(0, -100000, 400);
+    expect(host.camera.position.y).toBeGreaterThan(0);
+    const low = Math.atan2(host.camera.position.y, Math.hypot(host.camera.position.x, host.camera.position.z));
+    expect(low).toBeCloseTo((5 * Math.PI) / 180, 6);
+    scene.turn(0, 100000, 400);
+    const high = Math.atan2(host.camera.position.y, Math.hypot(host.camera.position.x, host.camera.position.z));
+    expect(high).toBeCloseTo((85 * Math.PI) / 180, 6);
+  });
+
+  it('R62 R23 Reset view returns the plane to its default view; pressed again it asks for no frame', () => {
+    const { host, scene } = make({ mesh: 'plane' });
+    scene.turn(60, 20, 400);
+    scene.dolly(-4);
+    scene.resetView();
+    expect(scene.view()).toMatchObject({ yaw: 0, pitch: Math.PI / 4, dolly: 1 });
+    (host.invalidate as ReturnType<typeof vi.fn>).mockClear();
+    scene.resetView();
+    expect(host.invalidate).not.toHaveBeenCalled();
+  });
+
+  it('R62 R4 choosing the plane puts it flat and choosing the ball turns it back to the upright default; both come back to their own default view', () => {
+    const { host, scene } = make();
+    scene.turn(60, 20, 400);
+    scene.setMesh('plane');
+    expect(flat(host)).toEqual([-Math.PI / 2, 0, 0]);
+    expect(scene.view()).toMatchObject({ mesh: 'plane', yaw: 0, pitch: Math.PI / 4 });
+    scene.turn(60, 20, 400);
+    scene.setMesh('ball');
+    expect(flat(host)).toEqual([0, 0, 0]);
+    expect(scene.view()).toMatchObject({ mesh: 'ball', yaw: 0, pitch: 0 });
+    expect(host.camera.position.x).toBeCloseTo(0, 6);
+    expect(host.camera.position.y).toBeCloseTo(0, 6);
+  });
+
+  it('R62 R53 the thumbnail of the plane is taken square-on from the front, and the orbit view comes back afterwards', async () => {
+    const { host, scene } = make({ mesh: 'plane' });
+    scene.turn(60, 20, 400);
+    const before = { position: host.camera.position.clone(), rotation: flat(host), view: scene.view() };
+    const seen = { rotation: [9, 9, 9], position: new Vector3() };
+    await scene.captureThumbnail(async () => {
+      seen.rotation = flat(host);
+      seen.position = host.camera.position.clone();
+      return new Blob(['x']);
+    });
+    expect(seen.rotation).toEqual([0, 0, 0]);
+    expect(seen.position.x).toBeCloseTo(0, 6);
+    expect(seen.position.y).toBeCloseTo(0, 6);
+    expect(seen.position.z).toBeGreaterThan(0);
+    expect(flat(host)).toEqual(before.rotation);
+    expect(host.camera.position.distanceTo(before.position)).toBeCloseTo(0, 6);
+    expect(scene.view()).toEqual(before.view);
+  });
+});
+
 describe('materialgen/preview R20 R22 R23 pose, dolly and Reset view', () => {
   it('R20 a drag turns the group and asks for one frame; a zero drag asks for none', () => {
     const { host, scene } = make();

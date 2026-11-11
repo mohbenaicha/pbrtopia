@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Button, CommitSlider } from '@shared/ui-kit';
 import { isRowAtDefaults } from '../record/maskRows';
 import type { MasksRecord } from '../record/masksRecord';
 import type { BaseMaterialTable } from '../table/baseMaterials';
 import { MAX_FEATHER } from '../bake/bakeMasks';
 import { MaskRowView } from './MaskRowView';
+import { MaskSwatchGrid } from './MaskSwatchGrid';
 import { ModelRunNotice, RerunDecompositionButton } from './ModelRunParts';
 import './masksPanel.css';
 
@@ -46,11 +48,12 @@ const READ_ONLY_REASON = 'This project is open in another tab, so it cannot be c
 
 /**
  * Masks R48-R54, R57, R59, R66-R68: the Material Masks controls of the viewport's Mask display popover, below its overlay switch and opacity slider. Top to bottom:
- * Feather, one block per component, a status line when one applies, then Reset all and Re-run decomposition side by side. With no masks it draws nothing. It holds
- * no state of its own beyond what a slider shows while it is dragged.
+ * Feather, the swatch grid with the block of the selected component, a status line when one applies, then Reset all and Re-run decomposition side by side. With no
+ * masks it draws nothing. It holds only which swatch is selected, and what a slider shows while it is dragged.
  */
 export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
   const { record, table, tableProblem, stale, canWrite, model } = props;
+  const [selected, setSelected] = useState<number | null>(null);
   const locked = !canWrite;
   const changeReason = locked ? READ_ONLY_REASON : undefined;
 
@@ -58,6 +61,7 @@ export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
 
   const allAtDefaults = table === null || record.rows.every((row) => isRowAtDefaults(row, table));
   const resetAllReason = changeReason ?? (allAtDefaults ? 'Every row is at its defaults' : undefined);
+  const selectedRow = record.rows.find((row) => row.label === selected); // a label the rebuilt masks no longer have selects nothing
 
   return (
     <div className="masks-panel">
@@ -66,19 +70,20 @@ export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
       {table === null ? (
         <p className="masks-panel__notice" role={tableProblem === null ? 'status' : 'alert'}>{tableProblem ?? 'Loading the materials'}</p>
       ) : (
-        <div className="mask-rows">
-          {record.rows.map((row) => (
+        <>
+          <MaskSwatchGrid rows={record.rows} palette={record.palette} selected={selectedRow?.label ?? null} onSelect={(label) => setSelected(label === selectedRow?.label ? null : label)} />
+          {selectedRow === undefined ? null : (
             <MaskRowView
-              key={row.label}
-              row={row}
+              key={selectedRow.label}
+              row={selectedRow}
               table={table}
               disabled={locked}
-              onMaterial={(name) => props.onRowMaterial(row.label, name)}
-              onRough={(value) => props.onRowRough(row.label, value)}
-              onMetal={(value) => props.onRowMetal(row.label, value)}
+              onMaterial={(name) => props.onRowMaterial(selectedRow.label, name)}
+              onRough={(value) => props.onRowRough(selectedRow.label, value)}
+              onMetal={(value) => props.onRowMetal(selectedRow.label, value)}
             />
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {stale ? <p className="masks-panel__notice" role="status">Albedo changed since the masks were made</p> : null}

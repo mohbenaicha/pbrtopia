@@ -25,6 +25,7 @@ export function dollyBy(factor: number, direction: number): number {
   return Math.min(DOLLY_MAX, Math.max(DOLLY_MIN, factor * DOLLY_STEP ** direction));
 }
 
-export function isDefaultView(pose: TurntablePose, dolly: number): boolean {
-  return pose.yaw === DEFAULT_POSE.yaw && pose.pitch === DEFAULT_POSE.pitch && dolly === 1;
+/** Whether the view is the mesh's default one: `home` is its default pose (the Plane's differs, preview R62). */
+export function isDefaultView(pose: TurntablePose, dolly: number, home: TurntablePose = DEFAULT_POSE): boolean {
+  return pose.yaw === home.yaw && pose.pitch === home.pitch && dolly === 1;
 }

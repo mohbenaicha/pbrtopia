@@ -18,7 +18,8 @@ const describeProgress = (finished: number, total: number): string => (total ===
 /** Materialgen app R14, R17, R18, generation R1, R9, R43, R61-R65: Preset, Generate (or Cancel while a run goes) with Custom setup, the plan hint and the outcome. */
 export function GenerateSection({ generation, prompt, canWrite, onCustomSetup }: GenerateSectionProps): React.JSX.Element {
   const { models, report, hint, references, run } = generation;
-  const block = describeGenerateBlock({ canWrite, prompt, referenceCount: references.references.length, keysReady: models.ready, planProblem: report.problem });
+  const holdsAlbedo = generation.choice.plan.images.some((image) => image.maps.includes('albedo'));
+  const block = describeGenerateBlock({ canWrite, prompt, referenceCount: references.references.length, keysReady: models.ready, planProblem: report.problem, holdsAlbedo });
   const setupReason = !canWrite ? READ_ONLY_REASON : run.running ? CUSTOM_SETUP_RUNNING : null;
 
   return (

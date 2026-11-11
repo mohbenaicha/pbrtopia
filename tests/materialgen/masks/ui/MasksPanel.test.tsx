@@ -29,7 +29,12 @@ function setup(overrides: Partial<MasksPanelProps> = {}) {
   render(<MasksPanel {...props} />);
   return { ...actions, model: props.model };
 }
-const block = (name: string): HTMLElement => screen.getByRole('group', { name });
+const swatch = (name: string): HTMLElement => screen.getByRole('button', { name });
+/** Selects a component's swatch (masks R48) and returns its block. */
+const block = (name: string): HTMLElement => {
+  if (swatch(name).getAttribute('aria-pressed') !== 'true') fireEvent.click(swatch(name));
+  return screen.getByRole('group', { name });
+};
 
 describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
   it('R49 with no masks the panel draws nothing: the masks come from the generation flow, not from buttons here', () => {
@@ -39,30 +44,67 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     expect(screen.queryByRole('group')).toBeNull();
   });
 
-  it('R48 one block per component in label order, each a group named by the component', () => {
+  it('R48 the components are swatches in label order, each filled with its palette colour; nothing is selected at first, so no block is drawn and a hint says what to do', () => {
     setup();
-    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['Wall', 'Trim']);
+    const swatches = screen.getAllByRole('button').filter((button) => button.classList.contains('mask-swatch'));
+    expect(swatches.map((button) => button.getAttribute('aria-label'))).toEqual(['Wall', 'Trim']);
+    expect(swatches.map((button) => (button as HTMLElement).style.backgroundColor)).toEqual(['rgb(255, 0, 0)', 'rgb(0, 255, 0)']);
+    expect(swatches.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'false']);
+    expect(screen.getByText('Select a material to edit its properties')).toBeTruthy();
+    expect(screen.queryByRole('group')).toBeNull();
+    expect(screen.queryByRole('combobox')).toBeNull();
   });
 
-  it('R48 a block holds the name, the base-material select under it, then Roughness and Metalness; no swatch, no "not used" mark, no row reset', () => {
+  it('R48 clicking a swatch draws that component\'s block only; clicking another changes it, clicking the selected one clears it', () => {
+    setup();
+    fireEvent.click(swatch('Wall'));
+    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['Wall']);
+    expect(swatch('Wall').getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(swatch('Trim'));
+    expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['Trim']);
+    expect(swatch('Wall').getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(swatch('Trim'));
+    expect(screen.queryByRole('group')).toBeNull();
+  });
+
+  it('R48 the grid has five columns, so up to five components make one row and six to ten make two', () => {
+    const ten = Array.from({ length: 10 }, (_, label) => row(label, `Part ${label}`));
+    setup({ record: record({ rows: ten, palette: ten.map((r) => ({ label: r.label, hex: '#808080', name: 'grey' })) }) });
+    const grid = document.querySelector('.mask-swatches') as HTMLElement;
+    expect(grid.querySelectorAll('.mask-swatch')).toHaveLength(10);
+    expect(grid.style.getPropertyValue('--mask-swatch-columns')).toBe('5');
+  });
+
+  it('R48 a selection that no longer names a component is cleared when the labels are rebuilt', () => {
+    const view = render(<MasksPanel {...({ record: record(), table, tableProblem: null, stale: false, canWrite: true, model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() } as MasksPanelProps)} />);
+    fireEvent.click(view.getByRole('button', { name: 'Wall' }));
+    expect(view.queryByRole('group', { name: 'Wall' })).not.toBeNull();
+    view.rerender(<MasksPanel {...({ record: record({ rows: [row(5, 'Glass')], palette: [{ label: 5, hex: '#0000FF', name: 'blue' }] }), table, tableProblem: null, stale: false, canWrite: true, model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() } as MasksPanelProps)} />);
+    expect(view.queryByRole('group')).toBeNull();
+  });
+
+  it('R48 a block holds the name, the base-material select under it, then Roughness and Metalness; no "not used" mark, no row reset', () => {
     setup();
     const wall = block('Wall');
     const order = [...wall.querySelectorAll('.mask-row__name, [role="combobox"], input[type="range"]')].map((node) => (node.getAttribute('role') === 'combobox' ? 'select' : (node.getAttribute('aria-label') ?? node.textContent)));
     expect(order).toEqual(['Wall', 'select', 'Roughness', 'Metalness']);
-    expect(wall.querySelector('.mask-row__swatch')).toBeNull();
     expect(within(wall).queryByText('Not used')).toBeNull();
     expect(within(wall).queryByRole('button', { name: 'Reset Wall' })).toBeNull();
   });
 
-  it('R49 the order is Feather, the blocks, then Reset all and Re-run decomposition side by side at the bottom; there is no overlay switch and no Re-quantise here', () => {
+  it('R49 the order is Feather, the hint and swatches, the selected block, then Reset all and Re-run decomposition side by side at the bottom; there is no overlay switch and no Re-quantise here', () => {
     setup({ model: idleModel({ disabledReason: null }) });
     const feather = screen.getByLabelText('Feather');
+    const hint = screen.getByText('Select a material to edit its properties');
+    const first = swatch('Wall');
     const wall = block('Wall');
     const resetAll = screen.getByRole('button', { name: 'Reset all' });
     const rerun = screen.getByRole('button', { name: 'Re-run decomposition' });
     const follows = (a: Node, b: Node): boolean => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
-    expect(follows(feather, wall)).toBe(true);
-    expect(follows(block('Trim'), resetAll)).toBe(true);
+    expect(follows(feather, hint)).toBe(true);
+    expect(follows(hint, first)).toBe(true);
+    expect(follows(first, wall)).toBe(true);
+    expect(follows(wall, resetAll)).toBe(true);
     expect(follows(resetAll, rerun)).toBe(true);
     expect(resetAll.parentElement).toBe(rerun.parentElement);
     expect(screen.queryByRole('switch')).toBeNull();

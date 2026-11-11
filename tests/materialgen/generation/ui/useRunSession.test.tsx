@@ -69,6 +69,28 @@ describe('materialgen/generation run session', () => {
     expect(result.current.result?.failures ?? []).toEqual([]);
   });
 
+  it('R76 the browser asks before the page unloads only while a run is going', async () => {
+    const unloadIsCancelled = (): boolean => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    const { result, unmount } = mountSession();
+    expect(unloadIsCancelled()).toBe(false);
+    act(() => result.current.generate());
+    await settle();
+    expect(result.current.running).toBe(true);
+    expect(unloadIsCancelled()).toBe(true);
+    act(() => result.current.cancel());
+    await settle();
+    expect(unloadIsCancelled()).toBe(false);
+    act(() => result.current.generate());
+    await settle();
+    expect(unloadIsCancelled()).toBe(true);
+    unmount();
+    expect(unloadIsCancelled()).toBe(false);
+  });
+
   it('R61 when an original would be replaced a warning opens first; Cancel starts nothing and Generate then starts the run', async () => {
     const { result, harness, keys } = mountSession({ maps: { size: 1024, maps: { albedo: record } } });
     act(() => result.current.generate());
