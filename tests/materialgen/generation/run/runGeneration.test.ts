@@ -93,6 +93,88 @@ describe('materialgen/generation R6 R7 R8 order and dependencies', () => {
   });
 });
 
+describe('materialgen/generation R6 R7 R57 the existing Albedo and the lead on any image', () => {
+  const existingAlbedo = new Blob(['existing-albedo'], { type: 'image/png' });
+  const seeded = (plan: GenerationPlan, references: Blob[] = []): RunInput['resume'] => ({ plan, userText: '', colorMode: 'albedo', references, finished: [], albedoReference: existingAlbedo, describe: null });
+  const noAlbedo = (): GenerationPlan => ({ ...preset('preset-2'), images: preset('preset-2').images.slice(1) }); // Image 1 = Normal, Image 2 = Height, Metal-Roughness card
+
+  it('R7 given Normal and Height on separate images and the Metal-Roughness card, with an existing Albedo, the Normal call, the Height call and the describe call start together with the existing Albedo attached, and the decomposition starts when the describe call has answered', async () => {
+    const plan = noAlbedo();
+    const run = start(plan, { resume: seeded(plan) });
+    await flush();
+    expect(run.harness.calls).toHaveLength(2); // both map images at once, no lead to wait for
+    expect(run.harness.describeCalls).toHaveLength(1);
+    expect(run.harness.describeCalls[0]!.reference).toBe(existingAlbedo);
+    for (const call of run.harness.calls) expect(call.request.images).toEqual([existingAlbedo]);
+    run.harness.settleDescribe({ ok: true, value: ANSWER });
+    await flush();
+    expect(run.harness.calls).toHaveLength(3);
+    expect(run.harness.calls[2]!.request.prompt).toContain('MASKS PROMPT');
+    for (const call of run.harness.calls) run.harness.answerCanvas(call);
+    const report = await run.done;
+    expect(report.status).toBe('done');
+    expect(report.committed).toEqual(['Normal', 'Height', 'Metal-Roughness']);
+    expect(run.harness.commits.flat().map((map) => map.kind)).not.toContain('albedo'); // Albedo is not touched
+  });
+
+  it('R7 given the Metal-Roughness card alone, the describe call runs on the existing Albedo and then the decomposition call; no map image is requested', async () => {
+    const plan: GenerationPlan = { images: [], decomposition: preset('preset-2').decomposition };
+    const run = start(plan, { resume: seeded(plan) });
+    await flush();
+    expect(run.harness.calls).toHaveLength(0);
+    expect(run.harness.describeCalls).toHaveLength(1);
+    run.harness.settleDescribe({ ok: true, value: ANSWER });
+    await flush();
+    expect(run.harness.calls).toHaveLength(1);
+    run.harness.answerCanvas(run.harness.calls[0]!);
+    expect((await run.done).committed).toEqual(['Metal-Roughness']);
+  });
+
+  it('R7 R39 given the lead holds Albedo on Image 2, Image 2 runs first, takes the references, and Image 1 starts after it with the albedo reference', async () => {
+    const swapped = assignMap(assignMap(preset('preset-1'), 'normal', 0), 'albedo', 1); // Image 1 = Normal, Image 2 = Albedo, Image 3 = Height
+    const references = [new Blob(['photo'])];
+    const run = start({ ...swapped, decomposition: null }, { references });
+    await flush();
+    expect(run.harness.calls).toHaveLength(1);
+    expect(run.harness.calls[0]!.request.prompt).toContain('albedo');
+    expect(run.harness.calls[0]!.request.images).toEqual(references);
+    run.harness.answerCanvas(run.harness.calls[0]!);
+    await flush();
+    expect(run.harness.calls).toHaveLength(3); // Image 1 (Normal) and Image 3 (Height)
+    for (const call of run.harness.calls.slice(1)) {
+      expect(call.request.images).toHaveLength(1);
+      expect(call.request.images).not.toEqual(references);
+    }
+    for (const call of run.harness.calls.slice(1)) run.harness.answerCanvas(call);
+    expect((await run.done).committed).toEqual(['Albedo', 'Normal', 'Height']);
+  });
+
+  it('R39 with no Albedo in the plan the user\'s references are not sent to any call', async () => {
+    const plan = noAlbedo();
+    const photo = new Blob(['photo']);
+    const run = start(plan, { resume: seeded(plan, [photo]), references: [photo] });
+    await flush();
+    for (const call of run.harness.calls) expect(call.request.images).toEqual([existingAlbedo]);
+    run.controller.abort();
+    await run.done;
+  });
+
+  it('R57 with no lead a failed image does not stop the others; the run ends partial and Retry keeps the existing Albedo in the checkpoint', async () => {
+    const plan = noAlbedo();
+    const run = start(plan, { resume: seeded(plan) });
+    await flush();
+    run.harness.calls[0]!.settle({ ok: false, error: providerError('quota') });
+    run.harness.answerCanvas(run.harness.calls[1]!);
+    run.harness.settleDescribe({ ok: true, value: ANSWER });
+    await flush();
+    run.harness.answerCanvas(run.harness.calls[2]!);
+    const report = await run.done;
+    expect(report.failures.map((failure) => failure.jobId)).toEqual(['image-1']);
+    expect(report.committed).toEqual(['Height', 'Metal-Roughness']);
+    expect(report.checkpoint.albedoReference).toBe(existingAlbedo);
+  });
+});
+
 describe('materialgen/generation R39 R31 what each call sends', () => {
   it('R39 with no reference image, Image 1 is a text-to-image request; every other image gets only the albedo reference', async () => {
     const run = start(preset('preset-1'));

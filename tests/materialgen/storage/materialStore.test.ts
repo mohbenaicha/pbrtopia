@@ -5,6 +5,7 @@ import type { StartupStore } from '@shared/shell/routing/startup';
 import type { SettingsStore } from '@shared/shell/settings/SettingsView';
 import type { MaterialProjectStore } from '@mat/storage/MaterialProjectStore';
 import type { MaterialRecord } from '@mat/storage/materialRecord';
+import { readMaterialSettings } from '@mat/storage/materialSettings';
 import { createTestMaterialStore, png } from './materialStoreFixtures';
 
 async function created(test: Awaited<ReturnType<typeof createTestMaterialStore>>, name = 'Mossy brick', size: 1024 | null = 1024): Promise<MaterialRecord> {
@@ -211,6 +212,19 @@ describe('MaterialProjectStore settings and storage', () => {
     await test.store.saveAppSettings({ panels: { leftPx: 300, rightPx: null } });
     const stored = await test.store.loadAppSettings();
     expect(stored).toMatchObject({ lastOpenProjectId: 'id-1', panels: { leftPx: 300, rightPx: null }, previewPrefs: { mesh: 'plane', meshResolution: 4 }, viewport: {} });
+  });
+
+  it('materialgen/generation R20 the saved setups are one app-wide list: empty at first, replaced whole on save, kept when other settings save, and a damaged value reads as empty', async () => {
+    const test = await createTestMaterialStore();
+    expect((await test.store.loadAppSettings()).savedSetups).toEqual([]);
+    const list = [{ name: 'Mossy', plan: { images: [], decomposition: null } }];
+    await test.store.saveAppSettings({ savedSetups: list });
+    await test.store.saveAppSettings({ lastOpenProjectId: 'id-1' });
+    expect((await test.store.loadAppSettings()).savedSetups).toEqual(list);
+    await test.store.saveAppSettings({ savedSetups: [] });
+    expect((await test.store.loadAppSettings()).savedSetups).toEqual([]);
+    expect(readMaterialSettings({ savedSetups: 'broken' }).savedSetups).toEqual([]);
+    expect(readMaterialSettings({ savedSetups: [{ name: 'ok' }, 4, null] }).savedSetups).toEqual([{ name: 'ok' }]);
   });
 
   it('materialgen/app R31 two stores with different app ids share nothing in one browser profile', async () => {

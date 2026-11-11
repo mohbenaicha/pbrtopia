@@ -47,11 +47,12 @@ export function buildCostHint(report: PlanReport, colorMode: ColorModeName, mate
     rows.push({ label: 'Describe step', model: describeModel ?? 'not chosen', canvas: '', layout: '', tilePx: null, costText: 'under $0.01' });
   }
 
-  const lead = jobs.find((job) => job.position === 1);
+  const lead = jobs.find((job) => job.maps.includes('albedo')) ?? jobs.find((job) => job.kind === 'map'); // the lead's tile, else the first map image's
   const mapPx = materialSize ?? lead?.layout.tileSide ?? null;
   const priced = jobs.length - unknown;
   const totalText = jobs.length === 0 || priced === 0 ? 'price unknown' : `${unknown > 0 ? 'at least' : 'about'} ${formatUsd(total)}`;
-  const parts = [`${jobs.length} image${jobs.length === 1 ? '' : 's'}`, ...(mapPx === null ? [] : [`maps ${mapPx} px`]), totalText];
+  const usesCurrentAlbedo = jobs.length > 0 && !jobs.some((job) => job.maps.includes('albedo')); // R62: the albedo reference is the project's own
+  const parts = [`${jobs.length} image${jobs.length === 1 ? '' : 's'}`, ...(mapPx === null ? [] : [`maps ${mapPx} px`]), totalText, ...(usesCurrentAlbedo ? ['uses the current Albedo'] : [])];
 
   const notices: string[] = [];
   const smallest = jobs.filter((job) => job.kind === 'map').map((job) => job.layout.tileSide).sort((a, b) => a - b)[0];

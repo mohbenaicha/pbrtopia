@@ -1,7 +1,7 @@
 import { FieldProblem, readChoice, readList, readObject, readText, type RawRecord } from '@shared/projects';
 import { MAX_MAP_IMAGES, PLAN_MAPS, type GenerationPlan, type SavedSetup, type SheetSettings } from './planTypes';
 
-// Generation R70: the plan and the saved setups as the material record keeps them (`customPlan`, `savedSetups`). The reader is strict about the shape and keeps a model id
+// Generation R70, R20: the plan as the material record keeps it (`customPlan`) and the saved setups as the app settings keep them. The reader is strict about the shape and keeps a model id
 // the catalog may no longer list (R19); a record that does not read is dropped by the caller, never half used.
 
 function readSettings(value: unknown, path: string): SheetSettings {
@@ -29,8 +29,9 @@ function readPlan(value: unknown, path: string): GenerationPlan {
     });
     return { maps: PLAN_MAPS.filter((name) => maps.includes(name)), settings: readSettings(image['settings'], `${itemPath}.settings`) };
   });
-  if (images.length < 1 || images.length > MAX_MAP_IMAGES || !images[0]!.maps.includes('albedo')) throw new FieldProblem(`${path}.images`);
+  if (images.length > MAX_MAP_IMAGES) throw new FieldProblem(`${path}.images`);
   const decomposition = raw['decomposition'] === null ? null : readSettings(raw['decomposition'], `${path}.decomposition`);
+  if (decomposition === null && !images.some((image) => image.maps.length > 0)) throw new FieldProblem(`${path}.images`); // R5: nothing to generate
   return { images, decomposition };
 }
 

@@ -10,20 +10,26 @@ const MAX_TEXTURE = 4096;
 const preset = (id: string) => buildPresetPlan(id, catalog, MAX_TEXTURE)!;
 
 describe('materialgen/generation plan choices', () => {
-  it('R1 the select lists the three presets under Presets, then saved setups under Saved setups, and Custom only when it is the value', () => {
+  it('R1 the select lists the three Full material presets and Single map under Presets, then saved setups under Saved setups, and Custom only when it is the value', () => {
     const saved: SavedSetup[] = [{ name: 'Mine', plan: preset('preset-2') }];
     const options = listPlanChoices(saved, 'preset-1');
-    expect(options.map((option) => [option.value, option.group])).toEqual([
-      ['preset-1', 'Presets'],
-      ['preset-2', 'Presets'],
-      ['preset-3', 'Presets'],
-      ['saved:Mine', 'Saved setups'],
+    expect(options.map((option) => [option.value, option.label, option.group])).toEqual([
+      ['preset-1', 'Full material: Gemini', 'Presets'],
+      ['preset-2', 'Full material: GPT Image', 'Presets'],
+      ['preset-3', 'Full material: Gemini + GPT Image', 'Presets'],
+      ['single-map', 'Single map', 'Presets'],
+      ['saved:Mine', 'Mine', 'Saved setups'],
     ]);
     expect(listPlanChoices([], 'custom').at(-1)).toEqual({ value: 'custom', label: 'Custom' });
   });
 
   it('R2 choosing a preset builds its plan from the catalog', () => {
     expect(resolvePlanChoice('preset-3', [], catalog, MAX_TEXTURE)).toEqual(preset('preset-3'));
+  });
+
+  it('R2 choosing Single map builds one Albedo image on GPT Image', () => {
+    expect(resolvePlanChoice('single-map', [], catalog, MAX_TEXTURE)).toEqual(preset('single-map'));
+    expect(preset('single-map').images.map((image) => image.maps)).toEqual([['albedo']]);
   });
 
   it('R20 choosing a saved setup loads its plan, and an unknown name or Custom loads nothing', () => {

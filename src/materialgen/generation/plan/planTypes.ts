@@ -2,7 +2,7 @@ import type { SheetSettings } from '@shared/generation';
 
 export type { SheetSettings };
 
-/** Generation R5, R21: the maps a map image can hold, in the reading order of a grid. Albedo is always in Image 1. */
+/** Generation R5, R21: the maps a map image can hold, in the reading order of a grid. Albedo is optional like the others; the image holding it is the lead. */
 export const PLAN_MAPS = ['albedo', 'normal', 'height'] as const;
 export type PlanMap = (typeof PLAN_MAPS)[number];
 
@@ -17,9 +17,12 @@ export interface MapImagePlan {
 
 /** Generation words: the plan stores map names and settings, never pixel sizes (canvases are derived, R22). */
 export interface GenerationPlan {
-  images: MapImagePlan[]; // 1 to 3; the first is the lead and holds Albedo
+  images: MapImagePlan[]; // 0 to 3; the one holding Albedo, if any, is the lead (R6)
   decomposition: SheetSettings | null; // null: the Metal-Roughness card is not included (R15)
 }
+
+/** Generation R2: what the Single map tabs pick: a map, or the Metal-Roughness card alone. */
+export type SingleMapChoice = PlanMap | 'metal-roughness';
 
 /** Generation R20: a plan the user saved under a name. */
 export interface SavedSetup {

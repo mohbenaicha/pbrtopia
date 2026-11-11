@@ -19,7 +19,6 @@ describe('materialRecord', () => {
       prompt: '',
       referenceImages: [],
       presetId: DEFAULT_PRESET_ID,
-      savedSetups: [],
       maps: {},
       preview: DEFAULT_PREVIEW_VALUES,
     });

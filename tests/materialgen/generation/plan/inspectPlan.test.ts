@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { KNOWN_MODELS } from '@shared/generation/catalog/knownModels';
-import { assignMap, setImageSettings } from '@mat/generation/plan/editPlan';
+import { assignMap, setImageSettings, unassignMap } from '@mat/generation/plan/editPlan';
 import { inspectMasksRun, inspectPlan, type PlanEnvironment } from '@mat/generation/plan/inspectPlan';
+import type { GenerationPlan } from '@mat/generation/plan/planTypes';
 import { buildPresetPlan, type ModelCatalog } from '@mat/generation/plan/presetPlans';
 
 const MAX_TEXTURE = 16384;
 const full: ModelCatalog = { gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai') };
-const env = (patch: Partial<PlanEnvironment> = {}): PlanEnvironment => ({ catalog: full, hasKey: { gemini: true, openai: true }, describeProvider: 'openai', referenceCount: 0, ...patch });
+const env = (patch: Partial<PlanEnvironment> = {}): PlanEnvironment => ({ catalog: full, hasKey: { gemini: true, openai: true }, describeProvider: 'openai', referenceCount: 0, hasExistingAlbedo: false, ...patch });
 const preset = (id: string) => buildPresetPlan(id, full, MAX_TEXTURE)!;
 
 describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
@@ -43,9 +44,45 @@ describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
     expect(report.cards[0]!.problem).toBeNull();
   });
 
-  it('R18 Albedo missing from Image 1 is the first problem', () => {
-    const plan = { ...preset('preset-1'), images: [{ ...preset('preset-1').images[0]!, maps: [] }, ...preset('preset-1').images.slice(1)] };
-    expect(inspectPlan(plan, env()).problem).toBe('Albedo is missing from Image 1.');
+  it('R9 R18 a plan with no Albedo when the project has none says Normal, Height and Metal-Roughness need an Albedo, and it is the first problem', () => {
+    const plan = unassignMap(preset('preset-1'), 'albedo');
+    expect(inspectPlan(plan, env({ hasExistingAlbedo: false })).problem).toBe('Normal, Height and Metal-Roughness need an Albedo: generate one or drop one in.');
+  });
+
+  it('R9 R18 the same plan has no problem when the project already has an Albedo', () => {
+    const plan = unassignMap(preset('preset-1'), 'albedo');
+    expect(inspectPlan(plan, env({ hasExistingAlbedo: true })).problem).toBeNull();
+    expect(inspectPlan({ images: [], decomposition: preset('preset-1').decomposition }, env({ hasExistingAlbedo: true })).problem).toBeNull();
+  });
+
+  it('R9 R18 a plan with Albedo needs no existing Albedo', () => {
+    expect(inspectPlan(preset('preset-1'), env({ hasExistingAlbedo: false })).problem).toBeNull();
+  });
+
+  it('R5 R9 R18 a plan that holds no map and no decomposition card has nothing to generate', () => {
+    expect(inspectPlan({ images: [], decomposition: null }, env({ hasExistingAlbedo: true })).problem).toBe('Nothing to generate.');
+    const emptied: GenerationPlan = { images: [{ maps: [], settings: preset('preset-1').images[0]!.settings }], decomposition: null };
+    expect(inspectPlan(emptied, env({ hasExistingAlbedo: true })).problem).toBe('Nothing to generate.');
+  });
+
+  it('R6 R13 the card holding Albedo is the lead whichever image it is: with Albedo on Image 2 that card takes the references and Image 1 takes the albedo', () => {
+    const plan = assignMap(preset('preset-1'), 'albedo', 1); // Image 2 holds Albedo and Normal, Image 1 is empty
+    const withHeightFirst = assignMap(plan, 'height', 0);
+    const report = inspectPlan(withHeightFirst, env({ referenceCount: 40 }));
+    expect(report.cards[0]!.problem).toBeNull(); // a follower: no reference limit
+    expect(report.cards[1]!.problem).toMatch(/^Too many reference images for image 2's model/);
+  });
+
+  it('R39 with no Albedo in the plan the references are not sent, so their number is no problem', () => {
+    const plan = unassignMap(preset('preset-1'), 'albedo');
+    expect(inspectPlan(plan, env({ referenceCount: 40, hasExistingAlbedo: true })).problem).toBeNull();
+  });
+
+  it('R39 a follower whose model takes no reference image cannot follow the albedo, with or without a lead in the plan', () => {
+    const noReference = { ...KNOWN_MODELS.find((model) => model.id === 'gpt-image-2.5-sunburst')!, id: 'no-reference', maxReferenceImages: 0 };
+    const plan = setImageSettings(unassignMap(preset('preset-2'), 'albedo'), 1, { provider: 'openai', modelId: 'no-reference', resolutionKey: '1K', quality: 'medium' });
+    const report = inspectPlan(plan, env({ hasExistingAlbedo: true, catalog: { gemini: full.gemini, openai: [noReference] } }));
+    expect(report.cards[1]!.problem).toBe('This image model takes no reference image, so it cannot follow the albedo.');
   });
 
   it('R13 an empty card is not a call: it has no layout and no problem even with a missing model', () => {

@@ -12,6 +12,7 @@ export interface AssignmentItem {
 /** One image card as the host draws it; the overlay adds the drag, drop and keyboard behaviour. */
 export interface AssignmentCardView {
   itemIds: number[];
+  lead?: boolean; // whether the card wears the Lead marker; left out: the first card is the lead (projection), materials mark the card holding Albedo
   preview?: ReactNode | null; // left out: no preview area at all; null: the empty drop frame with its text (prep S3 R27)
   below?: ReactNode; // under the drop area (a caveat, say)
   settings: ReactNode; // the card's model, resolution and quality

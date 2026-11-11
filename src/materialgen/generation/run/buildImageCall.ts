@@ -20,12 +20,12 @@ export interface CallInputs {
 }
 
 /**
- * Generation R22, R31, R39: the request of one job. Image 1 sends the user's references as the pictures to work from (none: a text-to-image request); every other
- * image sends the albedo reference alone. The canvas is the layout's; the prompt is final, the adapter adds nothing.
+ * Generation R22, R31, R39: the request of one job. The lead (the image holding Albedo) sends the user's references as the pictures to work from (none: a text-to-image
+ * request); every other image sends the albedo reference alone, so with no Albedo in the plan the references are not sent. The canvas is the layout's; the prompt is final, the adapter adds nothing.
  */
 export function buildImageCall(job: ImageJob, inputs: CallInputs): ImageCall {
   const { settings } = job;
-  const isLead = job.kind === 'map' && job.position === 1;
+  const isLead = job.kind === 'map' && job.maps.includes('albedo');
   const prompt =
     job.kind === 'decomposition'
       ? buildDecompositionImagePrompt(inputs.decompositionPrompt ?? '')

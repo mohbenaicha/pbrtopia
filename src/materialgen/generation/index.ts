@@ -1,9 +1,9 @@
 // What the rest of the material app may use from the generation folder (materialgen app R1).
 export { chooseLayout, gridName, MIN_TILE_SIDE_PX, type GridShape, type LayoutChoice, type PackedLayout, type TileRect } from './layout/chooseLayout';
-export { CUSTOM_PRESET_ID, MAX_MAP_IMAGES, PLAN_MAPS, type GenerationPlan, type MapImagePlan, type PlanMap, type SavedSetup, type SheetSettings } from './plan/planTypes';
+export { CUSTOM_PRESET_ID, MAX_MAP_IMAGES, PLAN_MAPS, type GenerationPlan, type MapImagePlan, type PlanMap, type SavedSetup, type SheetSettings, type SingleMapChoice } from './plan/planTypes';
 export { addImage, assignMap, listActiveImages, listPlannedMaps, removeImage, setDecompositionIncluded, setDecompositionSettings, setImageSettings, syncSettings, unassignMap } from './plan/editPlan';
 export { buildCardSettings, listCardOptions, retargetCardSettings, type CardOptions } from './plan/modelMinimums';
-export { buildPresetPlan, describePreset, detectPlanEntry, isSamePlan, PRESET_IDS, savedSetupValue, type ModelCatalog } from './plan/presetPlans';
+export { buildPresetPlan, describePreset, detectPlanEntry, isSamePlan, PRESET_IDS, readSingleMap, savedSetupValue, setSingleMap, SINGLE_MAP_ID, type ModelCatalog } from './plan/presetPlans';
 export { describeLayoutProblem, inspectPlan, type CardReport, type PlanEnvironment, type PlanReport } from './plan/inspectPlan';
 export { parseSavedSetups, parseStoredPlan, writePlan, writeSavedSetups } from './plan/planRecord';
 export { buildMapPrompt, type ColorModeName } from './prompts/buildMapPrompt';

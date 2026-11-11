@@ -39,11 +39,13 @@ describe('materialgen/generation setup overlay', () => {
     expect(screen.getByRole('switch', { name: 'Sync settings' }).getAttribute('aria-checked')).toBe('false'); // R17: off at first
   });
 
-  it('R11 the chip row shows each map once; Albedo sits on Image 1 and has no remove button, the others do', () => {
+  it('R11 R13 the chip row shows each map once; Albedo starts on Image 1, which is marked Lead, and every map has a remove button', () => {
     open();
-    expect(mapsOf('Image 1')).toEqual([]);
+    expect(mapsOf('Image 1')).toEqual(['Albedo']);
     expect(within(card('Image 1')).getAllByText('Albedo')).toHaveLength(2); // its chip and its tile in the preview
-    expect(within(card('Image 1')).queryByRole('button', { name: /Remove Albedo/ })).toBeNull();
+    expect(within(card('Image 1')).getByRole('button', { name: 'Remove Albedo from image 1' })).toBeTruthy();
+    expect(within(card('Image 1')).getByText('Lead')).toBeTruthy();
+    expect(within(card('Image 2')).queryByText('Lead')).toBeNull();
     expect(within(card('Image 2')).getByRole('button', { name: 'Remove Normal from image 2' })).toBeTruthy();
     expect(within(card('Image 3')).getByRole('button', { name: 'Remove Height from image 3' })).toBeTruthy();
     expect(chip('Albedo').closest('figure')!.getAttribute('data-assigned')).toBe('true');
@@ -54,15 +56,23 @@ describe('materialgen/generation setup overlay', () => {
     fireEvent.click(chip('Normal'));
     expect(chip('Normal').getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(within(card('Image 1')).getByRole('button', { name: 'Add Normal to image 1' }));
-    expect(mapsOf('Image 1')).toEqual(['Normal']);
+    expect(mapsOf('Image 1')).toEqual(['Albedo', 'Normal']);
     expect(mapsOf('Image 2')).toEqual([]);
     expect(screen.getByTestId('setup-announcement').textContent).toBe('Normal added to image 1.');
   });
 
-  it('R11 Albedo cannot be taken off Image 1: picking it offers no Unassign', () => {
+  it('R11 R13 Albedo goes back to the row with Unassign like the others, and the Lead marker follows it to the card it is added to', () => {
     open();
     fireEvent.click(chip('Albedo'));
-    expect(screen.queryByRole('button', { name: 'Unassign Albedo' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Unassign Albedo' }));
+    expect(mapsOf('Image 1')).toEqual([]);
+    expect(chip('Albedo').closest('figure')!.getAttribute('data-assigned')).toBe('false');
+    expect(screen.queryByText('Lead')).toBeNull();
+    fireEvent.click(chip('Albedo'));
+    fireEvent.click(within(card('Image 2')).getByRole('button', { name: 'Add Albedo to image 2' }));
+    expect(mapsOf('Image 2')).toEqual(['Albedo', 'Normal']);
+    expect(within(card('Image 2')).getByText('Lead')).toBeTruthy();
+    expect(within(card('Image 1')).queryByText('Lead')).toBeNull();
   });
 
   it('R11 an assigned map goes back to the row with Unassign', () => {
@@ -83,13 +93,16 @@ describe('materialgen/generation setup overlay', () => {
     expect(screen.queryByRole('button', { name: /Add Metal-Roughness/ })).toBeNull();
   });
 
-  it('R13 Image 1 cannot be removed; another image can, and its maps become unassigned', () => {
+  it('R13 every card can be removed, Image 1 included, and its maps become unassigned', () => {
     open();
-    expect(within(card('Image 1')).queryByRole('button', { name: 'Remove image 1' })).toBeNull();
     fireEvent.click(within(card('Image 2')).getByRole('button', { name: 'Remove image 2' }));
     expect(screen.queryByRole('group', { name: 'Image 3' })).toBeNull(); // the old Image 3 is Image 2 now
     expect(mapsOf('Image 2')).toEqual(['Height']);
     expect(chip('Normal').closest('figure')!.getAttribute('data-assigned')).toBe('false');
+    fireEvent.click(within(card('Image 1')).getByRole('button', { name: 'Remove image 1' }));
+    expect(mapsOf('Image 1')).toEqual(['Height']);
+    expect(chip('Albedo').closest('figure')!.getAttribute('data-assigned')).toBe('false');
+    expect(screen.queryByText('Lead')).toBeNull();
   });
 
   it('R13 "+ add image" adds an empty card that says "Drop a map here" and is hidden at three images', () => {
@@ -183,7 +196,7 @@ describe('materialgen/generation setup overlay', () => {
     open(generation);
     fireEvent.click(screen.getByRole('combobox', { name: 'Layout preset' }));
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'All in one' }));
-    expect(mapsOf('Image 1')).toEqual(['Normal', 'Height']);
+    expect(mapsOf('Image 1')).toEqual(['Albedo', 'Normal', 'Height']);
     expect(screen.getByRole('button', { name: 'Delete setup' })).toBeTruthy();
   });
 

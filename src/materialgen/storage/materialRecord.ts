@@ -27,7 +27,6 @@ export interface MaterialRecord {
   referenceImages: string[]; // blob keys
   presetId: string;
   customPlan?: RawRecord; // typed by the generation wave
-  savedSetups: RawRecord[]; // typed by the generation wave
   maps: Partial<Record<MapKind, MapRecord>>;
   masks?: RawRecord; // typed by the masks wave
   aoParams?: RawRecord; // typed by the imageops wave
@@ -54,7 +53,6 @@ export function newMaterialRecord({ id, name, size, now }: NewMaterialInput): Ma
     prompt: '',
     referenceImages: [],
     presetId: DEFAULT_PRESET_ID,
-    savedSetups: [],
     maps: {},
     preview: { ...DEFAULT_PREVIEW_VALUES },
   };

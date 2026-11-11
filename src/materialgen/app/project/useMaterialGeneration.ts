@@ -5,7 +5,7 @@ import { newMaterialRecord, type MaterialProjectStore, type MaterialRecord } fro
 import { readMaxTextureSize } from '../capabilities/readBrowserCapabilityEnv';
 import { useModelMasksSteps } from './useModelMasksSteps';
 
-type GenerationStore = Pick<MaterialProjectStore, 'readBlob' | 'writeBlob' | 'deleteBlob' | 'loadAppSettings'>;
+type GenerationStore = Pick<MaterialProjectStore, 'readBlob' | 'writeBlob' | 'deleteBlob' | 'loadAppSettings' | 'saveAppSettings'>;
 
 interface Inputs {
   store: GenerationStore;

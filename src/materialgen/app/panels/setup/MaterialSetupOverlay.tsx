@@ -32,7 +32,7 @@ export function MaterialSetupOverlay({ generation, colorMode, onClose }: Materia
   const { plan, report } = draft;
 
   const items = useMemo<AssignmentItem[]>(
-    () => PLAN_MAPS.map((map, id) => ({ id, name: mapDisplayName(map, colorMode), thumb: <MapChipThumb map={map} />, ...(map === 'albedo' ? { pinned: true } : {}) })),
+    () => PLAN_MAPS.map((map, id) => ({ id, name: mapDisplayName(map, colorMode), thumb: <MapChipThumb map={map} /> })),
     [colorMode],
   );
   const mapAt = (id: number): PlanMap | undefined => PLAN_MAPS[id];
@@ -43,6 +43,7 @@ export function MaterialSetupOverlay({ generation, colorMode, onClose }: Materia
     const problem = report.cards.find((card) => card.card === index)?.problem ?? null;
     return {
       itemIds: image.maps.map((map) => PLAN_MAPS.indexOf(map)),
+      lead: image.maps.includes('albedo'), // R13: the card holding Albedo is the lead
       preview: image.maps.length === 0 ? null : <LayoutPreview choice={layout} tileNames={image.maps.map((map) => mapDisplayName(map, colorMode))} />,
       below: image.maps.length === 0 ? undefined : <LayoutCaption choice={layout} mapCount={image.maps.length} />,
       settings: (
@@ -56,7 +57,6 @@ export function MaterialSetupOverlay({ generation, colorMode, onClose }: Materia
 
   const entry = detectPlanEntry(plan, choice.saved, models.catalog, maxTextureSize);
   const decomposition = report.cards.find((card) => card.card === 'decomposition');
-  const lead = plan.images[0]?.settings;
 
   return (
     <AssignmentOverlay
@@ -74,12 +74,12 @@ export function MaterialSetupOverlay({ generation, colorMode, onClose }: Materia
       }
       cards={cards}
       maxCards={MAX_MAP_IMAGES}
-      canRemoveCard={(index) => index > 0}
+      canRemoveCard={() => true}
       reorderable={false}
       toolbar={
         <PlanToolbar
           presets={PRESETS}
-          activePreset={entry.startsWith('preset-') ? entry : 'custom'}
+          activePreset={PRESET_IDS.includes(entry) ? entry : 'custom'}
           chosenSetup={choice.saved.find((setup) => savedSetupValue(setup.name) === entry)?.name ?? null}
           presetsEnabled
           savedSetups={choice.saved}
@@ -95,7 +95,7 @@ export function MaterialSetupOverlay({ generation, colorMode, onClose }: Materia
           onSave={(name) => choice.saveSetup(name, plan)}
         />
       }
-      aux={<DecompositionCard generation={generation} card={decomposition} canInclude={lead !== undefined} onIncludedChange={draft.setIncluded} onSettings={(settings) => draft.changeCard('decomposition', settings)} />}
+      aux={<DecompositionCard generation={generation} card={decomposition} canInclude onIncludedChange={draft.setIncluded} onSettings={(settings) => draft.changeCard('decomposition', settings)} />}
       problem={report.problem}
       onAssign={(id, image) => {
         const map = mapAt(id);

@@ -38,7 +38,7 @@ export interface GenerationPanel {
 }
 
 interface Inputs {
-  store: Pick<MaterialProjectStore, 'readBlob' | 'writeBlob' | 'deleteBlob' | 'loadAppSettings'>;
+  store: Pick<MaterialProjectStore, 'readBlob' | 'writeBlob' | 'deleteBlob' | 'loadAppSettings' | 'saveAppSettings'>;
   projectId: string;
   record: MaterialRecord;
   canWrite: boolean;
@@ -53,19 +53,20 @@ interface Inputs {
 export function useGenerationPanel({ store, projectId, record, canWrite, project, mapsState, placeGenerated, maxTextureSize, masksSteps }: Inputs): GenerationPanel {
   const backends = useAppBackends();
   const models = useModelCatalogFeed();
-  const choice = usePlanChoice({ record, catalog: models.catalog, maxTextureSize, onEdit: project.edit });
+  const choice = usePlanChoice({ record, catalog: models.catalog, maxTextureSize, onEdit: project.edit, store });
   const references = useReferenceImages({ store, projectId, keys: record.referenceImages, canWrite, whenSwept: project.whenSwept, commit: project.commit });
-  const describeModel = useDescribeModel(store, models.catalog, choice.plan.images[0]?.settings.provider ?? null, models.hasKey);
+  const describeModel = useDescribeModel(store, models.catalog, (choice.plan.images[0]?.settings ?? choice.plan.decomposition)?.provider ?? null, models.hasKey);
+  const hasExistingAlbedo = (mapsState.maps.albedo ?? mapsState.maps.diffuse) !== undefined; // R6: the albedo reference of a plan with no Albedo
 
   const environment = useMemo<PlanEnvironment>(
-    () => ({ catalog: models.catalog, hasKey: models.hasKey, describeProvider: describeModel?.provider ?? null, referenceCount: references.references.length }),
-    [models.catalog, models.hasKey, describeModel, references.references.length],
+    () => ({ catalog: models.catalog, hasKey: models.hasKey, describeProvider: describeModel?.provider ?? null, referenceCount: references.references.length, hasExistingAlbedo }),
+    [models.catalog, models.hasKey, describeModel, references.references.length, hasExistingAlbedo],
   );
   const report = useMemo(() => inspectPlan(choice.plan, environment), [choice.plan, environment]);
   const displayCatalog = useMemo(() => withKnownModels(models.catalog), [models.catalog]);
   // R62: the hint reads the plan as if every key existed, so it shows its images and prices before any key is added; it never gates Generate.
   const hint = useMemo(() => {
-    const preview = inspectPlan(choice.plan, { catalog: displayCatalog, hasKey: { gemini: true, openai: true }, describeProvider: describeModel?.provider ?? null, referenceCount: 0 });
+    const preview = inspectPlan(choice.plan, { catalog: displayCatalog, hasKey: { gemini: true, openai: true }, describeProvider: describeModel?.provider ?? null, referenceCount: 0, hasExistingAlbedo: true });
     return buildCostHint(preview, record.colorMode, record.size, describeModel?.modelId ?? null);
   }, [choice.plan, displayCatalog, describeModel, record.colorMode, record.size]);
   const referenceBlobs = useMemo(() => references.references.map((reference) => reference.blob), [references.references]);
@@ -82,6 +83,7 @@ export function useGenerationPanel({ store, projectId, record, canWrite, project
 
   const run = useRunSession({
     masksRun: masks.masksRun,
+    readAlbedoReference: masks.masksRun.readAlbedoReference,
     plan: choice.plan,
     report,
     planSummary: hint.summary,

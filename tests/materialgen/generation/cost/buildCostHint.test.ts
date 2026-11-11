@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assignMap, setImageSettings } from '@mat/generation/plan/editPlan';
+import { assignMap, setImageSettings, unassignMap } from '@mat/generation/plan/editPlan';
 import { inspectPlan } from '@mat/generation/plan/inspectPlan';
 import { buildCostHint } from '@mat/generation/cost/buildCostHint';
 import { estimateImageCost } from '@mat/generation/cost/estimateImageCost';
@@ -68,5 +68,17 @@ describe('materialgen/generation R64 notices', () => {
 
   it('R62 with no material size the maps follow the lead tile', () => {
     expect(hint(preset('preset-1'), null).summary).toContain('maps 1024 px');
+  });
+
+  it('R62 a plan with no Albedo says it uses the current Albedo, and a plan with Albedo does not', () => {
+    const noAlbedo = unassignMap(preset('preset-2'), 'albedo');
+    expect(hint(noAlbedo).summary).toBe('3 images - maps 1024 px - about $0.04 - uses the current Albedo');
+    expect(hint(preset('preset-2')).summary).not.toContain('current Albedo');
+    expect(hint({ images: [], decomposition: preset('preset-2').decomposition }, null).summary).toContain('uses the current Albedo');
+    expect(hint({ images: [], decomposition: null }).summary).not.toContain('current Albedo');
+  });
+
+  it('R62 with no material size and no lead the maps follow the first map image', () => {
+    expect(hint(unassignMap(preset('preset-1'), 'albedo'), null).summary).toContain('maps 1024 px');
   });
 });

@@ -9,6 +9,7 @@ export interface PlanEnvironment {
   hasKey: Record<Provider, boolean>;
   describeProvider: Provider | null; // the vision-text model of the describe step (masks R1); null when none is chosen
   referenceCount: number; // the user's reference images (R39)
+  hasExistingAlbedo: boolean; // the project has an Albedo or Diffuse working map, the albedo reference of a plan with no Albedo (R6)
 }
 
 /** One card of the plan as the overlay and the run see it. */
@@ -25,6 +26,9 @@ export interface PlanReport {
   cards: CardReport[];
   problem: string | null; // the first problem in the order Generate (R9) and Confirm (R18) report it
 }
+
+/** R9: why a plan with no Albedo cannot run in a project that has none. */
+export const NEEDS_ALBEDO_PROBLEM = 'Normal, Height and Metal-Roughness need an Albedo: generate one or drop one in.';
 
 const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
 
@@ -48,10 +52,10 @@ function inspectCard(card: CardReport['card'], maps: PlanMap[], settings: SheetS
   const layout = chooseLayout(model.canvases, settings.resolutionKey, Math.max(1, maps.length));
   const layoutProblem = describeLayoutProblem(layout);
   if (layoutProblem !== null) return { ...report, layout, problem: layoutProblem };
-  // R39: Image 1 takes the user's references (the albedo reference is not one of them); every other image takes the albedo reference.
+  // R39: the lead (the image holding Albedo) takes the user's references (the albedo reference is not one of them); every other image takes the albedo reference.
   if (role === 'lead') {
     const room = model.maxReferenceImages === undefined ? Infinity : model.maxReferenceImages;
-    if (env.referenceCount > room) return { ...report, layout, problem: `Too many reference images for image 1's model (${room} at most).` };
+    if (env.referenceCount > room) return { ...report, layout, problem: `Too many reference images for image ${Number(card) + 1}'s model (${room} at most).` };
   } else if (model.maxReferenceImages !== undefined && model.maxReferenceImages < 1) {
     return { ...report, layout, problem: 'This image model takes no reference image, so it cannot follow the albedo.' };
   }
@@ -59,16 +63,20 @@ function inspectCard(card: CardReport['card'], maps: PlanMap[], settings: SheetS
 }
 
 /**
- * Generation R9, R18, R19, R25, R39, R65-R67: every card of a plan with its layout and its own problem, and the first problem overall. Albedo missing comes first, then
- * the cards in order, the decomposition card, and the describe step's key. A plan with no key at all says so in one sentence.
+ * Generation R9, R18, R19, R25, R39, R65-R67: every card of a plan with its layout and its own problem, and the first problem overall. Nothing to generate and a plan
+ * that needs an Albedo it does not have come first, then the cards in order, the decomposition card, and the describe step's key. A plan with no key at all says so in
+ * one sentence. The lead is the card holding Albedo, whichever image it is (R6).
  */
 export function inspectPlan(plan: GenerationPlan, env: PlanEnvironment): PlanReport {
-  const cards: CardReport[] = plan.images.map((image, index) => inspectCard(index, image.maps, image.settings, env, index === 0 ? 'lead' : 'follower'));
+  const cards: CardReport[] = plan.images.map((image, index) => inspectCard(index, image.maps, image.settings, env, image.maps.includes('albedo') ? 'lead' : 'follower'));
   if (plan.decomposition !== null) cards.push(inspectCard('decomposition', [], plan.decomposition, env, 'follower'));
 
   let problem: string | null = null;
+  const holdsAlbedo = plan.images.some((image) => image.maps.includes('albedo'));
+  const holdsNothing = plan.decomposition === null && !plan.images.some((image) => image.maps.length > 0);
   if (!(env.hasKey.gemini || env.hasKey.openai)) problem = 'Add an image model key in Settings';
-  else if (!plan.images[0]?.maps.includes('albedo')) problem = 'Albedo is missing from Image 1.';
+  else if (holdsNothing) problem = 'Nothing to generate.';
+  else if (!holdsAlbedo && !env.hasExistingAlbedo) problem = NEEDS_ALBEDO_PROBLEM;
   else problem = cards.find((card) => card.problem !== null)?.problem ?? null;
   if (problem === null && plan.decomposition !== null) problem = describeStepProblem(env);
   return { cards, problem };

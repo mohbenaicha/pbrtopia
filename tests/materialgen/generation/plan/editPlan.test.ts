@@ -18,10 +18,12 @@ describe('materialgen/generation R5 R11 R13 map assignment', () => {
     expect(onLead.images.map((image) => image.maps)).toEqual([['albedo', 'normal'], ['height'], []]);
   });
 
-  it('R5 R11 Albedo cannot be moved or unassigned, it stays on Image 1', () => {
-    const plan = onePerImage();
-    expect(assignMap(plan, 'albedo', 1)).toBe(plan);
-    expect(unassignMap(plan, 'albedo')).toBe(plan);
+  it('R5 R11 Albedo can be moved to another image and unassigned like Normal and Height', () => {
+    const moved = assignMap(onePerImage(), 'albedo', 1);
+    expect(moved.images.map((image) => image.maps)).toEqual([[], ['albedo', 'normal'], ['height']]);
+    const dropped = unassignMap(onePerImage(), 'albedo');
+    expect(dropped.images.map((image) => image.maps)).toEqual([[], ['normal'], ['height']]);
+    expect(listPlannedMaps(dropped)).toEqual(['normal', 'height']);
   });
 
   it('R11 a map dropped back on the chip row is unassigned, and unassigning a free map changes nothing', () => {
@@ -45,12 +47,17 @@ describe('materialgen/generation R5 R11 R13 map assignment', () => {
     expect(addImage(three, gpt)).toBe(three);
   });
 
-  it('R13 Image 1 cannot be removed; removing another card unassigns its maps', () => {
+  it('R13 every card can be removed, Image 1 included; removing a card unassigns its maps, and a plan may be left with no map image', () => {
     const plan = onePerImage();
-    expect(removeImage(plan, 0)).toBe(plan);
     const removed = removeImage(plan, 1);
     expect(removed.images).toHaveLength(2);
     expect(listPlannedMaps(removed)).toEqual(['albedo', 'height']);
+    const withoutFirst = removeImage(plan, 0);
+    expect(withoutFirst.images).toHaveLength(2);
+    expect(listPlannedMaps(withoutFirst)).toEqual(['normal', 'height']);
+    const single: GenerationPlan = { images: [{ maps: ['albedo'], settings: gpt }], decomposition: gpt };
+    expect(removeImage(single, 0).images).toEqual([]);
+    expect(removeImage(plan, 7)).toBe(plan);
   });
 
   it('R13 an emptied card stays as a card but is not an active image', () => {

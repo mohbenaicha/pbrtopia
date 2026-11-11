@@ -19,12 +19,16 @@ describe('materialgen/generation R70 persistence of the plan', () => {
     expect(parseStoredPlan({ ...writePlan(plan), images: 'x' })).toBeNull();
   });
 
-  it('R5 a plan whose Image 1 lacks Albedo, or that names a map twice, does not read', () => {
-    const stored = writePlan(plan) as { images: Array<{ maps: string[] }> };
-    const noAlbedo = { ...stored, images: [{ ...stored.images[0]!, maps: ['normal'] }, ...stored.images.slice(1)] };
-    expect(parseStoredPlan(noAlbedo)).toBeNull();
+  it('R5 a plan with no Albedo, with Albedo on any image, or with the decomposition card alone reads back; a plan that names a map twice, or holds nothing, does not', () => {
+    const stored = writePlan(plan) as { images: Array<{ maps: string[] }>; decomposition: unknown };
+    const noAlbedo = { ...stored, images: [{ ...stored.images[0]!, maps: [] }, ...stored.images.slice(1)] };
+    expect(parseStoredPlan(noAlbedo)).not.toBeNull();
+    const onSecond = { ...stored, images: [{ ...stored.images[0]!, maps: [] }, { ...stored.images[1]!, maps: ['albedo', 'normal'] }, stored.images[2]!] };
+    expect(parseStoredPlan(onSecond)!.images[1]!.maps).toEqual(['albedo', 'normal']);
+    expect(parseStoredPlan({ images: [], decomposition: stored.decomposition } as never)!.images).toEqual([]);
     const twice = { ...stored, images: [stored.images[0]!, { ...stored.images[1]!, maps: ['albedo'] }, stored.images[2]!] };
     expect(parseStoredPlan(twice)).toBeNull();
+    expect(parseStoredPlan({ images: [], decomposition: null })).toBeNull();
   });
 
   it('R19 a model id the catalog does not list is kept as written', () => {

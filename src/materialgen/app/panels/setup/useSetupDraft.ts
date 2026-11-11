@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { findCatalogModel } from '@shared/generation';
 import {
-  addImage, assignMap, buildCardSettings, inspectPlan, removeImage, retargetCardSettings, setDecompositionIncluded, setDecompositionSettings, setImageSettings, syncSettings, unassignMap,
+  addImage, assignMap, buildCardSettings, buildPresetPlan, inspectPlan, removeImage, retargetCardSettings, setDecompositionIncluded, setDecompositionSettings, setImageSettings, SINGLE_MAP_ID, syncSettings, unassignMap,
   type GenerationPlan, type ModelCatalog, type PlanEnvironment, type PlanMap, type PlanReport, type SheetSettings,
 } from '@mat/generation';
 
@@ -55,10 +55,12 @@ export function useSetupDraft({ start, environment, displayCatalog, maxTextureSi
       return lead === undefined ? current : spread(current, 0, lead);
     });
   };
+  // The settings a new card starts from: the first card's, else the Metal-Roughness card's, else the GPT Image default (a plan with no card at all).
+  const startSettings = (current: GenerationPlan): SheetSettings => current.images[0]?.settings ?? current.decomposition ?? buildPresetPlan(SINGLE_MAP_ID, displayCatalog, maxTextureSize)!.images[0]!.settings;
   const setIncluded = (included: boolean): void => {
     setPlan((current) => {
-      const lead = current.images[0]?.settings;
-      const model = lead === undefined ? null : findCatalogModel(displayCatalog, lead.provider, lead.modelId);
+      const from = startSettings(current);
+      const model = findCatalogModel(displayCatalog, from.provider, from.modelId);
       return model === null ? current : setDecompositionIncluded(current, included, buildCardSettings(model, maxTextureSize, 1));
     });
   };
@@ -70,10 +72,7 @@ export function useSetupDraft({ start, environment, displayCatalog, maxTextureSi
     setSync,
     assign: (map, image) => setPlan((current) => assignMap(current, map, image)),
     unassign: (map) => setPlan((current) => unassignMap(current, map)),
-    addCard: () => setPlan((current) => {
-      const lead = current.images[0]?.settings;
-      return lead === undefined ? current : addImage(current, lead);
-    }),
+    addCard: () => setPlan((current) => addImage(current, startSettings(current))),
     removeCard: (image) => setPlan((current) => removeImage(current, image)),
     changeCard,
     setIncluded,

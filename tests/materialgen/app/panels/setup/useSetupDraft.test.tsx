@@ -8,7 +8,7 @@ import { withKnownModels } from '@mat/generation/plan/displayCatalog';
 
 const MAX_TEXTURE = 4096;
 const catalog = buildModelCatalog(['gemini', 'openai']);
-const environment = { catalog, hasKey: { gemini: true, openai: true }, describeProvider: 'gemini' as const, referenceCount: 0 };
+const environment = { catalog, hasKey: { gemini: true, openai: true }, describeProvider: 'gemini' as const, referenceCount: 0, hasExistingAlbedo: false };
 const start: GenerationPlan = buildPresetPlan('preset-1', catalog, MAX_TEXTURE)!;
 const openaiModel = catalog.openai[0]!;
 const picked = buildCardSettings(openaiModel, MAX_TEXTURE, 1);
@@ -53,14 +53,40 @@ describe('materialgen/generation setup draft', () => {
     expect(result.current.plan.images[1]!.settings.provider).toBe('openai');
   });
 
-  it('R11 Albedo cannot be moved or unassigned; Normal moves between cards', () => {
+  it('R11 Albedo moves and unassigns like the others; Normal moves between cards', () => {
     const { result } = mountDraft();
-    act(() => result.current.unassign('albedo'));
     act(() => result.current.assign('albedo', 1));
-    expect(result.current.plan.images[0]!.maps).toEqual(['albedo']);
+    expect(result.current.plan.images.map((image) => image.maps)).toEqual([[], ['albedo', 'normal'], ['height']]);
+    act(() => result.current.unassign('albedo'));
+    expect(result.current.plan.images.map((image) => image.maps)).toEqual([[], ['normal'], ['height']]);
     act(() => result.current.assign('normal', 0));
-    expect(result.current.plan.images[0]!.maps).toEqual(['albedo', 'normal']);
+    expect(result.current.plan.images[0]!.maps).toEqual(['normal']);
     expect(result.current.plan.images[1]!.maps).toEqual([]);
+  });
+
+  it('R13 Image 1 can be removed, and with every card gone a new card and the Include box still start from a model', () => {
+    const { result } = mountDraft();
+    act(() => result.current.removeCard(0));
+    expect(result.current.plan.images.map((image) => image.maps)).toEqual([['normal'], ['height']]);
+    act(() => {
+      result.current.removeCard(1);
+      result.current.removeCard(0);
+    });
+    expect(result.current.plan.images).toEqual([]);
+    act(() => result.current.addCard());
+    expect(result.current.plan.images).toHaveLength(1);
+    expect(result.current.plan.images[0]!.settings).toEqual(start.decomposition);
+    act(() => result.current.removeCard(0));
+    act(() => result.current.setIncluded(false));
+    act(() => result.current.setIncluded(true));
+    expect(result.current.plan.decomposition?.provider).toBe('openai'); // nothing left to start from: the GPT Image default
+  });
+
+  it('R5 R18 a draft with no map and no Metal-Roughness card has nothing to generate', () => {
+    const { result } = mountDraft();
+    act(() => result.current.setIncluded(false));
+    for (let index = 0; index < 3; index += 1) act(() => result.current.removeCard(0));
+    expect(result.current.report.problem).toBe('Nothing to generate.');
   });
 
   it('R15 unticking Include drops the Metal-Roughness card and ticking it again starts from the lead model', () => {

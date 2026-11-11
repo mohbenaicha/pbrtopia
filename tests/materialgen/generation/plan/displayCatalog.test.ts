@@ -18,10 +18,10 @@ describe('materialgen/generation display catalog', () => {
 
   it('R62 R65 with no key the hint still shows the plan\'s images while the real inspection keeps the key problem', () => {
     const plan = buildPresetPlan('preset-1', EMPTY, 4096)!;
-    const real = inspectPlan(plan, { catalog: EMPTY, hasKey: { gemini: false, openai: false }, describeProvider: null, referenceCount: 0 });
+    const real = inspectPlan(plan, { catalog: EMPTY, hasKey: { gemini: false, openai: false }, describeProvider: null, referenceCount: 0, hasExistingAlbedo: false });
     expect(real.problem).toBe('Add an image model key in Settings');
     expect(buildCostHint(real, 'albedo', 1024, null).summary).toMatch(/^0 images/);
-    const preview = inspectPlan(plan, { catalog: withKnownModels(EMPTY), hasKey: { gemini: true, openai: true }, describeProvider: 'gemini', referenceCount: 0 });
+    const preview = inspectPlan(plan, { catalog: withKnownModels(EMPTY), hasKey: { gemini: true, openai: true }, describeProvider: 'gemini', referenceCount: 0, hasExistingAlbedo: true });
     expect(buildCostHint(preview, 'albedo', 1024, null).summary).toMatch(/^4 images/);
   });
 });

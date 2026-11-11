@@ -1,21 +1,34 @@
 import { describe, expect, it } from 'vitest';
 import { KNOWN_MODELS } from '@shared/generation/catalog/knownModels';
 import { buildCardSettings, listCardOptions, retargetCardSettings } from '@mat/generation/plan/modelMinimums';
-import { buildPresetPlan, detectPlanEntry, isSamePlan, PRESET_IDS, savedSetupValue, type ModelCatalog } from '@mat/generation/plan/presetPlans';
-import type { GenerationPlan } from '@mat/generation/plan/planTypes';
+import { buildPresetPlan, describePreset, describePresetHint, detectPlanEntry, isSamePlan, PRESET_IDS, readSingleMap, savedSetupValue, setSingleMap, SINGLE_MAP_ID, type ModelCatalog } from '@mat/generation/plan/presetPlans';
+import type { GenerationPlan, SheetSettings } from '@mat/generation/plan/planTypes';
 
 const MAX_TEXTURE = 16384;
 const full: ModelCatalog = { gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai') };
 const model = (id: string) => KNOWN_MODELS.find((candidate) => candidate.id === id)!;
 
 describe('materialgen/generation R2 R3 presets', () => {
-  it('R2 every preset has Image 1 Albedo, Image 2 Normal, Image 3 Height and the decomposition card', () => {
-    for (const id of PRESET_IDS) {
+  it('R2 every Full material preset has Image 1 Albedo, Image 2 Normal, Image 3 Height and the decomposition card', () => {
+    for (const id of ['preset-1', 'preset-2', 'preset-3']) {
       const plan = buildPresetPlan(id, full, MAX_TEXTURE)!;
       expect(plan.images.map((image) => image.maps)).toEqual([['albedo'], ['normal'], ['height']]);
       expect(plan.decomposition).not.toBeNull();
     }
-    expect(PRESET_IDS).toEqual(['preset-1', 'preset-2', 'preset-3']);
+    expect(PRESET_IDS).toEqual(['preset-1', 'preset-2', 'preset-3', SINGLE_MAP_ID]);
+  });
+
+  it('R1 R2 the three presets are named Full material: Gemini, Full material: GPT Image and Full material: Gemini + GPT Image, then Single map', () => {
+    expect(PRESET_IDS.map(describePreset)).toEqual(['Full material: Gemini', 'Full material: GPT Image', 'Full material: Gemini + GPT Image', 'Single map']);
+    expect(describePreset('custom')).toBe('Custom');
+    expect(describePresetHint(SINGLE_MAP_ID)).toMatch(/one map/i);
+  });
+
+  it('R2 R3 R28 Single map starts as Albedo on the GPT Image default model, one map image and no decomposition card', () => {
+    const plan = buildPresetPlan(SINGLE_MAP_ID, full, MAX_TEXTURE)!;
+    expect(plan.images).toHaveLength(1);
+    expect(plan.images[0]).toMatchObject({ maps: ['albedo'], settings: { provider: 'openai', modelId: 'gpt-image-2.5-sunburst', resolutionKey: '1K', quality: 'medium' } });
+    expect(plan.decomposition).toBeNull();
   });
 
   it('R2 preset 1 is Gemini everywhere, preset 2 GPT Image everywhere, preset 3 Gemini colour then GPT Image', () => {
@@ -59,6 +72,31 @@ describe('materialgen/generation R1 R4 R20 the select value', () => {
     const changed: GenerationPlan = { ...edited, images: [{ ...edited.images[0]!, maps: ['albedo', 'normal'] }, ...edited.images.slice(1)] };
     expect(detectPlanEntry(changed, [], full, MAX_TEXTURE)).toBe('custom');
     expect(detectPlanEntry(changed, [{ name: 'Two in one', plan: changed }], full, MAX_TEXTURE)).toBe(savedSetupValue('Two in one'));
+  });
+
+  it('R2 R4 a plan with exactly one thing shows Single map whatever its model: one map image with one map and no decomposition card, or the decomposition card alone', () => {
+    const single = buildPresetPlan(SINGLE_MAP_ID, full, MAX_TEXTURE)!;
+    const gemini = buildPresetPlan('preset-1', full, MAX_TEXTURE)!.images[0]!.settings;
+    expect(detectPlanEntry(single, [], full, MAX_TEXTURE)).toBe(SINGLE_MAP_ID);
+    expect(detectPlanEntry({ images: [{ maps: ['normal'], settings: gemini }], decomposition: null }, [], full, MAX_TEXTURE)).toBe(SINGLE_MAP_ID);
+    expect(detectPlanEntry({ images: [], decomposition: gemini }, [], full, MAX_TEXTURE)).toBe(SINGLE_MAP_ID);
+    expect(detectPlanEntry({ images: [{ maps: ['albedo', 'normal'], settings: gemini }], decomposition: null }, [], full, MAX_TEXTURE)).toBe('custom');
+    expect(detectPlanEntry({ images: [{ maps: ['albedo'], settings: gemini }], decomposition: gemini }, [], full, MAX_TEXTURE)).toBe('custom');
+    expect(detectPlanEntry({ images: [], decomposition: null }, [], full, MAX_TEXTURE)).toBe('custom');
+  });
+
+  it('R2 R4 R16 the Single map tabs pick the map: Albedo, Normal and Height make one map image holding it, Metal-Roughness the decomposition card alone, the settings kept', () => {
+    const start = buildPresetPlan(SINGLE_MAP_ID, full, MAX_TEXTURE)!;
+    const chosen: SheetSettings = { provider: 'openai', modelId: 'gpt-image-2.5-sunburst', resolutionKey: '2K', quality: 'high' };
+    const tuned = { ...start, images: [{ ...start.images[0]!, settings: chosen }] };
+    const normal = setSingleMap(tuned, 'normal');
+    expect(normal).toEqual({ images: [{ maps: ['normal'], settings: chosen }], decomposition: null });
+    expect(readSingleMap(normal)).toBe('normal');
+    const metal = setSingleMap(normal, 'metal-roughness');
+    expect(metal).toEqual({ images: [], decomposition: chosen });
+    expect(readSingleMap(metal)).toBe('metal-roughness');
+    expect(setSingleMap(metal, 'height')).toEqual({ images: [{ maps: ['height'], settings: chosen }], decomposition: null });
+    expect(readSingleMap(buildPresetPlan('preset-2', full, MAX_TEXTURE)!)).toBeNull();
   });
 
   it('R4 plans are the same only card by card, empty cards and the decomposition card included', () => {

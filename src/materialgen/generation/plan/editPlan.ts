@@ -8,9 +8,9 @@ function withImages(plan: GenerationPlan, images: MapImagePlan[]): GenerationPla
   return { ...plan, images };
 }
 
-/** R11: moves a map to an image. Albedo cannot move (it stays on Image 1); an image that does not exist refuses. */
+/** R11: moves a map to an image (Albedo like the others); an image that does not exist refuses. */
 export function assignMap(plan: GenerationPlan, map: PlanMap, imageIndex: number): GenerationPlan {
-  if (map === 'albedo' || plan.images[imageIndex] === undefined) return plan;
+  if (plan.images[imageIndex] === undefined) return plan;
   if (plan.images[imageIndex].maps.includes(map)) return plan;
   const images = plan.images.map((image, index) => {
     const others = image.maps.filter((held) => held !== map);
@@ -19,9 +19,9 @@ export function assignMap(plan: GenerationPlan, map: PlanMap, imageIndex: number
   return withImages(plan, images);
 }
 
-/** R11: drops a map back on the chip row. Albedo cannot be unassigned (R5). */
+/** R11: drops a map back on the chip row. */
 export function unassignMap(plan: GenerationPlan, map: PlanMap): GenerationPlan {
-  if (map === 'albedo' || !plan.images.some((image) => image.maps.includes(map))) return plan;
+  if (!plan.images.some((image) => image.maps.includes(map))) return plan;
   return withImages(plan, plan.images.map((image) => ({ ...image, maps: image.maps.filter((held) => held !== map) })));
 }
 
@@ -31,9 +31,9 @@ export function addImage(plan: GenerationPlan, settings: SheetSettings): Generat
   return withImages(plan, [...plan.images, { maps: [], settings: { ...settings } }]);
 }
 
-/** R13: removes a card other than Image 1; its maps become unassigned. */
+/** R13: removes a card, Image 1 included; its maps become unassigned. */
 export function removeImage(plan: GenerationPlan, imageIndex: number): GenerationPlan {
-  if (imageIndex === 0 || plan.images[imageIndex] === undefined) return plan;
+  if (plan.images[imageIndex] === undefined) return plan;
   return withImages(plan, plan.images.filter((_, index) => index !== imageIndex));
 }
 

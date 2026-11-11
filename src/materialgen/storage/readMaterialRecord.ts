@@ -121,7 +121,6 @@ export function readMaterialRecord(raw: RawRecord): MaterialRecord {
     prompt: readPlainText(raw['prompt'], 'prompt'),
     referenceImages: readList(raw['referenceImages'], 'referenceImages', readBlobKey),
     presetId: readNonEmptyText(raw['presetId'], 'presetId'),
-    savedSetups: readList(raw['savedSetups'], 'savedSetups', readJsonObject),
     maps: readMaps(raw['maps'], 'maps'),
     preview: readPreviewValues(raw['preview']),
   };

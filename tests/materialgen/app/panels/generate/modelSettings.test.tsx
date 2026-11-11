@@ -27,14 +27,57 @@ describe('materialgen/generation Model settings', () => {
     expect(screen.getAllByRole('combobox').map((box) => box.getAttribute('aria-labelledby') && document.getElementById(box.getAttribute('aria-labelledby')!)?.textContent)).toEqual(['Preset', 'Model', 'Resolution', 'Quality']);
   });
 
-  it('R1 the Preset select lists the three presets and choosing one hands its value over', () => {
+  it('R1 the Preset select lists the three Full material presets and Single map, and choosing one hands its value over', () => {
     const generation = renderSection();
     fireEvent.click(screen.getByRole('combobox', { name: 'Preset' }));
     const options = screen.getAllByRole('option');
-    expect(options.map((option) => option.textContent)).toEqual(['Gemini', 'GPT Image', 'Gemini + GPT Image']);
+    expect(options.map((option) => option.textContent)).toEqual(['Full material: Gemini', 'Full material: GPT Image', 'Full material: Gemini + GPT Image', 'Single map']);
     for (const option of options) expect((option.getAttribute('title') ?? '').length).toBeGreaterThan(10); // each says what it is about on hover
-    fireEvent.click(screen.getByRole('option', { name: 'Gemini + GPT Image' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Full material: Gemini + GPT Image' }));
     expect(generation.choice.choose).toHaveBeenCalledWith('preset-3');
+  });
+
+  describe('R2 R4 app R14a Single map: the tabs pick the map to generate', () => {
+    const singleMap = (maps: 'albedo' | 'normal' | 'height' | 'metal-roughness') => {
+      const base = makeGenerationPanel({ presetId: 'single-map', keyed: ['openai'] });
+      const settings = base.choice.plan.images[0]!.settings;
+      const plan: GenerationPlan = maps === 'metal-roughness' ? { images: [], decomposition: settings } : { images: [{ maps: [maps], settings }], decomposition: null };
+      return makeGenerationPanel({ presetId: 'single-map', keyed: ['openai'], plan });
+    };
+
+    it('shows the four tabs, the plan\'s map selected, one settings group, and no Metal-Roughness switch', () => {
+      renderSection(singleMap('normal'));
+      expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('aria-label') ?? radio.textContent)).toEqual(['Albedo', 'Normal', 'Height', 'Metal-Roughness']);
+      expect(screen.getByRole('radio', { name: 'Normal' }).getAttribute('aria-checked')).toBe('true');
+      expect(screen.getAllByRole('region')).toHaveLength(1);
+      expect(screen.getAllByRole('combobox').map((box) => document.getElementById(box.getAttribute('aria-labelledby')!)?.textContent)).toEqual(['Preset', 'Model', 'Resolution', 'Quality']);
+      choose('Metal-Roughness');
+      expect(screen.queryByRole('switch', { name: 'Generate metal and roughness' })).toBeNull(); // the tab is the choice
+    });
+
+    it('a tab makes the plan one map image holding that map, with the model, resolution and quality kept', () => {
+      const generation = renderSection(singleMap('albedo'));
+      choose('Height');
+      expect(lastPlan(generation)).toEqual({ images: [{ maps: ['height'], settings: generation.choice.plan.images[0]!.settings }], decomposition: null });
+    });
+
+    it('Metal-Roughness makes the plan the Metal-Roughness card alone, and the tab shows when the plan is that card', () => {
+      const generation = renderSection(singleMap('albedo'));
+      choose('Metal-Roughness');
+      expect(lastPlan(generation)).toEqual({ images: [], decomposition: generation.choice.plan.images[0]!.settings });
+      cleanup();
+      renderSection(singleMap('metal-roughness'));
+      expect(screen.getByRole('radio', { name: 'Metal-Roughness' }).getAttribute('aria-checked')).toBe('true');
+      expect(screen.getAllByRole('combobox', { name: 'Resolution' })).toHaveLength(1);
+    });
+
+    it('the model, resolution and quality are adjustable and change the one card', () => {
+      const generation = renderSection(singleMap('normal'));
+      fireEvent.click(screen.getByRole('combobox', { name: 'Resolution' }));
+      fireEvent.click(screen.getAllByRole('option').find((option) => option.getAttribute('aria-selected') !== 'true')!);
+      expect(lastPlan(generation).images[0]!.maps).toEqual(['normal']);
+      expect(lastPlan(generation).images[0]!.settings.resolutionKey).not.toBe(generation.choice.plan.images[0]!.settings.resolutionKey);
+    });
   });
 
   it('R15 the Metal-Roughness toggle shows its hint and its own fields', () => {

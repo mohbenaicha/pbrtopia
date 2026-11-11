@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyVault } from '@shared/keys';
 import type { MapsState } from '@mat/maps';
-import type { PlanReport } from '../plan/inspectPlan';
+import { NEEDS_ALBEDO_PROBLEM, type PlanReport } from '../plan/inspectPlan';
 import type { GenerationPlan } from '../plan/planTypes';
 import type { ColorModeName } from '../prompts/buildMapPrompt';
 import { buildJobs } from '../run/buildJobs';
@@ -55,6 +55,7 @@ interface Inputs {
   ports: RunPorts;
   keys: Pick<KeyVault, 'ensureUnlocked'>;
   masksRun?: MasksRunInputs;
+  readAlbedoReference?: () => Promise<Blob | null>; // R6: the existing Albedo as the albedo reference of a plan that holds no Albedo; null when the project has none
 }
 
 /** Generation R6-R8, R43, R55-R57, R60, R61, R65, R68: runs the plan, with Cancel and Retry, and keeps the last ten runs in memory. */
@@ -114,6 +115,15 @@ export function useRunSession(inputs: Inputs): RunSession {
           return;
         }
         checkpoint = { plan: masksRun!.plan, userText: current.prompt, colorMode: current.colorMode, references: [], finished: [], albedoReference, describe: null };
+      }
+      if (mode === 'plan' && checkpoint === null && !current.plan.images.some((image) => image.maps.includes('albedo'))) {
+        const albedoReference = (await current.readAlbedoReference?.()) ?? null; // R6: no lead, so the existing Albedo is read now and kept for Retry (R56)
+        if (!mounted.current) return;
+        if (albedoReference === null) {
+          setStartError(NEEDS_ALBEDO_PROBLEM);
+          return;
+        }
+        checkpoint = { plan: current.plan, userText: current.prompt, colorMode: current.colorMode, references: [...current.references], finished: [], albedoReference, describe: null };
       }
       const plan = checkpoint?.plan ?? current.plan;
       const prompt = checkpoint?.userText ?? current.prompt;

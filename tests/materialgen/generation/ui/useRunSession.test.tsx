@@ -22,13 +22,18 @@ const masksRunOf = (albedo: Blob | null) => {
   return { plan, report: { cards: [run.card], problem: run.problem }, readAlbedoReference: vi.fn(async () => albedo) };
 };
 
-function mountSession(options: { plan?: GenerationPlan; maps?: MapsState; keys?: ReturnType<typeof keysOk>; harness?: Harness; masksRun?: ReturnType<typeof masksRunOf> } = {}) {
+const existingAlbedoOf = (albedo: Blob | null) => vi.fn(async () => albedo);
+
+function mountSession(
+  options: { plan?: GenerationPlan; maps?: MapsState; keys?: ReturnType<typeof keysOk>; harness?: Harness; masksRun?: ReturnType<typeof masksRunOf>; existingAlbedo?: ReturnType<typeof existingAlbedoOf> } = {},
+) {
   const plan = options.plan ?? albedoOnly();
   const harness = options.harness ?? createHarness();
   const keys = options.keys ?? keysOk();
   const hook = renderHook(() =>
     useRunSession({
       ...(options.masksRun === undefined ? {} : { masksRun: options.masksRun }),
+      ...(options.existingAlbedo === undefined ? {} : { readAlbedoReference: options.existingAlbedo }),
       plan,
       report: inspectPlan(plan, ENVIRONMENT),
       planSummary: '1 image - maps 1024 px',
@@ -165,6 +170,46 @@ describe('materialgen/generation run session', () => {
     expect(result.current.log).toHaveLength(1);
     expect(result.current.log[0]!.attempts.map((attempt) => attempt.status)).toEqual(['failed', 'done']);
     expect(result.current.canRetry).toBe(false);
+  });
+});
+
+describe('materialgen/generation R6 R7 R9 R56 a plan with no Albedo works from the existing Albedo', () => {
+  const albedo = new Blob(['existing-albedo'], { type: 'image/png' });
+  const normalHeight = (): GenerationPlan => ({ ...unassignMap(preset('preset-2'), 'albedo'), decomposition: null });
+
+  it('R6 R7 Generate reads the existing Albedo once, attaches it to every map image at once, and the plan\'s own Albedo is never asked for', async () => {
+    const read = existingAlbedoOf(albedo);
+    const { result, harness } = mountSession({ plan: normalHeight(), existingAlbedo: read, maps: { size: 1024, maps: { albedo: record } } });
+    act(() => result.current.generate());
+    await settle();
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(harness.calls).toHaveLength(2);
+    for (const call of harness.calls) expect(call.request.images).toEqual([albedo]);
+  });
+
+  it('R9 a plan with no Albedo in a project with none starts nothing and says what is missing', async () => {
+    const { result, harness } = mountSession({ plan: normalHeight(), existingAlbedo: existingAlbedoOf(null) });
+    act(() => result.current.generate());
+    await settle();
+    expect(harness.calls).toHaveLength(0);
+    expect(result.current.startError).toBe('Normal, Height and Metal-Roughness need an Albedo: generate one or drop one in.');
+    expect(result.current.running).toBe(false);
+  });
+
+  it('R56 Retry reuses the existing Albedo the run began with, without reading it again', async () => {
+    const read = existingAlbedoOf(albedo);
+    const { result, harness } = mountSession({ plan: normalHeight(), existingAlbedo: read });
+    act(() => result.current.generate());
+    await settle();
+    act(() => harness.calls[0]!.settle({ ok: false, error: providerError('quota') }));
+    act(() => harness.answerCanvas(harness.calls[1]!));
+    await settle();
+    expect(result.current.canRetry).toBe(true);
+    act(() => result.current.retry());
+    await settle();
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(harness.calls).toHaveLength(3);
+    expect(harness.calls[2]!.request.images).toEqual([albedo]);
   });
 });
 

@@ -35,7 +35,7 @@ export function ImageCard({ number, card, items, emptyDrop, pickedItem, isTarget
           </button>
         )}
         <h3 className="setup-card__title">Image {number}</h3>
-        {isFirst && <span className="setup-card__lead">Lead</span>}
+        {(card.lead ?? isFirst) && <span className="setup-card__lead">Lead</span>}
         <span className="setup-card__header-actions">
           {reorderable && (
             <span className="setup-card__move">

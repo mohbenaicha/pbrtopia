@@ -45,8 +45,9 @@ function raceAbort<T>(call: Promise<T>, signal: AbortSignal): Promise<T | typeof
 const sizeText = (width: number, height: number): string => `${width} x ${height}`;
 
 /**
- * Generation R6-R8, R40-R60: runs a plan. Image 1 first; when it is validated, split and committed, the other map images and the describe step start together and the
- * decomposition image starts as soon as the describe step has answered. Each image is committed as soon as it is split (R42); a failure keeps what was committed (R55);
+ * Generation R6-R8, R40-R60: runs a plan. The lead (the image holding Albedo) first; when it is validated, split and committed, the other map images and the describe step
+ * start together and the decomposition image starts as soon as the describe step has answered. With no lead the checkpoint already holds the existing Albedo as the albedo
+ * reference and everything starts at once. Each image is committed as soon as it is split (R42); a failure keeps what was committed (R55);
  * Cancel drops every late result (R43, R44). The report carries the checkpoint a Retry continues from (R56).
  */
 export async function runGeneration(input: RunInput): Promise<RunReport> {
@@ -190,7 +191,7 @@ export async function runGeneration(input: RunInput): Promise<RunReport> {
     if (!isFinished(job)) await runImageJob(job);
   }
 
-  const lead = jobs.find((job) => job.kind === 'map' && job.position === 1);
+  const lead = jobs.find((job) => job.kind === 'map' && job.maps.includes('albedo')); // R6: the image holding Albedo; none when the albedo reference is the existing one
   const decomposition = jobs.find((job) => job.kind === 'decomposition');
   reportProgress();
   let leadReady = lead === undefined || isFinished(lead);
