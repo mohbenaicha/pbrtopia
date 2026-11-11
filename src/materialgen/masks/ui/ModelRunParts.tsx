@@ -4,7 +4,7 @@ import type { MasksModelControls } from './MasksPanel';
 
 interface NoticeProps {
   model: MasksModelControls;
-  /** Changes are off (read-only project, or another operation is running). */
+  /** Changes are off (read-only project). */
   locked: boolean;
 }
 
@@ -37,14 +37,14 @@ interface RerunProps {
   lockedReason: string | undefined;
 }
 
-/** Masks R66: Re-run decomposition asks first, naming the models, the paid calls and that the rows the person changed are replaced. */
+/** Masks R49, R66: the gold Re-run decomposition button; it asks first, naming the models, the paid calls and that the rows the person changed are replaced. */
 export function RerunDecompositionButton({ model, locked, lockedReason }: RerunProps): React.JSX.Element {
   const [asking, setAsking] = useState(false);
   const reason = model.disabledReason ?? lockedReason;
   const off = locked || model.running || model.disabledReason !== null;
   return (
     <>
-      <Button disabled={off} {...(reason === undefined ? {} : { title: reason })} onClick={() => setAsking(true)}>Re-run decomposition</Button>
+      <Button variant="primary" disabled={off} {...(reason === undefined ? {} : { title: reason })} onClick={() => setAsking(true)}>Re-run decomposition</Button>
       <ConfirmDialog
         open={asking}
         title="Re-run the decomposition?"
@@ -56,7 +56,7 @@ export function RerunDecompositionButton({ model, locked, lockedReason }: RerunP
           model.onRerun();
         }}
       >
-        <p>{`This asks ${model.modelNames} again and makes up to 4 calls that cost money. The new labels replace the old ones, and the roughness and metal values you changed are replaced by the new defaults.`}</p>
+        <p>{`This asks ${model.modelNames} again and makes up to 3 calls that cost money. The new labels replace the old ones, and the roughness and metal values you changed are replaced by the new defaults.`}</p>
       </ConfirmDialog>
     </>
   );

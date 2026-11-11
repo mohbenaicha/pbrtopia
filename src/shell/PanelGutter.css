@@ -33,6 +33,7 @@
 
 .panel-gutter:hover::after,
 .panel-gutter:active::after,
+.panel-gutter[data-dragging]::after,
 .panel-gutter:focus-visible::after {
   background: var(--accent);
 }

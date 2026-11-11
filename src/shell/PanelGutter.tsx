@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { PanelSide } from './panelWidths';
 import './PanelGutter.css';
 
@@ -17,20 +17,26 @@ interface PanelGutterProps {
 export function PanelGutter({ side, widthPx, limits, onResize, onCommit, onReset }: PanelGutterProps): React.JSX.Element {
   const grows = side === 'left' ? 1 : -1; // the direction of a pointer move that makes the panel wider
   const drag = useRef<{ startX: number; startWidth: number } | null>(null);
+  const [target, setTarget] = useState<number | null>(null); // the width a drag has reached, held inside the limits; null while no pointer move has happened
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     if (event.button !== 0) return;
     drag.current = { startX: event.clientX, startWidth: widthPx };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
+  // R25: a drag moves only this strip (a guide line); the panels are laid out once, on release.
   const onPointerMove = (event: PointerEvent<HTMLDivElement>): void => {
     if (drag.current === null) return;
-    onResize(drag.current.startWidth + grows * (event.clientX - drag.current.startX));
+    const wanted = drag.current.startWidth + grows * (event.clientX - drag.current.startX);
+    setTarget(Math.min(limits.max, Math.max(limits.min, wanted)));
   };
   const onPointerUp = (event: PointerEvent<HTMLDivElement>): void => {
     if (drag.current === null) return;
     drag.current = null;
     event.currentTarget.releasePointerCapture?.(event.pointerId);
+    if (target === null) return; // pressed and released without a move
+    setTarget(null);
+    onResize(target);
     onCommit();
   };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -52,6 +58,8 @@ export function PanelGutter({ side, widthPx, limits, onResize, onCommit, onReset
       aria-valuemax={limits.max}
       tabIndex={0}
       data-testid={`gutter-${side}`}
+      data-dragging={target === null ? undefined : ''}
+      style={target === null ? undefined : { transform: `translateX(${grows * (target - widthPx)}px)` }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}

@@ -12,28 +12,31 @@ const row: MaskRow = {
 };
 
 function setup(overrides: Partial<Parameters<typeof MaskRowView>[0]> = {}) {
-  const actions = { onMaterial: vi.fn(), onRough: vi.fn(), onMetal: vi.fn(), onReset: vi.fn() };
-  render(<MaskRowView row={row} colour="#00FF00" table={table} disabled={false} {...actions} {...overrides} />);
+  const actions = { onMaterial: vi.fn(), onRough: vi.fn(), onMetal: vi.fn() };
+  render(<MaskRowView row={row} table={table} disabled={false} {...actions} {...overrides} />);
   return actions;
 }
 
 describe('materialgen/masks MaskRowView (masks R48 R57)', () => {
-  it('R48 a row shows the component name with its description as tooltip and a swatch of its palette colour', () => {
+  it('R48 a block shows the component name with its description as tooltip, and nothing else around it', () => {
     setup();
     expect(screen.getByText('Wall').getAttribute('title')).toBe('The brick wall');
-    expect((screen.getByTestId('mask-swatch-1') as HTMLElement).style.backgroundColor).toBe('rgb(0, 255, 0)');
+    expect(document.querySelector('.mask-row__swatch')).toBeNull();
+    expect(screen.queryByText('Not used')).toBeNull();
   });
 
-  it('R57 the sliders are named for the component, and show two decimals', () => {
+  it('R48 the block is a group named by the component, with Roughness and Metalness rows that show two decimals', () => {
     setup();
-    expect(screen.getByLabelText('Roughness of Wall')).toBeTruthy();
-    expect(screen.getByLabelText('Metal of Wall')).toBeTruthy();
+    const group = screen.getByRole('group', { name: 'Wall' });
+    expect(group.querySelector('input[aria-label="Roughness"]')).toBeTruthy();
+    expect(group.querySelector('input[aria-label="Metalness"]')).toBeTruthy();
     expect(screen.getByText('0.80')).toBeTruthy();
+    expect(screen.getByText('0.00')).toBeTruthy();
   });
 
   it('R50 a released slider reports its row value', () => {
     const actions = setup();
-    const slider = screen.getByLabelText('Metal of Wall');
+    const slider = screen.getByLabelText('Metalness');
     fireEvent.pointerDown(slider);
     fireEvent.change(slider, { target: { value: '0.5' } });
     fireEvent.pointerUp(slider);
@@ -75,24 +78,28 @@ describe('materialgen/masks MaskRowView (masks R48 R57)', () => {
     expect(screen.getByRole('combobox', { name: 'Base material of Wall' }).getAttribute('title')).toBe('Estimated default');
   });
 
-  it('R52 Reset is disabled when the row is at its defaults, and reports when it is not', () => {
+  it('R48 the reset arrows are disabled while the sliders are at the chosen material\'s values, and a click saves that value', () => {
     const first = setup();
-    expect((screen.getByRole('button', { name: 'Reset Wall' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Reset Roughness' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Reset Metalness' }) as HTMLButtonElement).disabled).toBe(true);
     cleanup();
-    const second = setup({ row: { ...row, rough: 0.4 } });
-    fireEvent.click(screen.getByRole('button', { name: 'Reset Wall' }));
-    expect(second.onReset).toHaveBeenCalledTimes(1);
-    expect(first.onReset).not.toHaveBeenCalled();
+    const second = setup({ row: { ...row, rough: 0.4, metal: 0.6 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Roughness' }));
+    expect(second.onRough).toHaveBeenCalledWith(0.8);
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Metalness' }));
+    expect(second.onMetal).toHaveBeenCalledWith(0);
+    expect(first.onRough).not.toHaveBeenCalled();
   });
 
-  it('R12 a disabled row cannot be changed', () => {
+  it('R48 a row whose material is not in the table has no value to go back to: its reset arrows are disabled', () => {
+    setup({ row: { ...row, material: 'Gone', rough: 0.4 } });
+    expect((screen.getByRole('button', { name: 'Reset Roughness' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('R12 a disabled block cannot be changed', () => {
     setup({ disabled: true, row: { ...row, rough: 0.4 } });
-    expect((screen.getByLabelText('Roughness of Wall') as HTMLInputElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: 'Reset Wall' }) as HTMLButtonElement).disabled).toBe(true);
-  });
-
-  it('R71 a row whose label no pixel uses is marked as not used', () => {
-    setup({ unused: true });
-    expect(screen.getByText('Not used')).toBeTruthy();
+    expect((screen.getByLabelText('Roughness') as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Reset Roughness' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('combobox', { name: 'Base material of Wall' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

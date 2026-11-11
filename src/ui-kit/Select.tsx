@@ -1,4 +1,4 @@
-import { Fragment, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { describedBy, FieldMessage } from './FieldMessage';
 import { Icon } from './Icon';
 import { useDismiss } from './useDismiss';
@@ -44,6 +44,10 @@ export function Select({
   const shown = searchable && needle !== '' ? options.filter((option) => option.label.toLowerCase().includes(needle)) : options;
 
   useDismiss(open, region, () => setOpen(false));
+  // Inside a scrolling area (the Mask display popover) the list is drawn past the area's edge: scroll it into view when it opens. (viewport-layout R22)
+  useEffect(() => {
+    if (open) region.current?.querySelector('.ui-select__popup, .ui-select__list')?.scrollIntoView?.({ block: 'nearest' });
+  }, [open]);
 
   const openList = (): void => {
     setQuery('');
@@ -87,7 +91,8 @@ export function Select({
     }
   };
 
-  const list = (
+  // Built only while the list is open: a closed select with hundreds of options (the Material Masks base materials) must not make an element per option on every render.
+  const renderList = (): React.JSX.Element => (
     <ul className="ui-select__list" data-opens-up={opensUp && !searchable ? '' : undefined} role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`}>
       {shown.map((option, index) => (
         <Fragment key={option.value}>
@@ -136,7 +141,7 @@ export function Select({
           <span className="ui-select__value" data-placeholder={selected ? undefined : ''}>{empty ? emptyText : (selected?.label ?? '')}</span>
           <Icon name="chevron-down" size={14} />
         </button>
-        {open && !searchable && list}
+        {open && !searchable && renderList()}
         {open && searchable && (
           <div className="ui-select__popup" data-opens-up={opensUp ? '' : undefined}>
             <input
@@ -152,7 +157,7 @@ export function Select({
               onChange={(event) => { setQuery(event.target.value); setHighlighted(0); }}
               onKeyDown={onSearchKeyDown}
             />
-            {shown.length === 0 ? <p className="ui-select__no-match" role="status">{noMatchText}</p> : list}
+            {shown.length === 0 ? <p className="ui-select__no-match" role="status">{noMatchText}</p> : renderList()}
           </div>
         )}
       </div>

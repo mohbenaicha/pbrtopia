@@ -50,23 +50,55 @@ describe('PanelGutter', () => {
     expect(onCommit).not.toHaveBeenCalled();
   });
 
-  it('viewport-layout R25 dragging the left gutter right widens the panel as the pointer moves and is saved once on release', () => {
+  it('viewport-layout R25 dragging the left gutter does not resize while it goes: the panel takes the width, and it is saved, once on release', () => {
     const { gutter, onResize, onCommit } = setup('left');
     fireEvent.pointerDown(gutter, { clientX: 300, pointerId: 1, button: 0 });
     fireEvent.pointerMove(gutter, { clientX: 340, pointerId: 1 });
-    expect(onResize).toHaveBeenLastCalledWith(340);
     fireEvent.pointerMove(gutter, { clientX: 280, pointerId: 1 });
-    expect(onResize).toHaveBeenLastCalledWith(280);
+    expect(onResize).not.toHaveBeenCalled();
     expect(onCommit).not.toHaveBeenCalled();
     fireEvent.pointerUp(gutter, { clientX: 280, pointerId: 1 });
+    expect(onResize).toHaveBeenCalledTimes(1);
+    expect(onResize).toHaveBeenLastCalledWith(280);
     expect(onCommit).toHaveBeenCalledTimes(1);
   });
 
-  it('viewport-layout R25 dragging the right gutter left widens the right panel', () => {
+  it('viewport-layout R25 dragging the right gutter left widens the right panel, on release', () => {
     const { gutter, onResize } = setup('right');
     fireEvent.pointerDown(gutter, { clientX: 900, pointerId: 1, button: 0 });
     fireEvent.pointerMove(gutter, { clientX: 850, pointerId: 1 });
+    expect(onResize).not.toHaveBeenCalled();
+    fireEvent.pointerUp(gutter, { clientX: 850, pointerId: 1 });
     expect(onResize).toHaveBeenLastCalledWith(350);
+  });
+
+  it('viewport-layout R25 while dragging only the gutter moves with the pointer, held inside the limits, and it settles back after release', () => {
+    const { gutter } = setup('left'); // width 300, limits 220 to 520
+    fireEvent.pointerDown(gutter, { clientX: 300, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(gutter, { clientX: 340, pointerId: 1 });
+    expect(gutter.style.transform).toBe('translateX(40px)');
+    fireEvent.pointerMove(gutter, { clientX: 900, pointerId: 1 });
+    expect(gutter.style.transform).toBe('translateX(220px)'); // 520 - 300
+    fireEvent.pointerMove(gutter, { clientX: 0, pointerId: 1 });
+    expect(gutter.style.transform).toBe('translateX(-80px)'); // 220 - 300
+    fireEvent.pointerUp(gutter, { clientX: 0, pointerId: 1 });
+    expect(gutter.style.transform).toBe('');
+  });
+
+  it('viewport-layout R25 a release at a width beyond the limits hands over the width held inside them', () => {
+    const { gutter, onResize } = setup('left');
+    fireEvent.pointerDown(gutter, { clientX: 300, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(gutter, { clientX: 900, pointerId: 1 });
+    fireEvent.pointerUp(gutter, { clientX: 900, pointerId: 1 });
+    expect(onResize).toHaveBeenLastCalledWith(520);
+  });
+
+  it('viewport-layout R25 a press and release without a move changes and saves nothing', () => {
+    const { gutter, onResize, onCommit } = setup('left');
+    fireEvent.pointerDown(gutter, { clientX: 300, pointerId: 1, button: 0 });
+    fireEvent.pointerUp(gutter, { clientX: 300, pointerId: 1 });
+    expect(onResize).not.toHaveBeenCalled();
+    expect(onCommit).not.toHaveBeenCalled();
   });
 
   it('viewport-layout R25 moving the pointer without pressing, or after release, resizes nothing', () => {

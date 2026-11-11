@@ -49,7 +49,7 @@ function setup(state: MapsState, masks?: MasksRecord | undefined, overrides: Par
   const refuse = vi.fn();
   const ports: MasksPanelPorts = {
     state, masksRecord: masks === undefined ? undefined : (masks as unknown as Record<string, unknown>), canWrite: true,
-    controller: { commitMasks, refuse }, readBlob: async (key) => blobs.get(key) ?? null, loadTable: async () => table, overlay: false, onOverlay: vi.fn(),
+    controller: { commitMasks, refuse }, readBlob: async (key) => blobs.get(key) ?? null, loadTable: async () => table,
     model: { disabledReason: 'off', running: false, error: null, canRetry: false, modelNames: '', onCreate: vi.fn(), onRerun: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn() }, ...overrides,
   };
   const view = renderHook(() => useMasksPanel(ports));
@@ -134,29 +134,12 @@ describe('materialgen/app useMasksPanel', () => {
     expect(fresh.view.result.current.stale).toBe(false);
   });
 
-  it('R71 a label no pixel uses is reported as unused', async () => {
-    const record = storedRecord();
-    record.rows.push({ ...record.rows[1]!, label: 2, name: 'Ghost' });
-    record.palette.push({ label: 2, hex: '#0000FF', name: 'blue' });
-    const { view } = setup(maskedState(), record);
-    await waitFor(() => expect([...view.result.current.unusedLabels]).toEqual([2]));
-  });
-
   it('R12 nothing is committed in a read-only project and the panel says it is locked', async () => {
     const { view, commits } = setup(maskedState(), storedRecord(), { canWrite: false });
     await waitFor(() => expect(view.result.current.table).not.toBeNull());
     await act(async () => { view.result.current.onRowRough(0, 0.2); });
     expect(commits).toHaveLength(0);
     expect(view.result.current.canWrite).toBe(false);
-  });
-
-  it('R55 the overlay is the shared session switch, not an edit: the panel shows its value and reports a change to it', async () => {
-    const onOverlay = vi.fn();
-    const { view, commits } = setup(maskedState(), storedRecord(), { overlay: true, onOverlay });
-    expect(view.result.current.overlay).toBe(true);
-    act(() => view.result.current.onOverlay(false));
-    expect(onOverlay).toHaveBeenCalledWith(false);
-    expect(commits).toHaveLength(0);
   });
 
   it('R58 changes made while a bake runs are merged into one further bake', async () => {
@@ -193,20 +176,6 @@ describe('materialgen/app useMasksPanel model source', () => {
   const modelRecord = storedRecord;
   const readFrom = (extra: Record<string, Blob>) => async (key: string) => ({ a: png(twoColours()), l: png(halves()), ...extra })[key] ?? null;
 
-  it('R66 Re-quantise of a model source quantises the stored picture again, keeps it as the original, and keeps the rows', async () => {
-    const { view, commits } = setup(modelState(true), modelRecord(), { readBlob: readFrom({ orig: png(decomposition()) }) });
-    await waitFor(() => expect(view.result.current.table).not.toBeNull());
-    await act(async () => { view.result.current.onRequantise(); });
-    await waitFor(() => expect(commits).toHaveLength(1));
-    const { commit, record } = commits[0]!;
-    expect(commit.labels?.keepOriginal).toBe(true);
-    expect(commit.labels?.working.width).toBe(256);
-    expect(commit.bake).toBeDefined();
-    const saved = parseMasksRecord(record)!;
-    expect(saved.source).toBe('model');
-    expect(saved.rows.map((row) => row.name)).toEqual(['Wall', 'Plate']);
-  });
-
   it('R79 a row change after the size grew rebuilds a model source\'s labels from its stored picture at the new size, then bakes, in one commit', async () => {
     const { view, commits, refuse } = setup(modelState(true), modelRecord(), { readBlob: readFrom({ orig: png(decomposition()) }) });
     await waitFor(() => expect(view.result.current.table).not.toBeNull());
@@ -220,10 +189,10 @@ describe('materialgen/app useMasksPanel model source', () => {
     expect(parseMasksRecord(record)?.rows[1]?.rough).toBe(0.5);
   });
 
-  it('R66 with no stored picture, Re-quantise of a model source refuses and keeps the labels as they were', async () => {
+  it('R79 with no stored picture, a row change after the size grew refuses and keeps the labels as they were', async () => {
     const { view, commits, refuse } = setup(modelState(false), modelRecord());
     await waitFor(() => expect(view.result.current.table).not.toBeNull());
-    await act(async () => { view.result.current.onRequantise(); });
+    await act(async () => { view.result.current.onRowRough(1, 0.5); });
     expect(commits).toHaveLength(0);
     expect(refuse).toHaveBeenCalledWith(expect.stringContaining('decomposition'));
   });
@@ -231,15 +200,6 @@ describe('materialgen/app useMasksPanel model source', () => {
   describe('when the masks work fails (R24)', () => {
     beforeEach(() => { jobs.failing = true; });
     afterEach(() => { jobs.failing = false; });
-
-    it('R24 a Re-quantise that fails says so, stores nothing and is no longer busy', async () => {
-      const { view, commits, refuse } = setup(modelState(true), modelRecord(), { readBlob: readFrom({ orig: png(decomposition()) }) });
-      await waitFor(() => expect(view.result.current.table).not.toBeNull());
-      await act(async () => { view.result.current.onRequantise(); });
-      await waitFor(() => expect(refuse).toHaveBeenCalledWith(expect.stringContaining('Could not make the labels')));
-      expect(commits).toHaveLength(0);
-      await waitFor(() => expect(view.result.current.busy).toBe(false));
-    });
 
     it('R24 a row change whose bake fails says so, stores nothing and answers false', async () => {
       const { view, commits, refuse } = setup(maskedState(), storedRecord());

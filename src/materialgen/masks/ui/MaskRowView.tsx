@@ -1,21 +1,16 @@
 import { useMemo } from 'react';
-import { Icon, IconButton, Select, type SelectOption } from '@shared/ui-kit';
-import { GENERIC, listMaterialOptions, type BaseMaterialTable } from '../table/baseMaterials';
-import { isRowAtDefaults, type MaskRow } from '../record/maskRows';
-import { CommitSlider } from '@shared/ui-kit';
+import { CommitSlider, Select, type SelectOption } from '@shared/ui-kit';
+import { findMaterial, GENERIC, listMaterialOptions, type BaseMaterialTable } from '../table/baseMaterials';
+import type { MaskRow } from '../record/maskRows';
 import './masksPanel.css';
 
 interface MaskRowViewProps {
   row: MaskRow;
-  colour: string; // the row's palette colour, #RRGGBB
   table: BaseMaterialTable;
   disabled: boolean;
-  /** No pixel of the labels has this label (masks R71): the row still works but changes nothing visible. */
-  unused?: boolean;
   onMaterial(name: string): void;
   onRough(value: number): void | Promise<unknown>;
   onMetal(value: number): void | Promise<unknown>;
-  onReset(): void;
 }
 
 /** Select options for a row: its suggestions first, then Generic, then every name once (masks R37). */
@@ -33,18 +28,16 @@ function materialOptions(row: MaskRow, table: BaseMaterialTable): SelectOption[]
   return options;
 }
 
-/** Masks R48, R57: one component: swatch, name, base-material select, roughness and metal sliders and the row's Reset. */
-export function MaskRowView({ row, colour, table, disabled, unused = false, onMaterial, onRough, onMetal, onReset }: MaskRowViewProps): React.JSX.Element {
+/**
+ * Masks R48, R57: one component's block: its name, the base-material select under it, then the Roughness and Metalness sliders with their value and reset arrow.
+ * A slider's reset arrow puts it back to the value of the row's chosen base material; a material that is not in the table leaves the arrow with nothing to go back to.
+ */
+export function MaskRowView({ row, table, disabled, onMaterial, onRough, onMetal }: MaskRowViewProps): React.JSX.Element {
   const options = useMemo(() => materialOptions(row, table), [row, table]);
-  const atDefaults = isRowAtDefaults(row, table);
+  const chosen = findMaterial(table, row.material);
   return (
-    <li className="mask-row" data-unused={unused ? '' : undefined}>
-      <div className="mask-row__head">
-        <span className="mask-row__swatch" data-testid={`mask-swatch-${row.label}`} style={{ backgroundColor: colour }} aria-hidden="true" />
-        <span className="mask-row__name" title={row.description === '' ? undefined : row.description}>{row.name}</span>
-        {unused ? <span className="mask-row__badge">Not used</span> : null}
-        <IconButton label={`Reset ${row.name}`} icon={<Icon name="reset" />} compact disabled={disabled || atDefaults} {...(disabled ? {} : { disabledReason: 'Already at its defaults' })} onClick={onReset} />
-      </div>
+    <div className="mask-row" role="group" aria-label={row.name}>
+      <span className="mask-row__name" title={row.description === '' ? undefined : row.description}>{row.name}</span>
       <Select
         label={`Base material of ${row.name}`}
         hideLabel
@@ -56,8 +49,8 @@ export function MaskRowView({ row, colour, table, disabled, unused = false, onMa
         noMatchText="No material matches"
         title="Estimated default"
       />
-      <CommitSlider label={`Roughness of ${row.name}`} value={row.rough} onCommit={onRough} disabled={disabled} />
-      <CommitSlider label={`Metal of ${row.name}`} value={row.metal} onCommit={onMetal} disabled={disabled} />
-    </li>
+      <CommitSlider label="Roughness" layout="row" value={row.rough} onCommit={onRough} disabled={disabled} resetTo={chosen?.roughness ?? row.rough} />
+      <CommitSlider label="Metalness" layout="row" value={row.metal} onCommit={onMetal} disabled={disabled} resetTo={chosen?.metal ?? row.metal} />
+    </div>
   );
 }

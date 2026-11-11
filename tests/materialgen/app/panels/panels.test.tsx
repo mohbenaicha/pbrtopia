@@ -4,19 +4,13 @@ import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_PREVIEW_VALUES, newMaterialRecord, type MaterialRecord } from '@mat/storage';
 import { MaterialGeneratePanel } from '@mat/app/panels/MaterialGeneratePanel';
-import { MaterialMapsPanel as MapsPanelWithMaskView } from '@mat/app/panels/MaterialMapsPanel';
-import { useMaskView } from '@mat/app/project/useMaskView';
+import { MaterialMapsPanel } from '@mat/app/panels/MaterialMapsPanel';
 import { describeGenerateBlock } from '@mat/app/panels/generateReason';
 import { CARD_SLOTS, slotTitle } from '@mat/app/panels/slotCards';
 import type { MapsController } from '@mat/maps';
 import { makeGenerationPanel } from './generate/fakeGeneration';
 
 afterEach(cleanup);
-
-// The project view owns the mask view state; here a stand-in does.
-function MaterialMapsPanel(props: Omit<ComponentProps<typeof MapsPanelWithMaskView>, 'maskView'>): React.JSX.Element {
-  return <MapsPanelWithMaskView {...props} maskView={useMaskView()} />;
-}
 
 const record = (patch: Partial<MaterialRecord> = {}): MaterialRecord => ({ ...newMaterialRecord({ id: 'p1', name: 'Bricks', size: 1024, now: '2026-11-10T09:00:00.000Z' }), ...patch });
 const storage = { estimate: null, full: false, warn: false };
@@ -203,8 +197,7 @@ describe('materialgen/app left panel (the material)', () => {
     changeSize: vi.fn(),
     download: vi.fn(),
   };
-  const baseProps = { shading: 'lit' as const, onShadingChange: vi.fn(), mapsState: { size: null, maps: {} }, maps: mapsStub, readBlob: async () => null, sessions: { openFilter: vi.fn(), openAo: vi.fn(), geometry: { crop: vi.fn(), mirror: vi.fn(), swap: vi.fn() } }, aoParams: undefined, onAoParamsChange: vi.fn(), onToolViewChange: vi.fn(), canWrite: true, masksRecord: undefined, loadMaterialTable: async () => [], projectName: 'Bricks', preview: DEFAULT_PREVIEW_VALUES,
-    masksModel: { disabledReason: 'off', running: false, error: null, canRetry: false, modelNames: '', onCreate: vi.fn(), onRerun: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn() } };
+  const baseProps = { shading: 'lit' as const, onShadingChange: vi.fn(), mapsState: { size: null, maps: {} }, maps: mapsStub, readBlob: async () => null, sessions: { openFilter: vi.fn(), openAo: vi.fn(), geometry: { crop: vi.fn(), mirror: vi.fn(), swap: vi.fn() } }, aoParams: undefined, onAoParamsChange: vi.fn(), onToolViewChange: vi.fn(), canWrite: true, projectName: 'Bricks', preview: DEFAULT_PREVIEW_VALUES };
 
   const maps = mapsStub;
   const props = baseProps;
@@ -223,10 +216,11 @@ describe('materialgen/app left panel (the material)', () => {
     expect(screen.queryByRole('button', { name: 'Open masks' })).toBeNull();
   });
 
-  it('R48 R49 with no masks there is no Material Masks section: the masks come from the generation, nothing here makes them', () => {
+  it('R48 R49 the left panel has no Material Masks section: the controls are in the viewport popover, and nothing here makes masks', () => {
     render(<MaterialMapsPanel colorMode="albedo" {...props} />);
     expect(screen.queryByRole('button', { name: /Material Masks/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Create masks' })).toBeNull();  });
+    expect(screen.queryByRole('button', { name: 'Create masks' })).toBeNull();
+  });
 
   it('R20 R20a it shows the five slot cards in order and none for the decomposition labels', () => {
     render(<MaterialMapsPanel colorMode="albedo" {...props} />);

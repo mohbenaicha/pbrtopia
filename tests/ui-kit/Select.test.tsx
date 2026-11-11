@@ -33,6 +33,27 @@ describe('Select', () => {
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
+  it('R22 a list that opens is scrolled into view (nearest), so inside a scrolling area it is not left hidden past the edge', async () => {
+    const scrolled = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function scrollIntoView(this: Element, arg?: boolean | ScrollIntoViewOptions) { scrolled(this.className, arg); };
+    try {
+      const user = userEvent.setup();
+      render(<Select label="Prompt enhancer model" options={models} value="gemini-3-flash" onChange={() => undefined} />);
+      expect(scrolled).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('combobox', { name: 'Prompt enhancer model' }));
+      expect(scrolled).toHaveBeenCalledTimes(1);
+      expect(scrolled).toHaveBeenCalledWith('ui-select__list', { block: 'nearest' });
+      cleanup();
+      scrolled.mockClear();
+      render(<Select label="Material" options={models} value="gemini-3-flash" onChange={() => undefined} searchable />);
+      await user.click(screen.getByRole('combobox', { name: 'Material' }));
+      expect(scrolled).toHaveBeenCalledWith('ui-select__popup', { block: 'nearest' }); // the filter box and the list move together
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
   it('R22 options with a group are listed under a heading for the group, one heading per run of the same group, and headings are not options', async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();

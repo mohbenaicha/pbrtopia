@@ -14,6 +14,7 @@ import { MaterialGeneratePanel } from '../panels/MaterialGeneratePanel';
 import { MaterialMapsPanel } from '../panels/MaterialMapsPanel';
 import { loadBaseMaterials } from '../panels/masks/loadBaseMaterials';
 import { describeMasksModel } from '../panels/masks/masksModelControls';
+import { MasksControls } from '../panels/masks/MasksControls';
 import { MaterialSetupOverlay } from '../panels/setup/MaterialSetupOverlay';
 import { useMaterialGeneration } from './useMaterialGeneration';
 import { useLeaveMaterialProject } from './useLeaveMaterialProject';
@@ -58,10 +59,6 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
   const previewTool = useMemo<PreviewTool>(() => ({ view: toolView, onSettled: releaseToolView }), [toolView, releaseToolView]);
   const maskView = useMaskView();
   const maskPalette = useMemo(() => (record === null ? null : (parseMasksRecord(record.masks)?.palette ?? null)), [record?.masks]);
-  const previewMasks = useMemo<PreviewMasks>(
-    () => ({ palette: maskPalette, overlay: maskView.overlay, onOverlayChange: maskView.onOverlay, panelOpen: maskView.open, onPanelOpenChange: maskView.onOpenChange }),
-    [maskPalette, maskView.overlay, maskView.onOverlay, maskView.open, maskView.onOpenChange],
-  );
 
   const { edit } = project;
   const changePreviewValues = useCallback((patch: Partial<PreviewValues>) => edit((current) => ({ ...current, preview: { ...current.preview, ...patch } })), [edit]);
@@ -71,6 +68,23 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
   }, [store, projectId]);
 
   const generation = useMaterialGeneration({ store, projectId, record, canWrite, project, mapsState, maps });
+  // The Material Masks controls live in the viewport's Mask display popover (masks R48); the popover builds them only while it is open.
+  const previewMasks: PreviewMasks = {
+    palette: maskPalette,
+    overlay: maskView.overlay,
+    onOverlayChange: maskView.onOverlay,
+    controls: (
+      <MasksControls
+        state={mapsState}
+        masksRecord={record?.masks}
+        canWrite={canWrite}
+        controller={maps}
+        readBlob={readBlob}
+        loadTable={loadBaseMaterials}
+        model={describeMasksModel({ generation, hasAlbedo: (mapsState.maps.albedo ?? mapsState.maps.diffuse) !== undefined })}
+      />
+    ),
+  };
   const [setupOpen, setSetupOpen] = useState(false); // generation R10: the Custom setup overlay
   useEffect(() => {
     if (!canWrite) setSetupOpen(false); // another tab took the project: nothing is left to confirm into
@@ -107,10 +121,6 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
             onAoParamsChange={(next) => project.edit((current) => ({ ...current, aoParams: next }))}
             colorMode={record.colorMode}
             canWrite={canWrite}
-            masksRecord={record.masks}
-            loadMaterialTable={loadBaseMaterials}
-            maskView={maskView}
-            masksModel={describeMasksModel({ generation, hasAlbedo: (mapsState.maps.albedo ?? mapsState.maps.diffuse) !== undefined })}
             onToolViewChange={setToolView}
           >
             <ExportSection dialog={exportDialog} />

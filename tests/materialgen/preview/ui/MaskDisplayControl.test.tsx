@@ -1,30 +1,28 @@
 // @vitest-environment jsdom
-import { useState } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MaskDisplayControl } from '../../../../src/materialgen/preview/ui/MaskDisplayControl';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const styles = readFileSync(resolve(process.cwd(), 'src/materialgen/preview/ui/maskDisplayControl.css'), 'utf8');
 
 afterEach(cleanup);
 
 type Props = Parameters<typeof MaskDisplayControl>[0];
-/** Stands in for the app: it keeps the panel's open state, as MaskView does, and passes it back. */
-function WithPanelState({ initialPanelOpen, ...props }: Omit<Props, 'panelOpen'> & { initialPanelOpen: boolean }): React.JSX.Element {
-  const [panelOpen, setPanelOpen] = useState(initialPanelOpen);
-  return (
+const setup = (patch: Partial<Props> = {}) => {
+  const props: Props = { hasLabels: true, overlay: false, onOverlayChange: vi.fn(), opacity: 0.5, onOpacityChange: vi.fn(), ...patch };
+  render(
     <>
-      <MaskDisplayControl {...props} panelOpen={panelOpen} onPanelOpenChange={(open) => { setPanelOpen(open); props.onPanelOpenChange(open); }} />
-      <button type="button" onClick={() => setPanelOpen((open) => !open)}>panel header</button>
-    </>
+      <MaskDisplayControl {...props} />
+      <button type="button">elsewhere</button>
+    </>,
   );
-}
-const setup = (patch: Partial<Omit<Props, 'panelOpen'>> & { initialPanelOpen?: boolean } = {}) => {
-  const { initialPanelOpen = false, ...rest } = patch;
-  const props = { hasLabels: true, overlay: false, onOverlayChange: vi.fn(), opacity: 0.5, onOpacityChange: vi.fn(), onPanelOpenChange: vi.fn(), ...rest };
-  render(<WithPanelState {...props} initialPanelOpen={initialPanelOpen} />);
   return props;
 };
 const icon = () => screen.getByRole('button', { name: 'Material Masks' });
+const popover = () => screen.queryByRole('dialog', { name: 'Mask display' });
 
 describe('materialgen/preview R28 R40 the Material Masks icon', () => {
   it('R28 the icon is always enabled and named Material Masks, also with no labels', () => {
@@ -33,15 +31,14 @@ describe('materialgen/preview R28 R40 the Material Masks icon', () => {
     expect(icon().getAttribute('data-testid')).toBe('preview-masks');
   });
 
-  it('R28 a click opens the Material Masks panel and shows the display options; a second click closes them', async () => {
-    const props = setup();
+  it('R28 a click opens the Mask display popover and lights the icon; a second click closes it', async () => {
+    setup();
     await userEvent.click(icon());
-    expect(props.onPanelOpenChange).toHaveBeenLastCalledWith(true);
-    expect(screen.getByRole('dialog', { name: 'Mask display' })).toBeTruthy();
+    expect(popover()).toBeTruthy();
     expect(icon().getAttribute('aria-expanded')).toBe('true');
     await userEvent.click(icon());
-    expect(props.onPanelOpenChange).toHaveBeenLastCalledWith(false);
-    expect(screen.queryByRole('dialog', { name: 'Mask display' })).toBeNull();
+    expect(popover()).toBeNull();
+    expect(icon().getAttribute('aria-expanded')).toBe('false');
   });
 
   it('R40 the options are the Mask overlay switch and the Overlay opacity slider', async () => {
@@ -62,49 +59,60 @@ describe('materialgen/preview R28 R40 the Material Masks icon', () => {
     expect(props.onOpacityChange).toHaveBeenCalledWith(0.8);
   });
 
-  it('R18 with no labels the switch is disabled and says why', async () => {
-    setup({ hasLabels: false });
+  it('R49 the popover holds the switch, then the opacity slider directly under it, then the Material Masks controls', async () => {
+    setup({ controls: <p data-testid="masks-controls">controls</p> });
+    await userEvent.click(icon());
+    const toggle = screen.getByRole('switch', { name: 'Mask overlay' });
+    const opacity = screen.getByRole('slider', { name: 'Overlay opacity' });
+    const controls = screen.getByTestId('masks-controls');
+    const follows = (a: Node, b: Node): boolean => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    expect(follows(toggle, opacity)).toBe(true);
+    expect(follows(opacity, controls)).toBe(true);
+    expect(popover()?.contains(controls)).toBe(true);
+  });
+
+  it('R49 the controls are built only while the popover is open', async () => {
+    setup({ controls: <p data-testid="masks-controls">controls</p> });
+    expect(screen.queryByTestId('masks-controls')).toBeNull();
+    await userEvent.click(icon());
+    expect(screen.getByTestId('masks-controls')).toBeTruthy();
+    await userEvent.click(icon());
+    expect(screen.queryByTestId('masks-controls')).toBeNull();
+  });
+
+  it('R18 R49 with no labels the switch is disabled and says why, and the controls are not offered', async () => {
+    setup({ hasLabels: false, controls: <p data-testid="masks-controls">controls</p> });
     await userEvent.click(icon());
     const toggle = screen.getByRole('switch', { name: 'Mask overlay' }) as HTMLInputElement;
     expect(toggle.disabled).toBe(true);
-    expect(toggle.closest('label')?.getAttribute('title')).toBe('There are no masks yet. Create them in Material Masks.');
+    expect(toggle.closest('label')?.getAttribute('title')).toBe('There are no masks yet. Generate the material first.');
+    expect(screen.getByRole('slider', { name: 'Overlay opacity' })).toBeTruthy();
+    expect(screen.queryByTestId('masks-controls')).toBeNull();
   });
 
-  it('R28 Escape closes the options and the icon goes inactive, the panel stays open, and the next click opens the options again', async () => {
-    const props = setup();
+  it('R28 Escape closes the popover and the icon goes inactive; the next click opens it again', async () => {
+    setup();
     await userEvent.click(icon());
     await userEvent.keyboard('{Escape}');
-    expect(screen.queryByRole('dialog', { name: 'Mask display' })).toBeNull();
+    expect(popover()).toBeNull();
     expect(icon().getAttribute('aria-expanded')).toBe('false');
-    expect(props.onPanelOpenChange).toHaveBeenCalledTimes(1); // the panel was not asked to close
     await userEvent.click(icon());
-    expect(screen.getByRole('dialog', { name: 'Mask display' })).toBeTruthy();
+    expect(popover()).toBeTruthy();
     expect(icon().getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('R28 a click elsewhere closes the options and the icon goes inactive; one click on the icon opens them again', async () => {
+  it('R28 a click elsewhere closes the popover and the icon goes inactive; one click on the icon opens it again', async () => {
     setup();
     await userEvent.click(icon());
-    await userEvent.click(screen.getByRole('button', { name: 'panel header' }));
-    expect(screen.queryByRole('dialog', { name: 'Mask display' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'elsewhere' }));
+    expect(popover()).toBeNull();
     expect(icon().getAttribute('aria-expanded')).toBe('false');
     await userEvent.click(icon());
-    expect(screen.getByRole('dialog', { name: 'Mask display' })).toBeTruthy();
-    expect(icon().getAttribute('aria-expanded')).toBe('true');
+    expect(popover()).toBeTruthy();
   });
 
-  it('R28 closing the panel from its own header closes the options and the icon goes inactive', async () => {
-    setup();
-    await userEvent.click(icon());
-    fireEvent.click(screen.getByRole('button', { name: 'panel header' })); // flips the panel to closed without a pointer-down outside
-    expect(screen.queryByRole('dialog', { name: 'Mask display' })).toBeNull();
-    expect(icon().getAttribute('aria-expanded')).toBe('false');
-  });
-
-  it('R28 with the panel already open from its own header the icon is inactive and one click opens the options', async () => {
-    setup({ initialPanelOpen: true });
-    expect(icon().getAttribute('aria-expanded')).toBe('false');
-    await userEvent.click(icon());
-    expect(screen.getByRole('dialog', { name: 'Mask display' })).toBeTruthy();
+  it('R28 the popover scrolls inside itself: its stylesheet bounds the height and scrolls the overflow, so a tall list never makes the app shell scroll', () => {
+    expect(styles).toMatch(/max-height:\s*calc\(100vh/);
+    expect(styles).toMatch(/overflow-y:\s*auto/);
   });
 });

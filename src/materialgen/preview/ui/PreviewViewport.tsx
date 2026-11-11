@@ -35,13 +35,12 @@ export interface PreviewTool {
   onSettled: () => void;
 }
 
-/** What the Material Masks icon and the overlay share with the right panel's Material Masks section (R28, R40). */
+/** What the app hands the Material Masks icon and the overlay (R28, R40). */
 export interface PreviewMasks {
   palette: readonly PaletteEntry[] | null; // from the masks record; null when the material has none
   overlay: boolean; // session-only switch
   onOverlayChange(on: boolean): void;
-  panelOpen: boolean; // the Material Masks section of the right panel is open
-  onPanelOpenChange(open: boolean): void;
+  controls: React.ReactNode; // the Material Masks controls shown in the icon's popover under the opacity slider (masks R49); the app owns them
 }
 
 /** Where the project thumbnail goes (R54): written while `enabled`; the saver is handed out so closing the project can ask for it, and withdrawn when the preview goes. */
@@ -105,8 +104,7 @@ export function PreviewViewport({ store, mapsState, readBlob, values, onValuesCh
               onOverlayChange={masks.onOverlayChange}
               opacity={prefs.maskOverlayOpacity}
               onOpacityChange={(maskOverlayOpacity) => changePrefs({ maskOverlayOpacity })}
-              panelOpen={masks.panelOpen}
-              onPanelOpenChange={masks.onPanelOpenChange}
+              controls={masks.controls}
             />
           </>
         }

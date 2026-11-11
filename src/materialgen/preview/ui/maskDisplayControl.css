@@ -1,6 +1,11 @@
+/* The popover is as wide as the viewport settings and scrolls inside itself: it starts about 165px down, under the icon stack, so 240px leaves it clear of the bottom of the viewport (preview R28). */
 .mask-display {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  min-width: 17rem;
+  width: 320px;
+  max-width: calc(100vw - 2 * var(--space-4));
+  max-height: calc(100vh - 240px);
+  overflow-y: auto;
+  padding-right: var(--space-2); /* keeps the scroll bar beside the rows, never over them */
 }
