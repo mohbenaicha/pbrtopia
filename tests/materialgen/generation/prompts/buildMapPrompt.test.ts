@@ -108,9 +108,9 @@ describe('materialgen/generation R35 packed images', () => {
     expect(text).toContain('The remaining space is plain mid grey.');
   });
 
-  it('R35 a pack that fills its canvas exactly does not mention grey space; one with margin does', () => {
-    expect(prompt(['albedo', 'normal', 'height'], layoutOf(3, [[932, 300]]))).not.toContain('plain mid grey');
-    expect(prompt(['albedo', 'normal', 'height'], layoutOf(3, [[1000, 300]]))).toContain('The remaining space is plain mid grey.');
+  it('R35 only an empty cell is mentioned as grey space: a pack with no empty cell never is, whatever the canvas', () => {
+    expect(prompt(['albedo', 'normal', 'height'], layoutOf(3, [[900, 300]]))).not.toContain('plain mid grey');
+    expect(prompt(['albedo', 'normal', 'height'], layoutOf(3, [[1000, 300]]))).not.toContain('plain mid grey');
   });
 
   it('R35 R36 a packed follower holding Normal and Height carries both follow sentences once', () => {

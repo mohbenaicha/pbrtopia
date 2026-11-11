@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CanvasRule } from '@shared/generation/catalog/canvasRules';
 import { KNOWN_MODELS } from '@shared/generation/catalog/knownModels';
-import { chooseLayout, gridName, MIN_TILE_SIDE_PX, TILE_GAP_PX } from '@mat/generation/layout/chooseLayout';
+import { chooseLayout, gridName, MIN_TILE_SIDE_PX } from '@mat/generation/layout/chooseLayout';
 
 const rule = (id: string): CanvasRule => KNOWN_MODELS.find((model) => model.id === id)!.canvases!;
 const gpt = rule('gpt-image-2.5-sunburst');
@@ -31,12 +31,12 @@ describe('materialgen/generation R21 R23 layouts', () => {
   it('R23 on a GPT model at 2K three maps are judged 3x1 against 2x2 by tile side, and the larger wins', () => {
     const layout = choose(gpt, '2K', 3);
     expect(gridName(layout.grid)).toBe('3x1');
-    expect(layout.tileSide).toBeGreaterThan(1016); // the 2x2 on the 2048 square would give (2048 - 16) / 2
+    expect(layout.tileSide).toBeGreaterThan(1024); // the 2x2 on the 2048 square would give 2048 / 2
     expect(layout.canvas.width * layout.canvas.height).toBeLessThanOrEqual(2048 * 2048);
   });
 
-  it('R23 ties prefer fewer empty cells: 3x1 on 932x300 and 2x2 on 616x616 both give tiles of 300, and 3x1 has no empty cell', () => {
-    const layout = choose(listRule([[616, 616], [932, 300]]), '1K', 3);
+  it('R23 ties prefer fewer empty cells: 3x1 on 900x300 and 2x2 on 600x600 both give tiles of 300, and 3x1 has no empty cell', () => {
+    const layout = choose(listRule([[600, 600], [900, 300]]), '1K', 3);
     expect(layout.tileSide).toBe(300);
     expect(gridName(layout.grid)).toBe('3x1');
     expect(layout.emptyCells).toBe(0);
@@ -53,29 +53,26 @@ describe('materialgen/generation R21 R23 layouts', () => {
     expect(gridName(layout.grid)).toBe('2x1');
   });
 
-  it('R23 a Gemini model with no 2:1 ratio packs two maps on the nearest listed ratios by tile side, leaving the rest as margin', () => {
+  it('R23 a Gemini model with no 2:1 ratio packs two maps on the nearest listed ratios by tile side, the cells simply dividing that canvas', () => {
     const layout = choose(gemini, '1K', 2);
-    expect(layout.tileSide).toBe(504); // (1024 - 16) / 2 on the 16:9 canvas 1024 x 576
+    expect(layout.tileSide).toBe(512); // the shorter side of the 512 x 576 cells of the 16:9 canvas 1024 x 576
     expect(gridName(layout.grid)).toBe('2x1');
     expect(layout.canvas).toEqual({ width: 1024, height: 576 });
   });
 
-  it('R23 the tiles are squares of one side, separated by the 16 px gap, centred, in reading order, and inside the canvas', () => {
-    const layout = choose(listRule([[932, 300]]), '1K', 3);
+  it('R23 the tiles are equal cells that touch: no gap, no margin, in reading order, covering the canvas', () => {
+    const layout = choose(listRule([[900, 300]]), '1K', 3);
     expect(layout.tiles).toEqual([
       { x: 0, y: 0, width: 300, height: 300 },
-      { x: 316, y: 0, width: 300, height: 300 },
-      { x: 632, y: 0, width: 300, height: 300 },
+      { x: 300, y: 0, width: 300, height: 300 },
+      { x: 600, y: 0, width: 300, height: 300 },
     ]);
-    expect(layout.tiles[1]!.x - (layout.tiles[0]!.x + layout.tiles[0]!.width)).toBe(TILE_GAP_PX);
-    const centred = choose(listRule([[1000, 400]]), '1K', 2);
-    const [first, second] = centred.tiles as [typeof centred.tiles[0], typeof centred.tiles[0]];
-    expect(first.x).toBe(1000 - (second.x + second.width)); // the margin is the same on both sides
-    for (const tile of centred.tiles) {
-      expect(tile.x).toBeGreaterThanOrEqual(0);
-      expect(tile.x + tile.width).toBeLessThanOrEqual(1000);
-      expect(tile.y + tile.height).toBeLessThanOrEqual(400);
-    }
+    const wide = choose(listRule([[1000, 400]]), '1K', 2);
+    expect(wide.tiles).toEqual([
+      { x: 0, y: 0, width: 500, height: 400 },
+      { x: 500, y: 0, width: 500, height: 400 },
+    ]);
+    expect(wide.tileSide).toBe(400);
   });
 
   it('R21 in 2x2 the fourth cell is empty and three tiles are placed in reading order', () => {
@@ -100,7 +97,7 @@ describe('materialgen/generation R22 R25 canvases and too-small packs', () => {
     if (!choice.ok) {
       expect(choice.reason).toBe('tiles-too-small');
       expect(choice.tileSide).toBeLessThan(MIN_TILE_SIDE_PX);
-      expect(choice.tileSide).toBe(189); // 3x1: (600 - 32) / 3 rounded down
+      expect(choice.tileSide).toBe(200); // 3x1: 600 / 3
     }
   });
 

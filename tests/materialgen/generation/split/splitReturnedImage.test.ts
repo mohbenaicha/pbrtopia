@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CanvasRule } from '@shared/generation/catalog/canvasRules';
 import type { PixelImage } from '@mat/maps';
 import { chooseLayout, type PackedLayout } from '@mat/generation/layout/chooseLayout';
-import { checkReturnedSize, computeTileCrop, describeAspect, labelImage, splitReturnedImage } from '@mat/generation/split/splitReturnedImage';
+import { checkReturnedSize, computeTileCrop, describeAspect, labelImage, splitReturnedImage, type CropRect } from '@mat/generation/split/splitReturnedImage';
 
 const listRule = (canvases: Array<[number, number]>): CanvasRule => ({ kind: 'list', byResolution: { '1K': canvases.map(([width, height]) => ({ width, height })) } });
 const layoutOf = (count: number, canvas: [number, number]): PackedLayout => {
@@ -56,30 +56,29 @@ describe('materialgen/generation R48 R49 R53 splitting', () => {
     }
   });
 
-  it('R48 each tile is cut by its cell with an inset of 2% of the tile side, at least 4 px, on every side', () => {
-    const layout = layoutOf(3, [932, 300]); // tiles of 300 px: inset 6
-    expect(computeTileCrop(layout.tiles[0]!, layout, 932, 300)).toEqual({ x: 6, y: 6, width: 288, height: 288 });
-    expect(computeTileCrop(layout.tiles[1]!, layout, 932, 300)).toEqual({ x: 322, y: 6, width: 288, height: 288 });
-    const small = layoutOf(2, [544, 256]); // tiles of 256 px: 2% is 5
-    expect(computeTileCrop(small.tiles[0]!, small, 544, 256).x).toBe(13); // the grid is centred (8 px margin), plus the inset 5
-    const tiny = layoutOf(2, [1000, 500]); // tiles of 492
-    expect(computeTileCrop(tiny.tiles[0]!, tiny, 1000, 500).x).toBe(10);
+  it('R48 each tile is cut exactly to its cell, with no inset', () => {
+    const layout = layoutOf(3, [900, 300]);
+    expect(computeTileCrop(layout.tiles[0]!, layout, 900, 300)).toEqual({ x: 0, y: 0, width: 300, height: 300 });
+    expect(computeTileCrop(layout.tiles[1]!, layout, 900, 300)).toEqual({ x: 300, y: 0, width: 300, height: 300 });
+    const stack = layoutOf(2, [256, 512]); // 1x2: cells of 256 x 256
+    expect(computeTileCrop(stack.tiles[1]!, stack, 256, 512)).toEqual({ x: 0, y: 256, width: 256, height: 256 });
   });
 
-  it('R48 the inset has a floor of 4 px', () => {
-    const tiles = [{ x: 0, y: 0, width: 150, height: 150 }, { x: 166, y: 0, width: 150, height: 150 }]; // 2% of 150 is 3
-    const layout: PackedLayout = { grid: { cols: 2, rows: 1 }, canvas: { width: 316, height: 150 }, tileSide: 150, tiles, emptyCells: 0 };
-    expect(computeTileCrop(tiles[0]!, layout, 316, 150).x).toBe(4);
+  it('R48 neighbouring crops touch: no pixel is lost between them', () => {
+    const layout = layoutOf(3, [900, 300]);
+    const [a, b, c] = layout.tiles.map((tile) => computeTileCrop(tile, layout, 900, 300)) as [CropRect, CropRect, CropRect];
+    expect(b.x).toBe(a.x + a.width);
+    expect(c.x).toBe(b.x + b.width);
   });
 
   it('R48 the cut pixels come from the tile, not from the next one', () => {
-    const layout = layoutOf(3, [932, 300]);
-    const outcome = splitReturnedImage('Image 1', layout, coordinates(932, 300));
+    const layout = layoutOf(3, [900, 300]);
+    const outcome = splitReturnedImage('Image 1', layout, coordinates(900, 300));
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
     expect(outcome.tiles).toHaveLength(3);
-    expect(outcome.tiles[1]!.data[0]).toBe(322 % 256); // red of the first pixel of the second tile: x = 316 + inset 6
-    expect(outcome.tiles[1]!.data[1]).toBe(6); // green: y = 6
+    expect(outcome.tiles[1]!.data[0]).toBe(300 % 256); // red of the first pixel of the second tile: x = 300
+    expect(outcome.tiles[1]!.data[1]).toBe(0); // green: y = 0
   });
 
   it('R49 a returned size one pixel short of the canvas still splits by fractions and reads nothing beyond the image', () => {

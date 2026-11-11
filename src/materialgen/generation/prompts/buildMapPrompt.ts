@@ -1,4 +1,4 @@
-import { TILE_GAP_PX, type PackedLayout } from '../layout/chooseLayout';
+import type { PackedLayout } from '../layout/chooseLayout';
 import type { PlanMap } from '../plan/planTypes';
 
 export type ColorModeName = 'albedo' | 'diffuse';
@@ -52,13 +52,6 @@ function describeArrangement(layout: PackedLayout, names: readonly string[]): st
   return `${grid}, in reading order from ${direction}: ${names.map((name, index) => `${ORDINALS[index]} ${name}`).join(', ')}${count > 0 ? '.' : ''}`;
 }
 
-/** Whether the grid leaves plain canvas: a cell without a map, or margin around the grid (R23, R35). */
-function leavesFreeSpace(layout: PackedLayout): boolean {
-  if (layout.emptyCells > 0) return true;
-  const { cols, rows } = layout.grid;
-  return cols * layout.tileSide + (cols - 1) * TILE_GAP_PX < layout.canvas.width || rows * layout.tileSide + (rows - 1) * TILE_GAP_PX < layout.canvas.height;
-}
-
 function buildRecipe({ maps, layout, colorMode, follower }: Omit<MapPromptInput, 'userText'>): string {
   const names = maps.map((map) => `${mapName(map, colorMode)} map`);
   const parts: string[] = [];
@@ -67,7 +60,7 @@ function buildRecipe({ maps, layout, colorMode, follower }: Omit<MapPromptInput,
   } else {
     parts.push(`Generate an image comprised of ${maps.length} maps of ${TOP_DOWN}, ${describeArrangement(layout, names)} Maps have no separators or labels, just the seamless texture maps equal in size.`);
     maps.forEach((map, index) => parts.push(`The ${ORDINALS[index]} map is the ${names[index]}: ${describeMap(map, colorMode)}.`));
-    if (leavesFreeSpace(layout)) parts.push('The remaining space is plain mid grey.');
+    if (layout.emptyCells > 0) parts.push('The remaining space is plain mid grey.');
   }
   if (follower) parts.push(describeFollowing(maps));
   return parts.join(' ');

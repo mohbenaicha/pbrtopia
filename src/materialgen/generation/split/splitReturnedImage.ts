@@ -4,9 +4,6 @@ import type { PackedLayout, TileRect } from '../layout/chooseLayout';
 /** R47: the aspect of a returned image may differ from its canvas by this share, and a tile must have at least this many returned pixels per side (proposal). */
 export const ASPECT_TOLERANCE = 0.01;
 export const MIN_RETURNED_TILE_PX = 64;
-/** R48: the inset on every side of a tile, a share of the tile side with a floor (proposals; EXPERIMENT(GEN-2) tunes them). */
-export const INSET_SHARE = 0.02;
-export const MIN_INSET_PX = 4;
 
 const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
 
@@ -37,7 +34,7 @@ export interface CropRect {
   height: number;
 }
 
-/** R48, R49: where a tile lies in the returned image: its cell as a fraction of the canvas applied to the returned size, then the inset; nothing beyond the image. A lone map is the whole image. */
+/** R48, R49: where a tile lies in the returned image: its cell as a fraction of the canvas applied to the returned size, no inset; nothing beyond the image. A lone map is the whole image. */
 export function computeTileCrop(tile: TileRect, layout: PackedLayout, returnedWidth: number, returnedHeight: number): CropRect {
   if (layout.tiles.length === 1) return { x: 0, y: 0, width: returnedWidth, height: returnedHeight };
   const { canvas } = layout;
@@ -45,10 +42,9 @@ export function computeTileCrop(tile: TileRect, layout: PackedLayout, returnedWi
   const top = Math.round((tile.y / canvas.height) * returnedHeight);
   const right = Math.round(((tile.x + tile.width) / canvas.width) * returnedWidth);
   const bottom = Math.round(((tile.y + tile.height) / canvas.height) * returnedHeight);
-  const inset = Math.max(MIN_INSET_PX, Math.round(INSET_SHARE * Math.min(right - left, bottom - top)));
-  const x = Math.max(0, left + inset);
-  const y = Math.max(0, top + inset);
-  return { x, y, width: Math.max(0, Math.min(returnedWidth, right - inset) - x), height: Math.max(0, Math.min(returnedHeight, bottom - inset) - y) };
+  const x = Math.max(0, left);
+  const y = Math.max(0, top);
+  return { x, y, width: Math.max(0, Math.min(returnedWidth, right) - x), height: Math.max(0, Math.min(returnedHeight, bottom) - y) };
 }
 
 function cropPixels(image: PixelImage, rect: CropRect): PixelImage {

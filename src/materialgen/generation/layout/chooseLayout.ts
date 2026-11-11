@@ -1,7 +1,6 @@
 import { listCanvases, type Canvas, type CanvasRule } from '@shared/generation';
 
-/** Generation R12, R21, R23: the gap between tiles and the smallest tile side a pack may have (R25). Both are proposals of the spec. */
-export const TILE_GAP_PX = 16;
+/** Generation R25: the smallest tile side a pack may have (a proposal of the spec). */
 export const MIN_TILE_SIDE_PX = 256;
 
 export interface GridShape {
@@ -27,8 +26,8 @@ export interface TileRect {
 export interface PackedLayout {
   grid: GridShape;
   canvas: Canvas;
-  tileSide: number; // the side of one square tile (the whole canvas side for a lone map)
-  tiles: TileRect[]; // one per map, in the order the maps were given (reading order of the grid)
+  tileSide: number; // the shorter side of a cell (the shorter canvas side for a lone map)
+  tiles: TileRect[]; // one cell per map, in the order the maps were given (reading order of the grid)
   emptyCells: number;
 }
 
@@ -43,18 +42,15 @@ function placeGrid(canvas: Canvas, grid: GridShape, mapCount: number): PackedLay
   if (mapCount === 1) {
     return { grid, canvas, tileSide: Math.min(canvas.width, canvas.height), tiles: [{ x: 0, y: 0, width: canvas.width, height: canvas.height }], emptyCells: 0 };
   }
-  const side = Math.max(0, Math.floor(Math.min((canvas.width - (grid.cols - 1) * TILE_GAP_PX) / grid.cols, (canvas.height - (grid.rows - 1) * TILE_GAP_PX) / grid.rows)));
-  const gridWidth = grid.cols * side + (grid.cols - 1) * TILE_GAP_PX;
-  const gridHeight = grid.rows * side + (grid.rows - 1) * TILE_GAP_PX;
-  const left = Math.floor((canvas.width - gridWidth) / 2); // the leftover canvas is a plain margin (R23)
-  const top = Math.floor((canvas.height - gridHeight) / 2);
+  const cellWidth = Math.floor(canvas.width / grid.cols); // equal cells that touch: no gap, margin or inset (R23, as Materialize)
+  const cellHeight = Math.floor(canvas.height / grid.rows);
   const tiles: TileRect[] = [];
   for (let index = 0; index < mapCount; index += 1) {
     const column = index % grid.cols;
     const row = Math.floor(index / grid.cols);
-    tiles.push({ x: left + column * (side + TILE_GAP_PX), y: top + row * (side + TILE_GAP_PX), width: side, height: side });
+    tiles.push({ x: column * cellWidth, y: row * cellHeight, width: cellWidth, height: cellHeight });
   }
-  return { grid, canvas, tileSide: side, tiles, emptyCells: grid.cols * grid.rows - mapCount };
+  return { grid, canvas, tileSide: Math.min(cellWidth, cellHeight), tiles, emptyCells: grid.cols * grid.rows - mapCount };
 }
 
 /** The squarest canvas wins for a lone map; at equal shape the bigger one (R23, third example). */

@@ -63,7 +63,7 @@ describe('materialgen/generation R25 R39 layouts and references', () => {
     expect(inspectPlan(packed, env()).cards[0]!.layout?.ok).toBe(true); // GPT at 1K packs three maps in tiles well over 256
     const narrow = { ...KNOWN_MODELS.find((model) => model.id === 'gpt-image-2.5-sunburst')!, id: 'narrow', canvases: { kind: 'list' as const, byResolution: { '1K': [{ width: 600, height: 300 }] } } };
     const small = inspectPlan(setImageSettings(packed, 0, { provider: 'openai', modelId: 'narrow', resolutionKey: '1K', quality: 'medium' }), env({ catalog: { gemini: full.gemini, openai: [narrow] } }));
-    expect(small.cards[0]!.problem).toBe('Too many maps for this size: tiles would be 189 px. Choose a larger size or move a map to another image.');
+    expect(small.cards[0]!.problem).toBe('Too many maps for this size: tiles would be 200 px. Choose a larger size or move a map to another image.');
     expect(small.problem).toBe(small.cards[0]!.problem);
   });
 
