@@ -5,8 +5,8 @@ import type { CallContext, ProviderError, Result } from './providerTypes';
 export interface GenerateRequest {
   model: string;
   prompt: string; // the enhanced prompt
-  atlas: Blob; // the captured atlas, always first
-  references: Blob[];
+  images: Blob[]; // the pictures the answer is made from, in order, the first being the lead; empty = a text-to-image request
+  references: Blob[]; // sent after the images
   resolutionKey: ResolutionKey;
   sizePx: number; // the square side the key stands for
   canvas?: Canvas; // custom generation R12: the shape of the answer (one of the model's canvases); a square of sizePx when absent

@@ -1,0 +1,125 @@
+/* The op dialog: the before and after picture beside the controls on a wide window, stacked on a narrow one (imageops R17). */
+.op-dialog {
+  --compare-frame-height: clamp(220px, 50vh, 640px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .op-dialog {
+    --compare-frame-height: clamp(180px, 34vh, 360px);
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.op-dialog__picture {
+  min-width: 0;
+}
+
+.op-dialog__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.op-dialog__error {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+  box-shadow: inset 3px 0 0 var(--error);
+  color: var(--text);
+}
+
+/* Imageops R52: the Crop and Mirror panel, which sits in the left panel in place of the slot cards. */
+.tool-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.tool-panel__title {
+  margin: 0;
+  font-size: var(--font-size-heading);
+  font-weight: 600;
+}
+
+.tool-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.tool-panel__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+/* Imageops R57: the four quadrants laid out as the picture is. */
+.mirror-grid {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: var(--space-2) var(--space-5);
+}
+
+.tool-panel__readout {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.tool-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* The category sections are apart from each other, and every control is one line: label, track, number, reset. */
+.op-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.op-controls__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.op-controls .ui-slider[data-layout='row'] {
+  grid-template-columns: 7rem minmax(0, 1fr) auto;
+}
+
+.op-control__readout {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.op-control__number {
+  box-sizing: border-box;
+  width: 3.75rem;
+  min-height: var(--control-height);
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+  color: var(--number);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.op-control__number:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}

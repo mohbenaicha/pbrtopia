@@ -90,6 +90,60 @@ describe('Select', () => {
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
+  describe('searchable (masks R37)', () => {
+    const materials = [
+      { value: 'Brick', label: 'Brick', detail: '0.80 / 0.00', group: 'Suggested' },
+      { value: 'Steel', label: 'Steel', detail: '0.30 / 1.00', group: 'All materials' },
+      { value: 'Stone', label: 'Stone', detail: '0.90 / 0.00', group: 'All materials' },
+    ];
+    const open = async (onChange = vi.fn()) => {
+      const user = userEvent.setup();
+      render(<Select label="Material" options={materials} value="Brick" onChange={onChange} searchable noMatchText="No material matches" title="Estimated default" />);
+      await user.click(screen.getByRole('combobox', { name: 'Material' }));
+      return { user, onChange };
+    };
+
+    it('R37 opening puts the cursor in a filter box, and the options show their detail', async () => {
+      await open();
+      expect(document.activeElement).toBe(screen.getByRole('searchbox'));
+      expect(screen.getByRole('option', { name: /Steel/ }).textContent).toContain('0.30 / 1.00');
+      expect(screen.getByRole('combobox', { name: 'Material' }).getAttribute('title')).toBe('Estimated default');
+    });
+
+    it('R37 typing filters by a case-insensitive part of the name, and the headings follow the options that are left', async () => {
+      const { user } = await open();
+      await user.keyboard('ST');
+      expect(screen.getAllByRole('option').map((option) => option.textContent?.split(/\d/)[0]?.trim())).toEqual(['Steel', 'Stone']);
+      expect(screen.queryByText('Suggested')).toBeNull();
+    });
+
+    it('R37 a filter that matches nothing says so and offers nothing to choose', async () => {
+      const { user } = await open();
+      await user.keyboard('zzz');
+      expect(screen.queryAllByRole('option')).toHaveLength(0);
+      expect(screen.getByText('No material matches')).toBeTruthy();
+    });
+
+    it('R37 the arrow keys and Enter choose from the filtered list, and Escape closes it without choosing', async () => {
+      const { user, onChange } = await open();
+      await user.keyboard('st{ArrowDown}{Enter}');
+      expect(onChange).toHaveBeenCalledWith('Stone');
+      expect(screen.queryByRole('listbox')).toBeNull();
+      await user.click(screen.getByRole('combobox', { name: 'Material' }));
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('listbox')).toBeNull();
+      expect(onChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('R37 the filter starts empty each time the list opens', async () => {
+      const { user } = await open();
+      await user.keyboard('zzz{Escape}');
+      await user.click(screen.getByRole('combobox', { name: 'Material' }));
+      expect(screen.getAllByRole('option')).toHaveLength(3);
+      expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('');
+    });
+  });
+
   it('R22 an error message is tied to the select', () => {
     render(<Select label="Model" options={models} value="other" onChange={() => undefined} error="Pick a model" />);
     const box = screen.getByRole('combobox', { name: 'Model' });

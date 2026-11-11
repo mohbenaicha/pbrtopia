@@ -43,4 +43,14 @@ describe('TextInput', () => {
     await user.type(screen.getByLabelText('Shown'), 'zz');
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it('R12 onBlur is called when focus leaves the field', async () => {
+    const onBlur = vi.fn();
+    const user = userEvent.setup();
+    render(<TextInput label="Amount" value="v" onChange={() => undefined} onBlur={onBlur} />);
+    await user.click(screen.getByLabelText('Amount'));
+    expect(onBlur).not.toHaveBeenCalled();
+    await user.tab();
+    expect(onBlur).toHaveBeenCalledTimes(1);
+  });
 });

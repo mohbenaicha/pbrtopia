@@ -1,3 +1,4 @@
+import { vaultScope } from '../appId';
 import { createSalt } from './crypto/createSalt';
 import { decryptSecret } from './crypto/decryptSecret';
 import { deriveKeyFromPassword } from './crypto/deriveKeyFromPassword';
@@ -17,6 +18,7 @@ interface KeyVaultDeps {
   requestPassword: PasswordRequest;
   kdfIterations?: number; // only used when a vault is created; unlock uses the iterations stored in the record
   channel?: VaultChannel | null; // how other tabs are told; left out = BroadcastChannel when the browser has it, null = none
+  appId?: string; // names the sealed data and the default channel for this app; none = the projection app's own names
 }
 
 interface UnlockedSession {
@@ -28,7 +30,6 @@ interface UnlockedSession {
 
 const isProvider = (value: unknown): value is Provider => (PROVIDERS as readonly unknown[]).includes(value);
 const hasWebCrypto = (): boolean => typeof crypto !== 'undefined' && crypto.subtle !== undefined;
-const additionalDataFor = (provider: Provider): string => `texture-lab-keys/v1/${provider}`;
 const sameBytes = (a: Uint8Array, b: Uint8Array): boolean => a.length === b.length && a.every((value, i) => value === b[i]);
 
 // R1-R3, R5-R7, R10, R12: the only holder of decrypted keys. A key is returned by getKey and nowhere else; nothing here logs or
@@ -38,6 +39,7 @@ export class KeyVault {
   private readonly requestPassword: PasswordRequest;
   private readonly kdfIterations: number;
   private readonly channel: VaultChannel | null;
+  private readonly scope: string;
   private record: VaultRecord | null = null;
   private loaded = false;
   private unreadable: string | null = null; // why the last read of the stored vault failed
@@ -51,8 +53,13 @@ export class KeyVault {
     this.storage = deps.storage;
     this.requestPassword = deps.requestPassword;
     this.kdfIterations = deps.kdfIterations ?? DEFAULT_KDF_ITERATIONS;
-    this.channel = deps.channel === undefined ? createBroadcastVaultChannel() : deps.channel;
+    this.scope = vaultScope(deps.appId);
+    this.channel = deps.channel === undefined ? createBroadcastVaultChannel(this.scope) : deps.channel;
     this.channel?.onChanged(() => void this.onOtherTabChanged());
+  }
+
+  private additionalDataFor(provider: Provider): string {
+    return `${this.scope}/v1/${provider}`;
   }
 
   status(): 'none' | 'locked' | 'unlocked' {
@@ -202,11 +209,11 @@ export class KeyVault {
     if (!answer) return keyFailure('password-cancelled');
     try {
       const cryptoKey = await deriveKeyFromPassword(answer.password, record.kdf.salt, record.kdf.iterations);
-      if (!(await checkVerifier(cryptoKey, record.verifier))) return keyFailure('wrong-password');
+      if (!(await checkVerifier(cryptoKey, record.verifier, this.scope))) return keyFailure('wrong-password');
       const keys: Partial<Record<Provider, string>> = {};
       for (const provider of PROVIDERS) {
         const sealed = record.keys[provider];
-        const opened = sealed ? await decryptSecret(cryptoKey, sealed, additionalDataFor(provider)) : null;
+        const opened = sealed ? await decryptSecret(cryptoKey, sealed, this.additionalDataFor(provider)) : null;
         if (opened !== null) keys[provider] = opened; // a key that does not open (swapped or damaged) is left out
       }
       // Another tab may have changed the vault while the password was being typed: these keys then belong to an old record.
@@ -234,7 +241,7 @@ export class KeyVault {
         version: VAULT_VERSION,
         revision: 1,
         kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: this.kdfIterations, salt },
-        verifier: await makeVerifier(cryptoKey),
+        verifier: await makeVerifier(cryptoKey, this.scope),
         keys: { [provider]: await this.sealKey(cryptoKey, provider, plain) },
       };
     } catch {
@@ -279,7 +286,7 @@ export class KeyVault {
   }
 
   private async sealKey(cryptoKey: CryptoKey, provider: Provider, plain: string): Promise<SealedKey> {
-    return { ...(await encryptSecret(cryptoKey, plain, additionalDataFor(provider))), hint: plain.slice(-HINT_LENGTH), addedAt: new Date().toISOString() };
+    return { ...(await encryptSecret(cryptoKey, plain, this.additionalDataFor(provider))), hint: plain.slice(-HINT_LENGTH), addedAt: new Date().toISOString() };
   }
 
   // R10: a refused save writes nothing; this tab locks and reads the vault again.

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { ProjectStore } from '../ProjectStore';
+import type { SharedProjectStore } from '../SharedProjectStore';
 import type { ProjectSummary } from '../records/projectRecords';
 
-export type ListViewStore = Pick<ProjectStore, 'listProjects' | 'renameProject' | 'deleteProjects' | 'loadThumbnail'>;
+export type ListViewStore = Pick<SharedProjectStore, 'listProjects' | 'renameProject' | 'deleteProjects' | 'loadThumbnail'>;
 
 type ListLoad ={ state: 'loading' } | { state: 'failed'; message: string } | { state: 'ready'; projects: ProjectSummary[] };
 

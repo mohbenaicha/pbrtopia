@@ -1,8 +1,9 @@
+import { projectStoreNames } from '../../appId';
 import { OLDEST_READABLE_PROJECT_VERSION, SCHEMA_TOO_OLD_MESSAGE } from '../records/migrateProjectRecord';
 import { PROJECT_SCHEMA_VERSION } from '../records/projectRecords';
 import type { ZipEntry } from './readZipEntries';
 import { reject, shorten } from './zipRejection';
-import { APP_NAME, ZIP_LIMITS, type ExportManifest } from './zipFormat';
+import { ZIP_LIMITS, type ExportManifest } from './zipFormat';
 
 export function concatEntryBytes(entry: ZipEntry): Uint8Array {
   const bytes = new Uint8Array(entry.size);
@@ -25,9 +26,10 @@ export function parseJsonEntry(entry: ZipEntry): Record<string, unknown> {
   return reject(`"${shorten(entry.name)}" in the zip is not readable.`);
 }
 
-export function readManifestEntry(entry: ZipEntry): ExportManifest {
+export function readManifestEntry(entry: ZipEntry, appId?: string): ExportManifest {
   const raw = parseJsonEntry(entry);
-  if (raw['app'] !== APP_NAME) reject('This zip was not made by Texture Lab.');
+  const names = projectStoreNames(appId);
+  if (raw['app'] !== names.zipApp) reject(names.foreignZipMessage);
   const version = raw['schemaVersion'];
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) reject('The zip\'s manifest has no valid version.');
   if ((version as number) < OLDEST_READABLE_PROJECT_VERSION) reject(SCHEMA_TOO_OLD_MESSAGE, 'schema-too-old');

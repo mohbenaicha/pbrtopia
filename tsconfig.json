@@ -12,8 +12,13 @@
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": true,
     "isolatedModules": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@shared/*": ["./src/*"],
+      "@mat/*": ["./src/materialgen/*"]
+    }
   },
-  "include": ["src", "tests", "*.ts"]
+  "include": ["src", "tests"]
 }

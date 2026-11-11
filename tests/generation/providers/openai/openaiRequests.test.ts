@@ -9,7 +9,7 @@ import {
 } from '../../../../src/generation/providers/openai/openaiRequests';
 
 const png = (name = 'a'): Blob => new Blob([name], { type: 'image/png' });
-const base = { model: 'gpt-image-2.5-sunburst', prompt: 'weathered steel', resolutionKey: '2K' as ResolutionKey, sizePx: 2048, quality: 'high' as string | null, atlas: png('atlas'), references: [] as Blob[] };
+const base = { model: 'gpt-image-2.5-sunburst', prompt: 'weathered steel', resolutionKey: '2K' as ResolutionKey, sizePx: 2048, quality: 'high' as string | null, images: [png('atlas')], references: [] as Blob[] };
 
 function formOf(patch: Partial<typeof base> & { canvas?: { width: number; height: number } } = {}): FormData {
   const result = buildOpenAiImageForm({ ...base, ...patch });
@@ -67,7 +67,7 @@ describe('buildOpenAiImageForm (R7)', () => {
     expect(files).toHaveLength(3);
     expect(await Promise.all(files.map((file) => file.text()))).toEqual(['atlas', 'r1', 'r2']);
     expect(files.map((file) => file.type)).toEqual(['image/png', 'image/jpeg', 'image/webp']);
-    expect(files.map((file) => file.name)).toEqual(['atlas.png', 'reference-1.jpeg', 'reference-2.webp']);
+    expect(files.map((file) => file.name)).toEqual(['image-1.png', 'reference-1.jpeg', 'reference-2.webp']);
   });
 
   it('R7 a reference with no type is named as a PNG', () => {
@@ -87,7 +87,7 @@ describe('buildOpenAiImageForm (R7)', () => {
 
 describe('buildOpenAiEnhanceBody (R8)', () => {
   it('R33 sends one user message with the built enhancer text exactly as given and the atlas as a data URL', () => {
-    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-astra', prompt: 'built enhancer text', atlas: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: null });
+    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-astra', prompt: 'built enhancer text', image: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: null });
     expect(body.model).toBe('gpt-6-astra');
     expect(body.input).toHaveLength(1);
     const message = body.input[0];
@@ -97,12 +97,12 @@ describe('buildOpenAiEnhanceBody (R8)', () => {
   });
 
   it('R8 a level is sent as reasoning.effort', () => {
-    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-luna', prompt: 'weathered steel', atlas: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: 'none' });
+    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-luna', prompt: 'weathered steel', image: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: 'none' });
     expect(body.reasoning).toEqual({ effort: 'none' });
   });
 
   it('R8 no level sends no reasoning field at all', () => {
-    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-astra', prompt: 'weathered steel', atlas: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: null });
+    const body = buildOpenAiEnhanceBody({ model: 'gpt-6-astra', prompt: 'weathered steel', image: { mimeType: 'image/png', base64: 'QVRMQVM=' }, level: null });
     expect('reasoning' in body).toBe(false);
   });
 });

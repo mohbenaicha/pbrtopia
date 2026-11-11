@@ -1,4 +1,4 @@
-import type { MeshRecord, UnwrapReport } from '../../projection/engine';
+import type { MeshRecord, UnwrapReport } from './meshRecord';
 import { FieldProblem, readBlobKey, readChoice, readCount, readDuration, readFlag, readList, readNonEmptyText, readObject, readOptional, readText, readTimestamp, type RawRecord } from './fieldReaders';
 import { readCustomPlan, readCustomSetups } from './customPlanRecords';
 import { readPictures, readSlots } from './pictureRecords';

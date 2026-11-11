@@ -1,0 +1,4 @@
+/* when the options wrap in a narrow panel, each keeps its own width instead of stretching across the row */
+.preview-shading .ui-segmented__option {
+  flex: 0 0 auto;
+}

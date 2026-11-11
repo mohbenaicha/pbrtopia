@@ -6,11 +6,14 @@ export { exportModelWithPictures, type PictureToLayOver } from './exportModelWit
 export type { OverrideChannel, OverridePicture } from './materialPictures';
 export { thumbnailOfFile, type ModelTextureRecord, type TextureChannel } from './modelTextures';
 export type { ShadingMode } from './shadingModes';
+export { createLitLook } from './litLook';
+export { createMapAdjustUniforms, setMapAdjust, type MapAdjustUniforms } from './mapAdjustUniforms';
 export type { ViewportErrorCode, ViewportResult } from './viewportError';
 export { DEFAULT_VIEWPORT_SETTINGS, clampViewportSettings, type MapAdjust, type ViewportSettings } from './viewportSettings';
 export { ViewportCanvas } from './ui/ViewportCanvas';
 export { ViewportCorner } from './ui/ViewportCorner';
-export { ViewportSettingsPanel } from './ui/ViewportSettingsPanel';
+export { ViewportSettingsPanel, type ViewportSectionId } from './ui/ViewportSettingsPanel';
+export { SettingsSection, SettingsSubsection } from './ui/SettingsSection';
 export { HdriControls, LightControls, MeshControls, MetalControls, NormalControls, RoughnessControls, ShadingControls } from './ui/ViewportSettingsControls';
 export { HDRI_CHOICES } from './hdriCatalog';
 export type { ViewportHandle } from './viewportHandle';

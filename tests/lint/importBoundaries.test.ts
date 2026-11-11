@@ -69,6 +69,26 @@ describe('import boundaries (specs/architecture.md)', () => {
     }
   });
 
+  it('shared/materialgen-prep R31 rejects a viewport import of meshEdit and allows hiddenMarks', async () => {
+    const rules = await lintImport('src/viewport/loadModelAsset.ts', "import * as x from '../meshEdit/model/idPixels';");
+    expect(rules).toContain('no-restricted-imports');
+    expect(await lintImport('src/viewport/loadModelAsset.ts', "import * as x from '../hiddenMarks';")).not.toContain('no-restricted-imports');
+  });
+
+  it('shared/materialgen-prep R54 A9 rejects a shell import of app, projection, meshEdit, materialgen, hiddenMarks and appId', async () => {
+    for (const target of ['app/App', 'projection/mode', 'projection/engine/model/loadModel', 'meshEdit/model/idPixels', 'materialgen/maps/mapKinds', 'hiddenMarks', 'appId']) {
+      const rules = await lintImport('src/shell/AppShell.tsx', `import * as x from '../${target}';`);
+      expect(rules, target).toContain('no-restricted-imports');
+    }
+  });
+
+  it('shared/materialgen-prep R54 A9 allows a shell import of ui-kit, keys, generation, projects and viewport', async () => {
+    for (const target of ['ui-kit', 'keys', 'generation', 'projects/ProjectStore', 'viewport']) {
+      const rules = await lintImport('src/shell/AppShell.tsx', `import * as x from '../${target}';`);
+      expect(rules, target).not.toContain('no-restricted-imports');
+    }
+  });
+
   it('R21 rejects a ui-kit import of any other src folder', async () => {
     for (const target of ['viewport', 'app', 'keys', 'generation', 'projects', 'projection/engine']) {
       const rules = await lintImport('src/ui-kit/Button.tsx', `import * as x from '../${target}/index';`);

@@ -1,6 +1,5 @@
 .ui-icon {
   display: inline-block;
-  flex: none;
   width: var(--icon-size, 18px);
   height: var(--icon-size, 18px);
   color: inherit;

@@ -60,4 +60,17 @@ describe('Dialog', () => {
     await user.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it('R22 a click outside closes a dismissible dialog, unless closeOnOutsideClick is false; Escape still closes it then', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    const { rerender } = render(<Dialog open title="Password" onClose={onClose}>text</Dialog>);
+    await user.pointer({ keys: '[MouseLeft]', target: document.body });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    rerender(<Dialog open title="Password" onClose={onClose} closeOnOutsideClick={false}>text</Dialog>);
+    await user.pointer({ keys: '[MouseLeft]', target: document.body });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    await user.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
 });

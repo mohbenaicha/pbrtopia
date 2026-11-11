@@ -83,6 +83,77 @@
   bottom: calc(100% + var(--space-1));
 }
 
+/* A searchable select: a filter box above the list, both inside one floating box. */
+.ui-select__popup {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: var(--space-1);
+  border-radius: var(--radius-group);
+  background: var(--bg-button);
+  box-shadow: var(--shadow-overlay);
+}
+
+.ui-select__popup[data-opens-up] {
+  top: auto;
+  bottom: calc(100% + var(--space-1));
+}
+
+.ui-select__popup .ui-select__list {
+  position: static;
+  padding: 0;
+  max-height: 200px;
+  background: none;
+  box-shadow: none;
+}
+
+.ui-select__search {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--control-height);
+  margin-bottom: var(--space-1);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+  color: var(--text);
+  font: inherit;
+}
+
+.ui-select__search:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.ui-select__no-match {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-hint);
+}
+
+.ui-select__option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.ui-select__option-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-select__option-detail {
+  flex: none;
+  color: var(--text-hint);
+  font-size: var(--font-size-small);
+  font-variant-numeric: tabular-nums;
+}
+
 .ui-select__heading {
   padding: var(--space-2) var(--space-3) var(--space-1);
   color: var(--text-hint);

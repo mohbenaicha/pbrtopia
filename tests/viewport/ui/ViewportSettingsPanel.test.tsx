@@ -18,6 +18,20 @@ describe('ViewportSettingsPanel', () => {
     for (const name of ['Light', 'HDRI', 'Metal', 'Roughness', 'Normal', 'Shading', 'Mesh']) expect(screen.getByRole('group', { name })).toBeTruthy();
   });
 
+  it('materialgen preview R31 a list of section ids hides those sections and nothing else', () => {
+    render(<ViewportSettingsPanel settings={DEFAULT_VIEWPORT_SETTINGS} onChange={() => undefined} hiddenSections={['view']} />);
+    expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual(['Environment', 'Material']);
+    expect(screen.queryByRole('group', { name: 'Shading' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Mesh' })).toBeNull();
+  });
+
+  it('materialgen preview R42 extra material subsections show under Normal, inside the Material section', () => {
+    render(<ViewportSettingsPanel settings={DEFAULT_VIEWPORT_SETTINGS} onChange={() => undefined} hiddenSections={['view']} materialExtras={<p>extra controls</p>} />);
+    const material = screen.getByRole('heading', { level: 3, name: 'Material' }).parentElement!;
+    expect(within(material).getByText('extra controls')).toBeTruthy();
+    expect(within(material).getByRole('group', { name: 'Normal' }).compareDocumentPosition(within(material).getByText('extra controls')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('R14 Shading holds the Smooth | Flat choice (Smooth by default) and the Angle slider, which reads Off at 180; Mesh holds Wireframe', () => {
     panel();
     const shading = group('Shading');
@@ -115,6 +129,33 @@ describe('ViewportSettingsPanel', () => {
     expect(onChange).toHaveBeenLastCalledWith({ mapAdjust: { ...DEFAULT_VIEWPORT_SETTINGS.mapAdjust, roughContrast: 2.5 } });
     fireEvent.change(group('Metal').getByRole('slider', { name: 'Strength' }), { target: { value: '1.5' } });
     expect(onChange).toHaveBeenLastCalledWith({ mapAdjust: { ...DEFAULT_VIEWPORT_SETTINGS.mapAdjust, metalStrength: 1.5 } });
+  });
+
+  it('R14b Light Intensity and Rotation, the Metal, Roughness and Normal sliders and the Angle each have a Reset arrow that sets the default', () => {
+    const onChange = vi.fn();
+    const moved = { metalStrength: 2, metalContrast: 2, roughStrength: 2, roughContrast: 2, normalStrength: 2, normalContrast: 2 };
+    panel({ ...DEFAULT_VIEWPORT_SETTINGS, environmentIntensity: 2.5, environmentRotationDeg: 90, smoothAngleDeg: 40, mapAdjust: moved }, onChange);
+    const defaults = DEFAULT_VIEWPORT_SETTINGS;
+    fireEvent.click(group('Light').getByRole('button', { name: 'Reset Intensity' }));
+    expect(onChange).toHaveBeenLastCalledWith({ environmentIntensity: defaults.environmentIntensity });
+    fireEvent.click(group('Light').getByRole('button', { name: 'Reset Rotation' }));
+    expect(onChange).toHaveBeenLastCalledWith({ environmentRotationDeg: defaults.environmentRotationDeg });
+    fireEvent.click(group('Shading').getByRole('button', { name: 'Reset Angle' }));
+    expect(onChange).toHaveBeenLastCalledWith({ smoothAngleDeg: defaults.smoothAngleDeg });
+    fireEvent.click(group('Normal').getByRole('button', { name: 'Reset Contrast' }));
+    expect(onChange).toHaveBeenLastCalledWith({ mapAdjust: { ...moved, normalContrast: defaults.mapAdjust.normalContrast } });
+    fireEvent.click(group('Metal').getByRole('button', { name: 'Reset Strength' }));
+    expect(onChange).toHaveBeenLastCalledWith({ mapAdjust: { ...moved, metalStrength: defaults.mapAdjust.metalStrength } });
+  });
+
+  it('R14b a Reset arrow is disabled at the default, there is none for a switch, the dropdown or the Smooth | Flat choice, and it is disabled with its slider', () => {
+    const { unmount } = panel();
+    const resets = screen.getAllByRole('button').filter((button) => /^Reset /.test(button.getAttribute('aria-label') ?? ''));
+    expect(resets).toHaveLength(9); // Intensity, Rotation, six Metal/Roughness/Normal sliders, Angle
+    for (const reset of resets) expect((reset as HTMLButtonElement).disabled).toBe(true);
+    unmount();
+    panel({ ...DEFAULT_VIEWPORT_SETTINGS, autoRotate: true, environmentRotationDeg: 90 });
+    expect((group('Light').getByRole('button', { name: 'Reset Rotation' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('R14 the switches report their new value', async () => {

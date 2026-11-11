@@ -7,7 +7,7 @@ const ids = (provider: string): string[] => KNOWN_MODELS.filter((entry) => entry
 describe('knownModels', () => {
   it('R4 the shipped table is the verified table of providers.md 4.4 without the models past or at their shutdown', () => {
     expect(ids('gemini')).toEqual(['gemini-3-pro-image', 'gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-nano-banana-2.1']);
-    expect(ids('openai')).toEqual(['gpt-5.6-luna', 'gpt-6-astra', 'gpt-6-luna', 'gpt-image-2', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst', 'gpt-image-2.6-flare', 'gpt-image-2.6-sunburst']);
+    expect(ids('openai')).toEqual(['gpt-5.6-luna', 'gpt-6-luna', 'gpt-image-2', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst', 'gpt-image-2.6-flare', 'gpt-image-2.6-sunburst']);
     expect(findKnownModel('openai', 'gpt-image-1')).toBeNull();
     expect(findKnownModel('gemini', 'gemini-2.5-flash-image')).toBeNull();
   });
@@ -54,7 +54,7 @@ describe('knownModels', () => {
   });
 
   it('R5 a model whose levels are unconfirmed (gemini-3-pro-image) and the text models offer no levels', () => {
-    for (const [provider, id] of [['gemini', 'gemini-3-pro-image'], ['gemini', 'gemini-3.8-flash'], ['gemini', 'gemini-3.5-flash-lite'], ['openai', 'gpt-6-astra'], ['openai', 'gpt-5.6-luna'], ['openai', 'gpt-6-luna']] as const) {
+    for (const [provider, id] of [['gemini', 'gemini-3-pro-image'], ['gemini', 'gemini-3.8-flash'], ['gemini', 'gemini-3.5-flash-lite'], ['openai', 'gpt-5.6-luna'], ['openai', 'gpt-6-luna']] as const) {
       expect(findKnownModel(provider, id)?.qualityLevels, id).toEqual([]);
     }
   });
@@ -65,7 +65,8 @@ describe('knownModels', () => {
     expect(luna?.source.length).toBeGreaterThan(0);
   });
 
-  it('R8 the enhancer level is held only by the three vision-text rows the spec names, with the values seen accepted, and none for gpt-6-astra', () => {
+  it('R8 the enhancer level is held only by the three vision-text rows the spec names, with the values seen accepted, and gpt-6-astra is not offered at all', () => {
+    expect(findKnownModel('openai', 'gpt-6-astra')).toBeNull();
     const withLevel = KNOWN_MODELS.filter((entry) => entry.enhancerLevel !== undefined).map((entry) => `${entry.id}=${entry.enhancerLevel}`).sort();
     expect(withLevel).toEqual(['gemini-3.8-flash=low', 'gpt-5.6-luna=none', 'gpt-6-luna=none']);
     for (const entry of KNOWN_MODELS) if (entry.enhancerLevel !== undefined) expect(entry.role, entry.id).toBe('vision-text');
@@ -88,7 +89,7 @@ describe('knownModels', () => {
       if (entry.role === 'image') expect(entry.resolutions.length, entry.id).toBeGreaterThan(0);
       else expect(entry.resolutions, entry.id).toEqual([]);
     }
-    expect(findKnownModel('openai', 'gpt-6-astra')?.role).toBe('vision-text');
+    expect(findKnownModel('openai', 'gpt-6-luna')?.role).toBe('vision-text');
     expect(findKnownModel('gemini', 'gemini-3.8-flash')?.role).toBe('vision-text');
   });
 

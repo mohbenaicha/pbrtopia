@@ -27,7 +27,15 @@ const keysForbidden = [
 ];
 
 const viewportForbidden = [
-  { group: ['**/projection/**', '**/generation', '**/generation/**', '**/projects', '**/projects/**', '**/keys', '**/keys/**', '**/app', '**/app/**'], ...message('The viewport imports three and ui-kit only.') },
+  { group: ['**/projection/**', '**/generation', '**/generation/**', '**/projects', '**/projects/**', '**/keys', '**/keys/**', '**/app', '**/app/**', '**/meshEdit', '**/meshEdit/**'], ...message('The viewport imports three and ui-kit only.') },
+];
+
+// A9: the shell frames import ui-kit, keys, generation, projects and viewport only; no app or tool folder.
+const shellForbidden = [
+  {
+    group: ['**/app', '**/app/**', '**/projection', '**/projection/**', '**/meshEdit', '**/meshEdit/**', '**/materialgen', '**/materialgen/**', '**/hiddenMarks', '**/hiddenMarks/**', '**/appId', '**/appId/**'],
+    ...message('The shell imports ui-kit, keys, generation, projects and viewport only.'),
+  },
 ];
 
 // Mode may use the engine's public entry only (not its internal folders).
@@ -50,7 +58,7 @@ const restrict = (files, patterns) => ({
 });
 
 export default tseslint.config(
-  { ignores: ['node_modules', 'dist', 'research', 'specs', 'ui-demo', 'icons'] },
+  { ignores: ['node_modules', 'dist', 'research', 'specs', 'ui-demo', 'icons', 'upstream/**'] },
   ...tseslint.configs.recommended,
   restrict(['src/projection/engine/**/*.ts'], engineForbidden),
   restrict(['src/generation/**/*.ts', 'src/generation/**/*.tsx'], generationForbidden),
@@ -67,4 +75,5 @@ export default tseslint.config(
   },
   restrict(['src/viewport/**/*.ts', 'src/viewport/**/*.tsx'], viewportForbidden),
   restrict(['src/projection/mode/**/*.ts', 'src/projection/mode/**/*.tsx'], modeForbidden),
+  restrict(['src/shell/**/*.ts', 'src/shell/**/*.tsx'], shellForbidden),
 );

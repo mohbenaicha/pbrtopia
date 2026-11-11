@@ -23,6 +23,20 @@
   --axis-y: #7cc75a;
   --axis-z: #5a9bf2;
 
+  /* Stops of the small pictures that stand for kinds of PBR map (a normal map is blue-violet); they show map data, so they do not follow the theme. */
+  --map-albedo-1: #b0623a;
+  --map-albedo-2: #7d8f4e;
+  --map-albedo-3: #c9a36a;
+  --map-normal-1: #9c9cff;
+  --map-normal-2: #8080ff;
+  --map-normal-3: #6c78ff;
+  --map-height-1: #262626;
+  --map-height-2: #8a8a8a;
+  --map-height-3: #e6e6e6;
+  --map-metal-1: #3a3a3a;
+  --map-metal-2: #b9b9b9;
+  --map-metal-3: #4c4c4c;
+
   --radius-control: 8px;
   --radius-group: 11px;
   --radius-dialog: 14px;

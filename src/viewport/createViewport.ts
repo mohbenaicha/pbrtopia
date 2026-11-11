@@ -1,25 +1,21 @@
-import { NeutralToneMapping, Quaternion, Scene, WebGLRenderer, type Material, type OrthographicCamera, type PerspectiveCamera } from 'three';
+import type { Box3, Material, OrthographicCamera, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { captureThumbnail, type ThumbnailSpec } from './captureThumbnail';
+import { createCameraMotion, type CameraMotion } from './cameraMotion';
 import { createMaterialFlash } from './materialFlash';
 import type { OverrideChannel, OverridePicture } from './materialPictures';
 import { createSurfacePicker } from './pickSurface';
-import { createViewportGrid } from './viewportGrid';
 import { createViewportHandle, type ViewportHandle } from './viewportHandle';
-import { createCameraRig, viewDirectionForAxis, type CameraRig, type Projection, type ViewAxis } from './cameraRig';
-import { runCameraTransition } from './cameraTransition';
-import { watchContextLoss } from './contextLoss';
+import type { CameraRig, Projection, ViewAxis } from './cameraRig';
 import type { ModelAsset } from './loadModelAsset';
 import { createEnvironment } from './environment';
 import { createEnvironmentLoader } from './environmentLoader';
 import { createModelHost, type GeometryReplacement } from './modelHost';
 import { createOrbitControls } from './orbitControlsSetup';
-import { watchPixelRatio } from './pixelRatio';
-import { createFrameRenderer } from './renderFrame';
-import { createRenderScheduler } from './renderScheduler';
 import type { ShadingMode } from './shadingModes';
 import type { ViewportResult } from './viewportError';
-import { createViewportEvents, type ViewportEvents } from './viewportEvents';
+import type { ViewportEvents } from './viewportEvents';
 import { createSnapshotLook, type SnapshotLook } from './snapshotLook';
+import { createViewportCore, type ViewportCore } from './viewportCore';
 import { DEFAULT_VIEWPORT_SETTINGS, type ViewportSettings } from './viewportSettings';
 
 // The part of the contract in specs/app/viewport-layout/contracts.md that exists so far; later tasks add the environment, picking and slots.
@@ -46,87 +42,36 @@ export interface Viewport {
   setSettings(patch: Partial<ViewportSettings>): void;
   invalidate(): void;
   resetView(): void;
+  frameBounds(box: Box3): void; // prep R38: the box fills the view and becomes the home view that resetView returns to; works with no model
   snapToAxis(axis: ViewAxis): void;
   setProjection(projection: Projection): void;
   on: ViewportEvents['on'];
   dispose(): void;
 }
 
+interface ViewportParts {
+  core: ViewportCore;
+  models: ReturnType<typeof createModelHost>;
+  motion: CameraMotion;
+  flash: ReturnType<typeof createMaterialFlash>;
+  handle: ViewportHandle;
+  orbit: ReturnType<typeof createOrbitControls>;
+  environment: ReturnType<typeof createEnvironment>;
+  applySettings(patch: Partial<ViewportSettings>): void;
+  setProjection(projection: Projection): void;
+}
+
 // Puts a WebGL canvas in `container`, keeps it the container's size at the display's pixel ratio, and draws only on invalidate.
 export function createViewport(container: HTMLElement, options: { settings?: ViewportSettings } = {}): Viewport {
-  const renderer = new WebGLRenderer({ antialias: true });
-  renderer.toneMapping = NeutralToneMapping; // keeps albedo colours true under the HDRI light
-  const scene = new Scene();
-  scene.backgroundBlurriness = 0.12;
-  const rig = createCameraRig(1);
-  rig.resetView();
-  const events = createViewportEvents();
-  const grid = createViewportGrid({ scene, rig });
-  const drawScene = createFrameRenderer(renderer, scene, rig);
-  let overlayPass: (() => void) | null = null;
-  const drawFrame = (): void => {
-    grid.update();
-    drawScene();
-    overlayPass?.();
-  };
-  const scheduler = createRenderScheduler(drawFrame);
-
-  const canvas = renderer.domElement;
-  canvas.style.display = 'block';
-  container.appendChild(canvas);
-  renderer.setPixelRatio(window.devicePixelRatio);
-
-  let width = 0;
-  let height = 0;
-  const resizeTo = (nextWidth: number, nextHeight: number): void => {
-    // A hidden container reports 0x0: keep the last good size until it is shown again.
-    if (nextWidth === 0 || nextHeight === 0) return;
-    width = nextWidth;
-    height = nextHeight;
-    renderer.setSize(width, height, false);
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    rig.setAspect(width / height);
-    scheduler.drawNow(); // setSize cleared the canvas: drawn again before the browser paints, never one frame later
-  };
-
-  const observer = new ResizeObserver(() => resizeTo(container.clientWidth, container.clientHeight));
-  observer.observe(container);
-  resizeTo(container.clientWidth, container.clientHeight);
-
-  const stopWatchingPixelRatio = watchPixelRatio((ratio) => {
-    renderer.setPixelRatio(ratio);
-    resizeTo(width, height);
-  });
-
-  const stopWatchingContext = watchContextLoss(canvas, {
-    onLost: () => {
-      scheduler.pause();
-      events.emit('context-lost');
-    },
-    onRestored: () => {
-      scheduler.resume();
-      events.emit('context-restored');
-    },
-  });
-
+  const core = createViewportCore(container);
+  const { scene, rig, events, grid, scheduler, canvas } = core;
   const onCameraMoved = (): void => {
     rig.syncOrthographic();
     events.emit('camera-change');
     scheduler.invalidate();
   };
-  let cancelTransition = (): void => undefined;
   const orbit = createOrbitControls(rig, canvas);
   orbit.controls.addEventListener('change', onCameraMoved);
-  orbit.controls.addEventListener('start', () => cancelTransition());
-
-  const setProjection = (projection: Projection): void => {
-    if (!rig.setProjection(projection)) return;
-    models.setSettings({ projection }); // the stored settings follow the camera, so a later setting change does not put the old projection back
-    events.emit('projection-changed', projection);
-    events.emit('settings-changed', models.settings());
-    scheduler.invalidate();
-  };
 
   const models = createModelHost({
     scene,
@@ -140,18 +85,19 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
       onCameraMoved();
     },
   });
-
-  const handle = createViewportHandle({
-    canvas,
-    camera: () => rig.active,
-    pick: createSurfacePicker({ canvas, camera: () => rig.active, model: models.root }),
-    events,
-  });
+  const setProjection = (projection: Projection): void => {
+    if (!rig.setProjection(projection)) return;
+    models.setSettings({ projection }); // the stored settings follow the camera, so a later setting change does not put the old projection back
+    events.emit('projection-changed', projection);
+    events.emit('settings-changed', models.settings());
+    scheduler.invalidate();
+  };
+  const motion = createCameraMotion({ rig, orbit, setProjection, onCameraMoved });
+  const handle = createViewportHandle({ canvas, camera: () => rig.active, pick: createSurfacePicker({ canvas, camera: () => rig.active, model: models.root }), events });
   const flash = createMaterialFlash({ show: models.setFlashMaterial });
-
   const environment = createEnvironment({
     scene,
-    loader: createEnvironmentLoader(renderer),
+    loader: createEnvironmentLoader(core.renderer),
     invalidate: scheduler.invalidate,
     onRotationSettled: (degrees) => {
       models.setSettings({ environmentRotationDeg: degrees });
@@ -166,12 +112,16 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     environment.applySettings(settings);
   };
   applySettings({});
-
   scheduler.invalidate();
+  return assembleViewport({ core, models, motion, flash, handle, orbit, environment, applySettings, setProjection });
+}
 
-  const viewport: Viewport = {
-    renderer,
-    scene,
+// The public object: each member forwards to the part that owns it.
+function assembleViewport({ core, models, motion, flash, handle, orbit, environment, applySettings, setProjection }: ViewportParts): Viewport {
+  const { rig, grid, scheduler } = core;
+  return {
+    renderer: core.renderer,
+    scene: core.scene,
     get camera() {
       return rig.active;
     },
@@ -184,67 +134,34 @@ export function createViewport(container: HTMLElement, options: { settings?: Vie
     setMaterialPicture: models.setMaterialPicture,
     flashMaterial: flash.start,
     captureThumbnail(spec) {
-      const picture = captureThumbnail(() => grid.drawWithoutGrid(drawFrame), canvas, spec);
+      const picture = captureThumbnail(() => grid.drawWithoutGrid(core.drawFrame), core.canvas, spec);
       scheduler.invalidate(); // the canvas keeps the grid-less picture until it is drawn again
       return picture;
     },
-    snapshotLook: () => createSnapshotLook(scene, grid.hide),
+    snapshotLook: () => createSnapshotLook(core.scene, grid.hide),
     modelAsset: models.asset,
     replaceModelGeometry: models.replaceGeometry,
     refreshModelGeometry: models.refreshGeometry,
     lockModelGeometry: models.lockGeometry,
-    setOverlayPass(pass) {
-      overlayPass = pass;
-      scheduler.invalidate();
-    },
+    setOverlayPass: core.setOverlayPass,
     setCameraControlsEnabled(enabled) {
       orbit.controls.enabled = enabled;
     },
     setSettings: applySettings,
     invalidate: scheduler.invalidate,
-    resetView() {
-      cancelTransition();
-      rig.resetView();
-      orbit.controls.update();
-      onCameraMoved();
-    },
-    snapToAxis(axis) {
-      cancelTransition();
-      setProjection('orthographic');
-      const fromDirection = rig.perspective.position.clone().sub(rig.target).normalize();
-      const fromTarget = rig.target.clone();
-      const fromDistance = rig.distance();
-      const toDirection = viewDirectionForAxis(axis);
-      const toTarget = rig.homeCenter();
-      const toDistance = rig.homeDistance();
-      const turn = new Quaternion().setFromUnitVectors(fromDirection, toDirection);
-      cancelTransition = runCameraTransition((progress) => {
-        rig.target.lerpVectors(fromTarget, toTarget, progress);
-        const direction = progress === 1 ? toDirection : fromDirection.clone().applyQuaternion(new Quaternion().slerp(turn, progress));
-        rig.placeCamera(direction, fromDistance + (toDistance - fromDistance) * progress);
-        orbit.controls.update();
-        onCameraMoved();
-      });
-    },
+    resetView: motion.resetView,
+    frameBounds: motion.frameBounds,
+    snapToAxis: motion.snapToAxis,
     setProjection,
-    on: events.on,
+    on: core.events.on,
     dispose() {
-      cancelTransition();
+      motion.cancel();
       flash.dispose();
       handle.dispose();
       environment.dispose();
       models.dispose();
-      grid.dispose();
       orbit.dispose();
-      observer.disconnect();
-      stopWatchingPixelRatio();
-      stopWatchingContext();
-      scheduler.dispose();
-      events.clear();
-      renderer.dispose();
-      renderer.forceContextLoss();
-      canvas.remove();
+      core.dispose();
     },
   };
-  return viewport;
 }

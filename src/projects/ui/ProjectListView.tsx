@@ -16,10 +16,11 @@ interface ProjectListViewProps {
   status?: ReactNode; // a line under the header, e.g. the import result
   notice?: string | null;
   onDismissNotice?: () => void;
+  deleteEffect?: string; // what a delete loses, in the app's words (the projection text by default)
 }
 
 // The stored projects as cards: open, rename, delete one, select several, delete the selection after confirming.
-export function ProjectListView({ store, onOpen, createActions, headerActions, status, notice = null, onDismissNotice }: ProjectListViewProps): React.JSX.Element {
+export function ProjectListView({ store, onOpen, createActions, headerActions, status, notice = null, onDismissNotice, deleteEffect }: ProjectListViewProps): React.JSX.Element {
   const { load, reload, rename, remove } = useProjectList(store);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -103,7 +104,7 @@ export function ProjectListView({ store, onOpen, createActions, headerActions, s
           />
         ))}
       </ul>
-      <ConfirmDeleteDialog projects={pending} progress={progress} confirm={() => void confirmDelete()} cancel={() => setToDelete([])} />
+      <ConfirmDeleteDialog projects={pending} progress={progress} {...(deleteEffect !== undefined && { deleteEffect })} confirm={() => void confirmDelete()} cancel={() => setToDelete([])} />
     </main>
   );
 }

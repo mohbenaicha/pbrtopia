@@ -34,6 +34,21 @@ describe('ProjectCard', () => {
     expect(screen.getByText(/^20,812 triangles · Oct 18, 2026$/)).toBeTruthy();
   });
 
+  it('shared/materialgen-prep R56 a summary with a detail text shows it instead of a triangle count', () => {
+    const bare = { ...summary };
+    delete bare.triangleCount;
+    show({ summary: { ...bare, detail: 'Texture · 1024 px' } });
+    expect(screen.getByText(/^Texture · 1024 px · Oct 18, 2026$/)).toBeTruthy();
+    expect(screen.queryByText(/triangles/)).toBeNull();
+  });
+
+  it('shared/materialgen-prep R56 a summary with neither detail nor triangle count shows only the day', () => {
+    const bare = { ...summary };
+    delete bare.triangleCount;
+    show({ summary: bare });
+    expect(screen.getByText(/^Oct 18, 2026$/)).toBeTruthy();
+  });
+
   it('textures R22 a project of an older version shows why it cannot be opened, cannot be opened or renamed, and can be deleted', async () => {
     const { open, startRename, remove } = show({ summary: { ...summary, unreadable: 'This project was made by an older version of the app and cannot be opened. Delete it.' } });
     expect(screen.getByText('This project was made by an older version of the app and cannot be opened. Delete it.')).toBeTruthy();

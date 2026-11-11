@@ -18,7 +18,7 @@ function readyStore() {
   s.setMaxTextureSize(8192);
   s.setCatalog({
     gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')],
-    openai: [known('openai', 'gpt-image-2.5-sunburst'), known('openai', 'gpt-6-astra'), unverified],
+    openai: [known('openai', 'gpt-image-2.5-sunburst'), known('openai', 'gpt-6-luna'), unverified],
   });
   s.setSceneState({ hasModel: true, hasUvs: true });
   s.setHasKey('gemini', true);
@@ -93,10 +93,18 @@ describe('describeGenerateAvailability (R6, R15)', () => {
     expect(pickEnhancerModel(store.getState())).toEqual({ provider: 'gemini', modelId: 'gemini-3.8-flash' });
   });
 
+  it('R8 with no enhancer chosen the default is GPT-6 Luna with an OpenAI key, else Gemini 3.8 Flash, else none', () => {
+    const store = readyStore();
+    const { catalog } = store.getState();
+    expect(pickEnhancerModel({ enhancer: null, provider: null, catalog, hasKey: { gemini: true, openai: true } })).toEqual({ provider: 'openai', modelId: 'gpt-6-luna' });
+    expect(pickEnhancerModel({ enhancer: null, provider: null, catalog, hasKey: { gemini: true, openai: false } })).toEqual({ provider: 'gemini', modelId: 'gemini-3.8-flash' });
+    expect(pickEnhancerModel({ enhancer: null, provider: null, catalog, hasKey: { gemini: false, openai: false } })).toBeNull();
+  });
+
   it('R6 a chosen enhancer wins over the fallback, and an image model is never the fallback', () => {
     const store = readyStore();
-    store.getState().setEnhancer({ provider: 'openai', modelId: 'gpt-6-astra' });
-    expect(pickEnhancerModel(store.getState())).toEqual({ provider: 'openai', modelId: 'gpt-6-astra' });
+    store.getState().setEnhancer({ provider: 'openai', modelId: 'gpt-6-luna' });
+    expect(pickEnhancerModel(store.getState())).toEqual({ provider: 'openai', modelId: 'gpt-6-luna' });
     store.getState().setEnhancer(null);
     store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1')], openai: [] });
     expect(pickEnhancerModel(store.getState())).toBeNull();
@@ -104,7 +112,7 @@ describe('describeGenerateAvailability (R6, R15)', () => {
 
   it('R6 no key for the enhancer provider', () => {
     const store = readyStore();
-    store.getState().setEnhancer({ provider: 'openai', modelId: 'gpt-6-astra' });
+    store.getState().setEnhancer({ provider: 'openai', modelId: 'gpt-6-luna' });
     const result = describeNow(store);
     expect(result.enabled).toBe(false);
     expect(result.reason).toMatch(/OpenAI/);
@@ -130,7 +138,7 @@ describe('describeGenerateAvailability (R6, R15)', () => {
     noKey.getState().setHasKey('gemini', false);
     reasons.add(describeNow(noKey).reason);
     const noEnhancerKey = readyStore();
-    noEnhancerKey.getState().setEnhancer({ provider: 'openai', modelId: 'gpt-6-astra' });
+    noEnhancerKey.getState().setEnhancer({ provider: 'openai', modelId: 'gpt-6-luna' });
     reasons.add(describeNow(noEnhancerKey).reason);
     const busy = readyStore();
     busy.getState().beginRun();

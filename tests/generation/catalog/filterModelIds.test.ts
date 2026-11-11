@@ -11,7 +11,7 @@ describe('filterModelIds: OpenAI', () => {
   });
 
   it('R4 keeps a vision text model only when it is in the shipped table', () => {
-    expect(ids('openai', list('gpt-6-astra', 'gpt-5.6-luna', 'gpt-4o', 'o1-pro'))).toEqual(['vision-text:gpt-6-astra', 'vision-text:gpt-5.6-luna']);
+    expect(ids('openai', list('gpt-6-astra', 'gpt-5.6-luna', 'gpt-4o', 'o1-pro'))).toEqual(['vision-text:gpt-5.6-luna']); // astra is not in the table
   });
 
   it('R4 drops a model whose shutdown date is today or past, and keeps a future one with its date', () => {

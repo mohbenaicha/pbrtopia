@@ -1,4 +1,4 @@
-const VAULT_CHANNEL_NAME ='texture-lab-keys';
+import { vaultScope } from '../appId';
 
 // How one tab tells the others the vault changed (R10). The message carries nothing: a tab that hears it locks and reads the record again.
 export interface VaultChannel {
@@ -8,7 +8,7 @@ export interface VaultChannel {
 }
 
 // The BroadcastChannel-backed channel, or null in a browser without it (tabs then find out at their next save, which is refused).
-export function createBroadcastVaultChannel(name: string = VAULT_CHANNEL_NAME): VaultChannel | null {
+export function createBroadcastVaultChannel(name: string = vaultScope()): VaultChannel | null {
   if (typeof BroadcastChannel === 'undefined') return null;
   const channel = new BroadcastChannel(name);
   return {

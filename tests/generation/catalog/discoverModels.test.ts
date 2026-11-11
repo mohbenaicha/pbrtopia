@@ -18,7 +18,7 @@ describe('discoverModels: OpenAI', () => {
       { id: 'gpt-image-9-mystery' },
       { id: 'gpt-image-1', shutdown_date: '2026-10-01' },
       { id: 'gpt-image-1-mini', shutdown_date: '2027-02-02' },
-      { id: 'gpt-6-astra' },
+      { id: 'gpt-6-luna' },
       { id: 'gpt-4o' },
     ],
   };

@@ -1,0 +1,108 @@
+/* The two pictures share one display rectangle with the aspect of the left picture, fitted inside a frame that never outgrows the window (materialgen-prep R46). */
+.ui-compare-viewer__frame {
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--compare-frame-height, clamp(240px, 60vh, 800px));
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+}
+
+.ui-compare-viewer__area {
+  --compare-ratio: 1;
+  position: relative;
+  width: min(100cqw, 100cqh * var(--compare-ratio));
+  aspect-ratio: var(--compare-ratio);
+  overflow: hidden;
+  cursor: default;
+  user-select: none;
+}
+
+.ui-compare-viewer__area[data-zoomed] {
+  cursor: grab;
+}
+
+.ui-compare-viewer__area[data-zoomed]:active {
+  cursor: grabbing;
+}
+
+.ui-compare-viewer__layer {
+  position: absolute;
+  inset: 0;
+}
+
+.ui-compare-viewer__picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  transform-origin: center;
+}
+
+.ui-compare-viewer__state {
+  position: absolute;
+  top: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--surface-over-picture);
+  color: var(--text-hint);
+  font-size: var(--font-size-small);
+  pointer-events: none;
+}
+
+.ui-compare-viewer__state--left {
+  left: var(--space-2);
+}
+
+.ui-compare-viewer__state--right {
+  right: var(--space-2);
+}
+
+/* The divider is a wide grab area around a thin line, so a finger can hold it. */
+.ui-compare-viewer__divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--space-5);
+  margin-left: calc(var(--space-5) / -2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.ui-compare-viewer__divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent-text);
+  box-shadow: var(--shadow-overlay);
+}
+
+.ui-compare-viewer__divider:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.ui-compare-viewer__handle {
+  position: relative;
+  width: var(--space-4);
+  height: var(--space-4);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-text);
+}
+
+.ui-compare-viewer__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin-top: var(--space-3);
+  font-size: var(--font-size-small);
+}

@@ -1,0 +1,11 @@
+/* The gear popover of the preview: the shared panel scrolls on its own, the reset button stays under it. */
+.preview-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.preview-settings > .ui-button {
+  align-self: flex-start;
+}

@@ -1,6 +1,6 @@
 import { SegmentedControl, Select, type SegmentOption, Slider, Toggle } from '../../ui-kit';
 import { HDRI_CHOICES } from '../hdriCatalog';
-import type { MapAdjust, ViewportSettings } from '../viewportSettings';
+import { DEFAULT_VIEWPORT_SETTINGS, type MapAdjust, type ViewportSettings } from '../viewportSettings';
 
 export interface ViewportControlsProps {
   settings: ViewportSettings;
@@ -19,10 +19,21 @@ const twoDecimals = (value: number): string => value.toFixed(2);
 export function LightControls({ settings, onChange }: ViewportControlsProps): React.JSX.Element {
   return (
     <>
-      <Slider label="Intensity" layout="row" value={settings.environmentIntensity} min={0} max={3} step={0.01} format={twoDecimals} onChange={(environmentIntensity) => onChange({ environmentIntensity })} />
+      <Slider
+        label="Intensity"
+        layout="row"
+        value={settings.environmentIntensity}
+        min={0}
+        max={3}
+        step={0.01}
+        format={twoDecimals}
+        resetTo={DEFAULT_VIEWPORT_SETTINGS.environmentIntensity}
+        onChange={(environmentIntensity) => onChange({ environmentIntensity })}
+      />
       <Slider
         label="Rotation"
         layout="row"
+        resetTo={DEFAULT_VIEWPORT_SETTINGS.environmentRotationDeg}
         value={settings.environmentRotationDeg}
         min={0}
         max={360}
@@ -56,8 +67,8 @@ function MapAdjustSliders({ settings, onChange, strength, contrast }: ViewportCo
   const adjust = (key: keyof MapAdjust, value: number): void => onChange({ mapAdjust: { ...settings.mapAdjust, [key]: value } });
   return (
     <>
-      <Slider label="Strength" layout="row" value={settings.mapAdjust[strength]} min={0} max={3} step={0.01} format={twoDecimals} onChange={(value) => adjust(strength, value)} />
-      <Slider label="Contrast" layout="row" value={settings.mapAdjust[contrast]} min={0} max={3} step={0.01} format={twoDecimals} onChange={(value) => adjust(contrast, value)} />
+      <Slider label="Strength" layout="row" value={settings.mapAdjust[strength]} min={0} max={3} step={0.01} format={twoDecimals} resetTo={DEFAULT_VIEWPORT_SETTINGS.mapAdjust[strength]} onChange={(value) => adjust(strength, value)} />
+      <Slider label="Contrast" layout="row" value={settings.mapAdjust[contrast]} min={0} max={3} step={0.01} format={twoDecimals} resetTo={DEFAULT_VIEWPORT_SETTINGS.mapAdjust[contrast]} onChange={(value) => adjust(contrast, value)} />
     </>
   );
 }
@@ -81,6 +92,7 @@ export function ShadingControls({ settings, onChange }: ViewportControlsProps): 
         step={1}
         format={(degrees) => (degrees >= 180 ? 'Off' : `${Math.round(degrees)}°`)}
         disabled={settings.flatShading}
+        resetTo={DEFAULT_VIEWPORT_SETTINGS.smoothAngleDeg}
         onChange={(smoothAngleDeg) => onChange({ smoothAngleDeg })}
       />
     </>

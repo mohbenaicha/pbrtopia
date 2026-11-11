@@ -24,6 +24,12 @@ export const LINE_ICON_PATHS = {
   eye: ['M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z', 'M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z'],
   bug: ['M8.5 10h7v4.5a3.5 4 0 0 1-7 0z', 'M9.5 10V8.5a2.5 2.5 0 0 1 5 0V10', 'M5 12h3.5', 'M15.5 12H19', 'M6 7.5l2.8 2', 'M18 7.5l-2.8 2', 'M6 18l2.8-2', 'M18 18l-2.8-2'],
   grid: ['M4 4h16v16H4z', 'M9.3 4v16', 'M14.7 4v16', 'M4 9.3h16', 'M4 14.7h16'],
+  // The three preview meshes (materialgen preview R27): a ball with its equator, a plane seen at an angle, and a ball on a plinth.
+  'mesh-ball': ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M3.5 12a8.5 3 0 0 0 17 0'],
+  'mesh-plane': ['M3.5 17.5L7 7h13.5L17 17.5z', 'M5.2 12.2h13.1', 'M12 7v10.5'],
+  'mesh-material-ball': ['M12 3.5a4.8 4.8 0 1 0 0 9.6 4.8 4.8 0 0 0 0-9.6z', 'M6.5 15.5h11', 'M5 20.5l1.5-5h11l1.5 5z'],
+  // Two overlapping discs: the material masks (preview R26).
+  masks: ['M9.5 5.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z', 'M14.5 8.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z'],
   // A cube with its three visible faces and a small arrow-head cursor at the front corner: edit the mesh (mesh edit R1).
   'edit-mesh': ['M10 3.5l6.5 3.7v7.6L10 18.5 3.5 14.8V7.2z', 'M3.5 7.2L10 11l6.5-3.8', 'M10 11v7.5', 'M15 13.5l5.5 2.5-2.4.9-.9 2.4z'],
   // The mesh edit toolbar (mesh edit R3).
@@ -36,6 +42,15 @@ export const LINE_ICON_PATHS = {
   undo: ['M9 14L4.5 9.5 9 5', 'M4.5 9.5h10a5 5 0 0 1 0 10H10'],
   redo: ['M15 14l4.5-4.5L15 5', 'M19.5 9.5h-10a5 5 0 0 0 0 10H14'],
   merge: ['M3.5 12h7', 'M7.5 8.5l3 3.5-3 3.5', 'M20.5 12h-7', 'M16.5 8.5l-3 3.5 3 3.5', 'M12 4.5v15'], // two arrows closing on a line
+  // The map tools (materialgen imageops R20, R29-R36, R43): crop marks, a mirror line between two triangles, two crossing arrows, a half-shaded disc (ambient occlusion).
+  crop: ['M6 3v13a2 2 0 0 0 2 2h13', 'M18 21V8a2 2 0 0 0-2-2H3'],
+  mirror: ['M4 7.5l5 4.5-5 4.5z', 'M20 7.5L15 12l5 4.5z', 'M12 3v2.5', 'M12 8.5v2', 'M12 13.5v2', 'M12 18.5V21'],
+  swap: ['M3 7h3.5c1.5 0 2.8.7 3.6 1.9l3.8 6.2c.8 1.2 2.1 1.9 3.6 1.9H21', 'M18 14.5l3 3-3 3', 'M3 17h3.5c1.5 0 2.8-.7 3.6-1.9', 'M13.9 8.9c.8-1.2 2.1-1.9 3.6-1.9H21', 'M18 4l3 3-3 3'],
+  occlusion: ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M12 3.5v17', 'M12 8a4 4 0 0 1 0 8'],
+  // The plan summary beside Generate (materialgen generation R62): a sheet with lines.
+  summary: ['M7 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2z', 'M8.5 8.5h7', 'M8.5 12h7', 'M8.5 15.5h4'],
+  // The AI mark (materialgen generation R71): a four-point star with curved sides, the sign everyone reads as "AI writes this".
+  sparkle: ['M12 3c.7 5.4 3.6 8.3 9 9-5.4.7-8.3 3.6-9 9-.7-5.4-3.6-8.3-9-9 5.4-.7 8.3-3.6 9-9z'],
 } as const;
 
 export type LineIconName = keyof typeof LINE_ICON_PATHS;

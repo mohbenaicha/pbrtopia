@@ -1,0 +1,431 @@
+/* Custom R2: the setup overlay covers the viewport area (the loading overlay's region, viewport-layout R31) and stacks above everything in it, the axis gizmo included. */
+.setup-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--bg-page) 82%, transparent); /* no backdrop blur: it would be redone over the whole viewport on every repaint while a card is dragged */
+}
+
+.setup-overlay__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-group);
+  background: var(--bg-panel);
+  color: var(--text);
+  box-shadow: var(--shadow-overlay);
+}
+
+/* The snapshot row and the toolbar stay put; the cards scroll between them and the footer. */
+.setup-overlay__body {
+  flex: 1;
+  min-height: 0;
+  margin-inline: calc(-1 * var(--space-2));
+  padding-inline: var(--space-2); /* room for a card's insertion bar in the gap beside the outer cards */
+  overflow-y: auto;
+}
+
+/* At most 5 cards to a row (4 images and the auxiliary card), none narrower than three thumbnails across (so six cameras take two rows): more wrap to the next row. */
+.setup-overlay__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(15.5rem, calc((100% - 4 * var(--space-4)) / 5)), 1fr));
+  gap: var(--space-4);
+  align-items: stretch; /* the cards of a row are equally tall */
+}
+
+.setup-overlay__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.setup-overlay__problem {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.setup-overlay__decision {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* The live region is for assistive technology only. */
+.setup-overlay__announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Every toolbar control sits on one row, centred; a label stands beside its control, never above it. */
+.setup-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-4);
+}
+
+.setup-toolbar__preset {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.setup-toolbar__preset .ui-field {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.setup-toolbar__preset .ui-field .ui-select {
+  min-width: 16rem;
+}
+
+.setup-toolbar__sync {
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height);
+}
+
+.setup-snapshots {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-3);
+  min-height: 96px;
+}
+
+.setup-snapshots__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: stretch;
+  width: 100%;
+  max-width: 8rem;
+  margin: 0 auto;
+  text-align: center;
+  font-size: var(--font-size-small);
+  transition: opacity var(--transition-fast);
+}
+
+.setup-snapshots__item[data-assigned='false'] {
+  opacity: 0.4;
+}
+
+.setup-snapshots__where {
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.setup-snapshots__button {
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+  cursor: grab;
+}
+
+.setup-snapshots__button:hover {
+  background: var(--bg-hover);
+}
+
+.setup-snapshots__button[data-dragging] {
+  opacity: 0.35;
+}
+
+.setup-card[data-target='true'] .setup-drop,
+.setup-snapshots[data-target='true'] {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.setup-snapshots__button[aria-pressed='true'] {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* A snapshot is cut to its silhouette's box and keeps that box's aspect (a tall person gives a tall thumbnail): it is as large as a square slot allows. */
+.setup-thumb-slot {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  aspect-ratio: 1;
+  container-type: size;
+}
+
+.setup-thumb {
+  position: relative;
+  display: block;
+  width: min(100cqw, calc(100cqh * var(--trim-aspect, 1)));
+  aspect-ratio: var(--trim-aspect, 1);
+  overflow: hidden;
+  background: var(--bg-input);
+}
+
+/* The whole square picture, scaled and slid by inline styles so that the trim box fills its parent. */
+.setup-trimmed {
+  position: absolute;
+  display: block;
+  max-width: none;
+  pointer-events: none;
+}
+
+/* While a card is dragged, the hovered card shows an accent bar in the gap on the side where the dragged card will land. */
+.setup-card[data-drop-edge]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.setup-card[data-drop-edge='before']::after {
+  left: calc(-0.5 * var(--space-4) - 2px);
+}
+
+.setup-card[data-drop-edge='after']::after {
+  right: calc(-0.5 * var(--space-4) - 2px);
+}
+
+.setup-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-group);
+  background: var(--bg-input);
+}
+
+.setup-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.setup-card__header > * {
+  flex-shrink: 0;
+}
+
+/* The arrows are the keyboard way to reorder (the handle is the mouse way): they stay out of sight, and out of the way of a narrow card, until one takes focus. */
+.setup-card__move:not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.setup-card__move {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.setup-card__handle {
+  padding: 0 var(--space-1);
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  cursor: grab;
+}
+
+.setup-card__title {
+  margin: 0;
+  white-space: nowrap;
+  font-size: var(--font-size);
+  font-weight: 700;
+}
+
+.setup-card__lead {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: var(--font-size-small);
+  font-weight: 600;
+}
+
+.setup-card__header-actions {
+  display: flex;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+/* The camera row and the drop area share a block of one fixed height (room for two rows of thumbnails and a small drop area): the drop area fills what the thumbnails leave. */
+.setup-card__assign {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: 17rem;
+}
+
+/* The drop area always spans the card. */
+.setup-drop {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 4rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--text-hint);
+  border-radius: var(--radius-control);
+  background: transparent;
+  transition: background var(--transition-fast);
+}
+
+/* The sheet's canvas at its real aspect, as large as the drop area allows, centred; the tiles sit on it as fractions. */
+.setup-drop {
+  container-type: size;
+}
+
+.setup-canvas {
+  position: relative;
+  flex: none;
+  width: min(100cqw, calc(100cqh * var(--drop-aspect, 1)));
+  aspect-ratio: var(--drop-aspect, 1);
+  background: var(--bg-page);
+  pointer-events: none;
+}
+
+.setup-canvas__tile {
+  position: absolute;
+  overflow: hidden;
+  background: var(--bg-hover);
+}
+
+.setup-canvas__tile--aux {
+  box-sizing: border-box;
+  border: 1px solid var(--bg-page); /* the tiles touch on the canvas; this keeps them apart on screen */
+  background: var(--bg-hover);
+}
+
+.setup-drop--aux {
+  flex: none;
+  height: 17rem; /* as tall as an image card's camera block, so the cards of a row line up */
+  opacity: 0.8;
+}
+
+.setup-drop__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+  text-align: center;
+}
+
+/* The cameras of an image: a row of small thumbnails above the drop area, the remove mark inside each; the row keeps its height when empty so the drop areas line up. */
+.setup-card__cameras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-3);
+  flex: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-card__camera {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 52px;
+  font-size: var(--font-size-small);
+  cursor: grab;
+  transition: opacity var(--transition-fast);
+}
+
+.setup-card__camera[data-dragging] {
+  opacity: 0.35;
+}
+
+.setup-card__camera .ui-icon-button {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+
+/* While a perspective or a card is dragged over a card or the row, the target says what dropping would do. */
+.setup-drop[data-drop-hint],
+.setup-snapshots[data-drop-hint] {
+  background: color-mix(in srgb, var(--accent) 24%, var(--bg-button));
+}
+
+.setup-drop[data-drop-hint]::after,
+.setup-snapshots[data-drop-hint]::after {
+  content: attr(data-drop-hint);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--bg-page) 55%, transparent);
+  color: var(--text);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.setup-card[data-dragging] {
+  opacity: 0.6;
+}
+
+.setup-card__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.setup-card__include {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.setup-add-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 12rem;
+  border: none;
+  border-radius: var(--radius-group);
+  background: var(--bg-input);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.setup-add-tile:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}

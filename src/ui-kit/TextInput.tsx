@@ -12,9 +12,10 @@ interface TextInputProps {
   error?: string;
   disabled?: boolean;
   readOnly?: boolean;
+  onBlur?: () => void; // when focus leaves the field, e.g. to tidy what was typed
 }
 
-export function TextInput({ label, value, onChange, type = 'text', placeholder, hint, error, disabled = false, readOnly = false }: TextInputProps): React.JSX.Element {
+export function TextInput({ label, value, onChange, type = 'text', placeholder, hint, error, disabled = false, readOnly = false, onBlur }: TextInputProps): React.JSX.Element {
   const id = useId();
   const messageId = `${id}-message`;
   return (
@@ -32,6 +33,7 @@ export function TextInput({ label, value, onChange, type = 'text', placeholder, 
         aria-describedby={describedBy(messageId, hint, error)}
         data-error={error ? '' : undefined}
         onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur}
       />
       <FieldMessage id={messageId} hint={hint} error={error} />
     </div>

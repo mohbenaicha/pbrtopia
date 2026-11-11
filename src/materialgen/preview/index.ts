@@ -1,0 +1,13 @@
+export { displacementFor, type DisplacementParams } from './math/displacement';
+export { defaultDistance, FRAME_MARGIN, type HalfExtents } from './math/framing';
+export { MESH_SEGMENTS, segmentsFor } from './math/meshSegments';
+export { DEFAULT_POSE, DOLLY_MAX, DOLLY_MIN, dollyBy, isDefaultView, turnPose, type TurntablePose } from './math/turntable';
+export { buildPreviewGeometry } from './meshes/buildPreviewGeometry';
+export { FLAT_VIEWS, PREVIEW_SHADINGS, isFlatView, type FlatView, type PreviewShading } from './math/flatViews';
+export { PreviewShadingControl } from './ui/PreviewShadingControl';
+export { PreviewMaterialControls } from './ui/PreviewMaterialControls';
+export { NormalDirectionSelect } from './ui/NormalDirectionSelect';
+export { usePreviewPrefs } from './ui/usePreviewPrefs';
+export { PreviewViewport, type PreviewMasks, type PreviewThumbnailSink, type PreviewTool, type PreviewViewportProps } from './ui/PreviewViewport';
+export type { ToolView } from './ui/useToolViewRelease';
+export type { ToolEdge, ToolMarks, ToolPlan, ToolQuadrant, ToolTransform } from './material/toolTransform';

@@ -1,0 +1,21 @@
+// What the rest of the material app may use from the generation folder (materialgen app R1).
+export { chooseLayout, gridName, MIN_TILE_SIDE_PX, TILE_GAP_PX, type GridShape, type LayoutChoice, type PackedLayout, type TileRect } from './layout/chooseLayout';
+export { CUSTOM_PRESET_ID, MAX_MAP_IMAGES, PLAN_MAPS, type GenerationPlan, type MapImagePlan, type PlanMap, type SavedSetup, type SheetSettings } from './plan/planTypes';
+export { addImage, assignMap, listActiveImages, listPlannedMaps, removeImage, setDecompositionIncluded, setDecompositionSettings, setImageSettings, syncSettings, unassignMap } from './plan/editPlan';
+export { buildCardSettings, listCardOptions, retargetCardSettings, type CardOptions } from './plan/modelMinimums';
+export { buildPresetPlan, describePreset, detectPlanEntry, isSamePlan, PRESET_IDS, savedSetupValue, type ModelCatalog } from './plan/presetPlans';
+export { describeLayoutProblem, inspectPlan, type CardReport, type PlanEnvironment, type PlanReport } from './plan/inspectPlan';
+export { parseSavedSetups, parseStoredPlan, writePlan, writeSavedSetups } from './plan/planRecord';
+export { buildMapPrompt, type ColorModeName } from './prompts/buildMapPrompt';
+export { splitReturnedImage, labelImage } from './split/splitReturnedImage';
+export { buildCostHint, type CostHint, type CostRow } from './cost/buildCostHint';
+export { buildJobs, mapDisplayName, mapKindOf } from './run/buildJobs';
+export { describeRegenerateWarning, listMapsToReplace } from './run/describeRegenerate';
+export { PACKED_NOTE } from './run/describeRunOutcome';
+export { runGeneration, type RunInput } from './run/runGeneration';
+export { MAX_LOGGED_RUNS, recordRetry, recordRun, type RunLogRow } from './run/runLogHistory';
+export type { PromptIdeas } from './ideas/usePromptIdeas';
+export { NOTHING_TO_GO_BACK_TO } from './ideas/usePromptIdeas';
+export { useGenerationPanel, type GenerationPanel, type ProjectEditing } from './ui/useGenerationPanel';
+export type { DescribeTarget, MasksStepsFactory } from './ui/bindRunPorts';
+export type { DescribeAnswer, ImageAttempt, ImageJob, RunCheckpoint, RunFailure, RunPorts, RunProgress, RunReport, RunStatus, StepResult } from './run/runTypes';

@@ -20,7 +20,7 @@ describe('base.css scrollbars (viewport-layout R26)', () => {
   });
 
   it('R26 no feature stylesheet sets its own scrollbar colours', () => {
-    for (const file of ['src/app/LeftPanel.css', 'src/app/RightPanel.css', 'src/viewport/ui/ViewportSettingsPanel.css', 'src/ui-kit/Select.css']) {
+    for (const file of ['src/shell/LeftPanel.css', 'src/shell/RightPanel.css', 'src/viewport/ui/ViewportSettingsPanel.css', 'src/ui-kit/Select.css']) {
       expect(readFileSync(file, 'utf8'), file).not.toMatch(/scrollbar/);
     }
   });

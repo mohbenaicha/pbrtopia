@@ -15,6 +15,22 @@
   text-align: right;
 }
 
+/* With a reset arrow the number keeps its 3rem column and the arrow sits after it, so every row's track ends at the same place. */
+.ui-slider[data-layout='row'][data-resettable] {
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+}
+
+.ui-slider__readout {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ui-slider__readout .ui-slider__value {
+  min-width: 3rem;
+  text-align: right;
+}
+
 .ui-slider__header {
   display: flex;
   justify-content: space-between;

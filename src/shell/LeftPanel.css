@@ -1,0 +1,20 @@
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg-panel);
+}
+
+/* R32: no padding: the tab strip's band runs edge to edge and the chosen tab sits directly on the body. */
+.left-panel__tabs {
+  flex: none;
+}
+
+.left-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden; /* R27: never scrolls sideways */
+  overflow-y: auto;
+  padding: var(--space-3);
+}

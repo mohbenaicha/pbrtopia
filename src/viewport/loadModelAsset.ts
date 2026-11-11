@@ -1,7 +1,6 @@
 import { Box3, Sphere, type BufferGeometry, type Texture, type Vector3, type Material, type Mesh, type Object3D } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { flagsFromRanges, MESH_EDIT_KEY, readHiddenMarks } from '../meshEdit/model/hiddenMarks';
-import { removeHiddenTriangles } from '../meshEdit/model/removeHiddenTriangles';
+import { flagsFromRanges, MESH_EDIT_KEY, readHiddenMarks, removeHiddenTriangles } from '../hiddenMarks';
 import { inspectGlb } from './inspectGlb';
 import { allMaterialsOf, collectTextureInfos, type ModelTextureRecord } from './modelTextures';
 import { tagSourceImages } from './sourceImageTags';

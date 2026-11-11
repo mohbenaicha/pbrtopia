@@ -106,6 +106,20 @@ describe('ViewportCorner', () => {
     expect(viewport.snapToAxis).toHaveBeenCalledWith('+x');
   });
 
+  it('materialgen preview R26 R29 the corner can leave out the gizmo, the camera toggle and the grid, and Reset view can be the caller\'s', async () => {
+    const { viewport } = fakeViewport();
+    const onResetView = vi.fn();
+    render(
+      <ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} showAxisGizmo={false} showCameraToggle={false} showGridToggle={false} onResetView={onResetView} moreButtons={<button>More</button>} />,
+    );
+    const found = screen.getAllByTestId(/^viewport-(gizmo|gear|camera|reset|grid)$/).map((element) => element.getAttribute('data-testid'));
+    expect(found).toEqual(['viewport-gear', 'viewport-reset']);
+    await userEvent.click(screen.getByRole('button', { name: 'Reset view' }));
+    expect(onResetView).toHaveBeenCalledTimes(1);
+    expect(viewport.resetView).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'More' })).toBeTruthy();
+  });
+
   it('R13 the gizmo turns with the camera', () => {
     const { viewport, rig, events } = fakeViewport();
     render(<ViewportCorner viewport={viewport} settingsOpen={false} onSettingsOpenChange={() => undefined} settingsPanel={<p>panel</p>} gridShown onGridShownChange={() => undefined} />);

@@ -6,7 +6,7 @@ import { createGeminiPromptEnhancer } from '../../../../src/generation/providers
 const KEY = 'AIza-test-key-0123456789';
 const png = (bytes = 4): Blob => new Blob([new Uint8Array(bytes).fill(7)], { type: 'image/png' });
 const ctx = (signal = new AbortController().signal) => ({ apiKey: KEY, signal });
-const request = (patch: Partial<GenerateRequest> = {}): GenerateRequest => ({ model: 'gemini-3.1-flash-image', prompt: 'weathered steel', atlas: png(), references: [], resolutionKey: '1K', sizePx: 1024, quality: 'minimal', ...patch });
+const request = (patch: Partial<GenerateRequest> = {}): GenerateRequest => ({ model: 'gemini-3.1-flash-image', prompt: 'weathered steel', images: [png()], references: [], resolutionKey: '1K', sizePx: 1024, quality: 'minimal', ...patch });
 const answerWith = (content: unknown[]) => ({ status: 'completed', steps: [{ type: 'model_output', content }] });
 const reply = (body: unknown, status = 200): Response => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
@@ -77,7 +77,7 @@ describe('createGeminiImageGenerator (R7, R14)', () => {
 
   it('R9 a request over the inline limit is refused before anything is sent', async () => {
     const { fetchImpl, calls } = fakeFetch(reply({}));
-    const result = await createGeminiImageGenerator(fetchImpl).generate(request({ atlas: png(16 * 1024 * 1024) }), ctx());
+    const result = await createGeminiImageGenerator(fetchImpl).generate(request({ images: [png(16 * 1024 * 1024)] }), ctx());
     expect(result).toMatchObject({ ok: false, error: { category: 'bad-request' } });
     expect(calls).toHaveLength(0);
   });
@@ -127,7 +127,7 @@ describe('createGeminiImageGenerator (R7, R14)', () => {
 });
 
 describe('createGeminiPromptEnhancer (R8)', () => {
-  const enhanceRequest = { model: 'gemini-3.8-flash', prompt: 'weathered steel', atlas: png(), level: null };
+  const enhanceRequest = { model: 'gemini-3.8-flash', prompt: 'weathered steel', image: png(), level: null };
 
   it('R8 sends the request level as generation_config.thinking_level, and no generation_config without one', async () => {
     const withLevel = fakeFetch(reply(answerWith([{ type: 'text', text: 'A steel plate.' }])));

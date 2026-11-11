@@ -31,6 +31,8 @@ export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, 
   }, [renaming]);
   const unreadable = summary.unreadable === undefined ? {} : { disabled: true, disabledReason: summary.unreadable }; // a project of an older version: it can only be deleted (textures R22)
   const changed = new Date(summary.updatedAt).toLocaleDateString('en-US', { dateStyle: 'medium' });
+  const size = summary.detail ?? (summary.triangleCount === undefined ? null : `${summary.triangleCount.toLocaleString('en-US')} triangles`);
+  const meta = summary.unreadable ?? [size, changed].filter((part) => part !== null).join(' · ');
   return (
     <li ref={card} className="project-card" data-testid="project-card" data-selected={selected ? '' : undefined}>
       <div className="project-card__thumbnail">{thumbnail !== null && <img src={thumbnail} alt={`${summary.name} thumbnail`} />}</div>
@@ -42,7 +44,7 @@ export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, 
       ) : (
         <>
           <h2 className="project-card__name" title={summary.name}>{summary.name}</h2>
-          <p className="project-card__meta">{summary.unreadable ?? `${summary.triangleCount.toLocaleString('en-US')} triangles · ${changed}`}</p>
+          <p className="project-card__meta">{meta}</p>
           <div className="project-card__actions">
             <IconButton label="Open" icon={<Icon name="open-project" />} {...unreadable} onClick={open} />
             <IconButton label="Rename" icon={<Icon name="pencil" />} {...unreadable} onClick={startRename} />

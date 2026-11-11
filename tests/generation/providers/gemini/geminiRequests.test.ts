@@ -80,7 +80,7 @@ describe('buildGeminiImageBody (R7)', () => {
 
 describe('buildGeminiEnhanceBody (R8)', () => {
   it('R33 carries the built enhancer text exactly as given, then the atlas, and no response_format', () => {
-    const body = buildGeminiEnhanceBody({ model: 'gemini-3.8-flash', prompt: 'built enhancer text', atlas, level: null });
+    const body = buildGeminiEnhanceBody({ model: 'gemini-3.8-flash', prompt: 'built enhancer text', image: atlas, level: null });
     expect(body.model).toBe('gemini-3.8-flash');
     expect(body.input[0]).toEqual({ type: 'text', text: 'built enhancer text' });
     expect(body.input[1]).toEqual({ type: 'image', mime_type: 'image/png', data: 'ATLAS' });
@@ -88,12 +88,12 @@ describe('buildGeminiEnhanceBody (R8)', () => {
   });
 
   it('R8 a level is sent as generation_config.thinking_level', () => {
-    const body = buildGeminiEnhanceBody({ model: 'gemini-3.8-flash', prompt: 'weathered steel', atlas, level: 'low' });
+    const body = buildGeminiEnhanceBody({ model: 'gemini-3.8-flash', prompt: 'weathered steel', image: atlas, level: 'low' });
     expect(body.generation_config).toEqual({ thinking_level: 'low' });
   });
 
   it('R8 no level sends no generation_config at all', () => {
-    const body = buildGeminiEnhanceBody({ model: 'gemini-3.5-flash-lite', prompt: 'weathered steel', atlas, level: null });
+    const body = buildGeminiEnhanceBody({ model: 'gemini-3.5-flash-lite', prompt: 'weathered steel', image: atlas, level: null });
     expect('generation_config' in body).toBe(false);
   });
 });

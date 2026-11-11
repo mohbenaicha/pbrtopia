@@ -1,0 +1,34 @@
+.mesh-picker__menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 10rem;
+}
+
+.mesh-picker__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mesh-picker__item:hover,
+.mesh-picker__item:focus-visible {
+  background: var(--bg-button);
+}
+
+.mesh-picker__item[aria-checked='true'] {
+  color: var(--accent);
+}
+
+.mesh-picker__item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}

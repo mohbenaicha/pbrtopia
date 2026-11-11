@@ -26,7 +26,7 @@ function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void 
   s.setMaxTextureSize(8192);
   s.setCatalog({
     gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3-pro-image'), known('gemini', 'gemini-3.8-flash')],
-    openai: [known('openai', 'gpt-image-2.5-sunburst'), unverified, known('openai', 'gpt-6-astra')],
+    openai: [known('openai', 'gpt-image-2.5-sunburst'), unverified, known('openai', 'gpt-6-luna')],
   });
   s.setHasKey('gemini', true);
   s.setSceneState({ hasModel: true, hasUvs: true });
@@ -124,7 +124,7 @@ describe('GeneratePanel: model, resolution, quality (R4, R5)', () => {
     const labels = optionsOf('Model');
     expect(labels).toContain('OpenAI: GPT Image 2.5 Sunburst');
     expect(labels).toContain('OpenAI: gpt-image-9-mystery (unverified)');
-    expect(labels.some((label) => label.includes('gpt-6-astra'))).toBe(false);
+    expect(labels.some((label) => label.includes('gpt-6-luna'))).toBe(false);
   });
 
   it('R4 choosing a model sets the store and the resolution control follows', () => {

@@ -10,16 +10,17 @@ interface DialogProps {
   headerActions?: ReactNode; // icon buttons at the right of the title bar (the image viewer's Download and Close)
   size?: 'default' | 'large'; // large: most of the window, for a picture (viewport-layout R33)
   dismissible?: boolean; // Escape and a click outside close it; false for dialogs that must be answered
+  closeOnOutsideClick?: boolean; // false: only Escape closes it, so a stray click cannot end work in progress
   children?: ReactNode;
 }
 
 const FOCUSABLE = 'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [href], [tabindex]:not([tabindex="-1"])';
 
 // A modal over a dimmed page. Focus moves in on open, cycles inside on Tab, and goes back to where it was on close.
-export function Dialog({ open, title, onClose, actions, headerActions, size = 'default', dismissible = true, children }: DialogProps): React.JSX.Element | null {
+export function Dialog({ open, title, onClose, actions, headerActions, size = 'default', dismissible = true, closeOnOutsideClick = true, children }: DialogProps): React.JSX.Element | null {
   const titleId = useId();
   const dialog = useRef<HTMLDivElement>(null);
-  useDismiss(open && dismissible, dialog, onClose);
+  useDismiss(open && dismissible, dialog, onClose, closeOnOutsideClick);
 
   useEffect(() => {
     if (!open) return undefined;

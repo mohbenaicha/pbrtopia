@@ -1,4 +1,4 @@
-import type { MeshRecord } from '../../projection/engine';
+import type { MeshRecord } from './meshRecord';
 import type { CustomPlanStoredRecord, NamedPlanStoredRecord } from './customPlanRecords';
 import type { PictureRecord, SlotRecord } from './pictureRecords';
 
@@ -55,7 +55,8 @@ export interface ProjectSummary {
   name: string;
   updatedAt: string;
   thumbnailKey?: string;
-  triangleCount: number;
+  triangleCount?: number; // the projection app's size line; the material app sets `detail` instead
+  detail?: string; // what the card shows in place of the triangle count (kind and size)
   unreadable?: string; // why the project cannot be opened (a record of an older version); it can still be deleted
 }
 

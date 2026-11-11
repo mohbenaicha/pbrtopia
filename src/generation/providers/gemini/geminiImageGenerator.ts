@@ -1,3 +1,4 @@
+import { checkRequestHasContent } from '../checkRequestHasContent';
 import { classifyOkBody } from '../classifyProviderError';
 import { decodeBase64ToBlob, encodeImage } from '../base64';
 import type { ImageGenerator } from '../ImageGenerator';
@@ -9,9 +10,12 @@ import { parseGeminiImage } from './geminiResponses';
 export function createGeminiImageGenerator(fetchImpl: typeof fetch = fetch): ImageGenerator {
   return {
     async generate(request, ctx) {
-      const tooBig = checkInlineSize([request.atlas, ...request.references], request.prompt);
+      const empty = checkRequestHasContent(request);
+      if (empty !== null) return { ok: false, error: empty };
+      const attached = [...request.images, ...request.references];
+      const tooBig = checkInlineSize(attached, request.prompt);
       if (tooBig !== null) return { ok: false, error: tooBig };
-      const images = await Promise.all([request.atlas, ...request.references].map(encodeImage));
+      const images = await Promise.all(attached.map(encodeImage));
       const body = buildGeminiImageBody({ model: request.model, prompt: request.prompt, resolutionKey: request.resolutionKey, quality: request.quality, images, ...(request.canvas ? { canvas: request.canvas } : {}) });
       if (!body.ok) return body;
       const sent = await sendProviderRequest(

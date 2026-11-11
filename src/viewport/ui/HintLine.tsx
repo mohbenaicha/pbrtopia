@@ -1,5 +1,7 @@
 import './HintLine.css';
 
-export function HintLine(): React.JSX.Element {
-  return <p className="viewport-hint">Right-drag orbit, middle-drag pan, scroll zoom</p>;
+export const DEFAULT_HINT = 'Right-drag orbit, middle-drag pan, scroll zoom';
+
+export function HintLine({ text = DEFAULT_HINT }: { text?: string }): React.JSX.Element {
+  return <p className="viewport-hint">{text}</p>;
 }

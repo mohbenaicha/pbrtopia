@@ -6,7 +6,7 @@ import { createOpenAiPromptEnhancer } from '../../../../src/generation/providers
 const KEY = 'sk-test-key-0123456789';
 const png = (text = 'atlas'): Blob => new Blob([text], { type: 'image/png' });
 const ctx = (signal = new AbortController().signal) => ({ apiKey: KEY, signal });
-const request = (patch: Partial<GenerateRequest> = {}): GenerateRequest => ({ model: 'gpt-image-2.5-sunburst', prompt: 'weathered steel', atlas: png(), references: [], resolutionKey: '1K', sizePx: 1024, quality: 'auto', ...patch });
+const request = (patch: Partial<GenerateRequest> = {}): GenerateRequest => ({ model: 'gpt-image-2.5-sunburst', prompt: 'weathered steel', images: [png()], references: [], resolutionKey: '1K', sizePx: 1024, quality: 'auto', ...patch });
 const reply = (body: unknown, status = 200): Response => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 function fakeFetch(response: Response | (() => Promise<Response>)) {
@@ -114,7 +114,7 @@ describe('createOpenAiImageGenerator (R7, R14)', () => {
 });
 
 describe('createOpenAiPromptEnhancer (R8)', () => {
-  const enhanceRequest = { model: 'gpt-6-astra', prompt: 'weathered steel', atlas: png(), level: null };
+  const enhanceRequest = { model: 'gpt-6-astra', prompt: 'weathered steel', image: png(), level: null };
   const answer = (text: string) => ({ output: [{ type: 'message', content: [{ type: 'output_text', text }] }] });
 
   it('R8 sends the request level as reasoning.effort, and no reasoning field without one', async () => {

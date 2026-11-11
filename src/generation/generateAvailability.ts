@@ -1,5 +1,6 @@
 import type { Provider } from '../keys';
 import { listCanvases } from './catalog/canvasRules';
+import { describeImageModelProblem } from './catalog/describeImageModelProblem';
 import type { ProviderModelRecord } from './catalog/modelTypes';
 import { countUserReferenceSlots } from './catalog/referenceSlots';
 import { countImages, describePlanProblem } from './custom/planEditing';
@@ -17,9 +18,22 @@ export interface GenerateAvailability {
 
 const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
 
-// R8: the model that rewrites the prompt: the Settings choice, else the first verified vision-text model of the image provider. Null when there is none.
-export function pickEnhancerModel(input: Pick<AvailabilityInput, 'enhancer' | 'provider' | 'catalog'>): EnhancerChoice | null {
+/** The models Automatic stands for, in order: GPT-6 Luna when an OpenAI key exists, else Gemini 3.8 Flash when a Gemini key exists. */
+const AUTOMATIC_ENHANCERS: readonly EnhancerChoice[] = [
+  { provider: 'openai', modelId: 'gpt-6-luna' },
+  { provider: 'gemini', modelId: 'gemini-3.8-flash' },
+];
+
+// R8: the model that rewrites the prompt: the Settings choice, else (Automatic) GPT-6 Luna with an OpenAI key or Gemini 3.8 Flash with a Gemini key. Without key information the
+// first verified vision-text model of the image provider. Null when there is none.
+export function pickEnhancerModel(input: Pick<AvailabilityInput, 'enhancer' | 'provider' | 'catalog'> & { hasKey?: Record<Provider, boolean> }): EnhancerChoice | null {
   if (input.enhancer !== null) return input.enhancer;
+  if (input.hasKey !== undefined) {
+    const keys = input.hasKey;
+    const catalog = input.catalog;
+    const listed = (choice: EnhancerChoice): boolean => catalog[choice.provider].some((model: ProviderModelRecord) => model.id === choice.modelId && model.role === 'vision-text');
+    return AUTOMATIC_ENHANCERS.find((choice) => keys[choice.provider] && listed(choice)) ?? null;
+  }
   if (input.provider === null) return null;
   const fallback = input.catalog[input.provider].find((model: ProviderModelRecord) => model.role === 'vision-text' && model.verified);
   return fallback === undefined ? null : { provider: input.provider, modelId: fallback.id };
@@ -51,14 +65,7 @@ export function describeGenerateAvailability(input: AvailabilityInput): Generate
   return { action: 'generate', enabled: true, reason: null };
 }
 
-// R19: why an image model cannot be used right now, or null.
-export function describeImageModelProblem(input: Pick<AvailabilityInput, 'catalog' | 'hasKey'>, provider: Provider, modelId: string): string | null {
-  const image = input.catalog[provider].find((model) => model.id === modelId);
-  if (image === undefined) return 'The chosen image model is no longer available. Choose another.';
-  if (!image.verified) return 'This image model is not verified yet, so its sizes and quality levels are unknown. Choose another.';
-  if (!input.hasKey[provider]) return `Add a ${PROVIDER_NAME[provider]} key in Settings.`;
-  return null;
-}
+export { describeImageModelProblem };
 
 // R8, R20: why the prompt enhancer cannot be used right now, or null.
 function describeEnhancerProblem(input: Pick<AvailabilityInput, 'enhancer' | 'provider' | 'catalog' | 'hasKey'>): string | null {

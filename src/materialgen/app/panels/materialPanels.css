@@ -1,0 +1,140 @@
+/* The left and right panels of the material app (materialgen app R14, R20). Tokens only; panels never scroll sideways (R22). */
+.material-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.material-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.material-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.material-panel__label {
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+/* The prompt field with its ideas strip inside the bottom edge (generation R71); the strip is left-aligned because the right corner keeps the resize grip. */
+.prompt-field {
+  position: relative;
+}
+
+.prompt-ideas {
+  position: absolute;
+  left: var(--space-2);
+  bottom: var(--space-2);
+  display: flex;
+  gap: var(--space-1);
+}
+
+.prompt-ideas__number {
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.material-panel__prompt {
+  width: 100%;
+  min-height: 160px;
+  padding: var(--space-2) var(--space-3) calc(var(--control-height) + var(--space-3)); /* room under the text for the ideas strip */
+  box-sizing: border-box;
+  resize: vertical;
+  background: var(--bg-input);
+  border: 1px solid var(--bg-hover);
+  border-radius: var(--radius-control);
+  color: var(--text);
+  font: inherit;
+}
+
+.material-panel__prompt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.material-panel__prompt:disabled {
+  opacity: 0.6;
+}
+
+.material-panel__generate {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.material-panel__generate > .ui-button {
+  flex: 1;
+  min-width: 0;
+}
+
+.material-panel__hint {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+  overflow-wrap: anywhere;
+}
+
+.material-slots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  min-width: 0;
+}
+
+/* What the maps controller reports after an operation (maps R17, R43). */
+.map-message {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  border-radius: var(--radius-control);
+  font-size: var(--font-size-small);
+  overflow-wrap: anywhere;
+}
+
+.map-message--error {
+  color: var(--error);
+}
+
+/* The shared Button is the panel's own colour; inside a panel (a Disclosure) it takes the input colour so it reads as a button. */
+.ui-disclosure .ui-button:not([data-variant]),
+.ui-disclosure .ui-button[data-variant='secondary'] {
+  background: var(--bg-input);
+}
+
+.ui-disclosure .ui-button:not([data-variant]):hover:not(:disabled),
+.ui-disclosure .ui-button[data-variant='secondary']:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+/* The Generate panel's tab strip runs edge to edge, so its notes and its tab bodies carry the padding (as the projection app's right panel). */
+.material-panel__notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) 0;
+}
+
+.material-panel--padded {
+  padding: var(--space-3) var(--space-4);
+}
+
+.map-message__dismiss {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

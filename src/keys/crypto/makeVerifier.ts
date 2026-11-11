@@ -2,14 +2,17 @@ import { decryptSecret } from './decryptSecret';
 import { encryptSecret } from './encryptSecret';
 import type { SealedBytes } from './sealedBytes';
 
-const VERIFIER_CONSTANT = 'texture-lab-keys verifier constant';
-const VERIFIER_DATA = 'texture-lab-keys/v1/verifier';
+import { vaultScope } from '../../appId';
+
+const constantFor = (scope: string): string => `${scope} verifier constant`;
+const dataFor = (scope: string): string => `${scope}/v1/verifier`;
 
 // R2, R5: a known constant sealed with the derived key. Whether a password is right is decided by opening it; nothing is written.
-export function makeVerifier(key: CryptoKey): Promise<SealedBytes> {
-  return encryptSecret(key, VERIFIER_CONSTANT, VERIFIER_DATA);
+// `scope` is the vault's name prefix (the default is the projection app's own), so a verifier made for one app never opens for another.
+export function makeVerifier(key: CryptoKey, scope: string = vaultScope()): Promise<SealedBytes> {
+  return encryptSecret(key, constantFor(scope), dataFor(scope));
 }
 
-export async function checkVerifier(key: CryptoKey, verifier: SealedBytes): Promise<boolean> {
-  return (await decryptSecret(key, verifier, VERIFIER_DATA)) === VERIFIER_CONSTANT;
+export async function checkVerifier(key: CryptoKey, verifier: SealedBytes, scope: string = vaultScope()): Promise<boolean> {
+  return (await decryptSecret(key, verifier, dataFor(scope))) === constantFor(scope);
 }

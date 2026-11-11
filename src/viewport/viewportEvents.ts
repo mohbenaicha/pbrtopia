@@ -4,6 +4,7 @@ interface ViewportEventPayloads {
   'context-lost': undefined;
   'context-restored': undefined;
   'camera-change': undefined;
+  resized: undefined; // the canvas took a new size and the cameras' aspect follows it, before the frame is drawn (a feature that frames its own view refits here)
   'projection-changed': 'perspective' | 'orthographic';
   'settings-changed': ViewportSettings; // the viewport changed a setting by itself, e.g. where auto-rotate stopped
 }

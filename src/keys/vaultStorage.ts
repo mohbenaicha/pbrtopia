@@ -1,3 +1,4 @@
+import { vaultScope } from '../appId';
 import { readVaultRecord } from './readVaultRecord';
 import type { VaultRecord, VaultStorage } from './vaultTypes';
 
@@ -15,9 +16,9 @@ const settle = <T>(request: IDBRequest<T>): Promise<T> =>
     request.onerror = () => reject(request.error);
   });
 
-function openVaultDatabase(factory: IDBFactory): Promise<IDBDatabase> {
+function openVaultDatabase(factory: IDBFactory, name: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = factory.open(VAULT_DATABASE_NAME, 1);
+    const request = factory.open(name, 1);
     request.onupgradeneeded = () => request.result.createObjectStore(STORE);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -28,12 +29,13 @@ const sameBytes = (a: Uint8Array, b: Uint8Array): boolean => a.length === b.leng
 
 // R2, R5, R10: the vault record in its own IndexedDB database. Each call opens the database and closes it again, so a handle never goes
 // stale when another tab upgrades it. Failures are rejected with fixed messages, never with stored content.
-export function createIndexedDbVaultStorage(factory: IDBFactory | null = globalThis.indexedDB ?? null): VaultStorage {
+export function createIndexedDbVaultStorage(factory: IDBFactory | null = globalThis.indexedDB ?? null, appId?: string): VaultStorage {
+  const databaseName = vaultScope(appId); // a bad appId throws here, before anything is opened
   async function withStore<T>(mode: IDBTransactionMode, failure: string, work: (store: IDBObjectStore) => Promise<T>): Promise<T> {
     if (!factory) throw new Error(UNAVAILABLE);
     let db: IDBDatabase;
     try {
-      db = await openVaultDatabase(factory);
+      db = await openVaultDatabase(factory, databaseName);
     } catch {
       throw new Error(UNAVAILABLE);
     }

@@ -38,6 +38,36 @@ describe('Slider', () => {
     expect(label.parentElement).toBe(slider.parentElement); // no header row above the track
   });
 
+  it('R23 a readout given by the caller replaces the number readout', () => {
+    render(<Slider label="Zoom" value={250} min={100} max={400} onChange={() => undefined} readout={<input aria-label="Zoom value" />} />);
+    expect(screen.getByLabelText('Zoom value')).toBeTruthy();
+    expect(screen.queryByText('250')).toBeNull();
+  });
+
+  it('preview R61 a slider given a default shows a Reset arrow after the number, and a click sets the default', () => {
+    const onChange = vi.fn();
+    render(<Slider label="Contrast" value={0.55} min={0} max={3} step={0.01} onChange={onChange} format={(value) => value.toFixed(2)} layout="row" resetTo={1} />);
+    const reset = screen.getByRole('button', { name: 'Reset Contrast' }) as HTMLButtonElement;
+    const value = screen.getByText('0.55');
+    expect(value.compareDocumentPosition(reset) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(reset);
+    expect(onChange).toHaveBeenCalledWith(1);
+  });
+
+  it('preview R61 the Reset arrow is disabled at the default and while the slider is disabled', () => {
+    const { rerender } = render(<Slider label="Contrast" value={1} min={0} max={3} onChange={() => undefined} layout="row" resetTo={1} />);
+    expect((screen.getByRole('button', { name: 'Reset Contrast' }) as HTMLButtonElement).disabled).toBe(true);
+    rerender(<Slider label="Contrast" value={2} min={0} max={3} onChange={() => undefined} layout="row" resetTo={1} disabled />);
+    expect((screen.getByRole('button', { name: 'Reset Contrast' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('preview R61 the stacked layout has the Reset arrow too, and a slider with no default has none', () => {
+    const { rerender } = render(<Slider label="Zoom" value={150} min={100} max={400} onChange={() => undefined} resetTo={100} />);
+    expect(screen.getByRole('button', { name: 'Reset Zoom' })).toBeTruthy();
+    rerender(<Slider label="Zoom" value={150} min={100} max={400} onChange={() => undefined} />);
+    expect(screen.queryByRole('button', { name: 'Reset Zoom' })).toBeNull();
+  });
+
   it('R1 the filled part of the track follows the value through a CSS variable', () => {
     render(<Slider label="Zoom" value={250} min={100} max={400} step={10} onChange={() => undefined} />);
     const slider = screen.getByRole('slider', { name: 'Zoom' }) as HTMLInputElement;

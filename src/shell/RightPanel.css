@@ -1,0 +1,19 @@
+.right-panel {
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden; /* R27: never scrolls sideways */
+  overflow-y: auto;
+  background: var(--bg-panel);
+}
+
+/* The panel's tab strip runs edge to edge (viewport-layout R32), so the messages around the Generate panel carry the padding. */
+.right-panel__notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.right-panel__notes:empty {
+  display: none;
+}

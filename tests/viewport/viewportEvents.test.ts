@@ -13,6 +13,14 @@ describe('viewportEvents', () => {
     expect(onLost).not.toHaveBeenCalled();
   });
 
+  it('R18 materialgen preview R5 the resized event reaches its subscriber (a feature that frames its own view refits on it)', () => {
+    const events = createViewportEvents();
+    const onResized = vi.fn();
+    events.on('resized', onResized);
+    events.emit('resized');
+    expect(onResized).toHaveBeenCalledTimes(1);
+  });
+
   it('R18 the function returned by on stops that subscriber only', () => {
     const events = createViewportEvents();
     const first = vi.fn();

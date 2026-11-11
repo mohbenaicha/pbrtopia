@@ -3,7 +3,9 @@ import { LINE_ICON_PATHS } from '../../src/ui-kit/lineIcons';
 
 describe('LINE_ICON_PATHS', () => {
   it('viewport-layout R3 offers the icons the app draws with one line set', () => {
-    expect(Object.keys(LINE_ICON_PATHS).sort()).toEqual(['apply', 'arrow-right', 'bug', 'check', 'chevron-down', 'chevron-right', 'close', 'download', 'edit-mesh', 'eye', 'eye-off', 'gear', 'grid', 'merge', 'model-download', 'move', 'pencil', 'plus', 'projects', 'redo', 'reset', 'rotate', 'save', 'scale', 'select-box', 'select-lasso', 'trash', 'undo', 'upload']);
+    const drawn = ['apply', 'arrow-right', 'bug', 'check', 'chevron-down', 'chevron-right', 'close', 'download', 'edit-mesh', 'eye', 'eye-off', 'gear', 'grid', 'masks', 'merge', 'mesh-ball', 'mesh-material-ball', 'mesh-plane', 'model-download', 'move', 'pencil', 'plus', 'projects', 'redo', 'reset', 'rotate', 'save', 'scale', 'select-box', 'select-lasso', 'trash', 'undo', 'upload'];
+    const mapTools = ['crop', 'mirror', 'occlusion', 'swap', 'summary', 'sparkle']; // imageops R20, R29-R36, R43: the map tools' icons in the Maps heading and on the AO picture
+    expect(Object.keys(LINE_ICON_PATHS).sort()).toEqual([...drawn, ...mapTools].sort());
   });
 
   it('textures R6 and R16 offer the apply and model-download icons', () => {

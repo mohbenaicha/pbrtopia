@@ -6,10 +6,11 @@ import './ViewportCanvas.css';
 interface ViewportCanvasProps {
   onReady?: (viewport: Viewport | null) => void; // the viewport once created, null when it is disposed
   overlay?: (viewport: Viewport) => ReactNode; // drawn over the canvas, e.g. the corner controls
+  hint?: string; // the control hint at the bottom-left; the orbit controls' text by default
 }
 
 // Creates the viewport in its own container, keeps it for as long as it is shown, and puts the overlay and the control hint over it.
-export function ViewportCanvas({ onReady, overlay }: ViewportCanvasProps): React.JSX.Element {
+export function ViewportCanvas({ onReady, overlay, hint }: ViewportCanvasProps): React.JSX.Element {
   const host = useRef<HTMLDivElement>(null);
   const latestOnReady = useRef(onReady);
   const [viewport, setViewport] = useState<Viewport | null>(null);
@@ -33,7 +34,7 @@ export function ViewportCanvas({ onReady, overlay }: ViewportCanvasProps): React
     <div className="viewport-surface" data-testid="viewport">
       <div className="viewport-surface__canvas" ref={host} />
       {viewport !== null && overlay?.(viewport)}
-      <HintLine />
+      <HintLine {...(hint === undefined ? {} : { text: hint })} />
     </div>
   );
 }

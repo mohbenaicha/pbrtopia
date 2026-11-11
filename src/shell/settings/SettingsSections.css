@@ -1,0 +1,166 @@
+/* One page structure for every section (settings R12): a title, one line of description, then groups as cards 24 px apart. */
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.settings-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.settings-page__title {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: 600;
+}
+
+.settings-page__description {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-group);
+  background: var(--bg-panel);
+}
+
+.settings-card__heading {
+  margin: 0;
+  font-size: var(--font-size);
+  font-weight: 600;
+}
+
+.settings-card__hint {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.settings-card__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.settings-card__messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.settings-card__messages:empty {
+  display: none;
+}
+
+.settings-card__messages > * {
+  margin: 0;
+}
+
+.settings-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* label column 40 %, control column the rest, controls at least 200 px; stacked when the content area is narrower than 600 px */
+.settings-field {
+  display: grid;
+  grid-template-columns: 40% minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.settings-field__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-field__hint {
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.storage-usage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.settings-field__control {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: min(200px, 100%);
+}
+
+@container settings-content (max-width: 599px) {
+  .settings-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+    align-items: stretch;
+  }
+}
+
+.shortcut-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 40%) minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.shortcut-row__keys {
+  justify-self: start;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+  font-family: var(--font);
+  font-size: var(--font-size-small);
+}
+
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings-note {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.settings-problems {
+  margin: 0;
+  padding-left: var(--space-4);
+  color: var(--error);
+  font-size: var(--font-size-small);
+}
+
+/* The API keys section belongs to the keys module; here it only takes the same card look. */
+.settings-page .key-settings {
+  padding: var(--space-4);
+  border-radius: var(--radius-group);
+  background: var(--bg-panel);
+}
+
+.settings-page .key-settings__title {
+  font-size: var(--font-size);
+}
+
+.settings-page .key-row {
+  background: var(--bg-input);
+}

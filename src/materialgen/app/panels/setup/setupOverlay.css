@@ -1,0 +1,64 @@
+/* Generation R10-R15: what the material setup overlay adds to the shared overlay styles (AssignmentOverlay.css). Tokens only, except the map pictures. */
+
+/* A chip is a picture of the kind of map; its colours are the --map-* tokens (they show map data, not the theme). */
+.map-chip-thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+}
+
+.map-chip-thumb--albedo {
+  background: linear-gradient(135deg, var(--map-albedo-1) 0%, var(--map-albedo-2) 55%, var(--map-albedo-3) 100%);
+}
+
+.map-chip-thumb--normal {
+  background: radial-gradient(circle at 35% 35%, var(--map-normal-1) 0%, var(--map-normal-2) 45%, var(--map-normal-3) 100%);
+}
+
+.map-chip-thumb--height {
+  background: linear-gradient(135deg, var(--map-height-1) 0%, var(--map-height-2) 60%, var(--map-height-3) 100%);
+}
+
+.map-chip-thumb--metal-roughness {
+  background: linear-gradient(135deg, var(--map-metal-1) 0%, var(--map-metal-2) 50%, var(--map-metal-3) 100%);
+}
+
+/* Metal-Roughness is shown in the row but never moved: it looks like a chip and does not answer a press. */
+.setup-snapshots__button[aria-disabled='true'] {
+  cursor: default;
+}
+
+/* The tiles of a card's preview are named in place. */
+.map-tile {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1px solid var(--bg-page);
+  background: var(--bg-hover);
+}
+
+.map-tile__name {
+  padding: 0 var(--space-1);
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.setup-preview__caption,
+.setup-preview__caveat {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+  overflow-wrap: anywhere;
+}
+
+.setup-preview__problem {
+  margin: 0;
+  color: var(--error);
+  font-size: var(--font-size-small);
+  text-align: center;
+  overflow-wrap: anywhere;
+}

@@ -4,6 +4,7 @@ import './IconButton.css';
 
 interface IconButtonProps {
   label: string; // the accessible name and the tooltip
+  hint?: string; // a longer tooltip in place of the label (a summary shown on hover); the accessible name stays the label
   icon: ReactNode;
   pressed?: boolean; // for a toggle: reported as aria-pressed and drawn selected
   expanded?: boolean; // for a button that opens a panel: reported as aria-expanded and drawn selected while it is open
@@ -15,7 +16,7 @@ interface IconButtonProps {
   testId?: string; // a stable hook for the end-to-end tests
 }
 
-export function IconButton({ label, icon, pressed, expanded, disabled = false, disabledReason, loading = false, compact = false, onClick, testId }: IconButtonProps): React.JSX.Element {
+export function IconButton({ label, hint, icon, pressed, expanded, disabled = false, disabledReason, loading = false, compact = false, onClick, testId }: IconButtonProps): React.JSX.Element {
   const reason = disabled ? disabledReason : undefined;
   return (
     <button
@@ -24,7 +25,7 @@ export function IconButton({ label, icon, pressed, expanded, disabled = false, d
       aria-label={label}
       aria-description={reason}
       aria-busy={loading ? true : undefined}
-      title={reason === undefined ? label : `${label}: ${reason}`}
+      title={reason === undefined ? (hint ?? label) : `${label}: ${reason}`}
       aria-pressed={pressed}
       aria-expanded={expanded}
       data-pressed={pressed || expanded ? '' : undefined}

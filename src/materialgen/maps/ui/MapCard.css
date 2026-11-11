@@ -1,0 +1,170 @@
+/* A map slot card (maps R34, R44, R45, R49; app R21, R22): a collapsible panel like the projection app's Materials sections, its picture square with the buttons over its top-right corner and the caption over its bottom. Tokens only; the card never scrolls sideways. */
+/* The maps grid: two columns of square pictures like the projection app's picture grids; Metal-Roughness takes a whole row for its two halves. */
+.map-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.map-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.map-card[data-split] {
+  grid-column: 1 / -1;
+}
+
+.map-card__halves {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.map-card[data-split] .map-card__halves {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.map-half {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.map-half__stale {
+  color: var(--error);
+}
+
+.map-half__frame {
+  position: relative;
+}
+
+.map-half__drop {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+  color: var(--text-hint);
+  font-size: var(--font-size-small);
+  text-align: center;
+  transition: background var(--transition-fast);
+}
+
+/* An empty slot is a drop zone: a dashed outline marks it. */
+.map-half__frame:not([data-filled]) .map-half__drop {
+  padding: var(--space-2);
+  border: 1px dashed var(--bg-hover);
+}
+
+.map-half__drop[data-dragging] {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.map-half__drop[data-dragging] .map-half__choose {
+  background: var(--bg-hover);
+}
+
+.map-half__drop[aria-busy='true'] {
+  opacity: 0.6;
+}
+
+/* The empty slot is one element, drop target and button in one, the same square as a filled picture; its name is the caption. */
+.map-half__choose {
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  color: var(--text-hint);
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: center;
+}
+
+.map-half__choose:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-dim);
+}
+
+.map-half__choose:disabled {
+  cursor: default;
+}
+
+.map-half__file {
+  display: none;
+}
+
+/* The picture is a button that opens the viewer, as in the projection app's Materials tab. */
+.map-half__picture {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.map-half__picture:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.map-card__thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.map-card__missing {
+  color: var(--error);
+}
+
+/* The caption is over the picture's bottom on a slight dark band, always shown so the cells are named at rest; it takes no height of its own. */
+.map-half__caption {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  overflow: hidden;
+  border-radius: 0 0 var(--radius-control) var(--radius-control);
+  background: var(--surface-over-picture);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* The buttons are over the picture's top-right corner, shown while the pointer is over the picture or a button has focus. */
+.map-half__buttons {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+  max-width: calc(3 * 26px + 2 * 2px); /* three over two, never four over one */
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.map-half__frame:hover .map-half__buttons,
+.map-half__frame:focus-within .map-half__buttons {
+  opacity: 1;
+}
+
+.map-half__buttons .ui-icon-button {
+  width: 26px;
+  height: 26px;
+  background: var(--surface-over-picture);
+}

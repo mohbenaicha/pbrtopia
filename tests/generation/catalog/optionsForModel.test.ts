@@ -43,7 +43,7 @@ describe('optionsForModel', () => {
   });
 
   it('R4 a text model offers no sizes and no levels', () => {
-    expect(optionsForModel(known('openai', 'gpt-6-astra'), 16384)).toEqual({ resolutions: [], qualityLevels: [] });
+    expect(optionsForModel(known('openai', 'gpt-6-luna'), 16384)).toEqual({ resolutions: [], qualityLevels: [] });
   });
 
   it('R4 the model it is given is not changed', () => {

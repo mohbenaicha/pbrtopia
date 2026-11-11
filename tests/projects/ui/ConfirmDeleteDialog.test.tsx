@@ -22,6 +22,12 @@ describe('ConfirmDeleteDialog', () => {
     expect(within(dialog).getByText(/^"Orc helmet": The model, textures, projection sets and thumbnail are removed from this browser\. This cannot be undone\.$/)).toBeTruthy();
   });
 
+  it('shared/materialgen-prep R57 the effect text can be replaced by the app', () => {
+    render(<ConfirmDeleteDialog {...props({ deleteEffect: 'The maps and thumbnail are removed.' })} />);
+    const dialog = screen.getByRole('dialog', { name: 'Delete this project?' });
+    expect(within(dialog).getByText('"Orc helmet": The maps and thumbnail are removed.')).toBeTruthy();
+  });
+
   it('projects R8 several projects are asked about by count', () => {
     render(<ConfirmDeleteDialog {...props({ projects: [summary('a', 'A'), summary('b', 'B'), summary('c', 'C')] })} />);
     const dialog = screen.getByRole('dialog', { name: 'Delete 3 projects?' });

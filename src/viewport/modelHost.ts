@@ -1,5 +1,5 @@
 import { Box3, Sphere, type BufferGeometry, type Material, type Object3D, type Scene } from 'three';
-import { removeHiddenTriangles } from '../meshEdit/model/removeHiddenTriangles';
+import { removeHiddenTriangles } from '../hiddenMarks';
 import type { CameraRig } from './cameraRig';
 import { loadModelAsset, type ModelAsset } from './loadModelAsset';
 import { createFlashOverlay, type FlashOverlay } from './flashOverlay';

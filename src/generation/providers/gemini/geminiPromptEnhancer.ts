@@ -5,12 +5,12 @@ import { sendProviderRequest } from '../sendProviderRequest';
 import { buildGeminiEnhanceBody, GEMINI_INTERACTIONS_URL } from './geminiRequests';
 import { parseGeminiText } from './geminiResponses';
 
-// R8: the Gemini prompt enhancer: the chosen text model reads the prompt and the atlas and answers with the rewritten prompt.
+// R8: the Gemini prompt enhancer: the chosen text model reads the prompt and the image and answers with the rewritten prompt.
 export function createGeminiPromptEnhancer(fetchImpl: typeof fetch = fetch): PromptEnhancer {
   return {
     async enhance(request, ctx) {
-      const atlas = await encodeImage(request.atlas);
-      const body = buildGeminiEnhanceBody({ model: request.model, prompt: request.prompt, atlas, level: request.level });
+      const image = request.image === undefined ? undefined : await encodeImage(request.image);
+      const body = buildGeminiEnhanceBody({ model: request.model, prompt: request.prompt, ...(image === undefined ? {} : { image }), level: request.level });
       const sent = await sendProviderRequest(
         { provider: 'gemini', url: GEMINI_INTERACTIONS_URL, method: 'POST', headers: { 'x-goog-api-key': ctx.apiKey, 'content-type': 'application/json' }, body: JSON.stringify(body) },
         ctx,

@@ -1,6 +1,5 @@
 import { isPlainSetId } from '../records/blobKeys';
-import { isSafeBlobKey, type ProjectRecord } from '../records/projectRecords';
-import type { SavedSetRecord } from '../records/savedSetRecord';
+import { isSafeBlobKey } from '../records/projectRecords';
 
 // The shape of an exported project zip (specs/app/projects/contracts.md, Zip contract).
 export const MANIFEST_PATH = 'manifest.json';
@@ -11,7 +10,7 @@ export const APP_NAME = 'texture-lab';
 export const ZIP_LIMITS = { maxEntries: 5000, maxBlobBytes: 512 * 1024 * 1024, maxRecordBytes: 64 * 1024 * 1024 } as const;
 
 export interface ExportManifest {
-  app: typeof APP_NAME;
+  app: string; // APP_NAME, or the name for an appId
   schemaVersion: number;
   exportedAt: string;
   projectId: string;
@@ -35,14 +34,4 @@ export function classifyEntryPath(path: string): EntryKind | null {
   const set = /^sets\/([^/]+)\.json$/.exec(path);
   if (set && isPlainSetId(set[1]!)) return { kind: 'set', setId: set[1]! };
   return null;
-}
-
-/** Every file the records point to, each once: the model, pictures, reference images, and each set's images. */
-export function referencedBlobKeys(project: ProjectRecord, sets: readonly SavedSetRecord[]): string[] {
-  const keys = new Set<string>([project.modelBlobKey]);
-  if (project.originalModelBlobKey !== undefined) keys.add(project.originalModelBlobKey);
-  for (const picture of project.pictures) keys.add(picture.blobKey);
-  for (const reference of project.generate.referenceImages) keys.add(reference.blobKey);
-  for (const set of sets) for (const image of set.images) keys.add(image.blobKey);
-  return [...keys];
 }

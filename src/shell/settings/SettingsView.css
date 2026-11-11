@@ -1,0 +1,99 @@
+/* The navigation stays; only the content area scrolls (viewport-layout R26). */
+.settings-view {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-page);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+}
+
+.settings-view__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  overflow-y: auto;
+  background: var(--bg-panel);
+}
+
+.settings-view__back {
+  display: flex;
+}
+
+.settings-view__title {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: 600;
+}
+
+.settings-view__links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings-view__links a {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+.settings-view__links a:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.settings-view__links a[aria-current='page'] {
+  background: var(--bg-button);
+  color: var(--text);
+}
+
+.settings-view__scroll {
+  position: relative; /* hidden labels and other absolutely placed parts scroll with the content instead of stretching the page */
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.settings-view__content {
+  container: settings-content / inline-size;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-5) 32px 32px;
+}
+
+/* Narrow windows: the navigation becomes a row of links above the content. */
+@media (max-width: 699px) {
+  .settings-view {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .settings-view__nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    overflow-y: visible;
+  }
+
+  .settings-view__links {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .settings-view__content {
+    padding: var(--space-4) var(--space-4) var(--space-5);
+  }
+}

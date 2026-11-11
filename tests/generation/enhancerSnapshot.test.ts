@@ -28,6 +28,7 @@ function panel() {
   const state = store.getState();
   state.setMaxTextureSize(8192);
   state.setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')], openai: [known('openai', 'gpt-6-luna')] });
+  state.setHasKey('gemini', true); // no OpenAI key, so the default enhancer is Gemini 3.8 Flash
   state.selectModel('gemini', 'gemini-nano-banana-2.1');
   state.setAtlasKey('2K');
   state.setPrompt('weathered steel');

@@ -25,7 +25,7 @@ interface GeminiEnhanceBody {
 
 const imagePart = (image: EncodedImage): GeminiPart => ({ type: 'image', mime_type: image.mimeType, data: image.base64 });
 
-// R7: the Interactions body for one image: prompt, atlas, references. The output is a JPEG (the only format the API offers) and a
+// R7: the Interactions body for one image: prompt, images, references. The output is a JPEG (the only format the API offers) and a
 // square unless a canvas is given (custom R12), because without an aspect ratio the answer is 1408x768. A size or a canvas shape Gemini
 // has no name for is refused here, before anything is sent.
 export function buildGeminiImageBody(input: { model: string; prompt: string; resolutionKey: ResolutionKey; quality: string | null; images: EncodedImage[]; canvas?: Canvas }): Result<GeminiImageBody, ProviderError> {
@@ -43,11 +43,11 @@ export function buildGeminiImageBody(input: { model: string; prompt: string; res
   };
 }
 
-// R8: the enhancer body: the fixed instruction with the user's prompt, then the atlas, and the thinking level when the model's table row has one.
-export function buildGeminiEnhanceBody(input: { model: string; prompt: string; atlas: EncodedImage; level: string | null }): GeminiEnhanceBody {
+// R8: the enhancer body: the fixed instruction with the user's prompt, then the image, and the thinking level when the model's table row has one.
+export function buildGeminiEnhanceBody(input: { model: string; prompt: string; image?: EncodedImage; level: string | null }): GeminiEnhanceBody {
   return {
     model: input.model,
-    input: [{ type: 'text', text: input.prompt }, imagePart(input.atlas)],
+    input: input.image === undefined ? [{ type: 'text', text: input.prompt }] : [{ type: 'text', text: input.prompt }, imagePart(input.image)],
     ...(input.level === null ? {} : { generation_config: { thinking_level: input.level } }),
   };
 }

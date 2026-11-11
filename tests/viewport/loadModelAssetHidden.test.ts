@@ -2,7 +2,7 @@ import { BoxGeometry, Mesh, MeshStandardMaterial, Scene } from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { MESH_EDIT_KEY, readHiddenMarks } from '../../src/meshEdit/model/hiddenMarks';
+import { MESH_EDIT_KEY, readHiddenMarks } from '../../src/hiddenMarks';
 import { exportModelWithPictures } from '../../src/viewport/exportModelWithPictures';
 import { loadModelAsset } from '../../src/viewport/loadModelAsset';
 import { installNodeFileReader } from '../support/installNodeFileReader';

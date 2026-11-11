@@ -1,0 +1,165 @@
+/* The generation parts of the left panel (generation R1, R9, R43, R55-R68). Tokens only; nothing scrolls sideways (app R22). */
+.generate-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+/* A run's heading is a sentence, not a name: it wraps instead of being cut (the one-line title of other disclosures is cut). */
+.run-log .ui-disclosure__title {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-small);
+}
+
+.run-log .ui-disclosure__header {
+  padding-block: var(--space-2);
+}
+
+.run-log__attempts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The plan summary overlay: the total, then one block per image: name left, cost right, its details under them. */
+.plan-summary__total {
+  margin: 0 0 var(--space-3);
+  font-weight: 600;
+}
+
+.plan-summary__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.plan-summary__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  border-radius: var(--radius-control);
+}
+
+.plan-summary__cost {
+  color: var(--text-dim);
+}
+
+.plan-summary__detail {
+  grid-column: 1 / -1;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+  overflow-wrap: anywhere;
+}
+
+.generate-outcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  border-radius: var(--radius-control);
+  font-size: var(--font-size-small);
+  overflow-wrap: anywhere;
+}
+
+.generate-outcome p {
+  margin: 0;
+}
+
+.generate-outcome--error {
+  border: 1px solid var(--error);
+}
+
+.generate-outcome__failures {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.model-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.model-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.model-card + .model-card {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--bg-hover);
+}
+
+.model-card__title {
+  margin: 0;
+  font-size: var(--font-size);
+  font-weight: 600;
+}
+
+.model-card__fields,
+.reference-images {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.model-card__problem,
+.run-log__error {
+  margin: 0;
+  color: var(--error);
+  font-size: var(--font-size-small);
+}
+
+.run-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.run-log__attempt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.run-log__attempt-title,
+.run-log__text {
+  margin: 0;
+  font-size: var(--font-size-small);
+  overflow-wrap: anywhere;
+}
+
+.run-log__prompt {
+  margin: 0;
+  padding: var(--space-2);
+  max-height: 200px;
+  overflow: auto;
+  background: var(--bg-input);
+  border-radius: var(--radius-control);
+  font-size: var(--font-size-small);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

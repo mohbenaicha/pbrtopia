@@ -1,0 +1,24 @@
+import { useId, type ReactNode } from 'react';
+import './SettingsSections.css';
+
+interface SettingsPageProps {
+  title: string;
+  description: string; // one plain line under the title
+  children: ReactNode; // the groups, stacked
+}
+
+// Settings R12: the same page for every section: the large title, one line of description, then the section's groups 24 px apart.
+export function SettingsPage({ title, description, children }: SettingsPageProps): React.JSX.Element {
+  const titleId = useId();
+  return (
+    <section className="settings-page" aria-labelledby={titleId}>
+      <header className="settings-page__header">
+        <h2 className="settings-page__title" id={titleId}>
+          {title}
+        </h2>
+        <p className="settings-page__description">{description}</p>
+      </header>
+      {children}
+    </section>
+  );
+}

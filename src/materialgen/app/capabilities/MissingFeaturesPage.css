@@ -1,0 +1,31 @@
+.missing-features {
+  box-sizing: border-box;
+  max-width: 36rem;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--text);
+}
+
+.missing-features__title {
+  margin: 0;
+  font-size: var(--font-size-title);
+}
+
+.missing-features__lead,
+.missing-features__hint {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.missing-features__list {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

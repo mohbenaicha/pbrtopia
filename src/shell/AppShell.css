@@ -1,0 +1,33 @@
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--panel-left, 296px) minmax(0, 1fr) var(--panel-right, 288px);
+  grid-template-rows: 56px minmax(0, 1fr);
+  grid-template-areas:
+    'top top top'
+    'left viewport right';
+  gap: var(--space-1);
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-page);
+}
+
+.app-shell__top {
+  grid-area: top;
+}
+
+.app-shell__left {
+  grid-area: left;
+  min-height: 0;
+}
+
+.app-shell__viewport {
+  grid-area: viewport;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.app-shell__right {
+  grid-area: right;
+  min-height: 0;
+}

@@ -22,6 +22,7 @@ export function Button({ variant = 'secondary', size = 'default', loading = fals
     <button
       type={type}
       title={title}
+      aria-description={disabled ? title : undefined} // a disabled button's tooltip is its reason: it is read out too
       aria-pressed={pressed}
       className="ui-button"
       data-variant={variant}

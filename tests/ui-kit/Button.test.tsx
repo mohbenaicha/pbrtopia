@@ -74,6 +74,17 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Import' }).getAttribute('title')).toBe('Import project');
   });
 
+  it('R22 a disabled button gives its tooltip as its description, so the reason is announced; an enabled one does not', () => {
+    render(
+      <>
+        <Button disabled title="Needs a height or normal map.">Off</Button>
+        <Button title="Import project">On</Button>
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Off' }).getAttribute('aria-description')).toBe('Needs a height or normal map.');
+    expect(screen.getByRole('button', { name: 'On' }).hasAttribute('aria-description')).toBe(false);
+  });
+
   it('R22 a large button is marked for styling and the default size is not', () => {
     render(
       <>

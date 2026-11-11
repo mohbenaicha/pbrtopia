@@ -1,0 +1,90 @@
+import { TILE_GAP_PX, type PackedLayout } from '../layout/chooseLayout';
+import type { PlanMap } from '../plan/planTypes';
+
+export type ColorModeName = 'albedo' | 'diffuse';
+
+export interface MapPromptInput {
+  maps: readonly PlanMap[]; // the maps of this image, in reading order
+  layout: PackedLayout;
+  userText: string;
+  colorMode: ColorModeName;
+  follower: boolean; // any image other than Image 1: it gets the albedo reference
+}
+
+/** R38: the tileability sentence of every prompt, and what a packed image adds. */
+export const TILEABLE_SENTENCE = 'The result must be seamless and tileable, with no visible seams at the image edges.';
+const PACKED_TILEABLE_SENTENCE = 'Each map is seamless on its own edges.';
+
+const ORDINALS = ['first', 'second', 'third'] as const;
+const TOP_DOWN = 'a top-down view of the material';
+
+/** R32, R33, R34: what each map looks like, as a clause. */
+function describeMap(map: PlanMap, colorMode: ColorModeName): string {
+  if (map === 'albedo') {
+    return colorMode === 'diffuse'
+      ? 'the colour of the material with subtle baked lighting and shadows allowed for a realistic look'
+      : 'the pure flat colour of the material, NO lighting, NO shadows, NO ambient occlusion, NO highlights or reflections';
+  }
+  if (map === 'height') return 'a greyscale height map: white is high, black is low, mid grey is the flat level; greyscale only, no colour, no lighting';
+  return 'a tangent-space normal map in the OpenGL convention (+Y up): mostly blue, flat areas are RGB 128, 128, 255, surface relief only, no lighting, no shadows';
+}
+
+const mapName = (map: PlanMap, colorMode: ColorModeName): string => (map === 'albedo' ? (colorMode === 'diffuse' ? 'diffuse' : 'albedo') : map);
+
+/** R36: a follower says the attached image is the albedo of the same material, and each of its maps follows the albedo's features. */
+function describeFollowing(maps: readonly PlanMap[]): string {
+  const parts = ['The attached image is the albedo of the same material; the output must match its features and its layout of detail.'];
+  if (maps.includes('normal')) parts.push('The relief of the normal map follows the features of the albedo.');
+  if (maps.includes('height')) parts.push('The high and low areas of the height map follow the features of the albedo.');
+  return parts.join(' ');
+}
+
+/** R35: how the maps sit on the canvas, in words: quadrants for 2x2, left to right or top to bottom for the other grids. */
+function describeArrangement(layout: PackedLayout, names: readonly string[]): string {
+  const { cols, rows } = layout.grid;
+  const count = names.length;
+  const grid = `arranged in a grid of ${cols} column${cols === 1 ? '' : 's'} and ${rows} row${rows === 1 ? '' : 's'}`;
+  if (cols === 2 && rows === 2) {
+    const quadrants = ['top-left', 'top-right', 'bottom-left'];
+    return `${grid}, one map per quadrant: ${names.map((name, index) => `${quadrants[index]} ${name}`).join(', ')}.`;
+  }
+  const direction = rows === 1 ? 'left to right' : 'top to bottom';
+  return `${grid}, in reading order from ${direction}: ${names.map((name, index) => `${ORDINALS[index]} ${name}`).join(', ')}${count > 0 ? '.' : ''}`;
+}
+
+/** Whether the grid leaves plain canvas: a cell without a map, or margin around the grid (R23, R35). */
+function leavesFreeSpace(layout: PackedLayout): boolean {
+  if (layout.emptyCells > 0) return true;
+  const { cols, rows } = layout.grid;
+  return cols * layout.tileSide + (cols - 1) * TILE_GAP_PX < layout.canvas.width || rows * layout.tileSide + (rows - 1) * TILE_GAP_PX < layout.canvas.height;
+}
+
+function buildRecipe({ maps, layout, colorMode, follower }: Omit<MapPromptInput, 'userText'>): string {
+  const names = maps.map((map) => `${mapName(map, colorMode)} map`);
+  const parts: string[] = [];
+  if (maps.length === 1) {
+    parts.push(`Generate the ${names[0]} of ${TOP_DOWN}: ${describeMap(maps[0]!, colorMode)}.`);
+  } else {
+    parts.push(`Generate an image comprised of ${maps.length} maps of ${TOP_DOWN}, ${describeArrangement(layout, names)} Maps have no separators or labels, just the seamless texture maps equal in size.`);
+    maps.forEach((map, index) => parts.push(`The ${ORDINALS[index]} map is the ${names[index]}: ${describeMap(map, colorMode)}.`));
+    if (leavesFreeSpace(layout)) parts.push('The remaining space is plain mid grey.');
+  }
+  if (follower) parts.push(describeFollowing(maps));
+  return parts.join(' ');
+}
+
+/**
+ * Generation R31-R36, R38: the prompt of a map image: the recipe of its maps, the user's text verbatim ("Material: ..." when it has a non-space character), then the
+ * tileability sentence. The text is built before the call and is what the run log shows (R68); the adapter adds nothing.
+ */
+export function buildMapPrompt(input: MapPromptInput): string {
+  const sections = [buildRecipe(input)];
+  if (input.userText.trim() !== '') sections.push(`Material: ${input.userText}`);
+  sections.push(input.maps.length > 1 ? `${TILEABLE_SENTENCE} ${PACKED_TILEABLE_SENTENCE}` : TILEABLE_SENTENCE);
+  return sections.join('\n\n');
+}
+
+/** R37: the decomposition prompt is the masks prompt, unchanged, with no user text, and the tileability sentence appended. */
+export function buildDecompositionImagePrompt(masksPrompt: string): string {
+  return `${masksPrompt}\n\n${TILEABLE_SENTENCE}`;
+}

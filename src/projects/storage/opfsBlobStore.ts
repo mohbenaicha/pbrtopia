@@ -1,3 +1,4 @@
+import { projectStoreNames } from '../../appId';
 import { storeFailure, type StoreResult } from '../storeError';
 import { checkBlobAddress, checkProjectId, isSafeProjectId, storeOk, type BlobStore } from './BlobStore';
 
@@ -8,10 +9,11 @@ function writeFailure(error: unknown): StoreResult<void> {
   return storeFailure('storage-unavailable', 'The browser would not save this file.');
 }
 
-// Folder handle for the app's blobs inside the browser's private file system (OPFS).
-export async function openOpfsRoot(): Promise<FileSystemDirectoryHandle> {
-  const origin = await navigator.storage.getDirectory();
-  return origin.getDirectoryHandle('projects', { create: true });
+// Folder handle for the app's blobs inside the browser's private file system (OPFS); the folder is named for `appId` when one is given.
+export async function openOpfsRoot(appId?: string, getOrigin: () => Promise<FileSystemDirectoryHandle> = () => navigator.storage.getDirectory()): Promise<FileSystemDirectoryHandle> {
+  const folder = projectStoreNames(appId).folder;
+  const origin = await getOrigin();
+  return origin.getDirectoryHandle(folder, { create: true });
 }
 
 // BlobStore over OPFS: `<root>/<projectId>/<key>`, with the key's folders created as needed.
