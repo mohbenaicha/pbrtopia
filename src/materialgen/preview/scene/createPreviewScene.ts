@@ -54,7 +54,6 @@ export interface PreviewScene {
 const LOOK_DIRECTION = new Vector3(0, 0, 1);
 
 /** Preview R57: the Material ball reads every map by position, one repeat per unit of length (at tiling 1); the Ball and the Plane read them by UV (0). */
-const triplanarRepeatsFor = (mesh: PreviewMesh): number => (mesh === 'materialBall' ? 1 : 0);
 
 /**
  * Preview R1-R7, R20-R23, R39: the one previewGroup in the viewport's scene with one mesh and one shared material. The camera looks at the origin down -z;
@@ -71,7 +70,6 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
   overlay.patchLitMaterial(preview.material); // before the look's own patch, which wraps it
   const toolShading = createToolShading();
   toolShading.setTile(initialValues.tilingX, initialValues.tilingY);
-  toolShading.setTriplanar(triplanarRepeatsFor(prefs.mesh));
   toolShading.setNormalFlipY(prefs.normalDirection === 'directx');
   const flatLooks = createFlatLooks(adjust, overlay.uniforms, toolShading.uniforms);
   let toolTransform: ToolTransform | null = null;
@@ -137,7 +135,6 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
         meshKind = next;
         swapGeometry();
         applySide();
-        toolShading.setTriplanar(triplanarRepeatsFor(next));
       }
       pose = homePoseOf(meshKind);
       dolly = 1;

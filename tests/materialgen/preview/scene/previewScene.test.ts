@@ -69,27 +69,21 @@ describe('materialgen/preview R1 R2 R6 the group and its one mesh', () => {
     expect(sideOf()).toBe(DoubleSide);
   });
 
-  it('R57 only the Material ball is textured by position: its mesh turns the triplanar uniform on (one repeat per unit), the Ball and the Plane turn it off, in the shaded and in a flat view', () => {
+  it('R57 every mesh is read by UV: the Material ball, the Ball and the Plane have no position-based read, in the shaded and in a flat view', () => {
     const { host, scene } = make();
-    const shadedValue = (): number => {
-      const shader = { uniforms: {} as Record<string, { value: number }>, vertexShader: '', fragmentShader: '' };
+    const shadedUniforms = (): Record<string, unknown> => {
+      const shader = { uniforms: {} as Record<string, unknown>, vertexShader: '', fragmentShader: '' };
       (meshes(host)[0]!.material as unknown as { onBeforeCompile(shader: unknown, renderer: unknown): void }).onBeforeCompile(shader, undefined);
-      return shader.uniforms['uTriplanar']!.value;
+      return shader.uniforms;
     };
-    expect(shadedValue()).toBe(0);
-    scene.setMesh('materialBall');
-    expect(shadedValue()).toBe(1);
-    scene.setShading('albedo');
-    expect((meshes(host)[0]!.material as unknown as { uniforms: Record<string, { value: number }> }).uniforms['uTriplanar']!.value).toBe(1);
-    scene.setMesh('plane');
-    expect((meshes(host)[0]!.material as unknown as { uniforms: Record<string, { value: number }> }).uniforms['uTriplanar']!.value).toBe(0);
-  });
-
-  it('R57 a scene that starts on the Material ball is textured by position from the first frame', () => {
-    const { host } = make({ mesh: 'materialBall' });
-    const shader = { uniforms: {} as Record<string, { value: number }>, vertexShader: '', fragmentShader: '' };
-    (meshes(host)[0]!.material as unknown as { onBeforeCompile(shader: unknown, renderer: unknown): void }).onBeforeCompile(shader, undefined);
-    expect(shader.uniforms['uTriplanar']!.value).toBe(1);
+    const flatUniforms = (): Record<string, unknown> => (meshes(host)[0]!.material as unknown as { uniforms: Record<string, unknown> }).uniforms;
+    for (const mesh of ['ball', 'materialBall', 'plane'] as const) {
+      scene.setMesh(mesh);
+      scene.setShading('lit');
+      expect(shadedUniforms()).not.toHaveProperty('uTriplanar');
+      scene.setShading('albedo');
+      expect(flatUniforms()).not.toHaveProperty('uTriplanar');
+    }
   });
 
   it('R60 the normal direction reaches the shaded and the flat materials, and a scene starts with the saved one', () => {

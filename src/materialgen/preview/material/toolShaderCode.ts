@@ -1,10 +1,14 @@
-import { NORMAL_FLIP_UNIFORM, TRI_COMMON, TRI_FRAGMENT, TRI_UNIFORMS, TRI_VARYINGS } from './triplanarShaderCode';
-
 // Imageops R53-R56, preview R58: the GLSL that puts an open Crop or Mirror on every map sample. Picture coordinates have the first row on top (the textures are
 // uploaded flipped, so the top is v = 1); the transform works in picture coordinates and the sample goes back to texture coordinates. All of it is one coordinate
-// computation per sample: no texture, no pass. On the Material ball (R57) the samples are taken by position, one per projection, each through the same transform.
+// computation per sample: no texture, no pass. Every map is read by UV (R57), the Material ball's included.
+
+// Preview R60: 1 when the stored normal map is read as DirectX (green down): the normal-map read turns the green before use. Fragment shaders only.
+const NORMAL_FLIP_UNIFORM = `
+uniform float uNormalFlipY;
+`;
 
 export const TOOL_UNIFORMS = `
+uniform vec2 uToolTile; // the tiling (preview R15)
 uniform int uToolMode; // 0 none, 1 crop, 2 mirror
 uniform vec4 uToolRect; // crop: x, y, width, height as fractions of the picture
 uniform vec4 uToolPlan[4]; // mirror, by result quadrant: source quadrant, flip x, flip y
@@ -49,18 +53,10 @@ vec4 toolSample(sampler2D s, vec2 uv, out vec2 flip) {
 
 export const TOOL_FRAGMENT = `
 vec4 toolTexel(sampler2D s, vec2 uv) {
-  if (uTriplanar > 0.5) return triTexel(s);
   vec2 flip;
   return toolSample(s, uv, flip);
 }
 vec4 toolNormalTexel(sampler2D s, vec2 uv) {
-  if (uTriplanar > 0.5) {
-#ifdef TOOL_LIT
-    return triNormalShaded(s);
-#else
-    return triNormalRaw(s);
-#endif
-  }
   vec2 flip;
   vec4 c = toolSample(s, uv, flip);
   if (flip.x > 0.5) c.r = 1.0 - c.r;
@@ -90,25 +86,14 @@ vec3 toolMarked(vec3 color, vec2 uv) {
 }
 `;
 
-// The vertex side (displacement): the base level, with the same coordinate. By position (R57) it reads the model's own position and normal, the very values that
-// the neighbouring vertex of a join has, so welded vertices read one height and the surface cannot tear.
+// The vertex side (displacement): the base level, with the same coordinate. The seam columns of the Material ball read one texel (R57), so welded vertices read one height.
 export const TOOL_VERTEX = `
-vec4 toolVertexSample(sampler2D s, vec2 uv) {
+vec4 toolTexelVertex(sampler2D s, vec2 uv) {
   if (uToolMode == 0) return texture2D(s, uv);
   vec2 flip;
   return texture2D(s, toolCoord(uv, flip));
 }
-vec4 triVertexTexel(sampler2D s) {
-  vec3 n = normalize(normal);
-  vec3 w = triWeights(n);
-  vec3 g = triSigns(n);
-  return toolVertexSample(s, triUv(0, position, g)) * w.x + toolVertexSample(s, triUv(1, position, g)) * w.y + toolVertexSample(s, triUv(2, position, g)) * w.z;
-}
-vec4 toolTexelVertex(sampler2D s, vec2 uv) {
-  if (uTriplanar > 0.5) return triVertexTexel(s);
-  return toolVertexSample(s, uv);
-}
 `;
 
-export const TOOL_FRAGMENT_SUPPORT = TRI_UNIFORMS + NORMAL_FLIP_UNIFORM + TRI_VARYINGS + TOOL_UNIFORMS + TOOL_COORD + TRI_COMMON + TOOL_SAMPLE + TRI_FRAGMENT + TOOL_FRAGMENT;
-export const TOOL_VERTEX_SUPPORT = TRI_UNIFORMS + TRI_VARYINGS + TOOL_UNIFORMS + TOOL_COORD + TRI_COMMON + TOOL_VERTEX;
+export const TOOL_FRAGMENT_SUPPORT = NORMAL_FLIP_UNIFORM + TOOL_UNIFORMS + TOOL_COORD + TOOL_SAMPLE + TOOL_FRAGMENT;
+export const TOOL_VERTEX_SUPPORT = TOOL_UNIFORMS + TOOL_COORD + TOOL_VERTEX;

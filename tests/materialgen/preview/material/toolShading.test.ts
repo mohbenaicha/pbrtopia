@@ -143,51 +143,31 @@ describe('materialgen/preview R53 the Shaded material', () => {
   });
 });
 
-describe('materialgen/preview R57 the shaders sample by position on the Material ball', () => {
-  it('R57 the triplanar repeat is one uniform, written in place and shared by the Shaded material and every flat view', () => {
+describe('materialgen/preview R57 R60 every map is read by UV: no position-based read in any shader', () => {
+  it('R57 the tiling uniform is shared by the Shaded material and every flat view, and there is no position-based repeat uniform', () => {
     const shading = createToolShading();
-    const uniform = shading.uniforms.uTriplanar;
-    expect(uniform.value).toBe(0);
-    shading.setTriplanar(1);
-    expect(shading.uniforms.uTriplanar).toBe(uniform);
-    expect(uniform.value).toBe(1);
+    expect(shading.uniforms).not.toHaveProperty('uTriplanar');
+    expect(shading).not.toHaveProperty('setTriplanar');
     const looks = createFlatLooks(createMapAdjustUniforms(), createMaskOverlay().uniforms, shading.uniforms);
     for (const view of FLAT_VIEWS) {
-      expect(looks.materialFor(view).uniforms['uTriplanar']).toBe(uniform);
       expect(looks.materialFor(view).uniforms['uToolTile']).toBe(shading.uniforms.uToolTile);
+      expect(looks.materialFor(view).uniforms).not.toHaveProperty('uTriplanar');
     }
   });
 
-  it('R57 the Shaded vertex shader passes the model position and normal on, and reads the displacement by position too', () => {
+  it('R57 the Shaded shaders carry no model position, smooth normal or axis varyings, and the displacement is read at the UV', () => {
     const material = new MeshPhysicalMaterial();
     createToolShading().patchLitMaterial(material);
-    const { vertexShader } = compile(material);
-    expect(vertexShader).toContain('vTriPosition = position;');
-    expect(vertexShader).toContain('vTriNormal = normal;');
-    expect(vertexShader).toContain('triVertexTexel(');
-    expect(vertexShader).toContain('uniform vec2 uToolTile;');
+    const { vertexShader, fragmentShader } = compile(material);
+    for (const code of [vertexShader, fragmentShader]) expect(code).not.toMatch(/[Tt]ri[A-Z]|uTriplanar|TOOL_LIT/);
+    expect(vertexShader).toContain('toolTexelVertex( displacementMap, vDisplacementMapUv )');
     expect(vertexShader.match(/uniform vec2 uToolTile;/g)).toHaveLength(1);
+    expect(fragmentShader).toContain('normal = normalize( tbn * mapN );'); // the UV frame, unchanged
   });
 
-  it('R57 the Shaded normal is built in a frame of the smooth view normal when sampling by position, and by the UV frame otherwise', () => {
-    const material = new MeshPhysicalMaterial();
-    createToolShading().patchLitMaterial(material);
-    const { fragmentShader } = compile(material);
-    expect(fragmentShader).toContain('#define TOOL_LIT');
-    expect(fragmentShader).toContain('normal = normalize( ( uTriplanar > 0.5 ? triFrame( normalize( vTriView ) ) : tbn ) * mapN );');
-    expect(fragmentShader).toContain('triNormalShaded(');
-    expect(fragmentShader).toContain('triNormalRaw(');
-    expect(fragmentShader).toContain('whiteout');
-  });
-
-  it('R57 the flat vertex shader passes the model position and normal on, and moves the vertex along the same normal', () => {
-    expect(FLAT_VERTEX_SHADER).toContain('vTriPosition = position;');
-    expect(FLAT_VERTEX_SHADER).toContain('vTriNormal = normal;');
-    for (const code of [FLAT_COLOR_FRAGMENT_SHADER, FLAT_CHANNEL_FRAGMENT_SHADER, FLAT_NORMAL_FRAGMENT_SHADER]) {
-      expect(code).toContain('uniform float uTriplanar;');
-      expect(code).toContain('varying vec3 vTriPosition;');
-      expect(code).not.toContain('#define TOOL_LIT');
-    }
+  it('R57 the flat shaders carry no position-based read either', () => {
+    for (const code of [FLAT_VERTEX_SHADER, FLAT_COLOR_FRAGMENT_SHADER, FLAT_CHANNEL_FRAGMENT_SHADER, FLAT_NORMAL_FRAGMENT_SHADER]) expect(code).not.toMatch(/[Tt]ri[A-Z]|uTriplanar|TOOL_LIT/);
+    for (const code of [FLAT_COLOR_FRAGMENT_SHADER, FLAT_CHANNEL_FRAGMENT_SHADER, FLAT_NORMAL_FRAGMENT_SHADER]) expect(code.match(/uniform vec2 uToolTile;/g)).toHaveLength(1);
   });
 
   it('R60 the green flip is one uniform, written in place and shared by the Shaded material and every flat view', () => {
@@ -203,21 +183,20 @@ describe('materialgen/preview R57 the shaders sample by position on the Material
     for (const view of FLAT_VIEWS) expect(looks.materialFor(view).uniforms['uNormalFlipY']).toBe(uniform);
   });
 
-  it('R60 the green is turned (g = 1 - g) in the UV read and in the position read, and the uniform is declared once in each shader', () => {
+  it('R60 the green is turned (g = 1 - g) in the one normal read, and the uniform is declared once in each shader', () => {
     const material = new MeshPhysicalMaterial();
     createToolShading().patchLitMaterial(material);
     const { fragmentShader, vertexShader } = compile(material);
     expect(fragmentShader.match(/uniform float uNormalFlipY;/g)).toHaveLength(1);
     expect(vertexShader).not.toContain('uNormalFlipY');
-    expect(fragmentShader.match(/if \(uNormalFlipY > 0\.5\) c\.g = 1\.0 - c\.g;/g)).toHaveLength(2); // toolNormalTexel and triNormalSample
+    expect(fragmentShader.match(/if \(uNormalFlipY > 0\.5\) c\.g = 1\.0 - c\.g;/g)).toHaveLength(1); // toolNormalTexel
     for (const code of [FLAT_COLOR_FRAGMENT_SHADER, FLAT_CHANNEL_FRAGMENT_SHADER, FLAT_NORMAL_FRAGMENT_SHADER]) expect(code.match(/uniform float uNormalFlipY;/g)).toHaveLength(1);
   });
 
-  it('R57 R18 the label map is read from the dominant projection, never blended', () => {
+  it('R57 R18 the label map is read by the UV, one fetch, never blended', () => {
     const labels = maskMixFor('vUv', 'color');
-    expect(labels).toContain('maskLabelTexel(vUv)');
-    expect(labels).not.toContain('texture2D(uMaskLabels');
-    expect(MASK_UNIFORMS).toContain('triDominantTexel(uMaskLabels)');
+    expect(labels).toContain('texture2D(uMaskLabels, vUv).r');
+    expect(MASK_UNIFORMS).not.toMatch(/maskLabelTexel|triDominantTexel|uTriplanar/);
   });
 });
 

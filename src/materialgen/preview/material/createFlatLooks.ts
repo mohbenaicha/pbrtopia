@@ -44,8 +44,7 @@ export function createFlatLooks(adjust: MapAdjustUniforms, mask: MaskUniforms, t
     uToolRect: tool.uToolRect,
     uToolPlan: tool.uToolPlan,
     uToolMarks: tool.uToolMarks,
-    uToolTile: tool.uToolTile, // the maps read by position (R57) use the tiling and the repeat of the Shaded view
-    uTriplanar: tool.uTriplanar,
+    uToolTile: tool.uToolTile,
     uNormalFlipY: tool.uNormalFlipY,
   };
   const build = (fragmentShader: string, own: Record<string, IUniform>): ShaderMaterial =>

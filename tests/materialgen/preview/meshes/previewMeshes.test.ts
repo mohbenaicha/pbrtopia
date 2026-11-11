@@ -66,12 +66,72 @@ describe('materialgen/preview R2 R3 ball and plane', () => {
 describe('materialgen/preview R57 material ball', () => {
   const geometry = buildMaterialBallGeometry();
 
-  it('R57 is one merged geometry with positions, normals and a placeholder UV inside 0 to 1', () => {
+  it('R57 is one merged geometry with positions, normals and UVs, u running 0 to 3 once round each surface', () => {
     expect(geometry.index).not.toBeNull();
     for (const name of ['position', 'normal', 'uv']) expect(geometry.getAttribute(name)).toBeDefined();
-    const { min, max } = uvRange(geometry);
-    expect(min).toBeGreaterThanOrEqual(0);
-    expect(max).toBeLessThanOrEqual(1);
+    const uv = geometry.getAttribute('uv');
+    let minU = Infinity;
+    let maxU = -Infinity;
+    for (let i = 0; i < uv.count; i += 1) {
+      minU = Math.min(minU, uv.getX(i));
+      maxU = Math.max(maxU, uv.getX(i));
+    }
+    expect([minU, maxU]).toEqual([0, 3]);
+    expect(uvRange(geometry).min).toBeGreaterThanOrEqual(0);
+  });
+
+  it('R57 the seam: two vertices at one position off the axis read one texel: their u differ by a whole number and their v are equal', () => {
+    const uv = geometry.getAttribute('uv');
+    const position = geometry.getAttribute('position');
+    let seams = 0;
+    for (const group of groupByPosition(geometry).values()) {
+      const off = Math.hypot(position.getX(group[0]!), position.getZ(group[0]!)) > 0.001;
+      if (!off || group.length < 2) continue;
+      seams += 1;
+      for (const index of group) {
+        const turns = uv.getX(index) - uv.getX(group[0]!);
+        expect(Math.abs(turns - Math.round(turns))).toBeLessThan(1e-6);
+        expect(Math.abs(uv.getY(index) - uv.getY(group[0]!))).toBeLessThan(1e-6);
+      }
+    }
+    expect(seams).toBeGreaterThan(100); // the seam columns of both surfaces, one vertex pair per ring
+  });
+
+  it('R57 a repeat is square on the widest ring of each surface: v grows 3 / (2 pi r) per unit along the profile (r 0.5 on the base wall, 0.42 on the ball)', () => {
+    const uv = geometry.getAttribute('uv');
+    const position = geometry.getAttribute('position');
+    const column = (select: (r: number, y: number) => boolean): number[] => {
+      const found: number[] = [];
+      for (let i = 0; i < position.count; i += 1) {
+        const [x, y, z] = [position.getX(i), position.getY(i), position.getZ(i)];
+        if (x > 0.001 && Math.abs(z) < 1e-6 && uv.getX(i) < 1e-9 && select(x, y)) found.push(i); // the first column only, one vertex per ring
+      }
+      return found.sort((a, b) => position.getY(a) - position.getY(b));
+    };
+    const slope = (rows: number[]): number => Math.abs(uv.getY(rows[1]!) - uv.getY(rows[0]!)) / Math.abs(position.getY(rows[1]!) - position.getY(rows[0]!));
+    const wall = column((r, y) => r > 0.4999 && y > -0.45 && y < -0.36);
+    expect(slope(wall)).toBeCloseTo(3 / (2 * Math.PI * 0.5), 1);
+    const equator = column((r, y) => r > 0.4195 && r < 0.4205 && Math.abs(y - 0.04) < 0.02);
+    expect(slope(equator)).toBeCloseTo(3 / (2 * Math.PI * 0.42), 1);
+  });
+
+  it('R57 the mouth has a flat rim: a straight run of rings on the cone of the opening whose normal is that cone\'s, round corners of radius 0.01 at both ends', () => {
+    const uv = geometry.getAttribute('uv');
+    const position = geometry.getAttribute('position');
+    const normal = geometry.getAttribute('normal');
+    const opening = (50 * Math.PI) / 180;
+    const up = [-Math.cos(opening), Math.sin(opening)]; // the rim's normal in the (radius, y) plane
+    const flat: number[] = [];
+    for (let i = 0; i < position.count; i += 1) {
+      const onMouthColumn = uv.getX(i) < 1e-9 && position.getX(i) > 0.001 && position.getY(i) > 0.2;
+      if (onMouthColumn && Math.hypot(normal.getX(i) - up[0]!, normal.getY(i) - up[1]!, normal.getZ(i)) < 0.01) flat.push(i);
+    }
+    expect(flat.length).toBeGreaterThanOrEqual(6);
+    const radial = (i: number): number => Math.hypot(position.getX(i), position.getY(i) - 0.04); // distance from the ball's centre
+    const along = flat.map(radial).sort((a, b) => a - b);
+    expect(along[0]!).toBeLessThan(0.33); // out to the inner shell's corner (radius 0.31 less the fillet)
+    expect(along[along.length - 1]!).toBeGreaterThan(0.4); // and the outer shell's
+    for (let k = 1; k < along.length; k += 1) expect(along[k]! - along[k - 1]!).toBeLessThan(0.0125); // no gap: rows every 0.012 at most
   });
 
   it('R57 no hard edge: vertices at one position share one normal, so displacement never tears the mesh', () => {

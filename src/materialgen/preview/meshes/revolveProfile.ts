@@ -1,6 +1,6 @@
 import { BufferAttribute, BufferGeometry } from 'three';
 
-/** One ring of a surface of revolution about the y axis: its radius and height, the surface normal in the (radius, y) plane and v along the profile (0 to 1). */
+/** One ring of a surface of revolution about the y axis: its radius and height, the surface normal in the (radius, y) plane and v, the distance along the profile from its first ring (model units). */
 export interface ProfileRow {
   r: number;
   y: number;
@@ -21,12 +21,18 @@ export function createMeshArrays(): MeshArrays {
   return { positions: [], normals: [], uvs: [], indices: [] };
 }
 
+/** How many times the texture repeats: `around` times once round the axis (a whole number, so the seam column reads the texel the first column reads) and `along` times per unit of profile length. */
+export interface UvRepeats {
+  around: number;
+  along: number;
+}
+
 /**
- * Appends the surface made by turning `rows` once about the y axis in `segments` steps. The UV is only a placeholder (u the turn about the axis, v the row's own v):
- * the Material ball is textured by position. A row with radius 0 (a pole) adds no flat triangles. Each triangle is wound so that its face points the way its vertex
- * normals do.
+ * Appends the surface made by turning `rows` once about the y axis in `segments` steps. The UV is one chart: u = the turn about the axis times `repeats.around`,
+ * v = the row's distance along the profile times `repeats.along`. A row with radius 0 (a pole) adds no flat triangles. Each triangle is wound so that its face points
+ * the way its vertex normals do.
  */
-export function addRevolvedStrip(into: MeshArrays, rows: readonly ProfileRow[], segments: number): void {
+export function addRevolvedStrip(into: MeshArrays, rows: readonly ProfileRow[], segments: number, repeats: UvRepeats): void {
   const base = into.positions.length / 3;
   const columns = segments + 1;
   for (const row of rows) {
@@ -36,7 +42,7 @@ export function addRevolvedStrip(into: MeshArrays, rows: readonly ProfileRow[], 
       const sin = Math.sin(turn * 2 * Math.PI);
       into.positions.push(row.r * cos, row.y, row.r * sin);
       into.normals.push(row.nr * cos, row.ny, row.nr * sin);
-      into.uvs.push(turn, row.v);
+      into.uvs.push(turn * repeats.around, row.v * repeats.along);
     }
   }
   const at = (i: number, j: number): number => base + i * columns + j;

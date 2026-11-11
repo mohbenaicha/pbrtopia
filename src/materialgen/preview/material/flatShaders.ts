@@ -14,8 +14,6 @@ uniform float uDisplacementBias;
 varying vec2 vUv;
 void main() {
   vUv = uv * uTile;
-  vTriPosition = position;
-  vTriNormal = normal;
   vec3 displaced = position;
   if (uHasHeight) displaced += normalize(normal) * (toolTexelVertex(uHeight, vUv).x * uDisplacementScale + uDisplacementBias);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);

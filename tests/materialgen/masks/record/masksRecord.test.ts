@@ -22,7 +22,8 @@ describe('materialgen/masks record', () => {
   });
 
   it('R88 a record saved before the height offsets existed reads with every height at 0; a height outside -1 to +1 makes it unusable', () => {
-    const { height: _height, ...old } = row(0);
+    const old: Partial<ReturnType<typeof row>> = { ...row(0) };
+    delete old.height;
     expect(parseMasksRecord({ ...record(), rows: [old, row(1)] })?.rows[0]?.height).toBe(0);
     expect(parseMasksRecord({ ...record(), rows: [{ ...row(0), height: 1.5 }, row(1)] })).toBeNull();
     expect(parseMasksRecord({ ...record(), rows: [{ ...row(0), height: -1.5 }, row(1)] })).toBeNull();
