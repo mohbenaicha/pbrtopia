@@ -15,6 +15,7 @@ export interface MaskRow {
   material: string; // the base material in use now
   rough: number; // 0 to 1, current
   metal: number; // 0 to 1, current
+  height: number; // -1 to +1, 0 in the middle: raises or lowers the Height map under this component (R81)
 }
 
 interface MakeRowInput {
@@ -40,6 +41,7 @@ export function makeRow({ label, component, match, table }: MakeRowInput): MaskR
     material: material.name,
     rough: material.roughness,
     metal: material.metal,
+    height: 0,
   };
 }
 
@@ -49,26 +51,40 @@ export function chooseMaterial(row: MaskRow, name: string, table: BaseMaterialTa
   return material === undefined ? row : { ...row, material: material.name, rough: material.roughness, metal: material.metal };
 }
 
-/** Masks R50: a slider value as the panel keeps it, from 0 to 1 in steps of 0.01 (a number that is not a number leaves the row as it is). */
-export function setRowValue(row: MaskRow, which: 'rough' | 'metal', value: number): MaskRow {
+/**
+ * Masks R50, R81: a slider value as the panel keeps it, in steps of 0.01 (a number that is not a number leaves the row as it is): 0 to 1 for
+ * roughness and metal, -1 to +1 for the height offset.
+ */
+export function setRowValue(row: MaskRow, which: 'rough' | 'metal' | 'height', value: number): MaskRow {
   if (Number.isNaN(value)) return row;
-  return { ...row, [which]: Math.round(Math.min(Math.max(value, 0), 1) * SLIDER_STEP) / SLIDER_STEP };
+  const low = which === 'height' ? -1 : 0;
+  return { ...row, [which]: Math.round(Math.min(Math.max(value, low), 1) * SLIDER_STEP) / SLIDER_STEP };
 }
 
-/** Masks R52: the row goes back to its matched material and that material's values. */
+/** Masks R52, R86: the row goes back to its matched material and that material's values, and its height to 0. */
 export function resetRow(row: MaskRow, table: BaseMaterialTable): MaskRow {
-  return chooseMaterial({ ...row, material: row.defaultMaterial }, row.defaultMaterial, table);
+  return { ...chooseMaterial({ ...row, material: row.defaultMaterial }, row.defaultMaterial, table), height: 0 };
 }
 
-/** Masks R52: true when the row already is what Reset would make it (the Reset button is disabled then). */
+/** Masks R52, R86: true when the row already is what Reset would make it (the Reset button is disabled then). */
 export function isRowAtDefaults(row: MaskRow, table: BaseMaterialTable): boolean {
   const reset = resetRow(row, table);
-  return reset.material === row.material && reset.rough === row.rough && reset.metal === row.metal;
+  return reset.material === row.material && reset.rough === row.rough && reset.metal === row.metal && reset.height === row.height;
 }
 
 /** Masks R53: every row reset; rows already at their defaults are returned as they are. */
 export function resetAllRows(rows: readonly MaskRow[], table: BaseMaterialTable): MaskRow[] {
   return rows.map((row) => (isRowAtDefaults(row, table) ? row : resetRow(row, table)));
+}
+
+/** Masks R82: the offsets the height bake reads, row k being label k. */
+export function rowsToHeightOffsets(rows: readonly MaskRow[]): number[] {
+  return rows.map(({ height }) => height);
+}
+
+/** Masks R83, R84: true while any row raises or lowers the Height map. */
+export function hasHeightOffset(rows: readonly MaskRow[]): boolean {
+  return rows.some(({ height }) => height !== 0);
 }
 
 /** Masks R42: the look-up tables the bake reads, row k being label k. */

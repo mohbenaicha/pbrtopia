@@ -97,3 +97,42 @@ describe('materialgen/maps planCommitMasks', () => {
     await expect(planCommitMasks(albedoState(), { bake: bake(), label: 'Material masks' }, io)).rejects.toThrow();
   });
 });
+
+describe('materialgen/maps planCommitMasks height offsets (masks R83-R85)', () => {
+  const withHeight = (): MapsState => ({ size: 1024, maps: { ...albedoState().maps, height: { originalKey: 'h-orig', workingKey: 'h-orig', undoKey: null, width: 1024, height: 1024, source: { kind: 'dropped', name: 'h.png' } } } });
+
+  it('R85 a height bake is an edit labelled Material masks of Height alone, tagged with its base, and leaves rough and metal untouched', async () => {
+    const first = await planCommitMasks(withHeight(), { labels: { working: grey(4, 1), derivedFrom: { kind: 'albedo', key: 'a-work' } }, bake: bake(), label: 'Material masks' }, io);
+    const plan = await planCommitMasks(first.next, { height: { image: grey(4, 200), offsetBase: 'h-orig' }, label: 'Material masks' }, io);
+    const height = plan.next.maps.height!;
+    expect(height).toMatchObject({ undoKey: 'h-orig', offsetBase: 'h-orig', originalKey: 'h-orig' });
+    expect(height.undo).toMatchObject({ label: 'Material masks' });
+    expect(height.undo!.groupId).toBeUndefined();
+    expect(plan.next.maps.rough).toEqual(first.next.maps.rough);
+    expect(plan.next.maps.metal).toEqual(first.next.maps.metal);
+    expect(plan.newBlobs.size).toBe(1);
+    expect(checkMapsInvariants(plan.next)).toEqual([]);
+  });
+
+  it('R85 a feather change writes rough, metal and Height as separate edits: no shared group', async () => {
+    const first = await planCommitMasks(withHeight(), { labels: { working: grey(4, 1), derivedFrom: { kind: 'albedo', key: 'a-work' } }, bake: bake(), label: 'Material masks' }, io);
+    const plan = await planCommitMasks(first.next, { bake: { rough: grey(4, 90), metal: grey(4, 1) }, height: { image: grey(4, 150), offsetBase: 'h-orig' }, label: 'Material masks' }, io);
+    const groups = ['rough', 'metal', 'height'].map((kind) => plan.next.maps[kind as 'rough']!.undo?.groupId);
+    expect(groups).toEqual([undefined, undefined, undefined]);
+    expect(plan.newBlobs.size).toBe(3);
+  });
+
+  it('R84 going back to the base sets the working map to the base key itself, with no new file and no tag, as an edit', async () => {
+    const baked = await planCommitMasks(withHeight(), { height: { image: grey(4, 200), offsetBase: 'h-orig' }, label: 'Material masks' }, io);
+    const plan = await planCommitMasks(baked.next, { height: { backTo: 'h-orig' }, label: 'Material masks' }, io);
+    const height = plan.next.maps.height!;
+    expect(height.workingKey).toBe('h-orig');
+    expect(height.offsetBase).toBeUndefined();
+    expect(height.undo).toMatchObject({ label: 'Material masks', offsetBase: 'h-orig' });
+    expect(plan.newBlobs.size).toBe(0);
+  });
+
+  it('R81 a height commit with no Height map is an error', async () => {
+    await expect(planCommitMasks(albedoState(), { height: { image: grey(4, 1), offsetBase: 'x' }, label: 'Material masks' }, io)).rejects.toThrow();
+  });
+});

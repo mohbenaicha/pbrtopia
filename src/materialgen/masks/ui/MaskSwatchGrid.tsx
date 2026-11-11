@@ -9,12 +9,14 @@ interface MaskSwatchGridProps {
   /** The selected component's label, or null when none is. */
   selected: number | null;
   onSelect(label: number): void;
+  /** Masks R80: the pointer is over a swatch, or one has the focus (its label), or neither (null). */
+  onHighlight?(label: number | null): void;
 }
 
 const COLUMNS = 5; // one row up to five components, two rows up to ten (masks R48)
 
 /** Masks R48, R57: the hint line and one colour swatch per component in label order; a swatch is a toggle button named by its component. */
-export function MaskSwatchGrid({ rows, palette, selected, onSelect }: MaskSwatchGridProps): React.JSX.Element {
+export function MaskSwatchGrid({ rows, palette, selected, onSelect, onHighlight }: MaskSwatchGridProps): React.JSX.Element {
   const colourOf = (label: number): string => palette.find((entry) => entry.label === label)?.hex ?? 'var(--bg-input)';
   return (
     <>
@@ -30,6 +32,10 @@ export function MaskSwatchGrid({ rows, palette, selected, onSelect }: MaskSwatch
             title={row.description === '' ? row.name : `${row.name}: ${row.description}`}
             style={{ backgroundColor: colourOf(row.label) }}
             onClick={() => onSelect(row.label)}
+            onPointerEnter={() => onHighlight?.(row.label)}
+            onPointerLeave={() => onHighlight?.(null)}
+            onFocus={() => onHighlight?.(row.label)}
+            onBlur={() => onHighlight?.(null)}
           />
         ))}
       </div>

@@ -41,11 +41,13 @@ function readRow(value: unknown, labels: ReadonlySet<number>): MaskRow | null {
   if (!isObject(value) || !isLabel(value['label']) || !labels.has(value['label'])) return null;
   const texts = ['name', 'description', 'location', 'defaultMaterial', 'material'].every((key) => isText(value[key]));
   if (!texts || !isUnit(value['rough']) || !isUnit(value['metal'])) return null;
+  const height = value['height'] === undefined ? 0 : value['height']; // a record from before the height offsets (R88) has none
+  if (typeof height !== 'number' || Number.isNaN(height) || height < -1 || height > 1) return null;
   const top3 = Array.isArray(value['top3']) ? value['top3'].filter(isText).slice(0, 3) : [];
   const kind = isText(value['matchKind']) && MATCH_KINDS.includes(value['matchKind']) ? (value['matchKind'] as MaskRow['matchKind']) : 'generic';
   return {
     label: value['label'], name: value['name'] as string, description: value['description'] as string, location: value['location'] as string,
-    defaultMaterial: value['defaultMaterial'] as string, top3, matchKind: kind, material: value['material'] as string, rough: value['rough'], metal: value['metal'],
+    defaultMaterial: value['defaultMaterial'] as string, top3, matchKind: kind, material: value['material'] as string, rough: value['rough'], metal: value['metal'], height,
   };
 }
 

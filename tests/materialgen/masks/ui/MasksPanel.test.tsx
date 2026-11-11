@@ -8,7 +8,7 @@ afterEach(cleanup);
 
 const table = parseBaseMaterials({ Brick: [0.8, 0, [160, 60, 40]], Steel: [0.3, 1, [200, 200, 205]] });
 const row = (label: number, name: string, material = 'Brick', rough = 0.8, metal = 0): MaskRow => ({
-  label, name, description: '', location: '', defaultMaterial: 'Brick', top3: ['Brick', 'Steel'], matchKind: 'keyword', material, rough, metal,
+  label, name, description: '', location: '', defaultMaterial: 'Brick', top3: ['Brick', 'Steel'], matchKind: 'keyword', material, rough, metal, height: 0,
 });
 const record = (overrides: Partial<MasksRecord> = {}): MasksRecord => ({
   source: 'model',
@@ -24,8 +24,8 @@ const idleModel = (patch: Partial<MasksModelControls> = {}): MasksModelControls 
 });
 
 function setup(overrides: Partial<MasksPanelProps> = {}) {
-  const actions = { onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() };
-  const props: MasksPanelProps = { record: record(), table, tableProblem: null, stale: false, canWrite: true, model: idleModel(), ...actions, ...overrides };
+  const actions = { onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() };
+  const props: MasksPanelProps = { record: record(), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, model: idleModel(), ...actions, ...overrides };
   render(<MasksPanel {...props} />);
   return { ...actions, model: props.model };
 }
@@ -55,6 +55,32 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     expect(screen.queryByRole('combobox')).toBeNull();
   });
 
+  it('R80 hovering or focusing a swatch highlights that component, leaving or blurring clears it, and the panel going away clears it', () => {
+    const onHighlight = vi.fn();
+    const { unmount } = render(<MasksPanel {...({ record: record(), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn(), onHighlight } as MasksPanelProps)} />);
+    fireEvent.pointerEnter(swatch('Wall'));
+    expect(onHighlight).toHaveBeenLastCalledWith(0);
+    fireEvent.pointerLeave(swatch('Wall'));
+    expect(onHighlight).toHaveBeenLastCalledWith(null);
+    fireEvent.focus(swatch('Trim'));
+    expect(onHighlight).toHaveBeenLastCalledWith(1);
+    fireEvent.blur(swatch('Trim'));
+    expect(onHighlight).toHaveBeenLastCalledWith(null);
+    fireEvent.pointerEnter(swatch('Trim'));
+    onHighlight.mockClear();
+    unmount();
+    expect(onHighlight).toHaveBeenCalledWith(null);
+  });
+
+  it('R80 a highlight never changes anything stored: no commit, no row change', () => {
+    const actions = setup();
+    fireEvent.pointerEnter(swatch('Wall'));
+    fireEvent.pointerLeave(swatch('Wall'));
+    expect(actions.onRowMaterial).not.toHaveBeenCalled();
+    expect(actions.onRowRough).not.toHaveBeenCalled();
+    expect(actions.onResetAll).not.toHaveBeenCalled();
+  });
+
   it('R48 clicking a swatch draws that component\'s block only; clicking another changes it, clicking the selected one clears it', () => {
     setup();
     fireEvent.click(swatch('Wall'));
@@ -76,18 +102,18 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
   });
 
   it('R48 a selection that no longer names a component is cleared when the labels are rebuilt', () => {
-    const view = render(<MasksPanel {...({ record: record(), table, tableProblem: null, stale: false, canWrite: true, model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() } as MasksPanelProps)} />);
+    const view = render(<MasksPanel {...({ record: record(), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() } as MasksPanelProps)} />);
     fireEvent.click(view.getByRole('button', { name: 'Wall' }));
     expect(view.queryByRole('group', { name: 'Wall' })).not.toBeNull();
-    view.rerender(<MasksPanel {...({ record: record({ rows: [row(5, 'Glass')], palette: [{ label: 5, hex: '#0000FF', name: 'blue' }] }), table, tableProblem: null, stale: false, canWrite: true, model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() } as MasksPanelProps)} />);
+    view.rerender(<MasksPanel {...({ record: record({ rows: [row(5, 'Glass')], palette: [{ label: 5, hex: '#0000FF', name: 'blue' }] }), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() } as MasksPanelProps)} />);
     expect(view.queryByRole('group')).toBeNull();
   });
 
-  it('R48 a block holds the name, the base-material select under it, then Roughness and Metalness; no "not used" mark, no row reset', () => {
+  it('R48 a block holds the name, the base-material select under it, then Roughness, Metalness and Height; no "not used" mark, no row reset', () => {
     setup();
     const wall = block('Wall');
     const order = [...wall.querySelectorAll('.mask-row__name, [role="combobox"], input[type="range"]')].map((node) => (node.getAttribute('role') === 'combobox' ? 'select' : (node.getAttribute('aria-label') ?? node.textContent)));
-    expect(order).toEqual(['Wall', 'select', 'Roughness', 'Metalness']);
+    expect(order).toEqual(['Wall', 'select', 'Roughness', 'Metalness', 'Height']);
     expect(within(wall).queryByText('Not used')).toBeNull();
     expect(within(wall).queryByRole('button', { name: 'Reset Wall' })).toBeNull();
   });
@@ -129,6 +155,25 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     fireEvent.change(metal, { target: { value: '0.5' } });
     fireEvent.pointerUp(metal);
     expect(actions.onRowMetal).toHaveBeenCalledWith(0, 0.5);
+  });
+
+  it('R81 a released Height slider reports the label and the signed value', () => {
+    const actions = setup();
+    const height = within(block('Trim')).getByLabelText('Height');
+    fireEvent.pointerDown(height);
+    fireEvent.change(height, { target: { value: '-0.4' } });
+    fireEvent.pointerUp(height);
+    expect(actions.onRowHeight).toHaveBeenCalledWith(1, -0.4);
+  });
+
+  it('R81 R86 the Height slider is off with no height map, saying why; Reset all counts a height offset as a change', () => {
+    setup({ hasHeightMap: false });
+    const height = within(block('Wall')).getByLabelText('Height') as HTMLInputElement;
+    expect(height.disabled).toBe(true);
+    expect(height.closest('[title]')?.getAttribute('title')).toBe('Add a height map first');
+    cleanup();
+    setup({ record: record({ rows: [{ ...row(0, 'Wall'), height: 0.3 }, row(1, 'Trim')] }) });
+    expect((screen.getByRole('button', { name: 'Reset all' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('R48 R52 the reset arrow of a slider puts it back to the value of the row\'s chosen base material, and is disabled at that value', () => {

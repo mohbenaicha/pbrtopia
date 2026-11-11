@@ -25,6 +25,8 @@ export function referencedMapKeys(state: MapsState): Set<string> {
     keys.add(map.originalKey);
     keys.add(map.workingKey);
     if (map.undoKey !== null) keys.add(map.undoKey);
+    if (map.offsetBase !== undefined) keys.add(map.offsetBase); // masks R83: the base of the height offsets is kept while a working or undo entry tags it
+    if (map.undo?.offsetBase !== undefined) keys.add(map.undo.offsetBase);
   }
   return keys;
 }
@@ -41,6 +43,13 @@ function withDerivedFrom(map: MapRecord, derivedFrom: DerivedFromRecord | undefi
   const next: MapRecord = { ...map };
   if (derivedFrom === undefined) delete next.derivedFrom;
   else next.derivedFrom = derivedFrom;
+  return next;
+}
+
+function withOffsetBase(map: MapRecord, offsetBase: string | undefined): MapRecord {
+  const next: MapRecord = { ...map };
+  if (offsetBase === undefined) delete next.offsetBase;
+  else next.offsetBase = offsetBase;
   return next;
 }
 
@@ -97,6 +106,8 @@ export interface MapEdit {
   workingKey: string;
   /** Left out: unchanged. A record: the new source. `null`: removed (a dropped image has no source, R33). */
   derivedFrom?: DerivedFromRecord | null;
+  /** Masks R83: the Height map a height-offset bake was computed from. Left out: the edit is not one of ours, so the map carries no tag. */
+  offsetBase?: string;
 }
 
 export interface EditGroup {
@@ -119,12 +130,13 @@ export function editMaps(state: MapsState, edits: readonly MapEdit[], label: str
     if (oldGroup !== undefined && oldGroup !== group?.groupId) replaced.add(oldGroup);
     const entry: MapUndoEntry = { label };
     if (previous.derivedFrom !== undefined) entry.derivedFrom = previous.derivedFrom;
+    if (previous.offsetBase !== undefined) entry.offsetBase = previous.offsetBase;
     if (group !== undefined) {
       entry.groupId = group.groupId;
       if (group.size !== undefined) entry.size = group.size;
     }
     const source = edit.derivedFrom === undefined ? previous.derivedFrom : edit.derivedFrom === null ? undefined : edit.derivedFrom;
-    maps[edit.kind] = withDerivedFrom({ ...previous, workingKey: edit.workingKey, undoKey: previous.workingKey, undo: entry }, source);
+    maps[edit.kind] = withOffsetBase(withDerivedFrom({ ...previous, workingKey: edit.workingKey, undoKey: previous.workingKey, undo: entry }, source), edit.offsetBase);
   }
   return { size: state.size, maps: breakGroups(maps, replaced) };
 }
@@ -172,7 +184,7 @@ export function undoMaps(state: MapsState, kinds: readonly MapKind[]): MapsState
     const map = maps[kind]!;
     const entry = map.undo!;
     if (entry.size !== undefined) size = entry.size;
-    maps[kind] = withDerivedFrom({ ...withoutUndo(map), workingKey: map.undoKey! }, entry.derivedFrom);
+    maps[kind] = withOffsetBase(withDerivedFrom({ ...withoutUndo(map), workingKey: map.undoKey! }, entry.derivedFrom), entry.offsetBase);
   }
   return { size, maps };
 }
@@ -214,7 +226,7 @@ export function isStale(state: MapsState, kind: MapKind): boolean {
  * R21: a change of S. `workingKeys` holds the new S x S blob of every map (labels included, which gets no undo entry, R6).
  * One group ties the entries and records the previous S; fresh derived maps follow their sources' new keys and stale ones stay stale.
  */
-export function changeSize(state: MapsState, size: MaterialSize, workingKeys: Partial<Record<MapKind, string>>, groupId: string): MapsState {
+export function changeSize(state: MapsState, size: MaterialSize, workingKeys: Partial<Record<MapKind, string>>, groupId: string, offsetBaseKey?: string): MapsState {
   if (state.size === size) return state;
   const kinds = kindsOf(state.maps);
   if (kinds.length === 0) return { size, maps: {} };
@@ -235,7 +247,11 @@ export function changeSize(state: MapsState, size: MaterialSize, workingKeys: Pa
     }
     const entry: MapUndoEntry = { label: 'Change size', groupId, size: state.size! };
     if (source !== undefined) entry.derivedFrom = source;
-    maps[kind] = withDerivedFrom({ ...map, workingKey: key, undoKey: map.workingKey, undo: entry }, remapped);
+    if (map.offsetBase !== undefined) {
+      if (offsetBaseKey === undefined) throw new Error('The resampled base of the height offsets is missing'); // masks R87
+      entry.offsetBase = map.offsetBase;
+    }
+    maps[kind] = withOffsetBase(withDerivedFrom({ ...map, workingKey: key, undoKey: map.workingKey, undo: entry }, remapped), map.offsetBase === undefined ? undefined : offsetBaseKey);
   }
   return { size, maps: breakGroups(maps, replaced) };
 }

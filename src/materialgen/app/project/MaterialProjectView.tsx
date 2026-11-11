@@ -73,8 +73,10 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
     palette: maskPalette,
     overlay: maskView.overlay,
     onOverlayChange: maskView.onOverlay,
+    highlight: maskView.highlight,
     controls: (
       <MasksControls
+        onHighlight={maskView.onHighlight}
         state={mapsState}
         masksRecord={record?.masks}
         canWrite={canWrite}

@@ -15,6 +15,7 @@ interface PreviewSceneInputs {
   maps: PreviewMaps;
   shading: PreviewShading; // session-only (R51)
   maskOverlay: MaskOverlaySettings; // R18, R40
+  maskHighlight?: number | null; // masks R80: the label under the pointer in the Material Masks controls
   toolTransform: ToolTransform | null; // an open Crop or Mirror (R58)
 }
 
@@ -36,6 +37,7 @@ export function usePreviewScene(viewport: Viewport | null, inputs: PreviewSceneI
     created.bind(latest.current.maps);
     created.setShading(latest.current.shading);
     created.setMaskOverlay(latest.current.maskOverlay);
+    created.setMaskHighlight(latest.current.maskHighlight ?? null);
     created.setToolTransform(latest.current.toolTransform);
     const detach = attachTurntableControls(viewport.renderer.domElement, created);
     const stopResizing = viewport.on('resized', created.fitCamera);
@@ -49,7 +51,9 @@ export function usePreviewScene(viewport: Viewport | null, inputs: PreviewSceneI
   }, [viewport]);
 
   const { prefs, values, mapAdjust, maps, shading, maskOverlay, toolTransform } = inputs;
+  const maskHighlight = inputs.maskHighlight ?? null;
   useEffect(() => scene?.setMaskOverlay(maskOverlay), [scene, maskOverlay]);
+  useEffect(() => scene?.setMaskHighlight(maskHighlight), [scene, maskHighlight]);
   useEffect(() => scene?.setToolTransform(toolTransform), [scene, toolTransform]);
   useEffect(() => scene?.setShading(shading), [scene, shading]);
   useEffect(() => scene?.setMesh(prefs.mesh), [scene, prefs.mesh]);

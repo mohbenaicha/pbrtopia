@@ -59,7 +59,7 @@ export function createFlatLooks(adjust: MapAdjustUniforms, mask: MaskUniforms, t
   };
 
   const materials: Record<FlatView, ShaderMaterial> = {
-    albedo: build(FLAT_COLOR_FRAGMENT_SHADER, { uFallbackColor: { value: MISSING_ALBEDO }, uMaskLabels: mask.uMaskLabels, uMaskPalette: mask.uMaskPalette, uMaskOpacity: mask.uMaskOpacity, uMaskOn: mask.uMaskOn }), // R18: the overlay shows on the albedo
+    albedo: build(FLAT_COLOR_FRAGMENT_SHADER, { uFallbackColor: { value: MISSING_ALBEDO }, uMaskLabels: mask.uMaskLabels, uMaskPalette: mask.uMaskPalette, uMaskOpacity: mask.uMaskOpacity, uMaskOn: mask.uMaskOn, uMaskOnly: mask.uMaskOnly }), // R18: the overlay shows on the albedo
     normal: build(FLAT_NORMAL_FRAGMENT_SHADER, { uStrength: adjust.normalStrength, uContrast: adjust.normalContrast }),
     rough: channelLook('rough'),
     metal: channelLook('metal'),

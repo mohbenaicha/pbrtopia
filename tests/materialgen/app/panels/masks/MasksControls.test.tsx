@@ -14,7 +14,7 @@ const stored: MasksRecord = {
   source: 'model',
   palette: [{ label: 0, hex: '#FF0000', name: 'red' }],
   feather: 1,
-  rows: [{ label: 0, name: 'Wall', description: '', location: '', defaultMaterial: 'Brick', top3: ['Brick'], matchKind: 'colour', material: 'Brick', rough: 0.8, metal: 0 }],
+  rows: [{ label: 0, name: 'Wall', description: '', location: '', defaultMaterial: 'Brick', top3: ['Brick'], matchKind: 'colour', material: 'Brick', rough: 0.8, metal: 0, height: 0 }],
 };
 
 const ports = (masksRecord: MasksPanelPorts['masksRecord']): MasksPanelPorts => ({

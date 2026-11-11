@@ -84,5 +84,13 @@ export async function planChangeSize(state: MapsState, size: MaterialSize, io: P
     keys[kind] = key;
     newBlobs.set(key, await resizeToSquareBlob(pixels, kind, size, io.resize));
   }
-  return { ok: true, plan: { next: changeSize(state, size, keys, io.newKey()), newBlobs } };
+  let offsetBaseKey: string | undefined;
+  const base = state.maps.height?.offsetBase; // masks R87: the base of the height offsets is resampled with the map
+  if (base !== undefined) {
+    const pixels = await readMapPixels(await io.readBlob(base));
+    if (pixels === null) return { ok: false, message: `${io.label('height')}: the file the offsets start from cannot be read.` };
+    offsetBaseKey = io.newKey();
+    newBlobs.set(offsetBaseKey, await resizeToSquareBlob(pixels, 'height', size, io.resize));
+  }
+  return { ok: true, plan: { next: changeSize(state, size, keys, io.newKey(), offsetBaseKey), newBlobs } };
 }

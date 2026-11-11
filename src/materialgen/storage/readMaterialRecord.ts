@@ -38,7 +38,9 @@ function readUndoEntry(value: unknown, path: string): MapUndoEntry {
   const derivedFrom = readOptional(raw['derivedFrom'], (present) => readDerivedFrom(present, `${path}.derivedFrom`));
   const groupId = readOptional(raw['groupId'], (present) => readNonEmptyText(present, `${path}.groupId`));
   const size = readOptional(raw['size'], (present) => readChoice(present, `${path}.size`, MATERIAL_SIZES));
+  const offsetBase = readOptional(raw['offsetBase'], (present) => readNonEmptyText(present, `${path}.offsetBase`));
   if (derivedFrom) entry.derivedFrom = derivedFrom;
+  if (offsetBase !== undefined) entry.offsetBase = offsetBase;
   if (groupId !== undefined) entry.groupId = groupId;
   if (size !== undefined) entry.size = size;
   return entry;
@@ -66,6 +68,8 @@ function readMap(kind: MapKind, value: unknown, path: string): MapRecord {
   }
   const derivedFrom = readOptional(raw['derivedFrom'], (present) => readDerivedFrom(present, `${path}.derivedFrom`));
   if (derivedFrom) map.derivedFrom = derivedFrom;
+  const offsetBase = readOptional(raw['offsetBase'], (present) => readNonEmptyText(present, `${path}.offsetBase`));
+  if (offsetBase !== undefined) map.offsetBase = offsetBase;
   const source = readOptional(raw['source'], (present) => readMapSource(present, `${path}.source`));
   if (source) map.source = source;
   return map;

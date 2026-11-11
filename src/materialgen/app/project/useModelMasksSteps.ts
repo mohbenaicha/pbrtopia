@@ -7,6 +7,7 @@ import type { MaterialRecord } from '@mat/storage';
 import { loadBaseMaterials } from '../panels/masks/loadBaseMaterials';
 import { loadMaterialVectors } from '../panels/masks/loadMaterialVectors';
 import { askDescribeModel } from './askDescribeModel';
+import { buildModelMasksCommit } from './buildModelMasksCommit';
 
 const UNDO_LABEL = 'Material masks';
 const embedder = createWorkerEmbedder();
@@ -53,10 +54,7 @@ export function useModelMasksSteps({ record, mapsState, maps }: Inputs): MasksSt
           },
         },
         commit: (build, original, albedoKey) =>
-          latest.current.maps.commitMasks(
-            { labels: { original, working: build.labels, derivedFrom: { kind: latest.current.mapsState.maps.albedo !== undefined ? 'albedo' : 'diffuse', key: albedoKey } }, bake: build.bake, label: UNDO_LABEL },
-            serializeMasksRecord(build.record),
-          ),
+          latest.current.maps.commitMasks(buildModelMasksCommit(latest.current.mapsState, build, original, albedoKey), serializeMasksRecord(build.record)),
       }),
     [keys, createPromptEnhancer],
   );

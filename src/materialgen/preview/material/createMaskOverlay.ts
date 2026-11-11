@@ -14,6 +14,7 @@ export type MaskUniforms = {
   uMaskPalette: IUniform<DataTexture>;
   uMaskOpacity: IUniform<number>;
   uMaskOn: IUniform<number>;
+  uMaskOnly: IUniform<number>; // the highlighted label, -1 for none (masks R80)
   uMaskTile: IUniform<Vector2>;
 };
 
@@ -21,6 +22,7 @@ export interface MaskOverlay {
   readonly uniforms: MaskUniforms; // shared by the shaded material and the flat Albedo view
   setLabels(picture: PixelImage | undefined): void; // the working copy of the labels map; rebuilt only for a different picture
   setSettings(settings: MaskOverlaySettings): void;
+  setHighlight(label: number | null): void; // R80: draws one label's colour alone, with or without the switch; waits for the labels and the palette
   setTile(x: number, y: number): void; // the labels repeat with the albedo
   patchLitMaterial(material: Material): void; // adds the overlay to the albedo of the shaded material, before any other patch of its shader
   dispose(): void;
@@ -57,6 +59,7 @@ export function createMaskOverlay(): MaskOverlay {
     uMaskPalette: { value: buildPaletteTexture(null) },
     uMaskOpacity: { value: 0.5 },
     uMaskOn: { value: 0 },
+    uMaskOnly: { value: -1 },
     uMaskTile: { value: new Vector2(1, 1) },
   };
   let source: PixelImage | undefined;
@@ -64,8 +67,12 @@ export function createMaskOverlay(): MaskOverlay {
   let hasPalette = false;
   let builtFrom: readonly PaletteEntry[] | null = null; // the palette the colour table was built from; only a different one rebuilds it
 
+  let highlight: number | null = null;
+
   const refreshOn = (): void => {
-    uniforms.uMaskOn.value = switchedOn && hasPalette && uniforms.uMaskLabels.value !== null ? 1 : 0;
+    const ready = hasPalette && uniforms.uMaskLabels.value !== null;
+    uniforms.uMaskOn.value = switchedOn && ready ? 1 : 0;
+    uniforms.uMaskOnly.value = highlight !== null && ready ? highlight : -1;
   };
 
   return {
@@ -86,6 +93,10 @@ export function createMaskOverlay(): MaskOverlay {
         uniforms.uMaskPalette.value.dispose();
         uniforms.uMaskPalette.value = buildPaletteTexture(palette);
       }
+      refreshOn();
+    },
+    setHighlight(label) {
+      highlight = label;
       refreshOn();
     },
     setTile(x, y) {

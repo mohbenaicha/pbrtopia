@@ -15,6 +15,11 @@ export interface MasksCommit {
     derivedFrom: DerivedFromRecord; // the albedo working copy they were made from
   };
   bake?: { rough: PixelImage; metal: PixelImage };
+  /**
+   * The Height map under the height offsets (masks R82-R85), an edit of Height alone with its own undo entry: a new image computed from the base
+   * `offsetBase` (an existing blob key, written down as the new working map's tag), or `backTo` the base's own key when the last offset returned to 0 (R84).
+   */
+  height?: { image: PixelImage; offsetBase: string } | { backTo: string };
   label: string; // the undo label of a later bake: Material masks
 }
 
@@ -57,6 +62,16 @@ export async function planCommitMasks(state: MapsState, commit: MasksCommit, io:
       else replacing.push({ kind, workingKey: key, derivedFrom });
     }
     if (replacing.length > 0) next = editMaps(next, replacing, commit.label);
+  }
+  if (commit.height !== undefined) {
+    if (next.maps.height === undefined) throw new Error('The height offsets need a Height map');
+    if ('backTo' in commit.height) {
+      next = editMaps(next, [{ kind: 'height', workingKey: commit.height.backTo }], commit.label);
+    } else {
+      const key = io.newKey();
+      newBlobs.set(key, await encodePngBlob(commit.height.image));
+      next = editMaps(next, [{ kind: 'height', workingKey: key, offsetBase: commit.height.offsetBase }], commit.label);
+    }
   }
   return { next, newBlobs };
 }

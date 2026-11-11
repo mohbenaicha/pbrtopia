@@ -4,9 +4,12 @@ import { useState } from 'react';
 export interface MaskView {
   overlay: boolean; // the mask overlay on the preview
   onOverlay(on: boolean): void;
+  highlight: number | null; // masks R80: the label under the pointer in the controls, drawn alone
+  onHighlight(label: number | null): void;
 }
 
 export function useMaskView(): MaskView {
   const [overlay, onOverlay] = useState(false);
-  return { overlay, onOverlay };
+  const [highlight, onHighlight] = useState<number | null>(null);
+  return { overlay, onOverlay, highlight, onHighlight };
 }

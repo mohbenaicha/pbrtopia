@@ -26,8 +26,8 @@ const masksRecord = (): MasksRecord => ({
   palette: [{ label: 0, hex: '#FF0000', name: 'red' }, { label: 1, hex: '#00FF00', name: 'green' }],
   feather: 1,
   rows: [
-    { label: 0, name: 'Wall', description: '', location: '', defaultMaterial: 'Brick', top3: [], matchKind: 'keyword', material: 'Brick', rough: 0.8, metal: 0 },
-    { label: 1, name: 'Plate', description: '', location: '', defaultMaterial: 'Steel', top3: [], matchKind: 'keyword', material: 'Steel', rough: 0.3, metal: 1 },
+    { label: 0, name: 'Wall', description: '', location: '', defaultMaterial: 'Brick', top3: [], matchKind: 'keyword', material: 'Brick', rough: 0.8, metal: 0, height: 0 },
+    { label: 1, name: 'Plate', description: '', location: '', defaultMaterial: 'Steel', top3: [], matchKind: 'keyword', material: 'Steel', rough: 0.3, metal: 1, height: 0 },
   ],
 });
 const options = (patch: Partial<ExportOptions> = {}): ExportOptions => ({ target: 'blender', packing: 'separate', includeHeight: true, includeAo: true, includeMasks: false, size: 4, ...patch });

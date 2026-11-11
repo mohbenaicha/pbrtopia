@@ -11,7 +11,12 @@ interface MaskRowViewProps {
   onMaterial(name: string): void;
   onRough(value: number): void | Promise<unknown>;
   onMetal(value: number): void | Promise<unknown>;
+  onHeight(value: number): void | Promise<unknown>;
+  /** Why the Height slider is off (no Height map, masks R81), or null while it works. */
+  heightDisabledReason: string | null;
 }
+
+const HEIGHT_RANGE = { min: -1, max: 1, step: 0.01, format: (value: number): string => `${value < 0 ? '-' : '+'}${Math.abs(value).toFixed(2)}` };
 
 /** Select options for a row: its suggestions first, then Generic, then every name once (masks R37). */
 function materialOptions(row: MaskRow, table: BaseMaterialTable): SelectOption[] {
@@ -29,10 +34,11 @@ function materialOptions(row: MaskRow, table: BaseMaterialTable): SelectOption[]
 }
 
 /**
- * Masks R48, R57: one component's block: its name, the base-material select under it, then the Roughness and Metalness sliders with their value and reset arrow.
- * A slider's reset arrow puts it back to the value of the row's chosen base material; a material that is not in the table leaves the arrow with nothing to go back to.
+ * Masks R48, R57, R81: one component's block: its name, the base-material select under it, then the Roughness and Metalness sliders with their value and reset arrow,
+ * and the Height slider (-1 to +1, its arrow goes back to 0). A slider's reset arrow puts it back to the value of the row's chosen base material; a material that is
+ * not in the table leaves the arrow with nothing to go back to.
  */
-export function MaskRowView({ row, table, disabled, onMaterial, onRough, onMetal }: MaskRowViewProps): React.JSX.Element {
+export function MaskRowView({ row, table, disabled, onMaterial, onRough, onMetal, onHeight, heightDisabledReason }: MaskRowViewProps): React.JSX.Element {
   const options = useMemo(() => materialOptions(row, table), [row, table]);
   const chosen = findMaterial(table, row.material);
   return (
@@ -51,6 +57,9 @@ export function MaskRowView({ row, table, disabled, onMaterial, onRough, onMetal
       />
       <CommitSlider label="Roughness" layout="row" value={row.rough} onCommit={onRough} disabled={disabled} resetTo={chosen?.roughness ?? row.rough} />
       <CommitSlider label="Metalness" layout="row" value={row.metal} onCommit={onMetal} disabled={disabled} resetTo={chosen?.metal ?? row.metal} />
+      <div style={{ minWidth: 0 }} {...(heightDisabledReason === null ? {} : { title: heightDisabledReason })}>
+        <CommitSlider label="Height" layout="row" value={row.height} onCommit={onHeight} disabled={disabled || heightDisabledReason !== null} resetTo={0} range={HEIGHT_RANGE} />
+      </div>
     </div>
   );
 }

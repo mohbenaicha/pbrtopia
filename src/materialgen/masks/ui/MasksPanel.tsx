@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, CommitSlider } from '@shared/ui-kit';
 import { isRowAtDefaults } from '../record/maskRows';
 import type { MasksRecord } from '../record/masksRecord';
@@ -39,11 +39,18 @@ export interface MasksPanelProps {
   /** A slider's value was released; a promise that settles when it has been stored lets the slider keep showing it until then (masks R50). */
   onRowRough(label: number, value: number): void | Promise<unknown>;
   onRowMetal(label: number, value: number): void | Promise<unknown>;
+  /** The Height offset of a row, -1 to +1 (masks R81). */
+  onRowHeight(label: number, value: number): void | Promise<unknown>;
+  /** The Height slot has a working map; without one the Height sliders are off (masks R81). */
+  hasHeightMap: boolean;
   onResetAll(): void;
   onFeather(pixels: number): void | Promise<unknown>;
+  /** The swatch under the pointer or holding the focus (masks R80), or null; the preview draws that component alone. */
+  onHighlight?(label: number | null): void;
 }
 
 const FEATHER_RANGE = { min: 0, max: MAX_FEATHER, step: 1, format: (value: number): string => `${value} px` };
+const NO_HEIGHT_REASON = 'Add a height map first';
 const READ_ONLY_REASON = 'This project is open in another tab, so it cannot be changed here.';
 
 /**
@@ -54,6 +61,8 @@ const READ_ONLY_REASON = 'This project is open in another tab, so it cannot be c
 export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
   const { record, table, tableProblem, stale, canWrite, model } = props;
   const [selected, setSelected] = useState<number | null>(null);
+  const { onHighlight } = props;
+  useEffect(() => () => onHighlight?.(null), [onHighlight]); // R80: a panel that goes (popover closed, masks gone) leaves no highlight behind
   const locked = !canWrite;
   const changeReason = locked ? READ_ONLY_REASON : undefined;
 
@@ -71,7 +80,7 @@ export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
         <p className="masks-panel__notice" role={tableProblem === null ? 'status' : 'alert'}>{tableProblem ?? 'Loading the materials'}</p>
       ) : (
         <>
-          <MaskSwatchGrid rows={record.rows} palette={record.palette} selected={selectedRow?.label ?? null} onSelect={(label) => setSelected(label === selectedRow?.label ? null : label)} />
+          <MaskSwatchGrid rows={record.rows} palette={record.palette} selected={selectedRow?.label ?? null} {...(onHighlight === undefined ? {} : { onHighlight })} onSelect={(label) => setSelected(label === selectedRow?.label ? null : label)} />
           {selectedRow === undefined ? null : (
             <MaskRowView
               key={selectedRow.label}
@@ -81,6 +90,8 @@ export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
               onMaterial={(name) => props.onRowMaterial(selectedRow.label, name)}
               onRough={(value) => props.onRowRough(selectedRow.label, value)}
               onMetal={(value) => props.onRowMetal(selectedRow.label, value)}
+              onHeight={(value) => props.onRowHeight(selectedRow.label, value)}
+              heightDisabledReason={props.hasHeightMap ? null : NO_HEIGHT_REASON}
             />
           )}
         </>

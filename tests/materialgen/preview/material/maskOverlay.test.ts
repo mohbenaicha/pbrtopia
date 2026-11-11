@@ -23,6 +23,34 @@ describe('materialgen/preview R18 R40 the mask overlay', () => {
     expect(overlay.uniforms.uMaskOn.value).toBe(0); // no masks record
   });
 
+  it('R18 R80 the component highlight is off (-1) until labels and a palette are there, and does not need the switch', () => {
+    const overlay = createMaskOverlay();
+    expect(overlay.uniforms.uMaskOnly.value).toBe(-1);
+    overlay.setHighlight(3);
+    expect(overlay.uniforms.uMaskOnly.value).toBe(-1); // no labels, no palette
+    overlay.setSettings({ on: false, opacity: 0.5, palette });
+    expect(overlay.uniforms.uMaskOnly.value).toBe(-1); // no labels yet
+    overlay.setLabels(labels(3));
+    expect(overlay.uniforms.uMaskOnly.value).toBe(3); // the switch is off and the highlight shows
+    expect(overlay.uniforms.uMaskOn.value).toBe(0);
+    overlay.setHighlight(null);
+    expect(overlay.uniforms.uMaskOnly.value).toBe(-1);
+  });
+
+  it('R80 a highlight waits for the palette and labels that come later, and a change of it rebuilds no texture', () => {
+    const overlay = createMaskOverlay();
+    overlay.setHighlight(0);
+    overlay.setSettings({ on: false, opacity: 0.5, palette });
+    overlay.setLabels(labels(0));
+    expect(overlay.uniforms.uMaskOnly.value).toBe(0);
+    const table = overlay.uniforms.uMaskPalette.value;
+    const picture = overlay.uniforms.uMaskLabels.value;
+    overlay.setHighlight(3);
+    overlay.setHighlight(null);
+    expect(overlay.uniforms.uMaskPalette.value).toBe(table);
+    expect(overlay.uniforms.uMaskLabels.value).toBe(picture);
+  });
+
   it('R18 the label colour table has each palette colour at its label and nothing elsewhere', () => {
     const overlay = createMaskOverlay();
     overlay.setSettings({ on: true, opacity: 0.5, palette });

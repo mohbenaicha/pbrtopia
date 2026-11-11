@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RawRecord } from '@shared/projects';
 import type { PixelImage } from '@mat/imageops';
-import { isStale, readMapPixels, type MapsController, type MapsState, type MasksCommit } from '@mat/maps';
+import { heightBaseKey, isStale, readMapPixels, type MapsController, type MapsState, type MasksCommit } from '@mat/maps';
 import {
   chooseMaterial,
   createBakeQueue,
+  hasHeightOffset,
   parseMasksRecord,
   resetAllRows,
   serializeMasksRecord,
@@ -17,6 +18,7 @@ import {
   type MasksPanelProps,
   type MasksRecord,
 } from '@mat/masks';
+import { planMasksWrites } from './planMasksWrites';
 
 export interface MasksPanelPorts {
   state: MapsState;
@@ -27,6 +29,7 @@ export interface MasksPanelPorts {
   /** The base materials of the shipped file (masks R34); the panel loads them when it is first used. */
   loadTable(): Promise<BaseMaterialTable>;
   model: MasksModelControls; // the model path (masks R64-R68), bound by the project view to the generation panel's masks-only run
+  onHighlight?(label: number | null): void; // masks R80: the swatch under the pointer, drawn alone in the preview
 }
 
 const UNDO_LABEL = 'Material masks';
@@ -86,6 +89,10 @@ export function useMasksPanel(ports: MasksPanelPorts): MasksPanelProps {
         let record = next;
         let relabel: MasksCommit['labels'];
         let bake: MasksCommit['bake'];
+        let height: MasksCommit['height'];
+        const heightMap = current.maps.height;
+        const needsRelabel = side !== null && labels.width !== side;
+        const writes = planMasksWrites(stored.current, next, needsRelabel);
         try {
           if (side !== null && labels.width !== side) {
             // R79: the labels are not S x S (S changed, or the change was undone): rebuild them at S first, then bake, in this one commit
@@ -96,15 +103,31 @@ export function useMasksPanel(ports: MasksPanelPorts): MasksPanelProps {
             if (!built.ok) return controller.refuse(built.message), false;
             ({ record, bake } = { record: built.value.record, bake: built.value.bake });
             relabel = { keepOriginal: true, working: built.value.labels, derivedFrom };
-          } else {
+          } else if (writes.roughMetal) {
             bake = await startMaskJob('bake', { labels, record: next });
+          }
+          if (heightMap !== undefined && writes.height) {
+            if (hasHeightOffset(record.rows)) {
+              let baseKey = heightBaseKey(current)!; // R83: the working Height's tag, else the working Height itself
+              let base = await readMapPixels(await readBlob(baseKey));
+              if (base === null && heightMap.offsetBase !== undefined) {
+                baseKey = heightMap.workingKey; // R83: the base file is gone, so the working Height is the base from now on
+                base = await readMapPixels(await readBlob(baseKey));
+              }
+              if (base === null) return controller.refuse('The height map cannot be read.'), false;
+              const used = relabel === undefined ? labels : relabel.working;
+              if (base.width !== used.width || base.height !== used.height) return controller.refuse('The height map is not the size of the masks.'), false;
+              height = { image: await startMaskJob('height', { labels: used, record, base }), offsetBase: baseKey };
+            } else if (heightMap.offsetBase !== undefined) {
+              height = { backTo: heightMap.offsetBase }; // R84: the last offset went back to 0
+            }
           }
         } catch {
           return controller.refuse('Could not bake the masks. Nothing changed.'), false;
         }
         const after = portsRef.current; // the bake takes a moment: the project may have moved on (labels replaced, lock lost)
-        if (!after.canWrite || after.state.maps.labels?.workingKey !== labelsMap.workingKey) return false;
-        const done = await after.controller.commitMasks({ ...(relabel === undefined ? {} : { labels: relabel }), ...(bake === undefined ? {} : { bake }), label: UNDO_LABEL }, serializeMasksRecord(record));
+        if (!after.canWrite || after.state.maps.labels?.workingKey !== labelsMap.workingKey || after.state.maps.height?.workingKey !== heightMap?.workingKey) return false;
+        const done = await after.controller.commitMasks({ ...(relabel === undefined ? {} : { labels: relabel }), ...(bake === undefined ? {} : { bake }), ...(height === undefined ? {} : { height }), label: UNDO_LABEL }, serializeMasksRecord(record));
         if (done) {
           stored.current = record;
           if (relabel !== undefined) labelsCache.current = null;
@@ -132,9 +155,12 @@ export function useMasksPanel(ports: MasksPanelPorts): MasksPanelProps {
     stale: state.maps.labels !== undefined && isStale(state, 'labels'),
     canWrite,
     model: ports.model,
+    ...(ports.onHighlight === undefined ? {} : { onHighlight: ports.onHighlight }),
     onRowMaterial: (label, name) => changeRow(label, (row, loaded) => chooseMaterial(row, name, loaded)),
     onRowRough: (label, value) => changeRow(label, (row) => setRowValue(row, 'rough', value)),
     onRowMetal: (label, value) => changeRow(label, (row) => setRowValue(row, 'metal', value)),
+    onRowHeight: (label, value) => changeRow(label, (row) => setRowValue(row, 'height', value)),
+    hasHeightMap: state.maps.height !== undefined,
     onResetAll: () => changeRows((rows, loaded) => resetAllRows(rows, loaded)),
     onFeather: (pixels) => submitChange((current) => ({ ...current, feather: pixels })),
   };

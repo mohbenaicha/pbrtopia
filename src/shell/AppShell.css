@@ -1,33 +1,54 @@
+/* Viewport-layout R37: the viewport fills the window and the panels and the top bar float on it, at the shell gap from the window's edges. */
 .app-shell {
-  display: grid;
-  grid-template-columns: var(--panel-left, 296px) minmax(0, 1fr) var(--panel-right, 288px);
-  grid-template-rows: 56px minmax(0, 1fr);
-  grid-template-areas:
-    'top top top'
-    'left viewport right';
-  gap: var(--space-1);
+  --shell-gap: 8px;
+  --shell-radius: 8px;
+  --top-bar-height: 44px;
+  /* The part of the viewport the floating panels leave free: the viewport's own controls add these to their offsets. */
+  --stage-left: calc(var(--panel-left, 296px) + 2 * var(--shell-gap));
+  --stage-right: calc(var(--panel-right, 288px) + 2 * var(--shell-gap));
+  --stage-top: calc(2 * var(--shell-gap) + var(--top-bar-height));
+  --stage-bottom: var(--shell-gap);
+  position: relative;
   width: 100vw;
   height: 100vh;
+  overflow: clip;
   background: var(--bg-page);
 }
 
-.app-shell__top {
-  grid-area: top;
+/* No z-index: the viewport makes no stacking context, so its popovers can rise above the panels. */
+.app-shell__viewport {
+  position: absolute;
+  inset: 0;
+}
+
+.app-shell__left,
+.app-shell__right {
+  position: absolute;
+  top: var(--shell-gap);
+  bottom: var(--shell-gap);
+  z-index: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--shell-radius);
 }
 
 .app-shell__left {
-  grid-area: left;
-  min-height: 0;
-}
-
-.app-shell__viewport {
-  grid-area: viewport;
-  position: relative;
-  min-width: 0;
-  min-height: 0;
+  left: var(--shell-gap);
+  width: var(--panel-left, 296px);
 }
 
 .app-shell__right {
-  grid-area: right;
-  min-height: 0;
+  right: var(--shell-gap);
+  width: var(--panel-right, 288px);
+}
+
+/* The column between the panels; the bar's two sections take the pointer, the space between them lets it through to the viewport. */
+.app-shell__top {
+  position: absolute;
+  top: var(--shell-gap);
+  left: calc(var(--panel-left, 296px) + 2 * var(--shell-gap));
+  right: calc(var(--panel-right, 288px) + 2 * var(--shell-gap));
+  z-index: 1;
+  height: var(--top-bar-height);
+  pointer-events: none;
 }

@@ -40,6 +40,7 @@ export interface PreviewMasks {
   palette: readonly PaletteEntry[] | null; // from the masks record; null when the material has none
   overlay: boolean; // session-only switch
   onOverlayChange(on: boolean): void;
+  highlight?: number | null; // masks R80: the label to draw alone while the pointer is over its swatch
   controls: React.ReactNode; // the Material Masks controls shown in the icon's popover under the opacity slider (masks R49); the app owns them
 }
 
@@ -66,7 +67,7 @@ export function PreviewViewport({ store, mapsState, readBlob, values, onValuesCh
   const toolTransform = useToolViewRelease(tool.view, keys, tool.onSettled);
   const maskOverlay = useMemo(() => ({ on: masks.overlay, opacity: prefs.maskOverlayOpacity, palette: masks.palette }), [masks.overlay, masks.palette, prefs.maskOverlayOpacity]);
   // the scene is built once the saved mesh and resolution are known, so a saved Plane never shows a Ball first
-  const scene = usePreviewScene(prefsLoaded ? viewport : null, { prefs, values, mapAdjust: settings.mapAdjust, maps, shading, maskOverlay, toolTransform });
+  const scene = usePreviewScene(prefsLoaded ? viewport : null, { prefs, values, mapAdjust: settings.mapAdjust, maps, shading, maskOverlay, maskHighlight: masks.highlight ?? null, toolTransform });
 
   const capture = useMemo(() => (viewport === null ? null : () => viewport.captureThumbnail()), [viewport]);
   const saveThumbnail = usePreviewThumbnail({ scene, capture, maps, loaded, enabled: thumbnail.enabled, save: thumbnail.save });

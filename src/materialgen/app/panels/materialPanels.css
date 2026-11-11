@@ -38,7 +38,7 @@
 .prompt-ideas {
   position: absolute;
   left: var(--space-2);
-  bottom: var(--space-2);
+  bottom: calc(var(--space-2) + var(--space-2));
   display: flex;
   gap: var(--space-1);
 }

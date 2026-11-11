@@ -396,6 +396,31 @@ describe('materialgen/preview R18 R40 the mask overlay on the scene', () => {
     expect(invalidate).toHaveBeenCalledTimes(1);
   });
 
+  it('R80 a change of the component highlight draws one frame, and the same one again draws none', () => {
+    const { host, scene } = make();
+    const invalidate = vi.mocked(host.invalidate);
+    invalidate.mockClear();
+    scene.setMaskHighlight(2);
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    scene.setMaskHighlight(2);
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    scene.setMaskHighlight(null);
+    expect(invalidate).toHaveBeenCalledTimes(2);
+  });
+
+  it('R53 R80 the thumbnail never shows the highlight either, and it comes back afterwards', async () => {
+    const { scene } = make();
+    scene.setMaskHighlight(0);
+    expect(scene.maskHighlight()).toBe(0);
+    let during: number | null = -9;
+    await scene.captureThumbnail(async () => {
+      during = scene.maskHighlight();
+      return new Blob(['x']);
+    });
+    expect(during).toBeNull();
+    expect(scene.maskHighlight()).toBe(0);
+  });
+
   it('R53 the thumbnail never shows the overlay, and it is back on afterwards', async () => {
     const { host, scene } = make();
     scene.bind({ labels });

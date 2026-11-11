@@ -41,6 +41,18 @@ describe('materialgen/preview R28 R40 the Material Masks icon', () => {
     expect(icon().getAttribute('aria-expanded')).toBe('false');
   });
 
+  it('R28 a click elsewhere does not close the popover, so the camera can be dragged while values are adjusted; Escape closes it', async () => {
+    setup();
+    await userEvent.click(icon());
+    await userEvent.click(screen.getByRole('button', { name: 'elsewhere' }));
+    fireEvent.pointerDown(document.body);
+    expect(popover()).toBeTruthy();
+    expect(icon().getAttribute('aria-expanded')).toBe('true');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(popover()).toBeNull();
+    expect(icon().getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('R40 the options are the Mask overlay switch and the Overlay opacity slider', async () => {
     setup({ overlay: true, opacity: 0.25 });
     await userEvent.click(icon());
@@ -101,10 +113,10 @@ describe('materialgen/preview R28 R40 the Material Masks icon', () => {
     expect(icon().getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('R28 a click elsewhere closes the popover and the icon goes inactive; one click on the icon opens it again', async () => {
+  it('R28 Escape closes the popover and the icon goes inactive; one click on the icon opens it again', async () => {
     setup();
     await userEvent.click(icon());
-    await userEvent.click(screen.getByRole('button', { name: 'elsewhere' }));
+    await userEvent.keyboard('{Escape}');
     expect(popover()).toBeNull();
     expect(icon().getAttribute('aria-expanded')).toBe('false');
     await userEvent.click(icon());

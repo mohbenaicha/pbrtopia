@@ -34,6 +34,8 @@ export interface PreviewScene {
   toolTransform(): ToolTransform | null; // what is shown now (null while the thumbnail is taken)
   setValues(values: PreviewValues): void;
   setMaskOverlay(settings: MaskOverlaySettings): void; // R18, R40: the palette colours drawn into the albedo (display only)
+  setMaskHighlight(label: number | null): void; // masks R80: one label's colour alone, with the switch on or off (display only)
+  maskHighlight(): number | null; // the highlight shown now (null while the thumbnail is taken)
   setAoIntensity(intensity: number): void;
   setNormalDirection(direction: NormalDirection): void; // R60: DirectX turns the green of the normal map in the Shaded and the flat Normal views; nothing stored changes
   setShading(shading: PreviewShading): void; // R51: Shaded or one map unlit; the mesh, pose, dolly and displacement stay
@@ -75,6 +77,8 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
   let toolTransform: ToolTransform | null = null;
   let maskSettings: MaskOverlaySettings = { on: false, opacity: prefs.maskOverlayOpacity, palette: null };
   overlay.setSettings(maskSettings);
+  let highlight: number | null = null; // masks R80
+  let highlightHidden = false; // while the thumbnail is taken
 
   let shading: PreviewShading = 'lit';
   let meshKind = prefs.mesh;
@@ -166,6 +170,13 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
       applyShading();
       host.invalidate();
     },
+    setMaskHighlight(label) {
+      if (label === highlight) return;
+      highlight = label;
+      overlay.setHighlight(label);
+      host.invalidate();
+    },
+    maskHighlight: () => (highlightHidden ? null : highlight),
     setMaskOverlay(settings) {
       maskSettings = settings;
       overlay.setSettings(settings);
@@ -194,6 +205,8 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
       dolly = 1;
       shading = 'lit';
       overlay.setSettings({ ...maskSettings, on: false }); // the thumbnail is the material, not the masks
+      highlightHidden = true;
+      overlay.setHighlight(null);
       const keptTool = toolTransform;
       toolTransform = null; // nor an open Crop or Mirror (R58)
       toolShading.set(null);
@@ -206,6 +219,8 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
         ({ pose, dolly, shading } = kept);
         facing = false;
         overlay.setSettings(maskSettings);
+        highlightHidden = false;
+        overlay.setHighlight(highlight);
         toolTransform = keptTool;
         toolShading.set(keptTool);
         applyPose();

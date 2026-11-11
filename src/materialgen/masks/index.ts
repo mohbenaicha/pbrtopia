@@ -21,4 +21,5 @@ export { startMaskJob, type MaskWorkerLike, type StartMaskJobOptions } from './w
 export { createMasksSteps, type DescribedComponents, type MasksStepDeps, type ModelMasksSteps } from './model/createMasksSteps';
 export { MasksPanel, type MasksModelControls, type MasksPanelProps } from './ui/MasksPanel';
 export { bakeCurrentRows, type BakedMaps, type MasksBuild } from './pipeline/bakeCurrentRows';
-export { chooseMaterial, isRowAtDefaults, makeRow, resetAllRows, resetRow, rowsToBake, setRowValue, type MaskRow } from './record/maskRows';
+export { chooseMaterial, hasHeightOffset, isRowAtDefaults, makeRow, resetAllRows, resetRow, rowsToBake, rowsToHeightOffsets, setRowValue, type MaskRow } from './record/maskRows';
+export { HEIGHT_SENSITIVITY, bakeHeight, type HeightBakeInput } from './bake/bakeHeight';

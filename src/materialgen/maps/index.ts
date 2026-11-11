@@ -6,6 +6,7 @@ export { withPendingMaps, type PendingMap, type PendingMaps } from './pendingMap
 export { useMapsController,type BusyTarget, type MapsController, type MapsHost, type MapsMessage } from './useMapsController';
 export type { ImageEdit } from './mapActions';
 export { planCommitMasks, type MasksCommit } from './planCommitMasks';
+export { heightBaseKey } from './heightBase';
 export { planPlaceGenerated, type GeneratedMap } from './planPlaceGenerated';
 export { readMapPixels } from './readMapPixels';
 export { findEditedSlot } from './lastEditedSlot';

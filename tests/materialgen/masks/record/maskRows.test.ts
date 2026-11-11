@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseBaseMaterials } from '@mat/masks/table/baseMaterials';
-import { chooseMaterial, isRowAtDefaults, makeRow, resetAllRows, resetRow, setRowValue, type MaskRow } from '@mat/masks/record/maskRows';
+import { chooseMaterial, hasHeightOffset, isRowAtDefaults, makeRow, resetAllRows, resetRow, rowsToHeightOffsets, setRowValue, type MaskRow } from '@mat/masks/record/maskRows';
 
 const TABLE = parseBaseMaterials({
   'Oak Wood': [0.7, 0, [120, 80, 40]],
@@ -58,5 +58,42 @@ describe('materialgen/masks rows', () => {
     expect(reset.every((entry) => isRowAtDefaults(entry, TABLE))).toBe(true);
     expect(reset.map((entry) => entry.label)).toEqual([0, 1, 2]);
     expect(resetAllRows(reset, TABLE)).toEqual(reset);
+  });
+});
+
+describe('materialgen/masks rows height offset (R81 R86)', () => {
+  it('R81 a row starts at height 0, in the middle of -1 to +1', () => {
+    expect(row().height).toBe(0);
+  });
+
+  it('R81 the height value is kept to steps of 0.01 within -1 and +1', () => {
+    expect(setRowValue(row(), 'height', 0.456).height).toBe(0.46);
+    expect(setRowValue(row(), 'height', -3).height).toBe(-1);
+    expect(setRowValue(row(), 'height', 3).height).toBe(1);
+    expect(setRowValue(row({ height: 0.5 }), 'height', Number.NaN).height).toBe(0.5);
+  });
+
+  it('R86 Reset puts the height back to 0, and a row with a height is not at its defaults', () => {
+    const raised = row({ height: 0.4 });
+    expect(isRowAtDefaults(raised, TABLE)).toBe(false);
+    expect(resetRow(raised, TABLE).height).toBe(0);
+    expect(resetAllRows([raised, row({ label: 1 })], TABLE).map((each) => each.height)).toEqual([0, 0]);
+  });
+
+  it('R86 choosing another base material leaves the height as it is', () => {
+    expect(chooseMaterial(row({ height: -0.3 }), 'Steel', TABLE).height).toBe(-0.3);
+  });
+
+  it('R50 a roughness value still clamps to 0..1', () => {
+    expect(setRowValue(row(), 'rough', -0.5).rough).toBe(0);
+  });
+
+  it('R82 the offsets the height bake reads are the rows heights in label order', () => {
+    expect(rowsToHeightOffsets([row({ height: 0.5 }), row({ label: 1, height: -1 })])).toEqual([0.5, -1]);
+  });
+
+  it('R84 hasHeightOffset is true while any row is not at 0', () => {
+    expect(hasHeightOffset([row(), row({ label: 1 })])).toBe(false);
+    expect(hasHeightOffset([row(), row({ label: 1, height: 0.01 })])).toBe(true);
   });
 });

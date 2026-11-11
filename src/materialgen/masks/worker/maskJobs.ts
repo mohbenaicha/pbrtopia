@@ -1,4 +1,6 @@
 import type { PixelImage } from '@mat/workerapi';
+import { bakeHeight } from '../bake/bakeHeight';
+import { rowsToHeightOffsets } from '../record/maskRows';
 import { buildModelMasks, type ModelMasksInput } from '../model/buildModelMasks';
 import { requantiseModelMasks, type RequantiseInput } from '../model/requantiseModelMasks';
 import type { StepOutcome } from '../model/stepOutcome';
@@ -8,6 +10,8 @@ import type { MasksRecord } from '../record/masksRecord';
 /** Masks R24, R45: the heavy pure jobs (quantise, bake), each with what it takes and what it gives. */
 export interface MaskJobs {
   bake: { input: { labels: PixelImage; record: MasksRecord }; output: BakedMaps };
+  /** Masks R82: the Height map under the record's height offsets, from the base the caller names (R83). */
+  height: { input: { labels: PixelImage; record: MasksRecord; base: PixelImage }; output: PixelImage };
   model: { input: ModelMasksInput; output: StepOutcome<MasksBuild> };
   requantise: { input: RequantiseInput; output: StepOutcome<MasksBuild> };
 }
@@ -19,6 +23,10 @@ export function runMaskJob<K extends MaskJobKind>(kind: K, input: MaskJobs[K]['i
     case 'bake': {
       const { labels, record } = input as MaskJobs['bake']['input'];
       return bakeCurrentRows(labels, record) as MaskJobs[K]['output'];
+    }
+    case 'height': {
+      const { labels, record, base } = input as MaskJobs['height']['input'];
+      return bakeHeight({ labels, offsets: rowsToHeightOffsets(record.rows), feather: record.feather, base }) as MaskJobs[K]['output'];
     }
     case 'model':
       return buildModelMasks(input as MaskJobs['model']['input']) as MaskJobs[K]['output'];

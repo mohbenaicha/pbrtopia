@@ -15,6 +15,7 @@ export interface DerivedFromRecord {
 export interface MapUndoEntry {
   label: string;
   derivedFrom?: DerivedFromRecord; // the map's previous derivedFrom
+  offsetBase?: string; // the map's previous offsetBase (masks R83)
   groupId?: string; // set only by a geometry operation
   size?: MaterialSize; // the previous S, only on the entries of an S change
 }
@@ -30,6 +31,8 @@ export interface MapRecord {
   width: number; // of the original
   height: number;
   derivedFrom?: DerivedFromRecord;
+  /** Height only (masks R83): the key of the Height map this working copy was computed from by the height offsets; any other edit removes it. */
+  offsetBase?: string;
   source?: MapSource;
 }
 

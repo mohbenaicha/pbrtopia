@@ -8,12 +8,12 @@ afterEach(cleanup);
 
 const table = parseBaseMaterials({ Brick: [0.8, 0, [160, 60, 40]], Steel: [0.3, 1, [200, 200, 205]] });
 const row: MaskRow = {
-  label: 1, name: 'Wall', description: 'The brick wall', location: 'centre', defaultMaterial: 'Brick', top3: ['Brick', 'Steel'], matchKind: 'keyword', material: 'Brick', rough: 0.8, metal: 0,
+  label: 1, name: 'Wall', description: 'The brick wall', location: 'centre', defaultMaterial: 'Brick', top3: ['Brick', 'Steel'], matchKind: 'keyword', material: 'Brick', rough: 0.8, metal: 0, height: 0,
 };
 
 function setup(overrides: Partial<Parameters<typeof MaskRowView>[0]> = {}) {
-  const actions = { onMaterial: vi.fn(), onRough: vi.fn(), onMetal: vi.fn() };
-  render(<MaskRowView row={row} table={table} disabled={false} {...actions} {...overrides} />);
+  const actions = { onMaterial: vi.fn(), onRough: vi.fn(), onMetal: vi.fn(), onHeight: vi.fn() };
+  render(<MaskRowView row={row} table={table} disabled={false} heightDisabledReason={null} {...actions} {...overrides} />);
   return actions;
 }
 
@@ -94,6 +94,45 @@ describe('materialgen/masks MaskRowView (masks R48 R57)', () => {
   it('R48 a row whose material is not in the table has no value to go back to: its reset arrows are disabled', () => {
     setup({ row: { ...row, material: 'Gone', rough: 0.4 } });
     expect((screen.getByRole('button', { name: 'Reset Roughness' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('R81 R57 the Height row comes last: a slider from -1 to +1 with 0 in the middle, a signed two-decimal readout and a Reset Height arrow', () => {
+    setup({ row: { ...row, height: 0.4 } });
+    const group = screen.getByRole('group', { name: 'Wall' });
+    const labels = Array.from(group.querySelectorAll('input[type="range"]')).map((input) => input.getAttribute('aria-label'));
+    expect(labels).toEqual(['Roughness', 'Metalness', 'Height']);
+    const slider = screen.getByLabelText('Height') as HTMLInputElement;
+    expect([slider.min, slider.max, slider.step]).toEqual(['-1', '1', '0.01']);
+    expect(screen.getByText('+0.40')).toBeTruthy();
+  });
+
+  it('R81 the readout of height 0 is +0.00 and a negative one carries its minus sign', () => {
+    setup();
+    expect(screen.getByText('+0.00')).toBeTruthy();
+    cleanup();
+    setup({ row: { ...row, height: -0.25 } });
+    expect(screen.getByText('-0.25')).toBeTruthy();
+  });
+
+  it('R81 R50 a released Height slider reports its value; the reset arrow is off at 0 and saves 0 otherwise', () => {
+    const first = setup();
+    expect((screen.getByRole('button', { name: 'Reset Height' }) as HTMLButtonElement).disabled).toBe(true);
+    const slider = screen.getByLabelText('Height');
+    fireEvent.pointerDown(slider);
+    fireEvent.change(slider, { target: { value: '-0.6' } });
+    fireEvent.pointerUp(slider);
+    expect(first.onHeight).toHaveBeenCalledWith(-0.6);
+    cleanup();
+    const second = setup({ row: { ...row, height: 0.4 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Height' }));
+    expect(second.onHeight).toHaveBeenCalledWith(0);
+  });
+
+  it('R81 with no height map the Height slider is disabled and says "Add a height map first"; the other sliders still work', () => {
+    setup({ heightDisabledReason: 'Add a height map first' });
+    expect((screen.getByLabelText('Height') as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByLabelText('Height').closest('[title]')?.getAttribute('title')).toBe('Add a height map first');
+    expect((screen.getByLabelText('Roughness') as HTMLInputElement).disabled).toBe(false);
   });
 
   it('R12 a disabled block cannot be changed', () => {

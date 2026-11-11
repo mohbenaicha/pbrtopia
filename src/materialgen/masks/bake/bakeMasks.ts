@@ -20,7 +20,7 @@ const toByte = (value: number): number => Math.round(Math.min(Math.max(value, 0)
  * One wrapped box blur of radius `radius` over whole numbers: sums the window in each direction and divides once at the end, so a region of
  * one value stays exactly that value (masks R44).
  */
-function blurWrapped(bytes: Uint8Array, width: number, height: number, radius: number): Uint8Array {
+export function blurWrapped(bytes: Uint8Array, width: number, height: number, radius: number): Uint8Array {
   const span = radius * 2 + 1;
   const across = new Uint16Array(bytes.length);
   for (let y = 0; y < height; y += 1) {
