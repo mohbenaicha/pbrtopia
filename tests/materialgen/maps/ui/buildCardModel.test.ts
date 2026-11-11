@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildCardModel, colorKindOf, kindLabel } from '../../../../src/materialgen/maps/ui/buildCardModel';
-import { changeSize, editMaps, placeMap } from '../../../../src/materialgen/maps/mapOperations';
+import { changeSize, editMaps, placeMap, restoreOriginal } from '../../../../src/materialgen/maps/mapOperations';
 import type { MapsState } from '../../../../src/materialgen/maps';
 
 const empty: MapsState = { size: null, maps: {} };
@@ -53,6 +53,14 @@ describe('materialgen/maps R44 buildCardModel', () => {
     let state = put(empty, 'albedo', 'a1');
     expect(buildCardModel(state, 'color', 'albedo').halves[0]?.canRestore).toBe(false);
     state = editMaps(state, [{ kind: 'albedo', workingKey: 'a2' }], 'Filter');
+    expect(buildCardModel(state, 'color', 'albedo').halves[0]?.canRestore).toBe(true);
+  });
+
+  it('R19 Restore original is off while the working map is the restored original of another size, and back on after any later change', () => {
+    let state = editMaps(put(empty, 'albedo', 'a1', { workingKey: 'w0' }), [{ kind: 'albedo', workingKey: 'w1' }], 'Filter');
+    state = restoreOriginal(state, 'albedo', 'r1');
+    expect(buildCardModel(state, 'color', 'albedo').halves[0]?.canRestore).toBe(false);
+    state = editMaps(state, [{ kind: 'albedo', workingKey: 'w2' }], 'Filter');
     expect(buildCardModel(state, 'color', 'albedo').halves[0]?.canRestore).toBe(true);
   });
 

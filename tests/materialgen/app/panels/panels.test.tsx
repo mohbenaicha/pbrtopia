@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_PREVIEW_VALUES, newMaterialRecord, type MaterialRecord } from '@mat/storage';
@@ -63,6 +65,13 @@ describe('materialgen/app right panel (Generate)', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Run log' }));
     expect(screen.getByRole('tabpanel', { name: 'Run log' })).toBeTruthy();
     expect(screen.queryByRole('tabpanel', { name: 'Generate fields' })).toBeNull();
+  });
+
+  it('R14 a tab panel that is hidden is not drawn: .material-panel sets display, so the stylesheet must turn it off for [hidden] (the Run log showed under Generate)', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/materialgen/app/panels/materialPanels.css'), 'utf8');
+    expect(css).toMatch(/\.material-panel\[hidden\]\s*\{[^}]*display:\s*none/);
+    renderGenerate(record());
+    expect(document.querySelector('[role="tabpanel"][aria-label="Run log"]')?.hasAttribute('hidden')).toBe(true);
   });
 
   it('R43 while a run goes the Color mode is locked', () => {

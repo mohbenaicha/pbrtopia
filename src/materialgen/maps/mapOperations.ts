@@ -129,11 +129,19 @@ export function editMaps(state: MapsState, edits: readonly MapEdit[], label: str
   return { size: state.size, maps: breakGroups(maps, replaced) };
 }
 
+/** The undo label of a restore; while a map's entry carries it, the working map is the restored original (R19). */
+export const RESTORE_LABEL = 'Restore original';
+
+/** R19: the working map already is the original (same file, or the resampled original a restore just made). */
+export function isOriginalRestored(map: MapRecord): boolean {
+  return map.workingKey === map.originalKey || map.undo?.label === RESTORE_LABEL;
+}
+
 /** R19: the working map becomes the original again. Pass `resampledKey` when the original is not S x S; nothing changes when it already is the working map. */
 export function restoreOriginal(state: MapsState, kind: MapKind, resampledKey?: string): MapsState {
   const map = state.maps[kind];
-  if (map === undefined || map.workingKey === map.originalKey) return state;
-  return editMaps(state, [{ kind, workingKey: resampledKey ?? map.originalKey }], 'Restore original');
+  if (map === undefined || isOriginalRestored(map)) return state;
+  return editMaps(state, [{ kind, workingKey: resampledKey ?? map.originalKey }], RESTORE_LABEL);
 }
 
 /** R18, R47, R70: the maps one Undo press changes: the asked maps that have an entry plus every live member of their groups. */

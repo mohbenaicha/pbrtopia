@@ -34,8 +34,12 @@ export function useMaterialMaps({ store, projectId, record, canWrite, project, r
     reported.current = missingFiles;
     const report = reportMissingFiles(state, missingFiles, colorMode);
     setProblems(report.lines);
-    if (report.state !== state) void commit((current) => ({ ...current, size: report.state.size, maps: report.state.maps }));
-  }, [record, missingFiles, state, colorMode, commit]);
+    if (report.state === state) return;
+    // maps R29, R30: the files the dropped entries named go once the record without them is stored
+    void commit((current) => ({ ...current, size: report.state.size, maps: report.state.maps })).then((stored) => {
+      if (stored.ok) for (const key of report.released) void store.deleteBlob(projectId, key);
+    });
+  }, [record, missingFiles, state, colorMode, commit, store, projectId]);
 
   const host = useMemo<MapsHost>(
     () => ({

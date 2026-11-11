@@ -1,4 +1,4 @@
-import { isStale, undoTargets } from '../mapOperations';
+import { isOriginalRestored, isStale, undoTargets } from '../mapOperations';
 import { kindsOfSlot, type MapKind, type Slot } from '../mapKinds';
 import type { MapRecords, MapsState } from '../mapRecord';
 
@@ -73,7 +73,7 @@ function describeHalf(state: MapsState, kind: MapKind, colorMode: ColorModeName)
     sizeText: map === undefined || state.size === null ? null : `${state.size} x ${state.size}`,
     sourceText: sourceText(state, kind),
     stale: isStale(state, kind),
-    canRestore: map !== undefined && map.workingKey !== map.originalKey,
+    canRestore: map !== undefined && !isOriginalRestored(map),
   };
 }
 

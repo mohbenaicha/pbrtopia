@@ -39,6 +39,17 @@ describe('materialgen/maps R19 planRestoreOriginal', () => {
     expect(await planRestoreOriginal(state, 'albedo', io({}))).toEqual({ ok: false, message: 'Albedo: the original file cannot be read.' });
   });
 
+  it('R19 R10 pressing Restore again on a map that was just restored writes nothing and keeps the real undo', async () => {
+    const edited = editMaps(placeMap({ size: 256, maps: {} }, 'height', { originalKey: 'o', workingKey: 'w0', width: 300, height: 100 }), [{ kind: 'height', workingKey: 'w' }], 'Filter');
+    const files = { o: png(solid(300, 100, 1, 90)) };
+    const first = await planRestoreOriginal(edited, 'height', io(files));
+    if (!first.ok) throw new Error(first.message);
+    const second = await planRestoreOriginal(first.plan.next, 'height', io(files));
+    expect(second).toMatchObject({ ok: true, plan: { next: first.plan.next } });
+    if (second.ok) expect(second.plan.newBlobs.size).toBe(0);
+    expect(first.plan.next.maps.height).toMatchObject({ workingKey: 'n1', undoKey: 'w' });
+  });
+
   it('R19 nothing happens when the working map already is the original', async () => {
     const state = placeMap({ size: 256, maps: {} }, 'albedo', { originalKey: 'o', workingKey: 'o', width: 256, height: 256 });
     const outcome = await planRestoreOriginal(state, 'albedo', io({}));

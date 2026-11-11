@@ -6,6 +6,11 @@
   min-width: 0;
 }
 
+/* The display above beats the browser's hidden rule, so a hidden tab panel (Run log under Generate) would stay drawn. */
+.material-panel[hidden] {
+  display: none;
+}
+
 .material-panel__section {
   display: flex;
   flex-direction: column;

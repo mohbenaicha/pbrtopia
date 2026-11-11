@@ -1,4 +1,4 @@
-import { dropUndoEntries } from './mapOperations';
+import { dropUndoEntries, referencedMapKeys } from './mapOperations';
 import type { MapKind } from './mapKinds';
 import type { MapsState } from './mapRecord';
 import { kindLabel, type ColorModeName } from './ui/buildCardModel';
@@ -8,6 +8,8 @@ export interface MissingFilesReport {
   state: MapsState;
   /** One "<name>: file missing" line per map with a missing file, in map order. */
   lines: string[];
+  /** Files that were referenced before and are not now, and can be read: delete them once the record is stored (R29). */
+  released: string[];
 }
 
 /**
@@ -15,7 +17,7 @@ export interface MissingFilesReport {
  * (the keys are kept); an unreadable undo file makes that map's Undo unavailable, with the other live members of its group (R70).
  */
 export function reportMissingFiles(state: MapsState, missingKeys: readonly string[], colorMode: ColorModeName): MissingFilesReport {
-  if (missingKeys.length === 0) return { state, lines: [] };
+  if (missingKeys.length === 0) return { state, lines: [], released: [] };
   const missing = new Set(missingKeys);
   const lines: string[] = [];
   const unreadableUndo: MapKind[] = [];
@@ -24,5 +26,8 @@ export function reportMissingFiles(state: MapsState, missingKeys: readonly strin
     if ([map.originalKey, map.workingKey, map.undoKey].some((key) => key !== null && missing.has(key))) lines.push(`${kindLabel(kind, colorMode)}: file missing`);
     if (map.undoKey !== null && missing.has(map.undoKey)) unreadableUndo.push(kind);
   }
-  return { state: dropUndoEntries(state, unreadableUndo), lines };
+  const next = dropUndoEntries(state, unreadableUndo);
+  const kept = referencedMapKeys(next);
+  const released = [...referencedMapKeys(state)].filter((key) => !kept.has(key) && !missing.has(key));
+  return { state: next, lines, released };
 }

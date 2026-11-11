@@ -1,4 +1,4 @@
-import { changeSize, editMaps, placeMap, restoreOriginal, type MapEdit } from './mapOperations';
+import { changeSize, editMaps, isOriginalRestored, placeMap, restoreOriginal, type MapEdit } from './mapOperations';
 import type { MapKind } from './mapKinds';
 import type { DerivedFromRecord, MapsState, MaterialSize } from './mapRecord';
 import type { PixelImage } from './png/pngCodec';
@@ -59,7 +59,7 @@ export async function planApplyEdits(state: MapsState, edits: readonly ImageEdit
 /** R19: the working map becomes the original again; the original's own file when it is S x S, else a resampled copy. */
 export async function planRestoreOriginal(state: MapsState, kind: MapKind, io: PlanIo): Promise<PlanResult> {
   const map = state.maps[kind];
-  if (map === undefined || state.size === null || map.workingKey === map.originalKey) return { ok: true, plan: { next: state, newBlobs: new Map() } };
+  if (map === undefined || state.size === null || isOriginalRestored(map)) return { ok: true, plan: { next: state, newBlobs: new Map() } };
   const original = await readMapPixels(await io.readBlob(map.originalKey));
   if (original === null) return { ok: false, message: `${io.label(kind)}: the original file cannot be read.` };
   if (original.width === state.size && original.height === state.size) return { ok: true, plan: { next: restoreOriginal(state, kind), newBlobs: new Map() } };

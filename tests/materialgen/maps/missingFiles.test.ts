@@ -12,7 +12,7 @@ const base = (): MapsState => {
 describe('materialgen/maps R30 reporting files the record names but the store does not have', () => {
   it('R30 nothing missing changes nothing and reports nothing', () => {
     const state = base();
-    expect(reportMissingFiles(state, [], 'albedo')).toEqual({ state, lines: [] });
+    expect(reportMissingFiles(state, [], 'albedo')).toEqual({ state, lines: [], released: [] });
   });
 
   it('R30 each map with a missing file is named once as "<name>: file missing", in the card name of the colour mode', () => {
@@ -41,5 +41,13 @@ describe('materialgen/maps R30 reporting files the record names but the store do
     expect(after.maps.normal!.undoKey).toBeNull();
     expect(after.maps.normal!.workingKey).toBe('n1');
     expect(after.size).toBe(512);
+  });
+
+  it('R30 R29 the readable undo files of the dropped entries are released at once (named for deletion); nothing is released when no entry is dropped', () => {
+    const edited = editMaps(base(), [{ kind: 'albedo', workingKey: 'a1' }, { kind: 'normal', workingKey: 'n1' }], 'Filter');
+    const state = changeSize(edited, 512, { albedo: 'a2', normal: 'n2' }, 'g1'); // undo keys: a1, n1
+    const report = reportMissingFiles(state, ['a1'], 'albedo');
+    expect(report.released).toEqual(['n1']); // a1 is the missing one (nothing to delete); n1 was normal's undo and is no longer referenced
+    expect(reportMissingFiles(state, ['a2'], 'albedo').released).toEqual([]);
   });
 });
