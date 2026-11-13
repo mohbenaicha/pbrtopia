@@ -58,7 +58,7 @@ const restrict = (files, patterns) => ({
 });
 
 export default tseslint.config(
-  { ignores: ['node_modules', 'dist', 'research', 'specs', 'ui-demo', 'icons', 'upstream/**'] },
+  { ignores: ['node_modules', 'dist', 'builds', 'research', 'specs', 'ui-demo', 'icons', 'upstream/**'] },
   ...tseslint.configs.recommended,
   restrict(['src/projection/engine/**/*.ts'], engineForbidden),
   restrict(['src/generation/**/*.ts', 'src/generation/**/*.tsx'], generationForbidden),
