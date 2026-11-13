@@ -1,5 +1,5 @@
 import type { ProjectSummary, RawRecord } from '@shared/projects';
-import { MATERIAL_SIZES, type DerivedFromRecord, type MapKind, type MapRecord, type MapUndoEntry, type MaterialSize } from '@mat/maps';
+import { MATERIAL_SIZES, referencedMapKeys, type DerivedFromRecord, type MapKind, type MapRecord, type MapUndoEntry, type MaterialSize } from '@mat/maps';
 import { DEFAULT_PREVIEW_VALUES, type PreviewValues } from './previewValues';
 
 // What a material project remembers, as JSON (app R26). No field holds image data; maps point at files by key.
@@ -69,11 +69,7 @@ export function summarizeMaterial(record: MaterialRecord): ProjectSummary {
 
 /** Every blob key some field of the record points at, once each; the thumbnail is not among them. */
 export function referencedBlobKeys(record: MaterialRecord): Set<string> {
-  const keys = new Set<string>(record.referenceImages);
-  for (const map of Object.values(record.maps)) {
-    keys.add(map.originalKey);
-    keys.add(map.workingKey);
-    if (map.undoKey !== null) keys.add(map.undoKey);
-  }
+  const keys = referencedMapKeys(record); // the one definition of the files the maps name (R25, R28): export, the orphan sweep and import use it
+  for (const key of record.referenceImages) keys.add(key);
   return keys;
 }

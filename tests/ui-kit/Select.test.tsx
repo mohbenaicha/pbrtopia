@@ -70,6 +70,28 @@ describe('Select', () => {
     expect(onChange).toHaveBeenCalledWith('c');
   });
 
+  it('R22 an option with separatorBefore has a divider line above it, which is not an option', async () => {
+    const user = userEvent.setup();
+    render(<Select label="Model" options={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B', separatorBefore: true }]} value="a" onChange={vi.fn()} />);
+    await user.click(screen.getByRole('combobox', { name: 'Model' }));
+    expect(screen.getAllByRole('separator')).toHaveLength(1);
+    expect(screen.getAllByRole('option')).toHaveLength(2);
+  });
+
+  it('R22 a disabled option is shown, aria-disabled, ignores a click, and the arrow keys skip it', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<Select label="Model" options={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B', disabled: true }, { value: 'c', label: 'C' }]} value="a" onChange={onChange} />);
+    await user.click(screen.getByRole('combobox', { name: 'Model' }));
+    expect(screen.getByRole('option', { name: 'B' }).getAttribute('aria-disabled')).toBe('true');
+    await user.click(screen.getByRole('option', { name: 'B' }));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('listbox')).toBeTruthy(); // still open: the click did nothing
+    screen.getByRole('combobox', { name: 'Model' }).focus();
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(onChange).toHaveBeenCalledWith('c');
+  });
+
   it('R22 keyboard: ArrowDown opens, arrows move, Enter chooses, Escape closes without choosing', async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();

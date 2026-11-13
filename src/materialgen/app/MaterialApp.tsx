@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ImportProjectButton, ImportProjectStatus, ProjectListView } from '@shared/projects';
-import { RouteSwitch } from '@shared/shell';
+import { RouteSwitch, exportEnvironments, useDesktopPickers } from '@shared/shell';
 import { Button, Icon } from '@shared/ui-kit';
 import type { MaterialProjectStore } from '@mat/storage';
+import { useSampleProjects } from './samples/useSampleProjects';
+import { createMaterialListExporter } from './list/materialListExporter';
 import { NewMaterialProjectButton } from './list/NewMaterialProjectButton';
 import { useMaterialImport } from './project/materialZipTransfer';
 import { MaterialProjectView } from './project/MaterialProjectView';
@@ -26,15 +28,20 @@ export function MaterialApp({ store, initial }: MaterialAppProps): React.JSX.Ele
   const { route, notice, dismissNotice } = useAddressWatcher(store, initial);
   const [listVersion, setListVersion] = useState(0); // bumped when an import ends, so the list is read again
   const projectImport = useMaterialImport(store, () => setListVersion((version) => version + 1));
+  const samples = useSampleProjects(store); // the bundled samples, imported once at the first start (default-projects R11)
+  const pickers = useDesktopPickers();
+  const exporter = useMemo(() => createMaterialListExporter(store, exportEnvironments(pickers)), [store, pickers]);
 
   return (
     <RouteSwitch
       route={route}
       views={{
-        list: (
+        list: !samples.checked ? null : (
           <ProjectListView
             key={listVersion}
             store={store}
+            placeholderCount={samples.remaining}
+            refreshToken={samples.refresh}
             deleteEffect={DELETE_EFFECT}
             onOpen={(id) => {
               window.location.hash = projectHash(id);
@@ -45,7 +52,15 @@ export function MaterialApp({ store, initial }: MaterialAppProps): React.JSX.Ele
                 <ImportProjectButton state={projectImport} showStatus={false} />
               </>
             )}
-            status={<ImportProjectStatus state={projectImport} />}
+            exporter={exporter}
+            status={
+              <>
+                <ImportProjectStatus state={projectImport} />
+                {samples.failures.map((failure) => (
+                  <p key={failure} role="alert">{`Sample project not added: ${failure}`}</p>
+                ))}
+              </>
+            }
             headerActions={
               <Button
                 icon={<Icon name="gear" size={26} />}

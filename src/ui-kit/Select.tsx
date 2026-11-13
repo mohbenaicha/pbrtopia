@@ -10,6 +10,8 @@ export interface SelectOption {
   group?: string; // a heading drawn above the first option of each run of options with the same group
   detail?: string; // drawn after the label in the list, not in the closed box (a value, a unit)
   hint?: string; // a tooltip on the option in the list, saying what it is about
+  separatorBefore?: boolean; // a divider line drawn above the option
+  disabled?: boolean; // shown dimmed in the list; ignores clicks and keys, and the arrow keys skip it
 }
 
 interface SelectProps {
@@ -56,10 +58,16 @@ export function Select({
   };
   const choose = (index: number): void => {
     const option = shown[index];
+    if (option?.disabled === true) return; // a disabled option does nothing and the list stays open
     if (option) onChange(option.value);
     setOpen(false);
   };
-  const move = (delta: number): void => setHighlighted((index) => Math.min(shown.length - 1, Math.max(0, index + delta)));
+  // Moves to the next enabled option in the direction asked; stays put when there is none.
+  const move = (delta: number): void =>
+    setHighlighted((index) => {
+      for (let next = index + delta; next >= 0 && next < shown.length; next += delta) if (shown[next]?.disabled !== true) return next;
+      return index;
+    });
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
     if (inactive) return;
@@ -96,15 +104,17 @@ export function Select({
     <ul className="ui-select__list" data-opens-up={opensUp && !searchable ? '' : undefined} role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`}>
       {shown.map((option, index) => (
         <Fragment key={option.value}>
+          {option.separatorBefore === true && <li role="separator" className="ui-select__separator" />}
           {option.group !== undefined && option.group !== shown[index - 1]?.group && <li role="presentation" className="ui-select__heading">{option.group}</li>}
           <li
             id={`${id}-option-${index}`}
             role="option"
             aria-selected={option.value === value}
+            aria-disabled={option.disabled === true ? true : undefined}
             title={option.hint}
             className="ui-select__option"
-            data-highlighted={index === highlighted ? '' : undefined}
-            onPointerEnter={() => setHighlighted(index)}
+            data-highlighted={index === highlighted && option.disabled !== true ? '' : undefined}
+            onPointerEnter={() => option.disabled !== true && setHighlighted(index)}
             onClick={() => choose(index)}
           >
             <span className="ui-select__option-label">{option.label}</span>

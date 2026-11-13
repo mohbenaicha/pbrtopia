@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { QuotaWarning, type StorageEstimate } from '@shared/projects';
-import { ReadOnlyBanner, RightPanel } from '@shared/shell';
+import { ReadOnlyBanner, RightPanel, useIsDesktopApp } from '@shared/shell';
 import { Disclosure, SegmentedControl, Tabs, type SegmentOption, type TabOption } from '@shared/ui-kit';
 import type { GenerationPanel } from '@mat/generation';
 import type { ColorMode, MaterialRecord, MaterialSize } from '@mat/storage';
@@ -49,6 +49,7 @@ interface MaterialGeneratePanelProps {
  */
 export function MaterialGeneratePanel({ record, canWrite, readOnly, generation, onEdit, onResizeMaps, resizing, onCustomSetup, storage, onExportProject, exporting, exportError, exportDisabledReason }: MaterialGeneratePanelProps): React.JSX.Element {
   const promptId = useId();
+  const onDisk = useIsDesktopApp();
   const [tab, setTab] = useState<GenerateTab>('generate');
   const [modelsOpen, setModelsOpen] = useState(false);
   const running = generation.run.running;
@@ -61,7 +62,7 @@ export function MaterialGeneratePanel({ record, canWrite, readOnly, generation, 
           <div className="material-panel__notes">
             {readOnly && <ReadOnlyBanner />}
             {storage.warn ? (
-              <QuotaWarning estimate={storage.estimate} full={storage.full} onExport={onExportProject} exporting={exporting} error={exportError} exportDisabledReason={exportDisabledReason} />
+              <QuotaWarning estimate={storage.estimate} full={storage.full} onExport={onExportProject} exporting={exporting} error={exportError} exportDisabledReason={exportDisabledReason} onDisk={onDisk} />
             ) : (
               exportError !== null && <p role="alert">{exportError}</p>
             )}

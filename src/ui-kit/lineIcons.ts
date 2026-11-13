@@ -28,8 +28,6 @@ export const LINE_ICON_PATHS = {
   'mesh-ball': ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M3.5 12a8.5 3 0 0 0 17 0'],
   'mesh-plane': ['M3.5 17.5L7 7h13.5L17 17.5z', 'M5.2 12.2h13.1', 'M12 7v10.5'],
   'mesh-material-ball': ['M12 3.5a4.8 4.8 0 1 0 0 9.6 4.8 4.8 0 0 0 0-9.6z', 'M6.5 15.5h11', 'M5 20.5l1.5-5h11l1.5 5z'],
-  // Two overlapping discs: the material masks (preview R26).
-  masks: ['M9.5 5.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z', 'M14.5 8.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z'],
   // A cube with its three visible faces and a small arrow-head cursor at the front corner: edit the mesh (mesh edit R1).
   'edit-mesh': ['M10 3.5l6.5 3.7v7.6L10 18.5 3.5 14.8V7.2z', 'M3.5 7.2L10 11l6.5-3.8', 'M10 11v7.5', 'M15 13.5l5.5 2.5-2.4.9-.9 2.4z'],
   // The mesh edit toolbar (mesh edit R3).

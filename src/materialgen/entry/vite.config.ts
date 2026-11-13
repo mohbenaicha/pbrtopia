@@ -19,5 +19,5 @@ export default defineConfig({
   assetsInclude: ['**/*.bin'], // the material ball's packed mesh is imported as an asset
   // `@ort` is the onnx runtime's runtime files, which the MiniLM worker serves from the app itself (masks R73)
   resolve: { alias: { '@shared': sharedRoot, '@mat': materialRoot, '@ort': path.resolve(repoRoot, 'node_modules/onnxruntime-web/dist') }, dedupe: DEDUPED_PACKAGES },
-  build: { outDir: path.resolve(repoRoot, 'dist-mat'), emptyOutDir: true },
+  build: { outDir: path.resolve(repoRoot, 'builds/web/material'), emptyOutDir: true },
 });

@@ -6,6 +6,7 @@ import { readPreviewPrefs, type PreviewPrefs } from './previewValues';
 export interface MaterialSettingsRecord extends AppSettingsRecord {
   previewPrefs: PreviewPrefs;
   savedSetups: RawRecord[];
+  samplesLoaded: boolean; // the bundled sample projects were imported at the first start, so they never come back (default-projects R11)
 }
 
 /** Reads stored settings leniently: every part that is missing or wrong falls back to its default, and a saved setup that is not a record is left out. */
@@ -16,5 +17,6 @@ export function readMaterialSettings(raw: unknown): MaterialSettingsRecord {
     ...readAppSettings(raw),
     previewPrefs: readPreviewPrefs(stored?.['previewPrefs']),
     savedSetups: Array.isArray(setups) ? setups.filter(isRawRecord) : [],
+    samplesLoaded: stored?.['samplesLoaded'] === true,
   };
 }

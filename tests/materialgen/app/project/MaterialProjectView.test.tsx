@@ -79,10 +79,10 @@ describe('materialgen/app project view', () => {
     await waitFor(() => expect(screen.getByTestId('preview-viewport').getAttribute('data-overlay')).toBe('true'));
   });
 
-  it('R11 the top bar has Projects, Export material and Settings in the middle, and shows the project name on the left', async () => {
+  it('R11 the top bar has Projects, Export material, Add-ons and Settings in the middle, and shows the project name on the left', async () => {
     open();
     const bar = screen.getByTestId('top-bar');
-    expect(within(bar).getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(['Projects', 'Export material', 'Settings']);
+    expect(within(bar).getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(['Projects', 'Export material', 'Add-ons', 'Settings']);
     expect([...bar.children].map((child) => child.getAttribute('data-region'))).toEqual(['name', 'actions']);
     await waitFor(() => expect(bar.querySelector('[data-region="name"]')?.textContent).toBe('Bricks'));
   });

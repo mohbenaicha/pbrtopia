@@ -169,6 +169,18 @@
   cursor: pointer;
 }
 
+.ui-select__separator {
+  height: 1px;
+  margin: var(--space-1) var(--space-2);
+  background: var(--bg-hover);
+  list-style: none;
+}
+
+.ui-select__option[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .ui-select__option[data-highlighted] {
   background: var(--bg-hover);
 }

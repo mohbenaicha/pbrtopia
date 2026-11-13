@@ -1,5 +1,6 @@
 import { Button, Dialog, Select, SegmentedControl, Toggle } from '@shared/ui-kit';
 import { EXPORT_TARGET_CARDS, type ExportDialogTarget, type ExportKind } from '@mat/export';
+import { TARGET_LOGO_URLS } from '../../addons/addonFiles';
 import type { useExportDialog } from './useExportDialog';
 import './exportDialog.css';
 
@@ -16,6 +17,7 @@ function TargetCards({ dialog }: { dialog: ExportDialogState }): React.JSX.Eleme
         return (
           <label key={card.target} className="export-dialog__card" data-selected={selected ? '' : undefined}>
             <input type="radio" name="export-target" value={card.target} checked={selected} disabled={running} onChange={() => setOptions({ target: card.target as ExportDialogTarget })} />
+            <img className="export-dialog__card-logo" src={TARGET_LOGO_URLS[card.target]} alt="" />
             <span className="export-dialog__card-title">{card.title}</span>
             <span className="export-dialog__card-convention">{card.convention}</span>
             {selected && (

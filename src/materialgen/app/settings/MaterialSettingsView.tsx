@@ -12,9 +12,8 @@ export const SECTION_LABELS: Record<SettingsSection, string> = {
   storage: 'Storage',
 };
 
-export const KEYS_NOTE = "This app has its own key vault, separate from the projection app's. Enter each key once here.";
-export const STORAGE_NOTE = "Projects and keys here are separate from the projection app's. Move a project between them only by export and import.";
 export const DELETE_ALL_TEXT = 'Every project, with its maps and thumbnail, is removed from this browser. Settings and the saved API keys stay. This cannot be undone.';
+export const DESKTOP_DELETE_ALL_TEXT = 'Every project, with its maps and thumbnail, is removed from the library folder. Settings and the saved API keys stay. This cannot be undone.';
 
 const SECTIONS: SettingsSectionDef<SettingsSection>[] = SETTINGS_SECTIONS.map((id) => ({
   id,
@@ -22,7 +21,7 @@ const SECTIONS: SettingsSectionDef<SettingsSection>[] = SETTINGS_SECTIONS.map((i
   render: (context) => {
     switch (id) {
       case 'keys':
-        return <ApiKeysSection rejectedKeys={context.keyCheck.flags} onKeySaved={context.keyCheck.keySaved} note={KEYS_NOTE} />;
+        return <ApiKeysSection rejectedKeys={context.keyCheck.flags} onKeySaved={context.keyCheck.keySaved} />;
       case 'models':
         return <ModelsSection store={context.store} vault={context.backends.keys} keysLoaded={context.backends.keysLoaded} refresh={context.refresh} />;
       case 'viewport':
@@ -30,7 +29,7 @@ const SECTIONS: SettingsSectionDef<SettingsSection>[] = SETTINGS_SECTIONS.map((i
       case 'shortcuts':
         return <MaterialShortcutsSection />;
       case 'storage':
-        return <StorageSection store={context.store} projectImport={context.projectImport} deleteAllText={DELETE_ALL_TEXT} note={STORAGE_NOTE} />;
+        return <StorageSection store={context.store} projectImport={context.projectImport} deleteAllText={context.backends.location === undefined ? DELETE_ALL_TEXT : DESKTOP_DELETE_ALL_TEXT} {...(context.backends.location === undefined ? {} : { location: context.backends.location })} />;
     }
   },
 }));

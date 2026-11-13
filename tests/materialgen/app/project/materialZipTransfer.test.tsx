@@ -36,11 +36,18 @@ describe('materialgen/app zip transfer', () => {
   it('R33 R37 the waiting save is written before the zip is made', async () => {
     const order: string[] = [];
     const flush = vi.fn(async () => (order.push('flush'), { ok: true as const, value: undefined }));
-    const download = vi.fn(async () => (order.push('download'), { ok: true as const, value: undefined }));
+    const download = vi.fn(async () => (order.push('download'), { ok: true as const, value: { droppedHeightBase: false } }));
     const { result } = renderHook(() => useMaterialExport({} as never, { id: 'p', name: 'P' }, flush, download));
     await act(() => result.current.start());
     expect(order).toEqual(['flush', 'download']);
     expect(result.current.error).toBeNull();
+  });
+
+  it('R37 an export that had to leave out the Height offsets\' base says so', async () => {
+    const download = vi.fn(async () => ({ ok: true as const, value: { droppedHeightBase: true } }));
+    const { result } = renderHook(() => useMaterialExport({} as never, { id: 'p', name: 'P' }, async () => ({ ok: true as const, value: undefined }), download));
+    await act(() => result.current.start());
+    expect(result.current.error).toBe("The Height offsets' base file was missing, so the Height map is exported as it is.");
   });
 
   it('R33 a failed save before export stops the export and reports the failure', async () => {

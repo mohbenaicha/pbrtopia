@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { acquireProjectLock } from '@shared/projects';
+import { AddonsButton } from '../addons/AddonsButton';
 import { AppShell, TopBar, rememberOpenProject, usePanelWidths, useProjectLock, useStorageWarning } from '@shared/shell';
 import { LoadingOverlay } from '@shared/ui-kit';
 import { parseMasksRecord } from '@mat/masks';
@@ -108,6 +109,7 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
           onExportProject={exportDialog.show}
           exporting={false}
           exportDisabledReason={record === null ? 'The project is still opening.' : exportUnavailableReason(exportDialog)}
+          extraActions={<AddonsButton />}
         />
       }
       left={

@@ -55,4 +55,22 @@ describe('materialRecord', () => {
     };
     expect([...referencedBlobKeys(record)].sort()).toEqual(['maps/a1.png', 'maps/h1.png', 'maps/h2.png', 'references/a.png']);
   });
+
+  it('materialgen/app R37 the base of the Height offsets is a referenced file, on the map and on its undo entry, so export keeps it and the orphan sweep spares it', () => {
+    const record: MaterialRecord = {
+      ...fresh(512),
+      maps: {
+        height: {
+          originalKey: 'maps/h1.png',
+          workingKey: 'maps/h4.png',
+          undoKey: 'maps/h3.png',
+          undo: { label: 'Height offset', offsetBase: 'maps/h2.png' },
+          offsetBase: 'maps/h5.png',
+          width: 512,
+          height: 512,
+        },
+      },
+    };
+    expect([...referencedBlobKeys(record)].sort()).toEqual(['maps/h1.png', 'maps/h2.png', 'maps/h3.png', 'maps/h4.png', 'maps/h5.png']);
+  });
 });

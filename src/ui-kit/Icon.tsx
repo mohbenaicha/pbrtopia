@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import matMaskUrl from './icons/mat-mask.png';
 import openProjectUrl from './icons/open-project.png';
 import orthographicUrl from './icons/orthographic.png';
 import perspectiveUrl from './icons/perspective.png';
@@ -12,6 +13,7 @@ const IMAGE_ICON_URLS = {
   orthographic: orthographicUrl,
   'open-project': openProjectUrl,
   'projects-list': projectsListUrl,
+  masks: matMaskUrl, // the material masks (preview R26)
 } as const;
 
 type ImageIconName =keyof typeof IMAGE_ICON_URLS;

@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_APP_SETTINGS } from '@shared/projects';
 import type { ProjectImportState } from '@shared/projects';
 import { AppBackendsProvider, type SettingsStore } from '@shared/shell';
-import { KEYS_NOTE, MaterialSettingsView, STORAGE_NOTE } from '@mat/app/settings/MaterialSettingsView';
+import { DESKTOP_DELETE_ALL_TEXT, MaterialSettingsView } from '@mat/app/settings/MaterialSettingsView';
 import type { SettingsSection } from '@mat/app/routes/router';
 import { createMemoryVaultStorage } from '../../../keys/memoryVaultStorage';
 
@@ -40,10 +40,9 @@ describe('materialgen/app settings view', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual(['#/settings/keys', '#/settings/models', '#/settings/viewport', '#/settings/shortcuts', '#/settings/storage']);
   });
 
-  it('R41 the API keys section says this app has its own vault and keys are entered once here', () => {
-    expect(KEYS_NOTE).toBe("This app has its own key vault, separate from the projection app's. Enter each key once here.");
+  it('R41 the API keys section no longer carries the "own key vault" line (settings R20)', () => {
     show('keys');
-    expect(screen.getByText(new RegExp(KEYS_NOTE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeTruthy();
+    expect(screen.queryByText(/own key vault/i)).toBeNull();
   });
 
   it('R42 the Models section is the shared one: enhancer model, the two image sizes and the model list refresh', async () => {
@@ -97,10 +96,31 @@ describe('materialgen/app settings view', () => {
     expect(screen.getByRole('heading', { name: 'Dialogs and overlays' })).toBeTruthy();
   });
 
-  it('R45 the Storage section says projects and keys are separate from the projection app', async () => {
-    expect(STORAGE_NOTE).toBe("Projects and keys here are separate from the projection app's. Move a project between them only by export and import.");
+  it('R45 the Storage section has Delete all data and no "Other apps" note (settings R20)', async () => {
     show('storage');
-    expect(await screen.findByText(STORAGE_NOTE)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Delete all data/ })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /Delete all data/ })).toBeTruthy();
+    expect(screen.queryByText('Other apps')).toBeNull();
+    expect(screen.queryByText(/separate from the projection app/i)).toBeNull();
+  });
+
+  it('storage-backends R10 in the desktop app the Storage section shows the library folder and Delete all data names the library, not the browser', async () => {
+    expect(DESKTOP_DELETE_ALL_TEXT).not.toMatch(/browser/i);
+    expect(DESKTOP_DELETE_ALL_TEXT).toContain('library folder');
+    render(
+      <AppBackendsProvider
+        backends={{
+          createImageGenerator: vi.fn(),
+          createPromptEnhancer: vi.fn(),
+          vaultStorage: createMemoryVaultStorage(),
+          kdfIterations: 1000,
+          appId: 'material-lab',
+          location: { path: 'D:\\Materials', showInFolder: vi.fn(), change: vi.fn() },
+        }}
+      >
+        <MaterialSettingsView store={store()} section="storage" projectImport={idleImport} />
+      </AppBackendsProvider>,
+    );
+    expect(await screen.findByRole('group', { name: 'Library folder' })).toBeTruthy();
+    expect(screen.getByText('D:\\Materials')).toBeTruthy();
   });
 });
