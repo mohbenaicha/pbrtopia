@@ -10,7 +10,7 @@ export { Disclosure, useDisclosureOpen } from './Disclosure';
 export { Icon, type IconName } from './Icon';
 export { IconButton } from './IconButton';
 export { ImageViewer } from './ImageViewer';
-export { CompareStage, type CompareSource } from './CompareStage';
+export { CompareStage, type CompareSource, type StageOverlay } from './CompareStage';
 export { LoadingOverlay } from './LoadingOverlay';
 export { useDismiss } from './useDismiss';
 export { Popover } from './Popover';

@@ -24,14 +24,15 @@ const idleModel = (patch: Partial<MasksModelControls> = {}): MasksModelControls 
 });
 
 function setup(overrides: Partial<MasksPanelProps> = {}) {
-  const actions = { onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() };
-  const props: MasksPanelProps = { record: record(), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, model: idleModel(), ...actions, ...overrides };
+  const actions = { onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onRowMix: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() };
+  const props: MasksPanelProps = { record: record(), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, hasAlbedo: true, model: idleModel(), ...actions, ...overrides };
   render(<MasksPanel {...props} />);
   return { ...actions, model: props.model };
 }
 const swatch = (name: string): HTMLElement => screen.getByRole('button', { name });
 /** Selects a component's swatch (masks R48) and returns its block. */
 const block = (name: string): HTMLElement => {
+  for (const other of screen.getAllByRole('button').filter((button) => button.classList.contains('mask-swatch') && button.getAttribute('aria-pressed') === 'true' && button.getAttribute('aria-label') !== name)) fireEvent.click(other); // only this one stays selected (R89 toggles)
   if (swatch(name).getAttribute('aria-pressed') !== 'true') fireEvent.click(swatch(name));
   return screen.getByRole('group', { name });
 };
@@ -57,7 +58,7 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
 
   it('R80 hovering or focusing a swatch highlights that component, leaving or blurring clears it, and the panel going away clears it', () => {
     const onHighlight = vi.fn();
-    const { unmount } = render(<MasksPanel {...({ record: record(), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn(), onHighlight } as MasksPanelProps)} />);
+    const { unmount } = render(<MasksPanel {...({ record: record(), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, hasAlbedo: true, onRowMix: vi.fn(), model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn(), onHighlight } as MasksPanelProps)} />);
     fireEvent.pointerEnter(swatch('Wall'));
     expect(onHighlight).toHaveBeenLastCalledWith(0);
     fireEvent.pointerLeave(swatch('Wall'));
@@ -81,15 +82,16 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     expect(actions.onResetAll).not.toHaveBeenCalled();
   });
 
-  it('R48 clicking a swatch draws that component\'s block only; clicking another changes it, clicking the selected one clears it', () => {
+  it('R48 R89 clicking a swatch draws one block; clicking another adds it (the block follows the last clicked), clicking a selected one takes it out', () => {
     setup();
     fireEvent.click(swatch('Wall'));
     expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['Wall']);
     expect(swatch('Wall').getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(swatch('Trim'));
     expect(screen.getAllByRole('group').map((group) => group.getAttribute('aria-label'))).toEqual(['Trim']);
-    expect(swatch('Wall').getAttribute('aria-pressed')).toBe('false');
+    expect(swatch('Wall').getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(swatch('Trim'));
+    fireEvent.click(swatch('Wall'));
     expect(screen.queryByRole('group')).toBeNull();
   });
 
@@ -102,10 +104,10 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
   });
 
   it('R48 a selection that no longer names a component is cleared when the labels are rebuilt', () => {
-    const view = render(<MasksPanel {...({ record: record(), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() } as MasksPanelProps)} />);
+    const view = render(<MasksPanel {...({ record: record(), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, hasAlbedo: true, onRowMix: vi.fn(), model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() } as MasksPanelProps)} />);
     fireEvent.click(view.getByRole('button', { name: 'Wall' }));
     expect(view.queryByRole('group', { name: 'Wall' })).not.toBeNull();
-    view.rerender(<MasksPanel {...({ record: record({ rows: [row(5, 'Glass')], palette: [{ label: 5, hex: '#0000FF', name: 'blue' }] }), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() } as MasksPanelProps)} />);
+    view.rerender(<MasksPanel {...({ record: record({ rows: [row(5, 'Glass')], palette: [{ label: 5, hex: '#0000FF', name: 'blue' }] }), table, tableProblem: null, stale: false, canWrite: true, hasHeightMap: true, hasAlbedo: true, onRowMix: vi.fn(), model: idleModel(), onRowMaterial: vi.fn(), onRowRough: vi.fn(), onRowMetal: vi.fn(), onRowHeight: vi.fn(), onResetAll: vi.fn(), onFeather: vi.fn() } as MasksPanelProps)} />);
     expect(view.queryByRole('group')).toBeNull();
   });
 
@@ -133,7 +135,7 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     expect(follows(wall, resetAll)).toBe(true);
     expect(follows(resetAll, rerun)).toBe(true);
     expect(resetAll.parentElement).toBe(rerun.parentElement);
-    expect(screen.queryByRole('switch')).toBeNull();
+    expect(screen.queryByRole('switch', { name: /overlay/i })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Re-quantise' })).toBeNull();
   });
 
@@ -143,18 +145,53 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     expect(screen.getByRole('button', { name: 'Reset all' }).getAttribute('data-variant')).toBe('secondary');
   });
 
+  it('R89 a click toggles a swatch, so several can be selected; the block is named by the last clicked and shows how many others', () => {
+    setup();
+    fireEvent.click(swatch('Wall'));
+    fireEvent.click(swatch('Trim'));
+    expect(swatch('Wall').getAttribute('aria-pressed')).toBe('true');
+    expect(swatch('Trim').getAttribute('aria-pressed')).toBe('true');
+    const nameLine = (name: string): string => screen.getByRole('group', { name }).querySelector('.mask-row__name')?.textContent ?? '';
+    expect(nameLine('Trim')).toBe('Trim +1');
+    fireEvent.click(swatch('Trim'));
+    expect(swatch('Trim').getAttribute('aria-pressed')).toBe('false');
+    expect(nameLine('Wall')).toBe('Wall');
+    fireEvent.click(swatch('Wall'));
+    expect(screen.queryByRole('group')).toBeNull(); // nothing selected: no block
+  });
+
+  it('R89 with two selected, a released slider, the material select and a reset arrow report both labels in label order; the block shows the last clicked one\'s values', () => {
+    const actions = setup({ record: record({ rows: [row(0, 'Wall', 'Brick', 0.8, 0), row(1, 'Trim', 'Steel', 0.3, 1)] }) });
+    fireEvent.click(swatch('Trim'));
+    fireEvent.click(swatch('Wall')); // Wall was clicked last
+    const group = within(screen.getByRole('group', { name: 'Wall' }));
+    expect((group.getByLabelText('Roughness') as HTMLInputElement).value).toBe('0.8');
+    const rough = group.getByLabelText('Roughness');
+    fireEvent.pointerDown(rough);
+    fireEvent.change(rough, { target: { value: '0.6' } });
+    fireEvent.pointerUp(rough);
+    expect(actions.onRowRough).toHaveBeenCalledWith([0, 1], 0.6);
+    fireEvent.click(group.getByRole('button', { name: 'Reset Metalness' }));
+    expect(actions.onRowMetal).not.toHaveBeenCalled(); // Wall's metalness is already at Brick's value
+    const height = group.getByLabelText('Height');
+    fireEvent.pointerDown(height);
+    fireEvent.change(height, { target: { value: '0.4' } });
+    fireEvent.pointerUp(height);
+    expect(actions.onRowHeight).toHaveBeenCalledWith([0, 1], 0.4);
+  });
+
   it('R50 a released slider reports the label and the value', () => {
     const actions = setup();
     const slider = within(block('Trim')).getByLabelText('Roughness');
     fireEvent.pointerDown(slider);
     fireEvent.change(slider, { target: { value: '0.3' } });
     fireEvent.pointerUp(slider);
-    expect(actions.onRowRough).toHaveBeenCalledWith(1, 0.3);
+    expect(actions.onRowRough).toHaveBeenCalledWith([1], 0.3);
     const metal = within(block('Wall')).getByLabelText('Metalness');
     fireEvent.pointerDown(metal);
     fireEvent.change(metal, { target: { value: '0.5' } });
     fireEvent.pointerUp(metal);
-    expect(actions.onRowMetal).toHaveBeenCalledWith(0, 0.5);
+    expect(actions.onRowMetal).toHaveBeenCalledWith([0], 0.5);
   });
 
   it('R81 a released Height slider reports the label and the signed value', () => {
@@ -163,7 +200,24 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     fireEvent.pointerDown(height);
     fireEvent.change(height, { target: { value: '-0.4' } });
     fireEvent.pointerUp(height);
-    expect(actions.onRowHeight).toHaveBeenCalledWith(1, -0.4);
+    expect(actions.onRowHeight).toHaveBeenCalledWith([1], -0.4);
+  });
+
+  it('R90 R89 the Colour mixin switch reports the selected labels, and with no albedo it is off, saying why; Reset all counts a mixin that is on as a change', () => {
+    const actions = setup();
+    fireEvent.click(swatch('Wall'));
+    fireEvent.click(swatch('Trim'));
+    fireEvent.click(screen.getByRole('switch', { name: 'Colour mixin' }));
+    expect(actions.onRowMix).toHaveBeenCalledWith([0, 1], { on: true });
+    cleanup();
+    setup({ hasAlbedo: false });
+    fireEvent.click(swatch('Wall'));
+    const toggle = screen.getByRole('switch', { name: 'Colour mixin' }) as HTMLInputElement;
+    expect(toggle.disabled).toBe(true);
+    expect(toggle.closest('label')?.getAttribute('title')).toBe('No albedo map');
+    cleanup();
+    setup({ record: record({ rows: [{ ...row(0, 'Wall'), mix: { on: true, invert: false, rough: 0.5, metal: 0.5 } }, row(1, 'Trim')] }) });
+    expect((screen.getByRole('button', { name: 'Reset all' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('R81 R86 the Height slider is off with no height map, saying why; Reset all counts a height offset as a change', () => {
@@ -180,9 +234,9 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     const actions = setup({ record: record({ rows: [row(0, 'Wall', 'Brick', 0.1, 0.4), row(1, 'Trim', 'Steel', 0.3, 1)] }) });
     const wall = within(block('Wall'));
     fireEvent.click(wall.getByRole('button', { name: 'Reset Roughness' }));
-    expect(actions.onRowRough).toHaveBeenCalledWith(0, 0.8); // Brick
+    expect(actions.onRowRough).toHaveBeenCalledWith([0], 0.8); // Brick
     fireEvent.click(wall.getByRole('button', { name: 'Reset Metalness' }));
-    expect(actions.onRowMetal).toHaveBeenCalledWith(0, 0); // Brick
+    expect(actions.onRowMetal).toHaveBeenCalledWith([0], 0); // Brick
     const trim = within(block('Trim'));
     expect((trim.getByRole('button', { name: 'Reset Roughness' }) as HTMLButtonElement).disabled).toBe(true); // Steel 0.3
     expect((trim.getByRole('button', { name: 'Reset Metalness' }) as HTMLButtonElement).disabled).toBe(true); // Steel 1

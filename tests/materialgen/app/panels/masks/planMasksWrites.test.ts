@@ -39,4 +39,11 @@ describe('materialgen/app planMasksWrites (masks R85 R87)', () => {
   it('R50 a change that alters nothing still bakes rough and metal, as before, and writes no Height', () => {
     expect(planMasksWrites(before, before, false)).toEqual({ roughMetal: true, height: false });
   });
+
+  it('R92 a change of the colour mixin alone writes rough and metal and never Height', () => {
+    const mixed = record([row(0, { mix: { on: true, invert: false, rough: 0.5, metal: 0.5 } }), row(1, { height: 0.5 })]);
+    expect(planMasksWrites(before, mixed, false)).toEqual({ roughMetal: true, height: false });
+    const moved = record([row(0, { mix: { on: true, invert: true, rough: 0.9, metal: 0.5 } }), row(1, { height: 0.5 })]);
+    expect(planMasksWrites(mixed, moved, false)).toEqual({ roughMetal: true, height: false });
+  });
 });

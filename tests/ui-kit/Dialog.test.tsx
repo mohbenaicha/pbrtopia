@@ -14,6 +14,13 @@ const actions = (
 );
 
 describe('Dialog', () => {
+  it('R38 an open dialog is drawn through a portal into the body, outside the tree that renders it', () => {
+    const { container } = render(<div className="panel"><Dialog open title="Password" onClose={() => undefined}>body</Dialog></div>);
+    const backdrop = screen.getByRole('dialog').parentElement as HTMLElement;
+    expect(container.contains(backdrop)).toBe(false);
+    expect(backdrop.parentElement).toBe(document.body);
+  });
+
   it('R22 a closed dialog renders nothing', () => {
     render(<Dialog open={false} title="Password" onClose={() => undefined}>body</Dialog>);
     expect(screen.queryByRole('dialog')).toBeNull();

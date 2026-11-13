@@ -44,6 +44,15 @@
   min-width: 0;
 }
 
+/* Masks R90: the Colour mixin's Invert switch and two sliders sit indented under its switch. */
+.mask-row__mixin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding-left: var(--space-4);
+}
+
 .mask-row__name {
   min-width: 0;
   overflow: hidden;

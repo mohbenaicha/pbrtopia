@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, CommitSlider } from '@shared/ui-kit';
-import { isRowAtDefaults } from '../record/maskRows';
+import { isRowAtDefaults, type RowMix } from '../record/maskRows';
 import type { MasksRecord } from '../record/masksRecord';
 import type { BaseMaterialTable } from '../table/baseMaterials';
 import { MAX_FEATHER } from '../bake/bakeMasks';
@@ -25,6 +25,9 @@ export interface MasksModelControls {
   onRetry(): void;
 }
 
+/** The components a change applies to: one label, or the selected ones (masks R89). */
+export type RowLabels = number | readonly number[];
+
 export interface MasksPanelProps {
   /** The stored masks, or null when the material has none. */
   record: MasksRecord | null;
@@ -35,14 +38,19 @@ export interface MasksPanelProps {
   stale: boolean;
   canWrite: boolean;
   model: MasksModelControls;
-  onRowMaterial(label: number, name: string): void;
+  /** The row changes name every selected component (`labels`: one label or the selected ones in label order; masks R89). */
+  onRowMaterial(labels: RowLabels, name: string): void;
   /** A slider's value was released; a promise that settles when it has been stored lets the slider keep showing it until then (masks R50). */
-  onRowRough(label: number, value: number): void | Promise<unknown>;
-  onRowMetal(label: number, value: number): void | Promise<unknown>;
-  /** The Height offset of a row, -1 to +1 (masks R81). */
-  onRowHeight(label: number, value: number): void | Promise<unknown>;
+  onRowRough(labels: RowLabels, value: number): void | Promise<unknown>;
+  onRowMetal(labels: RowLabels, value: number): void | Promise<unknown>;
+  /** The Height offset of the rows, -1 to +1 (masks R81). */
+  onRowHeight(labels: RowLabels, value: number): void | Promise<unknown>;
   /** The Height slot has a working map; without one the Height sliders are off (masks R81). */
   hasHeightMap: boolean;
+  /** The Colour mixin of the rows changed: the switch, Invert or a released amount (masks R90). */
+  onRowMix(labels: RowLabels, patch: Partial<RowMix>): void | Promise<unknown>;
+  /** The material has an albedo (or diffuse) map to mix from; without one the Colour mixin switch is off (masks R90). */
+  hasAlbedo: boolean;
   onResetAll(): void;
   onFeather(pixels: number): void | Promise<unknown>;
   /** The swatch under the pointer or holding the focus (masks R80), or null; the preview draws that component alone. */
@@ -51,6 +59,7 @@ export interface MasksPanelProps {
 
 const FEATHER_RANGE = { min: 0, max: MAX_FEATHER, step: 1, format: (value: number): string => `${value} px` };
 const NO_HEIGHT_REASON = 'Add a height map first';
+const NO_ALBEDO_REASON = 'No albedo map';
 const READ_ONLY_REASON = 'This project is open in another tab, so it cannot be changed here.';
 
 /**
@@ -60,7 +69,7 @@ const READ_ONLY_REASON = 'This project is open in another tab, so it cannot be c
  */
 export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
   const { record, table, tableProblem, stale, canWrite, model } = props;
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<readonly number[]>([]); // the clicked labels in click order (masks R89); the last one is the one the block shows
   const { onHighlight } = props;
   useEffect(() => () => onHighlight?.(null), [onHighlight]); // R80: a panel that goes (popover closed, masks gone) leaves no highlight behind
   const locked = !canWrite;
@@ -70,7 +79,10 @@ export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
 
   const allAtDefaults = table === null || record.rows.every((row) => isRowAtDefaults(row, table));
   const resetAllReason = changeReason ?? (allAtDefaults ? 'Every row is at its defaults' : undefined);
-  const selectedRow = record.rows.find((row) => row.label === selected); // a label the rebuilt masks no longer have selects nothing
+  const chosen = selected.filter((label) => record.rows.some((row) => row.label === label)); // a label the rebuilt masks no longer have selects nothing
+  const selectedRow = record.rows.find((row) => row.label === chosen[chosen.length - 1]);
+  const labels = record.rows.map((row) => row.label).filter((label) => chosen.includes(label)); // R89: what a change sets, in label order
+  const toggle = (label: number): void => setSelected(chosen.includes(label) ? chosen.filter((other) => other !== label) : [...chosen, label]);
 
   return (
     <div className="masks-panel">
@@ -80,18 +92,21 @@ export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
         <p className="masks-panel__notice" role={tableProblem === null ? 'status' : 'alert'}>{tableProblem ?? 'Loading the materials'}</p>
       ) : (
         <>
-          <MaskSwatchGrid rows={record.rows} palette={record.palette} selected={selectedRow?.label ?? null} {...(onHighlight === undefined ? {} : { onHighlight })} onSelect={(label) => setSelected(label === selectedRow?.label ? null : label)} />
+          <MaskSwatchGrid rows={record.rows} palette={record.palette} selected={chosen} {...(onHighlight === undefined ? {} : { onHighlight })} onSelect={toggle} />
           {selectedRow === undefined ? null : (
             <MaskRowView
               key={selectedRow.label}
               row={selectedRow}
+              others={labels.length - 1}
               table={table}
               disabled={locked}
-              onMaterial={(name) => props.onRowMaterial(selectedRow.label, name)}
-              onRough={(value) => props.onRowRough(selectedRow.label, value)}
-              onMetal={(value) => props.onRowMetal(selectedRow.label, value)}
-              onHeight={(value) => props.onRowHeight(selectedRow.label, value)}
+              onMaterial={(name) => props.onRowMaterial(labels, name)}
+              onRough={(value) => props.onRowRough(labels, value)}
+              onMetal={(value) => props.onRowMetal(labels, value)}
+              onHeight={(value) => props.onRowHeight(labels, value)}
               heightDisabledReason={props.hasHeightMap ? null : NO_HEIGHT_REASON}
+              onMix={(patch) => props.onRowMix(labels, patch)}
+              mixDisabledReason={props.hasAlbedo ? null : NO_ALBEDO_REASON}
             />
           )}
         </>

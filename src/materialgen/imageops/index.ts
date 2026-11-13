@@ -14,6 +14,7 @@ export { PREVIEW_DELAY_MS, createPreviewScheduler, type PreviewScheduler } from 
 export type { PixelImage } from './gpu/pixelFormats';
 export type { OpSession } from './session/opSession';
 export { MAX_PREVIEW_SIZE, createFilterSession, type FilterSession } from './filters/filterSession';
+export { blendByCoverage, downsampleBox } from './filters/blendByCoverage';
 export { aoControlsFor, aoSourceFor, createDefaultAoValues, hasAoChanges, type AoSource } from './derive/aoParams';
 export { createAoSession } from './derive/aoSession';
 export { aoValuesFor, readAoSettings, writeAoSettings, type AoSettings } from './derive/aoSettings';

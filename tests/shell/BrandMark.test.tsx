@@ -27,6 +27,6 @@ describe('the corner logo (branding R1)', () => {
 
   it('R1 sits above the floating panels', () => {
     const { container } = render(<BrandMark src="/logo.png" />);
-    expect(Number(container.querySelector('img')?.style.zIndex)).toBeGreaterThan(1);
+    expect(container.querySelector('img')?.style.zIndex).toBe('var(--layer-brand)'); // above the panels (1), below the dialogs (viewport-layout R38)
   });
 });

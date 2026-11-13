@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useDismiss } from './useDismiss';
 import './Dialog.css';
 
@@ -49,13 +50,15 @@ export function Dialog({ open, title, onClose, actions, headerActions, size = 'd
   };
 
   const heading = <h2 className="ui-dialog__title" id={titleId}>{title}</h2>;
-  return (
+  // viewport-layout R38: drawn through a portal into the body, so no panel or container above it in the tree can paint over it
+  return createPortal(
     <div className="ui-dialog__backdrop">
       <div className="ui-dialog" data-size={size === 'large' ? 'large' : undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={dialog} onKeyDown={keepFocusInside}>
         {headerActions === undefined ? heading : <div className="ui-dialog__header">{heading}<div className="ui-dialog__header-actions">{headerActions}</div></div>}
         <div className="ui-dialog__body">{children}</div>
         {actions && <div className="ui-dialog__actions">{actions}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

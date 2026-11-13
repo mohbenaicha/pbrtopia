@@ -2,7 +2,7 @@ import { controlsFor, type EditMapKind, type EditValues } from './editControls';
 
 // Imageops R20, R22: the spatial passes a set of control values asks for, in the order they must run.
 
-export type SpatialMode = 'blur' | 'denoise' | 'sharpness' | 'highpass' | 'clarity' | 'edge' | 'scale';
+export type SpatialMode = 'blur' | 'denoise' | 'sharpness' | 'highpass' | 'clarity' | 'edge' | 'scale' | 'mix';
 
 export interface SpatialPass {
   mode: SpatialMode;
@@ -13,6 +13,7 @@ export interface SpatialPass {
 const ORDER: readonly { mode: SpatialMode; control: string }[] = [
   { mode: 'blur', control: 'blur' },
   { mode: 'denoise', control: 'denoise' },
+  { mode: 'mix', control: 'albedoMix' }, // R82: a normal map's only other pass, after denoise
   { mode: 'sharpness', control: 'sharpness' },
   { mode: 'highpass', control: 'highpass' },
   { mode: 'clarity', control: 'clarity' },

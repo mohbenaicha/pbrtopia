@@ -53,6 +53,7 @@ const ROWS: readonly ControlRow[] = [
   slider('clarity', 'Clarity', 'detail', -2, 2, 0, 0.1, GREY_AND_ALBEDO),
   slider('highpass', 'High pass', 'detail', 0, 5, 0, 0.1, ALL_BUT_ALBEDO),
   slider('denoise', 'Denoise', 'detail', 0, 3, 0, 0.1, EDIT_MAP_KINDS),
+  slider('albedoMix', 'Colour mixin', 'detail', 0, 2, 0, 0.05, ['normal']), // R82: the albedo's brightness relief imprinted into the normal
   slider('levelsMin', 'Levels minimum', 'surface', 0, 1, 0, 0.01, GREY_AND_ALBEDO),
   slider('levelsMid', 'Levels midtones', 'surface', 0.1, 10, 1, 0.01, GREY_AND_ALBEDO),
   slider('levelsMax', 'Levels maximum', 'surface', 0, 1, 1, 0.01, GREY_AND_ALBEDO),

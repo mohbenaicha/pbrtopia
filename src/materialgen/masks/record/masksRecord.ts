@@ -1,6 +1,6 @@
 import { MAX_FEATHER } from '../bake/bakeMasks';
 import { MAX_COMPONENTS } from '../describe/parseComponents';
-import type { MaskRow } from './maskRows';
+import type { MaskRow, RowMix } from './maskRows';
 
 /** Masks R10: one palette entry the record keeps for a component. */
 export interface PaletteEntry {
@@ -37,17 +37,27 @@ function readPalette(value: unknown): PaletteEntry[] | null {
   return palette;
 }
 
+/** Masks R95: the stored Colour mixin of a row; undefined when there is none, null when it is not of the shape `{on, invert, rough, metal}`. */
+function readMix(value: unknown): RowMix | undefined | null {
+  if (value === undefined) return undefined;
+  if (!isObject(value) || typeof value['on'] !== 'boolean' || typeof value['invert'] !== 'boolean' || !isUnit(value['rough']) || !isUnit(value['metal'])) return null;
+  return { on: value['on'], invert: value['invert'], rough: value['rough'], metal: value['metal'] };
+}
+
 function readRow(value: unknown, labels: ReadonlySet<number>): MaskRow | null {
   if (!isObject(value) || !isLabel(value['label']) || !labels.has(value['label'])) return null;
   const texts = ['name', 'description', 'location', 'defaultMaterial', 'material'].every((key) => isText(value[key]));
   if (!texts || !isUnit(value['rough']) || !isUnit(value['metal'])) return null;
   const height = value['height'] === undefined ? 0 : value['height']; // a record from before the height offsets (R88) has none
   if (typeof height !== 'number' || Number.isNaN(height) || height < -1 || height > 1) return null;
+  const mix = readMix(value['mix']); // R95: a record from before the mixin has none; one that is not of the shape is not used
+  if (mix === null) return null;
   const top3 = Array.isArray(value['top3']) ? value['top3'].filter(isText).slice(0, 3) : [];
   const kind = isText(value['matchKind']) && MATCH_KINDS.includes(value['matchKind']) ? (value['matchKind'] as MaskRow['matchKind']) : 'generic';
   return {
     label: value['label'], name: value['name'] as string, description: value['description'] as string, location: value['location'] as string,
     defaultMaterial: value['defaultMaterial'] as string, top3, matchKind: kind, material: value['material'] as string, rough: value['rough'], metal: value['metal'], height,
+    ...(mix === undefined ? {} : { mix }),
   };
 }
 

@@ -25,8 +25,14 @@ describe('imageops spatial pass plan (R20, R15)', () => {
     expect(plan).toEqual([{ mode: 'scale', amount: 0, bands: [1, 2, 1] }]);
   });
 
-  it('R22 a normal map plans denoise only, even if other values are set', () => {
+  it('R22 a normal map plans denoise and the mixin only, even if other values are set', () => {
     expect(planSpatialPasses('normal', { denoise: 1, blur: 5, sharpness: 2 })).toEqual([{ mode: 'denoise', amount: 1 }]);
+  });
+
+  it('R82 R83 the colour mixin is a pass of a normal map, after denoise, carrying its amount; at 0 there is none', () => {
+    expect(planSpatialPasses('normal', { denoise: 1, albedoMix: 0.5 })).toEqual([{ mode: 'denoise', amount: 1 }, { mode: 'mix', amount: 0.5 }]);
+    expect(planSpatialPasses('normal', { albedoMix: 0 })).toEqual([]);
+    expect(planSpatialPasses('height', { albedoMix: 1 })).toEqual([]); // only a normal map has it
   });
 });
 

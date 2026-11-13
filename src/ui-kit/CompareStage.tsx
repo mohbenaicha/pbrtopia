@@ -11,9 +11,25 @@ export interface CompareSource {
   failed?: boolean; // the picture could not be read
 }
 
+/** A picture drawn once over the whole stage, both sides alike (imageops R80): RGBA pixels, `rgba.length` = width x height x 4. */
+export interface StageOverlay {
+  width: number;
+  height: number;
+  rgba: Uint8ClampedArray;
+}
+
 export interface CompareStageProps {
   sources: CompareSource[]; // one or more; the first is shown on the left, the second on the right
   details?: string[];
+  overlay?: StageOverlay | null; // follows the pictures' zoom and pan; never takes the pointer
+}
+
+function OverlayCanvas({ overlay, transform }: { overlay: StageOverlay; transform: string }): React.JSX.Element {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    canvas.current?.getContext('2d')?.putImageData(new ImageData(overlay.rgba as Uint8ClampedArray<ArrayBuffer>, overlay.width, overlay.height), 0, 0);
+  }, [overlay]);
+  return <canvas ref={canvas} className="ui-compare-viewer__picture" data-testid="compare-overlay" aria-hidden="true" width={overlay.width} height={overlay.height} style={{ transform, pointerEvents: 'none' }} />;
 }
 
 function Side({ source, side }: { source: CompareSource | undefined; side: 'left' | 'right' }): React.JSX.Element | null {
@@ -27,7 +43,7 @@ function Side({ source, side }: { source: CompareSource | undefined; side: 'left
 
 // Materialgen-prep S5: two pictures of one area on either side of a draggable divider, with one shared zoom and pan. The parent sets
 // `--compare-frame-height` to size the frame; the filter and AO dialogs draw this as their reveal.
-export function CompareStage({ sources, details = [] }: CompareStageProps): React.JSX.Element {
+export function CompareStage({ sources, details = [], overlay = null }: CompareStageProps): React.JSX.Element {
   const area = useRef<HTMLDivElement>(null);
   const leftPicture = useRef<HTMLImageElement>(null);
   const dragging = useRef(false);
@@ -113,6 +129,7 @@ export function CompareStage({ sources, details = [] }: CompareStageProps): Reac
         <div className="ui-compare-viewer__area" ref={area} data-testid="compare-viewer-area" style={areaStyle} data-zoomed={view.zoom > 1 ? '' : undefined} onMouseDown={startPan} onDoubleClick={() => setView(FITTED_IMAGE_VIEW)}>
           <div className="ui-compare-viewer__layer">{picture(left, true)}</div>
           {right !== undefined && <div className="ui-compare-viewer__layer" style={{ clipPath: `inset(0 0 0 ${divider}%)` }}>{picture(right, false)}</div>}
+          {overlay !== null && <div className="ui-compare-viewer__layer" style={{ pointerEvents: 'none' }}><OverlayCanvas overlay={overlay} transform={transform} /></div>}
           <Side source={left} side="left" />
           {right !== undefined && <Side source={right} side="right" />}
           {right !== undefined && (

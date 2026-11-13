@@ -5,12 +5,13 @@
 
 export const SPATIAL_FRAGMENT = `
 uniform sampler2D uSource;
-uniform int uMode; // 0 blur, 1 denoise, 2 sharpness, 3 highpass, 4 clarity, 5 edge emphasis, 6 contrast by scale
+uniform int uMode; // 0 blur, 1 denoise, 2 sharpness, 3 highpass, 4 clarity, 5 edge emphasis, 6 contrast by scale, 7 colour mixin
 uniform float uAmount;
 uniform vec3 uBands;
 uniform float uTexelsToUv; // 1 / S: converts a radius in texels of the map at size S to a fraction of the image
 uniform vec2 uPassTexel;   // 1 / (size of this pass), for the fixed 3 x 3 edge kernel
 uniform bool uNormal;
+uniform sampler2D uAlbedoTex; // the albedo, for the colour mixin (mode 7); the source itself when there is none
 varying vec2 vUv;
 
 float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
@@ -66,10 +67,23 @@ void main() {
     float gx = (tr + 2.0 * mr + br) - (tl + 2.0 * ml + bl);
     float gy = (bl + 2.0 * bc + br) - (tl + 2.0 * tc + tr);
     result = c + vec3(length(vec2(gx, gy)) * uAmount * 0.5);
-  } else {
+  } else if (uMode == 6) {
     vec3 wide = blurAt(6.0);
     vec3 narrow = blurAt(2.0);
     result = wide * uBands.x + (narrow - wide) * uBands.y + (c - narrow) * uBands.z; // large, medium and fine scales
+  } else {
+    // R83: the albedo's luma as a height field, its central-difference slope per texel of the map at size S, as a detail normal joined to this one.
+    // Picture rows run downward in v and the stored normal is OpenGL (green up), so x leans against the slope and y with it.
+    float d = uTexelsToUv;
+    float left = luma(texture2D(uAlbedoTex, vUv - vec2(d, 0.0)).rgb);
+    float right = luma(texture2D(uAlbedoTex, vUv + vec2(d, 0.0)).rgb);
+    float above = luma(texture2D(uAlbedoTex, vUv - vec2(0.0, d)).rgb);
+    float below = luma(texture2D(uAlbedoTex, vUv + vec2(0.0, d)).rgb);
+    vec3 detail = normalize(vec3(vec2(left - right, below - above) * 0.5 * uAmount * 8.0, 1.0));
+    vec3 base = c * 2.0 - 1.0;
+    base.z = max(base.z, 1e-3);
+    vec3 mixed = vec3(base.xy * detail.z + detail.xy * base.z, base.z * detail.z);
+    result = renormalise(normalize(mixed) * 0.5 + 0.5);
   }
   gl_FragColor = vec4(result, 1.0);
 }`;

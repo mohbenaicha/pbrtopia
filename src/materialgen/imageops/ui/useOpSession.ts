@@ -28,6 +28,8 @@ export interface OpSessionState<V extends Values> {
   values: V;
   setValue: (id: string, value: number) => void;
   reset: () => void;
+  /** Draws the preview again with the current values, for a change that is not a control (the mask scope, imageops R79); nothing before the session is open. */
+  refreshPreview: () => void;
   /** The newest preview picture, or null before the first one is drawn. */
   previewUrl: string | null;
   canApply: boolean;
@@ -126,6 +128,7 @@ export function useOpSession<V extends Values>({ openSession, defaults, initial,
   }, []);
   const setValue = useCallback((id: string, value: number) => change({ ...valuesRef.current, [id]: value }), [change]);
   const reset = useCallback(() => change({ ...defaults }), [change, defaults]);
+  const refreshPreview = useCallback(() => scheduler.current?.request(valuesRef.current), []);
 
   const apply = useCallback(
     async (commit: (image: PixelImage) => Promise<boolean>): Promise<boolean> => {
@@ -160,5 +163,5 @@ export function useOpSession<V extends Values>({ openSession, defaults, initial,
     [enqueue],
   );
 
-  return { status, values, setValue, reset, previewUrl, canApply: status === 'ready' && isChanged(values), applying, error, apply };
+  return { status, values, setValue, reset, refreshPreview, previewUrl, canApply: status === 'ready' && isChanged(values), applying, error, apply };
 }

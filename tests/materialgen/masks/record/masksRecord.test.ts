@@ -57,4 +57,16 @@ describe('materialgen/masks record', () => {
     expect(parsed).toEqual(record());
     expect(parsed).not.toHaveProperty('coverage');
   });
+
+  it('R95 the mixin is saved with the row and read back; a record from before it has none and reads as off', () => {
+    const mixed: MasksRecord = { ...record(), rows: [{ ...row(0), mix: { on: true, invert: true, rough: 0.25, metal: 0.75 } }, row(1)] };
+    expect(parseMasksRecord(serializeMasksRecord(mixed))).toEqual(mixed);
+    expect(parseMasksRecord(serializeMasksRecord(record()))?.rows[0]?.mix).toBeUndefined();
+  });
+
+  it('R95 a mix that is not of the shape makes the record unusable', () => {
+    for (const mix of [{ on: 'yes', invert: false, rough: 0.5, metal: 0.5 }, { on: true, invert: false, rough: 2, metal: 0.5 }, { on: true, invert: false, rough: 0.5 }, 3]) {
+      expect(parseMasksRecord({ ...record(), rows: [{ ...row(0), mix }, row(1)] })).toBeNull();
+    }
+  });
 });

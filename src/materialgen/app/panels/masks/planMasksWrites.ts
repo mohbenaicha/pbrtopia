@@ -16,6 +16,6 @@ const heightsOf = (record: MasksRecord): string => record.rows.map((row) => `${r
 export function planMasksWrites(previous: MasksRecord | null, next: MasksRecord, relabelled: boolean): MasksWrites {
   const heightsChanged = previous === null ? hasHeightOffset(next.rows) : heightsOf(previous) !== heightsOf(next);
   const shapeChanged = relabelled || (previous !== null && previous.feather !== next.feather);
-  const otherChanged = shapeChanged || previous === null || previous.rows.some((row, index) => row.rough !== next.rows[index]?.rough || row.metal !== next.rows[index]?.metal || row.material !== next.rows[index]?.material);
+  const otherChanged = shapeChanged || previous === null || previous.rows.some((row, index) => row.rough !== next.rows[index]?.rough || row.metal !== next.rows[index]?.metal || row.material !== next.rows[index]?.material || JSON.stringify(row.mix) !== JSON.stringify(next.rows[index]?.mix)); // R92: the Colour mixin shapes rough and metal only
   return { roughMetal: otherChanged || !heightsChanged, height: heightsChanged || (shapeChanged && hasHeightOffset(next.rows)) };
 }

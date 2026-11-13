@@ -16,7 +16,18 @@ export interface MaskRow {
   rough: number; // 0 to 1, current
   metal: number; // 0 to 1, current
   height: number; // -1 to +1, 0 in the middle: raises or lowers the Height map under this component (R81)
+  mix?: RowMix; // the Colour mixin (R90); a row from before it has none and reads as off (R95)
 }
+
+/** Masks R90: the Colour mixin of one row: on or off, Invert, and the two amounts, 0 to 1. */
+export interface RowMix {
+  on: boolean;
+  invert: boolean;
+  rough: number;
+  metal: number;
+}
+
+export const DEFAULT_MIX: Readonly<RowMix> = { on: false, invert: false, rough: 0.5, metal: 0.5 };
 
 interface MakeRowInput {
   label: number;
@@ -61,15 +72,35 @@ export function setRowValue(row: MaskRow, which: 'rough' | 'metal' | 'height', v
   return { ...row, [which]: Math.round(Math.min(Math.max(value, low), 1) * SLIDER_STEP) / SLIDER_STEP };
 }
 
-/** Masks R52, R86: the row goes back to its matched material and that material's values, and its height to 0. */
-export function resetRow(row: MaskRow, table: BaseMaterialTable): MaskRow {
-  return { ...chooseMaterial({ ...row, material: row.defaultMaterial }, row.defaultMaterial, table), height: 0 };
+/** Masks R95: the row's Colour mixin, the defaults (off) for a row that has none. */
+export function mixOf(row: MaskRow): RowMix {
+  return row.mix ?? { ...DEFAULT_MIX };
 }
 
-/** Masks R52, R86: true when the row already is what Reset would make it (the Reset button is disabled then). */
+const sameMix = (a: RowMix, b: RowMix): boolean => a.on === b.on && a.invert === b.invert && a.rough === b.rough && a.metal === b.metal;
+
+/** Masks R90: one or more parts of the row's Colour mixin changed; the amounts are kept in 0 to 1 in steps of 0.01 and a number that is not a number leaves its amount as it is. */
+export function setRowMix(row: MaskRow, patch: Partial<RowMix>): MaskRow {
+  const current = mixOf(row);
+  const amount = (value: number | undefined, kept: number): number => (value === undefined || Number.isNaN(value) ? kept : Math.round(Math.min(Math.max(value, 0), 1) * SLIDER_STEP) / SLIDER_STEP);
+  return { ...row, mix: { on: patch.on ?? current.on, invert: patch.invert ?? current.invert, rough: amount(patch.rough, current.rough), metal: amount(patch.metal, current.metal) } };
+}
+
+/** Masks R94: true while any row has the Colour mixin on. */
+export function hasMix(rows: readonly MaskRow[]): boolean {
+  return rows.some((row) => row.mix?.on === true);
+}
+
+/** Masks R52, R86, R94: the row goes back to its matched material and that material's values, its height to 0 and its Colour mixin off with its defaults. */
+export function resetRow(row: MaskRow, table: BaseMaterialTable): MaskRow {
+  const { mix: _mix, ...rest } = chooseMaterial({ ...row, material: row.defaultMaterial }, row.defaultMaterial, table);
+  return { ...rest, height: 0 };
+}
+
+/** Masks R52, R86, R94: true when the row already is what Reset would make it (the Reset button is disabled then). */
 export function isRowAtDefaults(row: MaskRow, table: BaseMaterialTable): boolean {
   const reset = resetRow(row, table);
-  return reset.material === row.material && reset.rough === row.rough && reset.metal === row.metal && reset.height === row.height;
+  return reset.material === row.material && reset.rough === row.rough && reset.metal === row.metal && reset.height === row.height && sameMix(mixOf(row), DEFAULT_MIX);
 }
 
 /** Masks R53: every row reset; rows already at their defaults are returned as they are. */
@@ -87,7 +118,7 @@ export function hasHeightOffset(rows: readonly MaskRow[]): boolean {
   return rows.some(({ height }) => height !== 0);
 }
 
-/** Masks R42: the look-up tables the bake reads, row k being label k. */
+/** Masks R42, R91: the look-up tables the bake reads, row k being label k; a row whose Colour mixin is on also gives its Invert and the two amounts. */
 export function rowsToBake(rows: readonly MaskRow[]): BakeRow[] {
-  return rows.map(({ rough, metal }) => ({ rough, metal }));
+  return rows.map(({ rough, metal, mix }) => (mix?.on === true ? { rough, metal, mix: { invert: mix.invert, rough: mix.rough, metal: mix.metal } } : { rough, metal }));
 }

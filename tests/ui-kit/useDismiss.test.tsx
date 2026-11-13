@@ -18,6 +18,29 @@ function Region({ open, onDismiss, outside }: { open: boolean; onDismiss: () => 
 }
 
 describe('useDismiss', () => {
+  it('R38 Escape reaches only the topmost open layer, so a select list inside a dialog closes alone', () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    const { rerender } = render(<Region open onDismiss={outer} />);
+    rerender(
+      <>
+        <Region open onDismiss={outer} />
+        <Region open onDismiss={inner} />
+      </>,
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
+    rerender(
+      <>
+        <Region open onDismiss={outer} />
+        <Region open={false} onDismiss={inner} />
+      </>,
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(outer).toHaveBeenCalledTimes(1);
+  });
+
   it('R22 Escape dismisses while open', () => {
     const onDismiss = vi.fn();
     render(<Region open onDismiss={onDismiss} />);

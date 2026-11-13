@@ -2,7 +2,7 @@
   position: absolute;
   inset: 0; /* the veil fills the whole window behind the floating panels (viewport-layout R37)... */
   padding: var(--stage-top, 0px) var(--stage-right, 0px) var(--stage-bottom, 0px) var(--stage-left, 0px); /* ...and the card is centred in the free part between them */
-  z-index: 20;
+  z-index: var(--layer-loading);
   display: flex;
   align-items: center;
   justify-content: center;

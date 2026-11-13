@@ -3,12 +3,15 @@ import type { RawRecord } from '@shared/projects';
 import type { PixelImage } from '@mat/imageops';
 import { heightBaseKey, isStale, readMapPixels, type MapsController, type MapsState, type MasksCommit } from '@mat/maps';
 import {
+  albedoToGrey,
   chooseMaterial,
   createBakeQueue,
   hasHeightOffset,
   parseMasksRecord,
+  hasMix,
   resetAllRows,
   serializeMasksRecord,
+  setRowMix,
   setRowValue,
   startMaskJob,
   type BaseMaterialTable,
@@ -17,6 +20,7 @@ import {
   type MasksModelControls,
   type MasksPanelProps,
   type MasksRecord,
+  type RowLabels,
 } from '@mat/masks';
 import { planMasksWrites } from './planMasksWrites';
 
@@ -64,6 +68,17 @@ export function useMasksPanel(ports: MasksPanelPorts): MasksPanelProps {
     return image;
   };
 
+  // R96: the albedo's grey plane, made when a bake first needs it and kept for the panel's life, per albedo working copy
+  const greyCache = useRef<{ key: string; image: PixelImage } | null>(null);
+  const readGrey = async (key: string): Promise<PixelImage | undefined> => {
+    if (greyCache.current?.key === key) return greyCache.current.image;
+    const albedo = await readMapPixels(await portsRef.current.readBlob(key));
+    if (albedo === null) return undefined;
+    const image = albedoToGrey(albedo);
+    greyCache.current = { key, image };
+    return image;
+  };
+
   useEffect(() => {
     let cancelled = false;
     ports.loadTable().then(
@@ -103,8 +118,13 @@ export function useMasksPanel(ports: MasksPanelPorts): MasksPanelProps {
             if (!built.ok) return controller.refuse(built.message), false;
             ({ record, bake } = { record: built.value.record, bake: built.value.bake });
             relabel = { keepOriginal: true, working: built.value.labels, derivedFrom };
+            if (hasMix(record.rows) && colour !== undefined) {
+              const grey = await readGrey(colour.workingKey); // R96: bake again with the grain of the albedo at the new size
+              if (grey !== undefined) bake = await startMaskJob('bake', { labels: built.value.labels, record, grey });
+            }
           } else if (writes.roughMetal) {
-            bake = await startMaskJob('bake', { labels, record: next });
+            const grey = hasMix(next.rows) && colour !== undefined ? await readGrey(colour.workingKey) : undefined; // R96: read only while a row has the mixin on
+            bake = await startMaskJob('bake', { labels, record: next, ...(grey === undefined ? {} : { grey }) });
           }
           if (heightMap !== undefined && writes.height) {
             if (hasHeightOffset(record.rows)) {
@@ -145,8 +165,11 @@ export function useMasksPanel(ports: MasksPanelPorts): MasksPanelProps {
     return queue.submit((current) => update(current, loaded));
   };
   const changeRows = (update: RowUpdate): Promise<boolean> => submitChange((current, loaded) => ({ ...current, rows: update(current.rows, loaded) }));
-  const changeRow = (label: number, update: (row: MaskRow, loaded: BaseMaterialTable) => MaskRow): Promise<boolean> =>
-    changeRows((rows, loaded) => rows.map((row) => (row.label === label ? update(row, loaded) : row)));
+  // R89: one label or several; a list is one change, so one bake and one commit
+  const changeRow = (labels: RowLabels, update: (row: MaskRow, loaded: BaseMaterialTable) => MaskRow): Promise<boolean> => {
+    const wanted = new Set(typeof labels === 'number' ? [labels] : labels);
+    return changeRows((rows, loaded) => rows.map((row) => (wanted.has(row.label) ? update(row, loaded) : row)));
+  };
 
   return {
     record,
@@ -161,6 +184,8 @@ export function useMasksPanel(ports: MasksPanelPorts): MasksPanelProps {
     onRowMetal: (label, value) => changeRow(label, (row) => setRowValue(row, 'metal', value)),
     onRowHeight: (label, value) => changeRow(label, (row) => setRowValue(row, 'height', value)),
     hasHeightMap: state.maps.height !== undefined,
+    onRowMix: (labels, patch) => changeRow(labels, (row) => setRowMix(row, patch)),
+    hasAlbedo: (state.maps.albedo ?? state.maps.diffuse) !== undefined,
     onResetAll: () => changeRows((rows, loaded) => resetAllRows(rows, loaded)),
     onFeather: (pixels) => submitChange((current) => ({ ...current, feather: pixels })),
   };

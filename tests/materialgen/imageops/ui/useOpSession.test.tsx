@@ -98,6 +98,19 @@ describe('imageops/ui useOpSession', () => {
     expect(result.current.canApply).toBe(false);
   });
 
+  it('R79 refreshPreview draws the preview again with the current values (the mask selection changed), and does nothing before the session is open', async () => {
+    const session = fakeSession();
+    const { result } = mount(session);
+    act(() => result.current.refreshPreview()); // not open yet
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(session.renderPreview).not.toHaveBeenCalled();
+    act(() => result.current.setValue('amount', 3));
+    await waitFor(() => expect(session.renderPreview).toHaveBeenCalledTimes(1));
+    act(() => result.current.refreshPreview());
+    await waitFor(() => expect(session.renderPreview).toHaveBeenCalledTimes(2));
+    expect(session.renderPreview).toHaveBeenLastCalledWith({ amount: 3 });
+  });
+
   it('R18 five changes within 75 ms render one preview, with the last values', async () => {
     const session = fakeSession();
     const { result } = mount(session);

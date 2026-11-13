@@ -24,8 +24,14 @@ describe('imageops edit controls (R14)', () => {
     expect(idsFor('ao')).not.toContain('heightIntensity');
   });
 
-  it('R14 a normal map has denoise only', () => {
-    expect(idsFor('normal')).toEqual(['denoise']);
+  it('R14 R82 a normal map has denoise and the colour mixin, both in Detail, the mixin 0..2 from 0', () => {
+    expect(idsFor('normal')).toEqual(['denoise', 'albedoMix']);
+    const mixin = controlsFor('normal').find((control) => control.id === 'albedoMix')!;
+    expect([mixin.label, mixin.category, mixin.min, mixin.max, mixin.step, mixin.defaultValue]).toEqual(['Colour mixin', 'detail', 0, 2, 0.05, 0]);
+  });
+
+  it('R82 no other map kind has the colour mixin', () => {
+    for (const kind of ['albedo', 'rough', 'metal', 'ao', 'height'] as const) expect(idsFor(kind)).not.toContain('albedoMix');
   });
 
   it('R14 ranges, steps and defaults match the table', () => {
@@ -63,6 +69,7 @@ describe('imageops edit controls (R14)', () => {
     expect(hasAnyChanges('albedo', { ...values, invert: 1 })).toBe(false); // albedo has no invert
     expect(hasAnyChanges('rough', { ...createDefaultEditValues('rough'), invert: 1 })).toBe(true);
     expect(hasAnyChanges('normal', { ...createDefaultEditValues('normal'), denoise: 0.1 })).toBe(true);
+    expect(hasAnyChanges('normal', { ...createDefaultEditValues('normal'), albedoMix: 0.5 })).toBe(true);
   });
 
   it('R16 values outside a range are clamped to it', () => {

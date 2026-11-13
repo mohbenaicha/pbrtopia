@@ -31,4 +31,12 @@ describe('materialgen/masks bakeCurrentRows', () => {
     const edited: MasksRecord = { ...record(0), rows: record(0).rows.map((row) => ({ ...row, rough: 0.25 })) };
     expect(new Set(bakeCurrentRows(halves(), edited).rough.data)).toEqual(new Set([Math.round(0.25 * 255)]));
   });
+
+  it('R91 a row with the colour mixin on takes the albedo grey it is given into its roughness; without the grey the rows bake as before', () => {
+    const grey: PixelImage = { width: 8, height: 8, channels: 1, data: Uint8Array.from({ length: 64 }, (_, index) => (index % 2 === 0 ? 100 : 200)) };
+    const mixed: MasksRecord = { ...record(0), rows: record(0).rows.map((row) => ({ ...row, rough: 0.5, mix: { on: true, invert: false, rough: 1, metal: 0 } })) };
+    const withGrey = bakeCurrentRows(halves(), mixed, grey);
+    expect(new Set(withGrey.rough.data)).toEqual(new Set([103, 153]));
+    expect(new Set(bakeCurrentRows(halves(), mixed).rough.data)).toEqual(new Set([128]));
+  });
 });

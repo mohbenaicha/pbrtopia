@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CompareStage } from '../../src/ui-kit';
 
 afterEach(cleanup);
@@ -12,6 +12,29 @@ const SOURCES = [
   { id: 'b', label: 'Roughness', src: 'blob:b' },
   { id: 'c', label: 'Normal', src: 'blob:c' },
 ];
+
+describe('CompareStage overlay (imageops R80)', () => {
+  it('R80 an overlay picture is drawn once over the whole stage, with the pictures\' zoom and pan, and none when there is none', () => {
+    const putImageData = vi.fn();
+    vi.stubGlobal('ImageData', class { constructor(public data: Uint8ClampedArray, public width: number, public height: number) {} }); // jsdom has none
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ putImageData } as never);
+    const { rerender } = render(<CompareStage sources={SOURCES} />);
+    expect(screen.queryByTestId('compare-overlay')).toBeNull();
+    const rgba = new Uint8ClampedArray(2 * 2 * 4).fill(7);
+    rerender(<CompareStage sources={SOURCES} overlay={{ width: 2, height: 2, rgba }} />);
+    const canvas = screen.getByTestId('compare-overlay') as HTMLCanvasElement;
+    expect(canvas.width).toBe(2);
+    expect(canvas.style.pointerEvents).toBe('none');
+    expect(canvas.getAttribute('aria-hidden')).toBe('true');
+    expect(canvas.style.transform).toBe(screen.getAllByRole('img')[0]!.style.transform);
+    expect(putImageData).toHaveBeenCalledTimes(1);
+    expect((putImageData.mock.calls[0]![0] as ImageData).data[0]).toBe(7);
+    rerender(<CompareStage sources={SOURCES} overlay={null} />);
+    expect(screen.queryByTestId('compare-overlay')).toBeNull();
+    getContext.mockRestore();
+    vi.unstubAllGlobals();
+  });
+});
 
 const open = (props: Partial<React.ComponentProps<typeof CompareStage>> = {}) =>
   render(<CompareStage sources={SOURCES} {...props} />);

@@ -15,7 +15,7 @@ export interface MasksBuild {
   bake: BakedMaps;
 }
 
-/** Masks R50, R54: the two maps for the labels with the rows and the feather the record has now. */
-export function bakeCurrentRows(labels: PixelImage, record: MasksRecord): BakedMaps {
-  return bakeMasks({ labels, rows: rowsToBake(record.rows), feather: record.feather });
+/** Masks R50, R54, R91: the two maps for the labels with the rows and the feather the record has now; `grey` is the albedo's, for the rows with the Colour mixin on. */
+export function bakeCurrentRows(labels: PixelImage, record: MasksRecord, grey?: PixelImage): BakedMaps {
+  return bakeMasks({ labels, rows: rowsToBake(record.rows), feather: record.feather, ...(grey === undefined ? {} : { grey }) });
 }

@@ -26,7 +26,7 @@
   position: absolute;
   top: var(--shell-gap);
   bottom: var(--shell-gap);
-  z-index: 1;
+  z-index: var(--layer-panel);
   min-height: 0;
   overflow: hidden;
   border-radius: var(--shell-radius);
@@ -48,7 +48,7 @@
   top: var(--shell-gap);
   left: calc(var(--panel-left, 296px) + 2 * var(--shell-gap));
   right: calc(var(--panel-right, 288px) + 2 * var(--shell-gap));
-  z-index: 1;
+  z-index: var(--layer-panel);
   height: var(--top-bar-height);
   pointer-events: none;
 }

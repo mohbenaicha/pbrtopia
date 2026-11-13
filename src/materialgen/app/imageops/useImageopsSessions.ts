@@ -15,7 +15,7 @@ export interface GeometryOps {
 
 /** Opens op sessions on a map's working copy (imageops R7, R9). The dialogs depend on this, not on the graphics card. */
 export interface ImageopsSessions {
-  openFilter(image: PixelImage, kind: EditMapKind): Promise<FilterSession>;
+  openFilter(image: PixelImage, kind: EditMapKind, albedo?: PixelImage): Promise<FilterSession>; // the albedo is a normal map's colour mixin source (imageops R84)
   openAo(image: PixelImage, source: AoSource): Promise<OpSession<EditValues>>;
   geometry: GeometryOps;
 }
@@ -43,7 +43,7 @@ export function useImageopsSessions(): ImageopsSessions {
       return gpu.current.context;
     };
     return {
-      openFilter: async (image, kind) => createFilterSession(context(), { image, kind }),
+      openFilter: async (image, kind, albedo) => createFilterSession(context(), { image, kind, ...(albedo ? { albedo } : {}) }),
       openAo: async (image, source) => createAoSession(context(), { image, source }),
       geometry: {
         crop: async (image, kind, rect, size) => scaleRectToSquare(context(), { image, kind }, rect, size),

@@ -62,4 +62,13 @@
   --surface-over-picture: rgba(16, 16, 18, 0.85); /* behind the buttons laid over a picture (textures R4) */
   --shadow-overlay: 0 10px 30px rgba(0, 0, 0, 0.5);
   --transition-fast: 120ms ease;
+
+  /* The stack of whole components (viewport-layout R38): a dialog is drawn through a portal and is always topmost. */
+  --layer-panel: 1;
+  --layer-gutter: 2;
+  --layer-popover: 10;
+  --layer-loading: 20;
+  --layer-brand: 30;
+  --layer-setup: 50;
+  --layer-dialog: 100;
 }

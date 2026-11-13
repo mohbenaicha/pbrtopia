@@ -9,7 +9,7 @@ import type { MasksRecord } from '../record/masksRecord';
 
 /** Masks R24, R45: the heavy pure jobs (quantise, bake), each with what it takes and what it gives. */
 export interface MaskJobs {
-  bake: { input: { labels: PixelImage; record: MasksRecord }; output: BakedMaps };
+  bake: { input: { labels: PixelImage; record: MasksRecord; grey?: PixelImage }; output: BakedMaps }; // grey: the albedo's, for the Colour mixin (R91)
   /** Masks R82: the Height map under the record's height offsets, from the base the caller names (R83). */
   height: { input: { labels: PixelImage; record: MasksRecord; base: PixelImage }; output: PixelImage };
   model: { input: ModelMasksInput; output: StepOutcome<MasksBuild> };
@@ -21,8 +21,8 @@ export type MaskJobKind = keyof MaskJobs;
 export function runMaskJob<K extends MaskJobKind>(kind: K, input: MaskJobs[K]['input']): MaskJobs[K]['output'] {
   switch (kind) {
     case 'bake': {
-      const { labels, record } = input as MaskJobs['bake']['input'];
-      return bakeCurrentRows(labels, record) as MaskJobs[K]['output'];
+      const { labels, record, grey } = input as MaskJobs['bake']['input'];
+      return bakeCurrentRows(labels, record, grey) as MaskJobs[K]['output'];
     }
     case 'height': {
       const { labels, record, base } = input as MaskJobs['height']['input'];

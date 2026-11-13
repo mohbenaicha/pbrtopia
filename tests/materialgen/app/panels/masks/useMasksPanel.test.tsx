@@ -79,6 +79,82 @@ describe('materialgen/app useMasksPanel', () => {
     expect(rough[0]).toBe(Math.round(0.8 * 255)); // a pixel of label 0
   });
 
+  describe('colour mixin (masks R90-R96)', () => {
+    // The albedo's left half (label 0) alternates 100 and 200 grey by column; its right half is flat.
+    const ribbed = (): PixelImage => {
+      const data = new Uint8Array(8 * 8 * 3);
+      for (let y = 0; y < 8; y += 1) for (let x = 0; x < 8; x += 1) data.fill(x >= 4 ? 128 : x % 2 === 0 ? 100 : 200, (y * 8 + x) * 3, (y * 8 + x) * 3 + 3);
+      return { width: 8, height: 8, channels: 3, data };
+    };
+    const reads = (): { keys: string[]; readBlob: (key: string) => Promise<Blob | null> } => {
+      const keys: string[] = [];
+      const blobs = new Map<string, Blob>([['a', png(ribbed())], ['l', png(halves())]]);
+      return { keys, readBlob: async (key) => (keys.push(key), blobs.get(key) ?? null) };
+    };
+
+    it('R91 R92 turning the mixin on bakes the albedo\'s grain into the roughness of that component in one commit that writes no Height', async () => {
+      const { keys, readBlob } = reads();
+      const { view, commits } = setup(maskedState(), storedRecord(), { readBlob });
+      await waitFor(() => expect(view.result.current.table).not.toBeNull());
+      await act(async () => { view.result.current.onRowMix(0, { on: true, rough: 1, metal: 0 }); });
+      await waitFor(() => expect(commits).toHaveLength(1));
+      const { commit, record } = commits[0]!;
+      expect(commit.height).toBeUndefined();
+      expect(parseMasksRecord(record)?.rows[0]?.mix).toEqual({ on: true, invert: false, rough: 1, metal: 0 });
+      const rough = commit.bake!.rough.data;
+      const base = Math.round(0.8 * 255);
+      expect([rough[0], rough[1]]).toEqual([base - 25, base + 25]); // grey 100 and 200 about the mean 150
+      expect(rough[7]).toBe(Math.round(0.3 * 255)); // label 1 has no mixin
+      expect(keys.filter((key) => key === 'a')).toHaveLength(1);
+    });
+
+    it('R96 with the mixin off the albedo is not read, and with it on it is read once however many bakes follow', async () => {
+      const { keys, readBlob } = reads();
+      const { view, commits } = setup(maskedState(), storedRecord(), { readBlob });
+      await waitFor(() => expect(view.result.current.table).not.toBeNull());
+      await act(async () => { view.result.current.onRowRough(1, 0.5); });
+      await waitFor(() => expect(commits).toHaveLength(1));
+      expect(keys).not.toContain('a');
+      await act(async () => { view.result.current.onRowMix(0, { on: true }); });
+      await waitFor(() => expect(commits).toHaveLength(2));
+      expect(keys.filter((key) => key === 'a')).toHaveLength(1);
+    });
+
+    it('R90 R89 a mix change on several labels sets them all in one commit', async () => {
+      const { view, commits } = setup(maskedState(), storedRecord());
+      await waitFor(() => expect(view.result.current.table).not.toBeNull());
+      await act(async () => { view.result.current.onRowMix([0, 1], { on: true, invert: true }); });
+      await waitFor(() => expect(commits).toHaveLength(1));
+      expect(parseMasksRecord(commits[0]!.record)?.rows.map((row) => row.mix?.invert)).toEqual([true, true]);
+    });
+
+    it('R94 Reset all turns the mixin off and bakes without the grain', async () => {
+      const { view, commits } = setup(maskedState(), { ...storedRecord(), rows: storedRecord().rows.map((row) => ({ ...row, mix: { on: true, invert: false, rough: 1, metal: 1 } })) });
+      await waitFor(() => expect(view.result.current.table).not.toBeNull());
+      await act(async () => { view.result.current.onResetAll(); });
+      await waitFor(() => expect(commits).toHaveLength(1));
+      expect(parseMasksRecord(commits[0]!.record)?.rows.every((row) => row.mix?.on !== true)).toBe(true);
+    });
+
+    it('R90 the panel says whether there is an albedo for the mixin to read', async () => {
+      const withAlbedo = setup(maskedState(), storedRecord());
+      expect(withAlbedo.view.result.current.hasAlbedo).toBe(true);
+      const without = setup({ size: TINY_SIZE, maps: { labels: maskedState().maps.labels! } }, storedRecord());
+      expect(without.view.result.current.hasAlbedo).toBe(false);
+    });
+  });
+
+  it('R89 a value set on several labels is one bake and one commit with every one of those rows changed', async () => {
+    const { view, commits } = setup(maskedState(), storedRecord());
+    await waitFor(() => expect(view.result.current.table).not.toBeNull());
+    await act(async () => { view.result.current.onRowRough([0, 1], 0.4); });
+    await waitFor(() => expect(commits).toHaveLength(1));
+    const { commit, record } = commits[0]!;
+    expect(parseMasksRecord(record)?.rows.map((row) => row.rough)).toEqual([0.4, 0.4]);
+    expect(commit.bake!.rough.data[0]).toBe(Math.round(0.4 * 255));
+    expect(commit.bake!.rough.data[7]).toBe(Math.round(0.4 * 255));
+  });
+
   it('R79 a row change after the size changed, with no stored picture to rebuild the labels from, refuses and commits nothing', async () => {
     const { view, commits, refuse } = setup(maskedState('a', 256), storedRecord());
     await waitFor(() => expect(view.result.current.table).not.toBeNull());

@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
-import { CommitSlider, Select, type SelectOption } from '@shared/ui-kit';
+import { CommitSlider, Select, Toggle, type SelectOption } from '@shared/ui-kit';
 import { findMaterial, GENERIC, listMaterialOptions, type BaseMaterialTable } from '../table/baseMaterials';
-import type { MaskRow } from '../record/maskRows';
+import { DEFAULT_MIX, mixOf, type MaskRow, type RowMix } from '../record/maskRows';
 import './masksPanel.css';
 
 interface MaskRowViewProps {
   row: MaskRow;
+  /** How many other components are selected with this one (masks R89); a change sets them all. */
+  others?: number;
   table: BaseMaterialTable;
   disabled: boolean;
   onMaterial(name: string): void;
@@ -14,6 +16,10 @@ interface MaskRowViewProps {
   onHeight(value: number): void | Promise<unknown>;
   /** Why the Height slider is off (no Height map, masks R81), or null while it works. */
   heightDisabledReason: string | null;
+  /** A change of the Colour mixin: the switch, Invert or a released amount (masks R90). */
+  onMix(patch: Partial<RowMix>): void | Promise<unknown>;
+  /** Why the Colour mixin switch is off (no albedo map, masks R90), or null while it works. */
+  mixDisabledReason: string | null;
 }
 
 const HEIGHT_RANGE = { min: -1, max: 1, step: 0.01, format: (value: number): string => `${value < 0 ? '-' : '+'}${Math.abs(value).toFixed(2)}` };
@@ -38,12 +44,13 @@ function materialOptions(row: MaskRow, table: BaseMaterialTable): SelectOption[]
  * and the Height slider (-1 to +1, its arrow goes back to 0). A slider's reset arrow puts it back to the value of the row's chosen base material; a material that is
  * not in the table leaves the arrow with nothing to go back to.
  */
-export function MaskRowView({ row, table, disabled, onMaterial, onRough, onMetal, onHeight, heightDisabledReason }: MaskRowViewProps): React.JSX.Element {
+export function MaskRowView({ row, others = 0, table, disabled, onMaterial, onRough, onMetal, onHeight, heightDisabledReason, onMix, mixDisabledReason }: MaskRowViewProps): React.JSX.Element {
   const options = useMemo(() => materialOptions(row, table), [row, table]);
   const chosen = findMaterial(table, row.material);
+  const mix = mixOf(row);
   return (
     <div className="mask-row" role="group" aria-label={row.name}>
-      <span className="mask-row__name" title={row.description === '' ? undefined : row.description}>{row.name}</span>
+      <span className="mask-row__name" title={row.description === '' ? undefined : row.description}>{others > 0 ? `${row.name} +${others}` : row.name}</span>
       <Select
         label={`Base material of ${row.name}`}
         hideLabel
@@ -60,6 +67,14 @@ export function MaskRowView({ row, table, disabled, onMaterial, onRough, onMetal
       <div style={{ minWidth: 0 }} {...(heightDisabledReason === null ? {} : { title: heightDisabledReason })}>
         <CommitSlider label="Height" layout="row" value={row.height} onCommit={onHeight} disabled={disabled || heightDisabledReason !== null} resetTo={0} range={HEIGHT_RANGE} />
       </div>
+      <Toggle label="Colour mixin" checked={mix.on} onChange={(on) => onMix({ on })} disabled={disabled || mixDisabledReason !== null} hint={mixDisabledReason ?? 'Shapes roughness and metalness by the albedo inside this component'} />
+      {mix.on && (
+        <div className="mask-row__mixin" role="group" aria-label="Colour mixin">
+          <Toggle label="Invert" checked={mix.invert} onChange={(invert) => onMix({ invert })} disabled={disabled} />
+          <CommitSlider label="Roughness" layout="row" value={mix.rough} onCommit={(rough) => onMix({ rough })} disabled={disabled} resetTo={DEFAULT_MIX.rough} />
+          <CommitSlider label="Metalness" layout="row" value={mix.metal} onCommit={(metal) => onMix({ metal })} disabled={disabled} resetTo={DEFAULT_MIX.metal} />
+        </div>
+      )}
     </div>
   );
 }

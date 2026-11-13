@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseBaseMaterials } from '@mat/masks/table/baseMaterials';
-import { chooseMaterial, hasHeightOffset, isRowAtDefaults, makeRow, resetAllRows, resetRow, rowsToHeightOffsets, setRowValue, type MaskRow } from '@mat/masks/record/maskRows';
+import { chooseMaterial, hasHeightOffset, hasMix, isRowAtDefaults, makeRow, mixOf, resetAllRows, resetRow, rowsToBake, rowsToHeightOffsets, setRowMix, setRowValue, type MaskRow } from '@mat/masks/record/maskRows';
 
 const TABLE = parseBaseMaterials({
   'Oak Wood': [0.7, 0, [120, 80, 40]],
@@ -95,5 +95,40 @@ describe('materialgen/masks rows height offset (R81 R86)', () => {
   it('R84 hasHeightOffset is true while any row is not at 0', () => {
     expect(hasHeightOffset([row(), row({ label: 1 })])).toBe(false);
     expect(hasHeightOffset([row(), row({ label: 1, height: 0.01 })])).toBe(true);
+  });
+});
+
+describe('materialgen/masks rows colour mixin (R90 R94 R95)', () => {
+  it('R95 a row with no mix reads as off with Invert off and both amounts at 0.5', () => {
+    expect(mixOf(row())).toEqual({ on: false, invert: false, rough: 0.5, metal: 0.5 });
+    expect(hasMix([row(), row({ label: 1 })])).toBe(false);
+  });
+
+  it('R90 setRowMix changes only the named part, keeps the sliders in 0 to 1 in steps of 0.01 and ignores a number that is not a number', () => {
+    const on = setRowMix(row(), { on: true });
+    expect(mixOf(on)).toEqual({ on: true, invert: false, rough: 0.5, metal: 0.5 });
+    expect(mixOf(setRowMix(on, { invert: true, rough: 0.123 }))).toEqual({ on: true, invert: true, rough: 0.12, metal: 0.5 });
+    expect(mixOf(setRowMix(on, { metal: 3 })).metal).toBe(1);
+    expect(mixOf(setRowMix(on, { rough: -2 })).rough).toBe(0);
+    expect(mixOf(setRowMix(on, { rough: Number.NaN })).rough).toBe(0.5);
+  });
+
+  it('R94 Reset turns the mixin off with its Invert and amounts back to the defaults, and a row with the mixin on is not at its defaults', () => {
+    const mixed = setRowMix(row(), { on: true, invert: true, rough: 0.9, metal: 0.1 });
+    expect(isRowAtDefaults(mixed, TABLE)).toBe(false);
+    expect(mixOf(resetRow(mixed, TABLE))).toEqual({ on: false, invert: false, rough: 0.5, metal: 0.5 });
+    expect(isRowAtDefaults(resetRow(mixed, TABLE), TABLE)).toBe(true);
+    expect(isRowAtDefaults(setRowMix(row(), { on: false, rough: 0.9 }), TABLE)).toBe(false); // an amount moved while off is still a change from the defaults
+  });
+
+  it('R94 Reset all turns it off on every row that has it', () => {
+    const rows = resetAllRows([setRowMix(row(), { on: true }), row({ label: 1 })], TABLE);
+    expect(hasMix(rows)).toBe(false);
+  });
+
+  it('R91 only a row with the mixin on gives the bake its mix, with its Invert and the two amounts', () => {
+    expect(rowsToBake([row(), setRowMix(row({ label: 1 }), { on: true, invert: true, rough: 0.3, metal: 0.8 })])).toEqual([
+      { rough: 0.7, metal: 0 }, { rough: 0.7, metal: 0, mix: { invert: true, rough: 0.3, metal: 0.8 } },
+    ]);
   });
 });

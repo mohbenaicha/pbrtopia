@@ -1,14 +1,17 @@
 import type { PixelImage } from '@mat/workerapi';
+import { addGrain, meanGreyPerRow, type BakeMix } from './colourMixin';
 
 export interface BakeRow {
   rough: number; // 0 to 1
   metal: number; // 0 to 1
+  mix?: BakeMix; // present only for a row whose Colour mixin is on (R91)
 }
 
 export interface BakeInput {
   labels: PixelImage; // R8
   rows: readonly BakeRow[]; // the look-up tables: row k is label k
   feather: number; // 0 to 4 pixels
+  grey?: PixelImage; // the albedo's grey at the labels' size; the Colour mixin of the rows that have it reads it (R91), without it they bake plainly
 }
 
 export const MAX_FEATHER = 4;
@@ -48,18 +51,22 @@ export function blurWrapped(bytes: Uint8Array, width: number, height: number, ra
  * table value times 255, rounded; above 0 the mapped values are blurred across label boundaries by a wrapped box of that radius. A label
  * with no row uses the first row, so a stale label never reads past the table. The result depends only on the inputs.
  */
-export function bakeMasks({ labels, rows, feather }: BakeInput): { rough: PixelImage; metal: PixelImage } {
+export function bakeMasks({ labels, rows, feather, grey }: BakeInput): { rough: PixelImage; metal: PixelImage } {
   const { width, height } = labels;
   const radius = Math.min(Math.max(Math.round(feather), 0), MAX_FEATHER);
   const roughTable = rows.map((row) => toByte(row.rough));
   const metalTable = rows.map((row) => toByte(row.metal));
-  const map = (table: number[]): Uint8Array => {
+  const mixes = rows.map((row) => row.mix);
+  const mixing = grey !== undefined && grey.data.length === labels.data.length && mixes.some((mix) => mix !== undefined);
+  const means = mixing ? meanGreyPerRow(labels, grey, mixes) : null;
+  const map = (table: number[], which: 'rough' | 'metal'): Uint8Array => {
     const mapped = new Uint8Array(labels.data.length);
     for (let index = 0; index < mapped.length; index += 1) mapped[index] = table[labels.data[index]!] ?? table[0] ?? 0;
-    return radius === 0 ? mapped : blurWrapped(mapped, width, height, radius);
+    const smooth = radius === 0 ? mapped : blurWrapped(mapped, width, height, radius);
+    return means === null ? smooth : addGrain(smooth, labels, grey!, mixes, means, which); // R91: after the feather, so the grain is not blurred
   };
   return {
-    rough: { width, height, channels: 1, data: map(roughTable) },
-    metal: { width, height, channels: 1, data: map(metalTable) },
+    rough: { width, height, channels: 1, data: map(roughTable, 'rough') },
+    metal: { width, height, channels: 1, data: map(metalTable, 'metal') },
   };
 }

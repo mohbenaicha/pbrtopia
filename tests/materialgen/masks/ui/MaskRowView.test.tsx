@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseBaseMaterials, type MaskRow } from '@mat/masks';
 import { MaskRowView } from '../../../../src/materialgen/masks/ui/MaskRowView';
@@ -13,7 +13,7 @@ const row: MaskRow = {
 
 function setup(overrides: Partial<Parameters<typeof MaskRowView>[0]> = {}) {
   const actions = { onMaterial: vi.fn(), onRough: vi.fn(), onMetal: vi.fn(), onHeight: vi.fn() };
-  render(<MaskRowView row={row} table={table} disabled={false} heightDisabledReason={null} {...actions} {...overrides} />);
+  render(<MaskRowView row={row} table={table} disabled={false} heightDisabledReason={null} onMix={vi.fn()} mixDisabledReason={null} {...actions} {...overrides} />);
   return actions;
 }
 
@@ -133,6 +133,57 @@ describe('materialgen/masks MaskRowView (masks R48 R57)', () => {
     expect((screen.getByLabelText('Height') as HTMLInputElement).disabled).toBe(true);
     expect(screen.getByLabelText('Height').closest('[title]')?.getAttribute('title')).toBe('Add a height map first');
     expect((screen.getByLabelText('Roughness') as HTMLInputElement).disabled).toBe(false);
+  });
+
+  describe('colour mixin (R90)', () => {
+    const mixOn: MaskRow = { ...row, mix: { on: true, invert: false, rough: 0.5, metal: 0.5 } };
+    const withMix = (overrides: Partial<Parameters<typeof MaskRowView>[0]> = {}) => {
+      const onMix = vi.fn();
+      setup({ onMix, mixDisabledReason: null, ...overrides });
+      return onMix;
+    };
+    const mixGroup = (): HTMLElement => screen.getByRole('group', { name: 'Colour mixin' });
+
+    it('R90 the Colour mixin switch comes after Height and, off, shows no Invert and no mixin sliders', () => {
+      withMix();
+      const toggle = screen.getByRole('switch', { name: 'Colour mixin' }) as HTMLInputElement;
+      expect(toggle.checked).toBe(false);
+      expect(screen.queryByRole('switch', { name: 'Invert' })).toBeNull();
+      expect(screen.queryByRole('group', { name: 'Colour mixin' })).toBeNull();
+      const height = screen.getByLabelText('Height');
+      expect(height.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('R90 on, it shows an indented Invert switch (off) and Roughness and Metalness sliders at 0.50', () => {
+      withMix({ row: mixOn });
+      const group = mixGroup();
+      expect((within(group).getByRole('switch', { name: 'Invert' }) as HTMLInputElement).checked).toBe(false);
+      expect(within(group).getByLabelText('Roughness')).toBeTruthy();
+      expect(within(group).getByLabelText('Metalness')).toBeTruthy();
+      expect(within(group).getAllByText('0.50')).toHaveLength(2);
+    });
+
+    it('R90 the switches report their change and a released slider reports its value; the arrows go back to 0.5', () => {
+      const onMix = withMix({ row: { ...mixOn, mix: { on: true, invert: false, rough: 0.8, metal: 0.5 } } });
+      fireEvent.click(screen.getByRole('switch', { name: 'Invert' }));
+      expect(onMix).toHaveBeenLastCalledWith({ invert: true });
+      const slider = within(mixGroup()).getByLabelText('Metalness');
+      fireEvent.pointerDown(slider);
+      fireEvent.change(slider, { target: { value: '0.9' } });
+      fireEvent.pointerUp(slider);
+      expect(onMix).toHaveBeenLastCalledWith({ metal: 0.9 });
+      fireEvent.click(within(mixGroup()).getByRole('button', { name: 'Reset Roughness' }));
+      expect(onMix).toHaveBeenLastCalledWith({ rough: 0.5 });
+      fireEvent.click(screen.getByRole('switch', { name: 'Colour mixin' }));
+      expect(onMix).toHaveBeenLastCalledWith({ on: false });
+    });
+
+    it('R90 with no albedo the switch is disabled and says "No albedo map"', () => {
+      withMix({ mixDisabledReason: 'No albedo map' });
+      const toggle = screen.getByRole('switch', { name: 'Colour mixin' }) as HTMLInputElement;
+      expect(toggle.disabled).toBe(true);
+      expect(toggle.closest('label')?.getAttribute('title')).toBe('No albedo map');
+    });
   });
 
   it('R12 a disabled block cannot be changed', () => {

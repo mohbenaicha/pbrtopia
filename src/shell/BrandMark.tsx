@@ -12,7 +12,7 @@ const markStyle: CSSProperties = {
   width: 'auto',
   pointerEvents: 'none',
   userSelect: 'none',
-  zIndex: 1000, // above the floating panels (z-index 1)
+  zIndex: 'var(--layer-brand)', // above the floating panels, below every popover-blocking layer and dialog (viewport-layout R38)
 };
 
 /** Branding R1: the app's wide logo as a see-through mark in the window's bottom left corner. Decoration only: no clicks, no alt text. */

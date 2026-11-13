@@ -3,7 +3,7 @@
   position: absolute;
   top: var(--shell-gap);
   bottom: var(--shell-gap);
-  z-index: 2;
+  z-index: var(--layer-gutter);
   width: 10px;
   cursor: col-resize;
   touch-action: none;

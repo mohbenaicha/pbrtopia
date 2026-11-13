@@ -20,18 +20,20 @@ export interface FilterSessionOptions {
   image: PixelImage; // the working copy, S x S
   kind: EditMapKind;
   previewSize?: number; // P; min(S, 1024) by default
+  albedo?: PixelImage; // a normal map's colour mixin reads it (R82-R84); any size, sampled by uv; without it the mixin does nothing
 }
 
-const MODE_INDEX: Record<SpatialMode, number> = { blur: 0, denoise: 1, sharpness: 2, highpass: 3, clarity: 4, edge: 5, scale: 6 };
+const MODE_INDEX: Record<SpatialMode, number> = { blur: 0, denoise: 1, sharpness: 2, highpass: 3, clarity: 4, edge: 5, scale: 6, mix: 7 };
 
 const vec2 = (v: [number, number]): Vector2 => new Vector2(v[0], v[1]);
 const vec3 = (v: [number, number, number]): Vector3 => new Vector3(v[0], v[1], v[2]);
 const vec4 = (v: [number, number, number, number]): Vector4 => new Vector4(v[0], v[1], v[2], v[3]);
 
-export function createFilterSession(ctx: GpuContext, { image, kind, previewSize }: FilterSessionOptions): FilterSession {
+export function createFilterSession(ctx: GpuContext, { image, kind, previewSize, albedo }: FilterSessionOptions): FilterSession {
   const size = image.width;
   const preview = previewSize ?? Math.min(size, MAX_PREVIEW_SIZE);
   const source: Texture = ctx.upload(toRgba(image), size, size, { decodeSrgb: kind === 'albedo' });
+  const albedoTexture: Texture | null = kind === 'normal' && albedo !== undefined ? ctx.upload(toRgba(albedo), albedo.width, albedo.height, { decodeSrgb: true }) : null; // R84: owned here, released on close
   const channels = kind === 'albedo' || kind === 'normal' ? 3 : 1;
   let range: LumaRange | null = null;
   let result: { lease: RtLease<WebGLRenderTarget>; size: number } | null = null;
@@ -57,7 +59,7 @@ export function createFilterSession(ctx: GpuContext, { image, kind, previewSize 
 
   async function render(values: EditValues, at: number): Promise<PixelImage> {
     if (closed) throw new Error('The filter session is closed.');
-    const plan = planSpatialPasses(kind, values);
+    const plan = planSpatialPasses(kind, values).filter((pass) => pass.mode !== 'mix' || albedoTexture !== null);
     if (range === null) range = computeLumaRange(image, kind); // once per session, shared by preview and Apply (R20)
     const tone = buildToneUniforms(kind, values, range);
     let current: Texture = source;
@@ -66,6 +68,7 @@ export function createFilterSession(ctx: GpuContext, { image, kind, previewSize 
       spatialPass ??= ctx.createPass(SPATIAL_FRAGMENT, {
         uSource: { value: null }, uMode: { value: 0 }, uAmount: { value: 0 }, uBands: { value: new Vector3(1, 1, 1) },
         uTexelsToUv: { value: 1 / size }, uPassTexel: { value: new Vector2() }, uNormal: { value: false },
+        uAlbedoTex: { value: albedoTexture ?? source },
       });
       plan.forEach((pass, index) => {
         const target = targets[index % 2]!;
@@ -115,6 +118,7 @@ export function createFilterSession(ctx: GpuContext, { image, kind, previewSize 
       if (spatialPass) ctx.releasePass(spatialPass);
       if (tonePass) ctx.releasePass(tonePass);
       source.dispose();
+      albedoTexture?.dispose();
     },
   };
 }

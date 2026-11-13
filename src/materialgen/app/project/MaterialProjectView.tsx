@@ -139,6 +139,7 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
             colorMode={record.colorMode}
             canWrite={canWrite}
             onToolViewChange={setToolView}
+            masksRecord={record.masks}
           >
             <ExportSection dialog={exportDialog} />
           </MaterialMapsPanel>
