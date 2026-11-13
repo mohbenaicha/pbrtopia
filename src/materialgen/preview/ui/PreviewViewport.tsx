@@ -15,6 +15,9 @@ import { usePreviewPrefs } from './usePreviewPrefs';
 import { usePreviewScene } from './usePreviewScene';
 import { usePreviewThumbnail } from './usePreviewThumbnail';
 import { useToolViewRelease, type ToolView } from './useToolViewRelease';
+import type { ToolLiveFeed } from './toolLiveFeed';
+import { pickLiveTransform, useLiveToolFeed } from './useLiveToolTransform';
+import { useViewAngleReport } from './useViewAngleReport';
 
 export interface PreviewViewportProps {
   store: Pick<MaterialProjectStore, 'loadAppSettings' | 'saveAppSettings'>;
@@ -33,6 +36,8 @@ export interface PreviewViewportProps {
 export interface PreviewTool {
   view: ToolView | null;
   onSettled: () => void;
+  live?: ToolLiveFeed; // imageops R75: the ticks of a dragged setting, put on the scene once per frame without a render of the owner
+  onViewAngle?: (degrees: number) => void; // imageops R72, R74: the turn of the picture in the view; present only while a plane picker is on screen (the picker follows it)
 }
 
 /** What the app hands the Material Masks icon and the overlay (R28, R40). */
@@ -54,6 +59,7 @@ export interface PreviewThumbnailSink {
 const HINT = 'Drag to rotate, scroll to zoom'; // preview R21
 const NO_TOOL: PreviewTool = { view: null, onSettled: () => undefined };
 const NO_PENDING: PendingMaps = {};
+const NO_REPORT = (): void => undefined;
 
 /** The 3D preview of the open material (preview spec): the shared viewport without a model, one mesh in previewGroup, turned by dragging. */
 export function PreviewViewport({ store, mapsState, readBlob, values, onValuesChange, shading, thumbnail, masks, tool = NO_TOOL, pending = NO_PENDING }: PreviewViewportProps): React.JSX.Element {
@@ -64,10 +70,13 @@ export function PreviewViewport({ store, mapsState, readBlob, values, onValuesCh
   const { prefs, loaded: prefsLoaded, change: changePrefs, reset: resetPrefs } = usePreviewPrefs(store);
   const shownState = useMemo(() => withPendingMaps(mapsState, pending), [mapsState, pending]);
   const { maps, loaded, keys } = usePreviewMaps(shownState, readBlob, pending);
-  const toolTransform = useToolViewRelease(tool.view, keys, tool.onSettled);
+  const toolTransform = pickLiveTransform(tool.view, tool.live, useToolViewRelease(tool.view, keys, tool.onSettled));
   const maskOverlay = useMemo(() => ({ on: masks.overlay, opacity: prefs.maskOverlayOpacity, palette: masks.palette }), [masks.overlay, masks.palette, prefs.maskOverlayOpacity]);
   // the scene is built once the saved mesh and resolution are known, so a saved Plane never shows a Ball first
   const scene = usePreviewScene(prefsLoaded ? viewport : null, { prefs, values, mapAdjust: settings.mapAdjust, maps, shading, maskOverlay, maskHighlight: masks.highlight ?? null, toolTransform });
+  useLiveToolFeed(scene, tool.view, tool.live);
+  const { onViewAngle } = tool;
+  useViewAngleReport(scene, onViewAngle !== undefined, onViewAngle ?? NO_REPORT); // the owner hands the reader over only while it wants the angle
 
   const capture = useMemo(() => (viewport === null ? null : () => viewport.captureThumbnail()), [viewport]);
   const saveThumbnail = usePreviewThumbnail({ scene, capture, maps, loaded, enabled: thumbnail.enabled, save: thumbnail.save });

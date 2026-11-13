@@ -1,4 +1,4 @@
-import { QUADRANTS, type CropEdge, type CropRect, type MirrorPlan, type Quadrant } from '@mat/imageops';
+import { QUADRANTS, type CropEdge, type CropRect, type MirrorPlan, type Quadrant, type SeamParams } from '@mat/imageops';
 import type { ToolMarks, ToolPlan, ToolQuadrant, ToolTransform } from '@mat/preview';
 
 // Imageops R54: the panels hold pixels of S and quadrant names; the viewport's shaders take fractions of the picture and quadrant indexes.
@@ -11,6 +11,9 @@ export const cropTransform = (rect: CropRect, size: number, edge: CropEdge | nul
   rect: { x: rect.x / size, y: rect.y / size, width: rect.width / size, height: rect.height / size },
   edge,
 });
+
+/** The Blend edges settings of the panel (the depth as a fraction of the side, the Canny profile or none) as the viewport's transform. */
+export const seamTransform = ({ depth, profile }: SeamParams): ToolTransform => ({ kind: 'seam', depth, profile });
 
 /** The mirror plan of the panel (null: none fits) and its selected quadrants as the viewport's transform. */
 export function mirrorTransform(plan: MirrorPlan | null, selection: ReadonlySet<Quadrant>): ToolTransform {

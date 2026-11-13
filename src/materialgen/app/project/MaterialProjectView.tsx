@@ -4,7 +4,7 @@ import { AddonsButton } from '../addons/AddonsButton';
 import { AppShell, TopBar, rememberOpenProject, usePanelWidths, useProjectLock, useStorageWarning } from '@shared/shell';
 import { LoadingOverlay } from '@shared/ui-kit';
 import { parseMasksRecord } from '@mat/masks';
-import { PreviewViewport, type PreviewMasks, type PreviewShading, type PreviewThumbnailSink, type PreviewTool, type ToolView } from '@mat/preview';
+import { PreviewViewport, createToolLiveFeed, type PreviewMasks, type PreviewShading, type PreviewThumbnailSink, type PreviewTool, type ToolView } from '@mat/preview';
 import { DEFAULT_PREVIEW_VALUES, type MaterialProjectStore, type PreviewValues } from '@mat/storage';
 import { APP_ID } from '../appIdentity';
 import { useMasksPackagePrompt } from '../masksPackage/useMasksPackagePrompt';
@@ -14,6 +14,9 @@ import { ExportSection, exportUnavailableReason } from '../panels/export/ExportS
 import { useExportDialog } from '../panels/export/useExportDialog';
 import { MaterialGeneratePanel } from '../panels/MaterialGeneratePanel';
 import { MaterialMapsPanel } from '../panels/MaterialMapsPanel';
+import { ToolLiveContext } from '../panels/tools/ToolLiveContext';
+import { ViewAngleContext, useViewAngleWatched } from '../panels/tools/ViewAngleContext';
+import { createViewAngleStore } from '../panels/tools/viewAngleStore';
 import { loadBaseMaterials } from '../panels/masks/loadBaseMaterials';
 import { describeMasksModel } from '../panels/masks/masksModelControls';
 import { MasksControls } from '../panels/masks/MasksControls';
@@ -58,7 +61,13 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
   const [shading, setShading] = useState<PreviewShading>('lit'); // the selector is at the top of the left panel, the preview draws it (preview R51)
   const [toolView, setToolView] = useState<ToolView | null>(null); // the transform an open Crop or Mirror puts on the maps in the viewport (imageops R53, preview R58)
   const releaseToolView = useCallback(() => setToolView(null), []);
-  const previewTool = useMemo<PreviewTool>(() => ({ view: toolView, onSettled: releaseToolView }), [toolView, releaseToolView]);
+  const viewAngle = useMemo(createViewAngleStore, []); // the turn of the picture in the viewport, for the plane picker of an open Crop or Mirror (imageops R72)
+  const pickerOpen = useViewAngleWatched(viewAngle); // the viewport reads the angle only while a plane picker is on screen (R74)
+  const toolLive = useMemo(() => createToolLiveFeed(), []); // the ticks of a dragged tool setting, past this view's state (imageops R75)
+  const previewTool = useMemo<PreviewTool>(
+    () => ({ view: toolView, onSettled: releaseToolView, live: toolLive, ...(pickerOpen ? { onViewAngle: viewAngle.set } : {}) }),
+    [toolView, releaseToolView, toolLive, viewAngle, pickerOpen],
+  );
   const maskView = useMaskView();
   const maskPalette = useMemo(() => (record === null ? null : (parseMasksRecord(record.masks)?.palette ?? null)), [record?.masks]);
 
@@ -116,6 +125,8 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
       }
       left={
         record === null ? null : (
+          <ViewAngleContext.Provider value={viewAngle}>
+          <ToolLiveContext.Provider value={toolLive}>
           <MaterialMapsPanel
             shading={shading}
             onShadingChange={setShading}
@@ -131,6 +142,8 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
           >
             <ExportSection dialog={exportDialog} />
           </MaterialMapsPanel>
+          </ToolLiveContext.Provider>
+          </ViewAngleContext.Provider>
         )
       }
       viewport={

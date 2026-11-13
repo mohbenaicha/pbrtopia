@@ -1,3 +1,5 @@
+import { SEAM_GLSL } from './seamGlsl';
+
 // Imageops R24-R40: the fragment shaders of the geometry ops. Texel (x, y) is row y of the pixel array (v = (y + 0.5) / size).
 
 const SRGB_ENCODE = `
@@ -87,5 +89,20 @@ void main() {
   }
   vec3 color = sum / (uTaps.x * uTaps.y);
   if (uNormal) color = renormalise(color);
+  gl_FragColor = vec4(uEncodeSrgb ? encodeSrgb(color) : color, 1.0);
+}`;
+
+// R64, R68: Blend edges. The shared blend of seamGlsl.ts evaluated at each result texel; v = 0 is the top row here, so the maps are not flipped. Albedo is
+// decoded by the upload and encoded last (R4); every other map is written as it is blended.
+export const SEAM_FRAGMENT = `${SRGB_ENCODE}
+${SEAM_GLSL}
+uniform sampler2D uSource;
+uniform sampler2D uProfile;
+uniform float uDepth;
+uniform bool uCanny;
+uniform bool uEncodeSrgb;
+varying vec2 vUv;
+void main() {
+  vec3 color = seamBlend(uSource, uProfile, uCanny, uDepth, vUv, 0.0, vec2(0.0), vec2(0.0)).rgb;
   gl_FragColor = vec4(uEncodeSrgb ? encodeSrgb(color) : color, 1.0);
 }`;

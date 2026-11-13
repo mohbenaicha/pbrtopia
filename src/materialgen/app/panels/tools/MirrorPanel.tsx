@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Checkbox, SegmentedControl } from '@shared/ui-kit';
-import { QUADRANTS, ToolPanel, availableMirrorModes, planMirror, toggleQuadrant, type MirrorMode, type MirrorPlan, type Quadrant } from '@mat/imageops';
+import { SegmentedControl } from '@shared/ui-kit';
+import { PlanePicker } from './PlanePicker';
+import { ToolPanel, availableMirrorModes, planMirror, toggleQuadrant, type MirrorMode, type MirrorPlan, type Quadrant } from '@mat/imageops';
 import { useToolApply, type ToolOutcome } from './useToolApply';
 
 interface MirrorPanelProps {
@@ -18,7 +19,7 @@ const MODES: ReadonlyArray<{ value: MirrorMode; label: string }> = [
 const START: ReadonlySet<Quadrant> = new Set<Quadrant>(['TL', 'TR']);
 
 /**
- * Imageops R32, R56, R57: which quadrants to mirror and how. The viewport shows the result and draws a line on the outer edges of the quadrants the
+ * Imageops R32, R56, R57, R71: which quadrants to mirror (the corner handles of the plane picker) and how (the mode switch under it). The viewport shows the result and draws a line on the outer edges of the quadrants the
  * mirror copies from. The selection is always a corner or a half (toggleQuadrant), so a mode always fits; each mode is offered only when it fits.
  */
 export function MirrorPanel({ onChange, onApply, onClose }: MirrorPanelProps): React.JSX.Element {
@@ -45,17 +46,15 @@ export function MirrorPanel({ onChange, onApply, onClose }: MirrorPanelProps): R
       onCancel={onClose}
       onApply={() => { if (plan !== null) void apply(plan); }}
     >
-      <div className="mirror-grid" role="group" aria-label="Quadrants to mirror">
-        {QUADRANTS.map((quadrant) => (
-          <Checkbox key={quadrant} label={quadrant} checked={selection.has(quadrant)} onChange={() => toggle(quadrant)} />
-        ))}
+      <PlanePicker handles="corners" selected={selection} onCorner={toggle} />
+      <div className="tool-panel__center">
+        <SegmentedControl
+          label="Mirror mode"
+          options={MODES.map(({ value, label }) => ({ value, label, disabled: !available.includes(value) }))}
+          value={mode ?? chosen}
+          onChange={setChosen}
+        />
       </div>
-      <SegmentedControl
-        label="Mirror mode"
-        options={MODES.map(({ value, label }) => ({ value, label, disabled: !available.includes(value) }))}
-        value={mode ?? chosen}
-        onChange={setChosen}
-      />
     </ToolPanel>
   );
 }

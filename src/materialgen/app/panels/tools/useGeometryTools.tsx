@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon, IconButton } from '@shared/ui-kit';
-import { editKindOf, type CropRect, type MirrorPlan } from '@mat/imageops';
+import { editKindOf, type CropRect, type MirrorPlan, type PixelImage, type SeamParams } from '@mat/imageops';
 import { kindLabel, readMapPixels, type MapKind, type MapsController, type MapsState } from '@mat/maps';
 import type { ToolTransform, ToolView } from '@mat/preview';
 import type { ColorMode } from '@mat/storage';
 import { applyGeometryOp, type GeometryOpResult, type GeometryPorts } from '../../imageops/applyGeometryOp';
 import type { GeometryOps } from '../../imageops/useImageopsSessions';
 import { GeometryToolPanel, type GeometryToolName } from './GeometryToolPanel';
+import { ToolLiveContext } from './ToolLiveContext';
 import type { ToolOutcome } from './useToolApply';
 
 /** The transform an open tool puts on the viewport's maps (preview R58); `hold` is set once Apply worked, to keep it until the committed maps are shown (imageops R59). */
@@ -30,14 +31,15 @@ interface GeometryToolsInput {
   onToolViewChange(view: HeldToolView | null): void;
 }
 
-const TOOL_LABEL: Record<GeometryToolName, string> = { crop: 'Crop', mirror: 'Mirror' };
+const TOOL_LABEL: Record<GeometryToolName, string> = { crop: 'Crop', mirror: 'Mirror', seam: 'Blend edges' };
+const EDGE_SOURCE_KINDS = ['albedo', 'height']; // imageops R66: the map the Canny edges are found in, the first one the project has; any picture map when neither is there
 
 /** The working keys of every map and the side, joined: changes when anything under an open panel changes (imageops R61). */
 const signatureOf = (state: MapsState): string =>
   `${state.size ?? ''}|${(Object.keys(state.maps) as MapKind[]).map((kind) => `${kind}:${state.maps[kind]?.workingKey ?? ''}`).join(',')}`;
 
 /**
- * Imageops R20, R29-R36, R52-R62: Crop, Mirror and Swap diagonals, each changing every picture map at once and undone as one step.
+ * Imageops R20, R29-R36, R52-R70: Crop, Mirror, Swap diagonals and Blend edges, each changing every picture map at once and undone as one step.
  * The buttons go in the Maps heading bar; the open panel is drawn where the caller puts it, in place of the cards.
  */
 export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, opOpen, busy, exclusive, geometry, controller, readBlob, onToolOpenChange, onToolViewChange }: GeometryToolsInput): { buttons: ReactNode; panel: ReactNode } {
@@ -46,6 +48,8 @@ export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, o
   const ownApply = useRef(false); // set while this panel's own Apply is changing the maps, which is not a reason to cancel
   const applied = useRef(false);
   const lastTransform = useRef<ToolTransform | null>(null);
+  const seamShown = useRef(false); // R75: the viewport's view is already open for Blend edges
+  const live = useContext(ToolLiveContext);
   const size = state.size;
   const signature = signatureOf(state);
   const hasMaps = size !== null && (Object.keys(state.maps) as MapKind[]).some((kind) => editKindOf(kind) !== null); // the labels are not edited as a picture
@@ -69,6 +73,8 @@ export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, o
     ownApply.current = false;
     applied.current = false;
     lastTransform.current = null;
+    seamShown.current = false;
+    live.clear();
     onToolOpenChange(next !== null);
   };
   const close = (): void => {
@@ -95,6 +101,7 @@ export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, o
     if (tool === null || opened.current === null || signature === opened.current || ownApply.current) return;
     controller.refuse(`The maps changed. ${TOOL_LABEL[tool]} was cancelled.`);
     onToolViewChange(null);
+    live.clear();
     setTool(null);
     opened.current = null;
     onToolOpenChange(false);
@@ -109,11 +116,21 @@ export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, o
         controller.refuse('Could not apply. Nothing changed.'); // the file could not be read or saved
       }
     });
-  const button = (label: string, icon: 'crop' | 'mirror' | 'swap', onClick: () => void): React.JSX.Element => (
+  const readEdgeSource = async (): Promise<PixelImage | null> => {
+    const kind = EDGE_SOURCE_KINDS.find((candidate) => baseKeys[candidate] !== undefined) ?? Object.keys(baseKeys)[0];
+    return kind === undefined ? null : readMapPixels(await readBlob(baseKeys[kind]!));
+  };
+  const button = (label: string, icon: 'crop' | 'mirror' | 'swap' | 'seam', onClick: () => void): React.JSX.Element => (
     <IconButton label={label} icon={<Icon name={icon} size={16} />} disabled={reason !== undefined} {...(reason ? { disabledReason: reason } : {})} onClick={onClick} />
   );
+  // R75: the first Blend edges transform opens the viewport's view through the owner's state; every tick after it goes to the live feed alone (no render above the viewport).
   const onTransform = (transform: ToolTransform): void => {
     lastTransform.current = transform;
+    if (transform.kind === 'seam') {
+      live.push(transform);
+      if (seamShown.current) return;
+      seamShown.current = true;
+    }
     onToolViewChange({ transform, baseKeys, hold: false });
   };
 
@@ -123,6 +140,7 @@ export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, o
         {button('Crop', 'crop', () => open('crop'))}
         {button('Mirror', 'mirror', () => open('mirror'))}
         {button('Swap diagonals', 'swap', () => void swap())}
+        {button('Blend edges', 'seam', () => open('seam'))}
       </>
     ),
     panel:
@@ -133,6 +151,8 @@ export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, o
           onTransform={onTransform}
           onApplyCrop={(rect: CropRect) => apply('Crop', (image, kind) => geometry.crop(image, kind, rect, size))}
           onApplyMirror={(plan: MirrorPlan) => apply('Mirror', (image, kind) => geometry.mirror(image, kind, plan))}
+          onApplySeam={(params: SeamParams) => apply('Blend edges', (image, kind) => geometry.seam(image, kind, params))}
+          readEdgeSource={readEdgeSource}
           onClose={close}
         />
       ) : null,

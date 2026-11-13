@@ -63,11 +63,22 @@
   gap: var(--space-2) var(--space-3);
 }
 
-/* Imageops R57: the four quadrants laid out as the picture is. */
-.mirror-grid {
-  display: grid;
-  grid-template-columns: repeat(2, max-content);
-  gap: var(--space-2) var(--space-5);
+/* Imageops R57: the mode switch sits centred under the plane picker. */
+.tool-panel__center {
+  display: flex;
+  justify-content: center;
+}
+
+/* Imageops R29, R65: a slider row in a tool panel stays inside the panel: the label and the number keep their room, the track gives way. */
+.tool-panel .ui-slider[data-layout='row'] {
+  grid-template-columns: 5.25rem minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.tool-panel .ui-slider input[type='range'] {
+  min-width: 0;
+  width: 100%;
 }
 
 .tool-panel__readout {

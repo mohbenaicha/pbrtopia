@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { planMirror, type Quadrant } from '@mat/imageops';
-import { cropTransform, mirrorTransform } from '@mat/app/panels/tools/toolTransformOf';
+import { cropTransform, mirrorTransform, seamTransform } from '@mat/app/panels/tools/toolTransformOf';
 
 describe('materialgen/app toolTransformOf', () => {
   it('imageops R54 a crop rectangle in pixels of S becomes fractions of the picture', () => {
@@ -36,5 +36,13 @@ describe('materialgen/app toolTransformOf', () => {
 
   it('imageops R56 no plan shows each quadrant as it is and still marks the selection', () => {
     expect(mirrorTransform(null, new Set<Quadrant>(['TR', 'BR']))).toEqual({ kind: 'mirror', plan: null, marked: [false, true, false, true] });
+  });
+});
+
+describe('materialgen/app seamTransform', () => {
+  it('imageops R67 the Blend edges depth and profile become the viewport transform as they are', () => {
+    const profile = new Float32Array([0.1, 0.2, 0.3, 0.4]);
+    expect(seamTransform({ depth: 0.225, profile: null })).toEqual({ kind: 'seam', depth: 0.225, profile: null });
+    expect(seamTransform({ depth: 0.1, profile })).toEqual({ kind: 'seam', depth: 0.1, profile });
   });
 });

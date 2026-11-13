@@ -2,7 +2,9 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MapsController, MapsState } from '@mat/maps';
+import { ToolLiveContext } from '@mat/app/panels/tools/ToolLiveContext';
 import { useGeometryTools } from '@mat/app/panels/tools/useGeometryTools';
+import { createToolLiveFeed } from '@mat/preview/ui/toolLiveFeed';
 import { encodePng, type PixelImage } from '../../../../../src/materialgen/maps/png/pngCodec';
 
 afterEach(cleanup);
@@ -29,7 +31,7 @@ function ToolsSection(input: ToolsInput): React.JSX.Element {
 function show(patch: Partial<ToolsInput> = {}) {
   readBlob.mockClear();
   const controller = { applyEdits: vi.fn(async () => true), refuse: vi.fn() } as unknown as MapsController & { applyEdits: ReturnType<typeof vi.fn>; refuse: ReturnType<typeof vi.fn> };
-  const geometry = { crop: vi.fn(async (image: PixelImage) => image), mirror: vi.fn(async (image: PixelImage) => image), swap: vi.fn(async (image: PixelImage) => image) };
+  const geometry = { crop: vi.fn(async (image: PixelImage) => image), mirror: vi.fn(async (image: PixelImage) => image), swap: vi.fn(async (image: PixelImage) => image), seam: vi.fn(async (image: PixelImage) => image) };
   const onToolOpenChange = vi.fn();
   const onToolViewChange = vi.fn();
   const props = {
@@ -47,8 +49,10 @@ function show(patch: Partial<ToolsInput> = {}) {
     onToolViewChange,
     ...patch,
   } as ToolsInput;
-  const view = render(<ToolsSection {...props} />);
-  return { controller, geometry, onToolOpenChange, onToolViewChange, rerender: (next: Partial<ToolsInput>) => view.rerender(<ToolsSection {...props} {...next} />) };
+  const live = createToolLiveFeed({ request: () => 0, cancel: () => undefined }); // the viewport's live feed (R75); no frame ever runs here, the tests read what it holds
+  const wrap = (next: ToolsInput): React.JSX.Element => <ToolLiveContext.Provider value={live}><ToolsSection {...next} /></ToolLiveContext.Provider>;
+  const view = render(wrap(props));
+  return { controller, geometry, live, onToolOpenChange, onToolViewChange, rerender: (next: Partial<ToolsInput>) => view.rerender(wrap({ ...props, ...next })) };
 }
 const tool = (name: string): HTMLButtonElement => screen.getByRole('button', { name }) as HTMLButtonElement;
 
@@ -128,11 +132,11 @@ describe('materialgen/app ToolsSection', () => {
     const { onToolViewChange } = show();
     fireEvent.click(tool('Crop'));
     const top = screen.getByRole('button', { name: 'Top' });
-    fireEvent.mouseEnter(top.parentElement!);
+    fireEvent.mouseEnter(top);
     expect(onToolViewChange).toHaveBeenLastCalledWith(expect.objectContaining({ transform: { kind: 'crop', rect: { x: 0, y: 0, width: 1, height: 1 }, edge: 'top' } }));
     fireEvent.click(top);
     expect(onToolViewChange).toHaveBeenLastCalledWith(expect.objectContaining({ transform: { ...CROPPED_TOP, edge: 'top' } }));
-    fireEvent.mouseLeave(top.parentElement!);
+    fireEvent.mouseLeave(top);
     expect(onToolViewChange).toHaveBeenLastCalledWith(expect.objectContaining({ transform: CROPPED_TOP }));
   });
 
@@ -140,7 +144,7 @@ describe('materialgen/app ToolsSection', () => {
     const { onToolViewChange } = show();
     fireEvent.click(tool('Mirror'));
     expect(onToolViewChange).toHaveBeenLastCalledWith(expect.objectContaining({ transform: expect.objectContaining({ kind: 'mirror', marked: [true, true, false, false] }), hold: false }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'BL' }));
+    fireEvent.click(screen.getByRole('button', { name: 'BL' }));
     expect(onToolViewChange).toHaveBeenLastCalledWith(expect.objectContaining({ transform: expect.objectContaining({ kind: 'mirror' }) }));
   });
 
@@ -219,9 +223,79 @@ describe('materialgen/app ToolsSection', () => {
   });
 
   it('R12 a failed swap is reported as a message and nothing is committed', async () => {
-    const { controller } = show({ geometry: { crop: vi.fn(), mirror: vi.fn(), swap: vi.fn(async () => { throw new Error('lost'); }) } });
+    const { controller } = show({ geometry: { crop: vi.fn(), mirror: vi.fn(), swap: vi.fn(async () => { throw new Error('lost'); }), seam: vi.fn() } });
     fireEvent.click(tool('Swap diagonals'));
     await waitFor(() => expect(controller.refuse).toHaveBeenCalledWith('Could not apply (graphics error). Nothing changed.'));
     expect(controller.applyEdits).not.toHaveBeenCalled();
+  });
+
+  it('R63 Blend edges is a button after Swap diagonals that opens its panel and is disabled with no maps', () => {
+    const { onToolOpenChange } = show();
+    fireEvent.click(tool('Blend edges'));
+    expect(screen.getByRole('region', { name: 'Blend edges' })).toBeTruthy();
+    expect(onToolOpenChange).toHaveBeenLastCalledWith(true);
+    cleanup();
+    show({ state: noMaps });
+    expect(tool('Blend edges').disabled).toBe(true);
+  });
+
+  it('R67 R69 opening Blend edges reads nothing; the viewport is told the depth at once', () => {
+    const { onToolViewChange } = show();
+    fireEvent.click(tool('Blend edges'));
+    expect(readBlob).not.toHaveBeenCalled();
+    expect(onToolViewChange).toHaveBeenLastCalledWith({ transform: { kind: 'seam', depth: 0.225, profile: null }, baseKeys: { albedo: 'a1', normal: 'n1' }, hold: false });
+  });
+
+  it('R75 Blend edges opens the viewport\'s view through state once; every slider tick after that goes to the live feed only', () => {
+    const { onToolViewChange, live } = show();
+    fireEvent.click(tool('Blend edges'));
+    expect(onToolViewChange).toHaveBeenCalledTimes(1);
+    expect(live.latest()).toEqual({ kind: 'seam', depth: 0.225, profile: null }); // the opening is also the feed's first value
+    for (const value of ['60', '70', '80', '90']) fireEvent.change(screen.getByRole('slider', { name: 'Fade start' }), { target: { value } });
+    expect(onToolViewChange).toHaveBeenCalledTimes(1); // no state change above the viewport for any tick
+    expect(live.latest()).toEqual({ kind: 'seam', depth: 0.05, profile: null });
+  });
+
+  it('R75 closing or cancelling Blend edges empties the feed, and opening it again starts through state again', () => {
+    const { onToolViewChange, live } = show();
+    fireEvent.click(tool('Blend edges'));
+    fireEvent.change(screen.getByRole('slider', { name: 'Fade start' }), { target: { value: '80' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(live.latest()).toBeNull();
+    expect(onToolViewChange).toHaveBeenLastCalledWith(null);
+    onToolViewChange.mockClear();
+    fireEvent.click(tool('Blend edges'));
+    expect(onToolViewChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('R75 Apply after slider ticks uses the last transform the panel sent, and holds it in the viewport', async () => {
+    const { geometry, onToolViewChange } = show();
+    fireEvent.click(tool('Blend edges'));
+    fireEvent.change(screen.getByRole('slider', { name: 'Fade start' }), { target: { value: '80' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(geometry.seam).toHaveBeenCalledWith(expect.anything(), 'albedo', { depth: 0.1, profile: null }));
+    await waitFor(() => expect(onToolViewChange).toHaveBeenLastCalledWith(expect.objectContaining({ transform: { kind: 'seam', depth: 0.1, profile: null }, hold: true })));
+  });
+
+  it('R66 R69 Canny reads the albedo working copy once, however often the slider moves afterwards', async () => {
+    const { live } = show();
+    fireEvent.click(tool('Blend edges'));
+    fireEvent.click(screen.getByRole('switch', { name: 'Canny edges' }));
+    await waitFor(() => expect((live.latest() as { profile: unknown }).profile).toBeInstanceOf(Float32Array));
+    expect(readBlob).toHaveBeenCalledTimes(1);
+    expect(readBlob).toHaveBeenCalledWith('a1');
+    for (const value of ['60', '70', '80']) fireEvent.change(screen.getByRole('slider', { name: 'Fade start' }), { target: { value } });
+    expect(readBlob).toHaveBeenCalledTimes(1);
+  });
+
+  it('R68 R11 applying Blend edges blends every map with the panel\'s depth and commits one grouped edit', async () => {
+    const { geometry, controller } = show();
+    fireEvent.click(tool('Blend edges'));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(controller.applyEdits).toHaveBeenCalledTimes(1));
+    expect(geometry.seam).toHaveBeenCalledTimes(2);
+    expect(geometry.seam).toHaveBeenCalledWith(expect.anything(), 'albedo', { depth: 0.225, profile: null });
+    expect(controller.applyEdits).toHaveBeenCalledWith(expect.any(Array), 'Blend edges', true);
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Blend edges' })).toBeNull());
   });
 });

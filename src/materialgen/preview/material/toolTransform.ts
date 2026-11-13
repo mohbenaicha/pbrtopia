@@ -14,11 +14,12 @@ export type ToolMarks = readonly [boolean, boolean, boolean, boolean]; // the se
 
 export type ToolTransform =
   | { kind: 'crop'; rect: { x: number; y: number; width: number; height: number }; edge: ToolEdge | null } // the rectangle in fractions of the picture, first row on top
-  | { kind: 'mirror'; plan: ToolPlan | null; marked: ToolMarks }; // no plan: each quadrant as it is
+  | { kind: 'mirror'; plan: ToolPlan | null; marked: ToolMarks } // no plan: each quadrant as it is
+  | { kind: 'seam'; depth: number; profile: Float32Array | null }; // Blend edges (imageops R64-R67): the fixed depth as a fraction of the side, and the Canny profile (N rows then N columns) or none
 
 export interface ToolUniformValues {
-  mode: 0 | 1 | 2; // 0 none, 1 crop, 2 mirror
-  rect: [number, number, number, number]; // crop: x, y, width, height
+  mode: 0 | 1 | 2 | 3; // 0 none, 1 crop, 2 mirror, 3 blend edges
+  rect: [number, number, number, number]; // crop: x, y, width, height; blend edges: the fixed depth, 0, 1 with a Canny profile, 0
   plan: number[]; // mirror: four vec4 (source quadrant, flip x, flip y, unused), by result quadrant
   marks: [number, number, number, number]; // crop: the marked edge code in [0]; mirror: 1 for each selected quadrant
 }
@@ -35,6 +36,7 @@ export function toolUniformValues(transform: ToolTransform | null): ToolUniformV
     const whole = x === 0 && y === 0 && width === 1 && height === 1;
     return { mode: whole && transform.edge === null ? 0 : 1, rect: [x, y, width, height], plan: [...IDENTITY_PLAN], marks: [transform.edge === null ? 0 : EDGE_CODE[transform.edge], 0, 0, 0] };
   }
+  if (transform.kind === 'seam') return { mode: 3, rect: [transform.depth, 0, transform.profile === null ? 0 : 1, 0], plan: [...IDENTITY_PLAN], marks: [0, 0, 0, 0] };
   const plan = transform.plan === null ? [...IDENTITY_PLAN] : transform.plan.flatMap((quadrant) => [quadrant.from, quadrant.flipX ? 1 : 0, quadrant.flipY ? 1 : 0, 0]);
   const [tl, tr, bl, br] = transform.marked;
   return { mode: 2, rect: [...NO_RECT], plan, marks: [tl ? 1 : 0, tr ? 1 : 0, bl ? 1 : 0, br ? 1 : 0] };

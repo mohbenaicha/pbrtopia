@@ -1,9 +1,9 @@
-import { Vector4, type IUniform, type Texture } from 'three';
+import { DataTexture, FloatType, NearestFilter, RedFormat, Vector4, type IUniform, type Texture } from 'three';
 import type { EditMapKind } from '../filters/editControls';
 import type { GpuContext } from '../gpu/gpuContext';
 import { fromRgba, toRgba, type PixelImage } from '../gpu/pixelFormats';
 import type { CropRect } from './cropRect';
-import { MIRROR_FRAGMENT, RESAMPLE_FRAGMENT, TILE_FRAGMENT } from './geometryShaders';
+import { MIRROR_FRAGMENT, RESAMPLE_FRAGMENT, SEAM_FRAGMENT, TILE_FRAGMENT } from './geometryShaders';
 import { QUADRANTS, type MirrorPlan } from './mirrorPlan';
 import type { TilingSettings } from './tilingBake';
 
@@ -96,4 +96,38 @@ export function scaleRectToSquare(ctx: GpuContext, input: MapInput, rect: CropRe
     uNormal: { value: input.kind === 'normal' },
     uEncodeSrgb: { value: albedo },
   }));
+}
+
+/** R65, R66: what Blend edges is given: the fixed depth as a fraction of the side, and the Canny profile (null for the fixed depth). */
+export interface SeamParams {
+  depth: number;
+  profile: Float32Array | null;
+}
+
+/** The profile as a float texture of N x 2 texels read without filtering; a map with none gets a one-texel stand-in the shader never reads. */
+export function createSeamProfileTexture(profile: Float32Array | null): DataTexture {
+  const data = (profile ?? new Float32Array(2)) as Float32Array<ArrayBuffer>;
+  const texture = new DataTexture(data, data.length / 2, 2, RedFormat, FloatType);
+  texture.minFilter = NearestFilter;
+  texture.magFilter = NearestFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+/** R64-R68: the left and top borders blended with their mirror image, in one pass; albedo in linear light, every other map as it is. */
+export async function blendEdgesMap(ctx: GpuContext, input: MapInput, params: SeamParams): Promise<PixelImage> {
+  const size = input.image.width;
+  const albedo = input.kind === 'albedo';
+  const profile = createSeamProfileTexture(params.profile);
+  try {
+    return await renderToPixels(ctx, input, size, { decodeSrgb: albedo, nearest: true }, SEAM_FRAGMENT, (source) => ({
+      uSource: { value: source },
+      uProfile: { value: profile },
+      uDepth: number(params.depth),
+      uCanny: { value: params.profile !== null },
+      uEncodeSrgb: { value: albedo },
+    }));
+  } finally {
+    profile.dispose();
+  }
 }

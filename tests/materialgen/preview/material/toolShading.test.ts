@@ -1,5 +1,6 @@
 import { Group, Mesh, MeshPhysicalMaterial, PlaneGeometry, type WebGLProgramParametersWithUniforms } from 'three';
 import { describe, expect, it } from 'vitest';
+import { SEAM_GLSL } from '@mat/imageops';
 import { createLitLook, createMapAdjustUniforms } from '@shared/viewport';
 import { createFlatLooks } from '../../../../src/materialgen/preview/material/createFlatLooks';
 import { createMaskOverlay } from '../../../../src/materialgen/preview/material/createMaskOverlay';
@@ -211,5 +212,46 @@ describe('materialgen/preview R51 R53 the flat views', () => {
       expect(code).not.toContain('texture2D(uMap');
     }
     expect(FLAT_VERTEX_SHADER).not.toContain('texture2D(uHeight');
+  });
+});
+
+describe('materialgen/preview R67 the Blend edges tool view', () => {
+  const SEAM: ToolTransform = { kind: 'seam', depth: 0.225, profile: null };
+
+  it('imageops R67 Blend edges is mode 3, the depth and the Canny flag ride in the rectangle uniform, and no mark is drawn', () => {
+    expect(toolUniformValues(SEAM)).toMatchObject({ mode: 3, rect: [0.225, 0, 0, 0], marks: [0, 0, 0, 0] });
+    expect(toolUniformValues({ kind: 'seam', depth: 0.1, profile: new Float32Array(4) }).rect).toEqual([0.1, 0, 1, 0]);
+  });
+
+  it('imageops R67 the profile texture exists only while a Canny profile is shown, is rebuilt in place for a new profile of the same size, and is freed after', () => {
+    const shading = createToolShading();
+    const dummy = shading.uniforms.uToolProfile.value;
+    expect(dummy.image.height).toBe(2);
+    shading.set({ kind: 'seam', depth: 0.2, profile: new Float32Array([0.1, 0.2, 0.3, 0.4]) });
+    const shown = shading.uniforms.uToolProfile.value;
+    expect([shown.image.width, shown.image.height]).toEqual([2, 2]);
+    shading.set({ kind: 'seam', depth: 0.1, profile: new Float32Array([0.5, 0.6, 0.7, 0.8]) });
+    expect(shading.uniforms.uToolProfile.value).toBe(shown);
+    expect(Array.from(shown.image.data as unknown as Float32Array)).toEqual([0.5, 0.6, 0.7, 0.8].map((value) => Math.fround(value)));
+    shading.set(null);
+    expect(shading.uniforms.uToolProfile.value).toBe(dummy);
+  });
+
+  it('imageops R67 R76 the fragment shader carries the shared blend and the vertex shader does not blend', () => {
+    const material = new MeshPhysicalMaterial();
+    createToolShading().patchLitMaterial(material);
+    const { fragmentShader, vertexShader } = compile(material);
+    expect(fragmentShader).toContain(SEAM_GLSL);
+    expect(vertexShader).not.toContain('seamBlend');
+    expect(vertexShader).toMatch(/uToolMode == 3\) return texture2D\(s, uv\)/);
+    expect(vertexShader).not.toContain('dFdx');
+  });
+
+  it('imageops R67 the flat views read the profile uniform the Shaded material reads, and the mark ignores mode 3', () => {
+    const shading = createToolShading();
+    const looks = createFlatLooks(createMapAdjustUniforms(), createMaskOverlay().uniforms, shading.uniforms);
+    for (const view of FLAT_VIEWS) expect(looks.materialFor(view).uniforms.uToolProfile).toBe(shading.uniforms.uToolProfile);
+    expect(FLAT_COLOR_FRAGMENT_SHADER).toContain(SEAM_GLSL);
+    expect(FLAT_COLOR_FRAGMENT_SHADER).toMatch(/float toolMark\(vec2 uv\) \{\s*if \(uToolMode == 0 \|\| uToolMode == 3\) return 0\.0;/);
   });
 });

@@ -40,6 +40,7 @@ function show(extra: { canWrite?: boolean } = {}) {
       crop: vi.fn(async (image: PixelImage) => image),
       mirror: vi.fn(async (image: PixelImage) => image),
       swap: vi.fn(async (image: PixelImage) => image),
+      seam: vi.fn(async (image: PixelImage) => image),
     },
   };
   render(<MapCards state={state} colorMode="albedo" canWrite={extra.canWrite ?? true} controller={controller} readBlob={readBlob} sessions={sessions} aoParams={undefined} onAoParamsChange={vi.fn()} onToolViewChange={vi.fn()} />);

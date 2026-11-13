@@ -10,4 +10,5 @@ export { NormalDirectionSelect } from './ui/NormalDirectionSelect';
 export { usePreviewPrefs } from './ui/usePreviewPrefs';
 export { PreviewViewport, type PreviewMasks, type PreviewThumbnailSink, type PreviewTool, type PreviewViewportProps } from './ui/PreviewViewport';
 export type { ToolView } from './ui/useToolViewRelease';
+export { createToolLiveFeed, type ToolLiveFeed } from './ui/toolLiveFeed';
 export type { ToolEdge, ToolMarks, ToolPlan, ToolQuadrant, ToolTransform } from './material/toolTransform';

@@ -12,18 +12,33 @@ function show(onApply = vi.fn(async () => ({ ok: true }) as { ok: boolean; messa
   render(<MirrorPanel onChange={onChange} onApply={onApply} onClose={onClose} />);
   return { onApply, onClose, onChange };
 }
-const quadrant = (name: Quadrant): HTMLInputElement => screen.getByRole('checkbox', { name }) as HTMLInputElement;
+const quadrant = (name: Quadrant): { checked: boolean } & HTMLButtonElement => {
+  const corner = screen.getByRole('button', { name }) as HTMLButtonElement;
+  return Object.assign(corner, { checked: corner.getAttribute('aria-pressed') === 'true' }); // a corner handle is a toggle: its pressed state is the selection
+};
 const mode = (name: string): HTMLInputElement => screen.getByRole('radio', { name }) as HTMLInputElement;
 const apply = (): HTMLButtonElement => screen.getByRole('button', { name: 'Apply' }) as HTMLButtonElement;
 
 describe('materialgen/app MirrorPanel', () => {
-  it('R52 R57 it is a panel, not a dialog, with the four toggles in the picture\'s own layout and no help paragraph', () => {
+  it('R52 R57 it is a panel, not a dialog, with the four corner handles on the plane and no checkbox or help paragraph', () => {
     show();
     expect(screen.queryByRole('dialog')).toBeNull();
-    const grid = screen.getByRole('group', { name: 'Quadrants to mirror' });
-    expect([...grid.querySelectorAll('input[type=checkbox]')].map((box) => box.getAttribute('aria-label') ?? (box.closest('label')?.textContent ?? ''))).toEqual(['TL', 'TR', 'BL', 'BR']);
-    expect(grid.className).toContain('mirror-grid'); // a 2 x 2 grid in CSS: TL TR over BL BR
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    expect(screen.getByTestId('plane-picker-plane').querySelectorAll('button')).toHaveLength(4);
+    expect([...screen.getByTestId('plane-picker-plane').querySelectorAll('button')].map((corner) => corner.getAttribute('aria-label'))).toEqual(['TL', 'TR', 'BL', 'BR']);
     expect(document.querySelector('.tool-dialog__hint')).toBeNull();
+  });
+
+  it('R71 the picker carries corner handles only, no edge handle', () => {
+    show();
+    for (const name of ['Top', 'Left', 'Right', 'Bottom']) expect(screen.queryByRole('button', { name })).toBeNull();
+  });
+
+  it('R57 the mode switch keeps Pair, X, Y and Around, centred under the picker', () => {
+    show();
+    const group = screen.getByRole('radiogroup', { name: 'Mirror mode' });
+    expect([...group.querySelectorAll('[role=radio]')].map((radio) => radio.textContent)).toEqual(['Pair', 'X', 'Y', 'Around']);
+    expect(group.closest('.tool-panel__center')).not.toBeNull();
   });
 
   it('R56 the viewport is told the plan and the selected quadrants when the panel opens and on every change', () => {

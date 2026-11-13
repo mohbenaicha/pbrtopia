@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { WebGLRenderer } from 'three';
 import {
-  createAoSession, createFilterSession, createGpuContext, mirrorMap, scaleRectToSquare, swapDiagonals,
-  type AoSource, type CropRect, type EditMapKind, type EditValues, type FilterSession, type GpuContext, type MirrorPlan, type OpSession, type PixelImage,
+  blendEdgesMap, createAoSession, createFilterSession, createGpuContext, mirrorMap, scaleRectToSquare, swapDiagonals,
+  type AoSource, type CropRect, type EditMapKind, type EditValues, type FilterSession, type GpuContext, type MirrorPlan, type OpSession, type PixelImage, type SeamParams,
 } from '@mat/imageops';
 
 /** The geometry ops of imageops R24-R36, each on one map as the kind it is. The live preview of Crop and Mirror is not one of them: it is in the viewport's shaders (R53). */
@@ -10,6 +10,7 @@ export interface GeometryOps {
   crop(image: PixelImage, kind: EditMapKind, rect: CropRect, size: number): Promise<PixelImage>;
   mirror(image: PixelImage, kind: EditMapKind, plan: MirrorPlan): Promise<PixelImage>;
   swap(image: PixelImage, kind: EditMapKind): Promise<PixelImage>;
+  seam(image: PixelImage, kind: EditMapKind, params: SeamParams): Promise<PixelImage>; // Blend edges (R64)
 }
 
 /** Opens op sessions on a map's working copy (imageops R7, R9). The dialogs depend on this, not on the graphics card. */
@@ -48,6 +49,7 @@ export function useImageopsSessions(): ImageopsSessions {
         crop: async (image, kind, rect, size) => scaleRectToSquare(context(), { image, kind }, rect, size),
         mirror: async (image, kind, plan) => mirrorMap(context(), { image, kind }, plan),
         swap: async (image, kind) => swapDiagonals(context(), { image, kind }),
+        seam: async (image, kind, params) => blendEdgesMap(context(), { image, kind }, params),
       },
     };
   }, []);

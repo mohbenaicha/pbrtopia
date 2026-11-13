@@ -1,3 +1,5 @@
+import { SEAM_GLSL } from '@mat/imageops';
+
 // Imageops R53-R56, preview R58: the GLSL that puts an open Crop or Mirror on every map sample. Picture coordinates have the first row on top (the textures are
 // uploaded flipped, so the top is v = 1); the transform works in picture coordinates and the sample goes back to texture coordinates. All of it is one coordinate
 // computation per sample: no texture, no pass. Every map is read by UV (R57), the Material ball's included.
@@ -13,6 +15,7 @@ uniform int uToolMode; // 0 none, 1 crop, 2 mirror
 uniform vec4 uToolRect; // crop: x, y, width, height as fractions of the picture
 uniform vec4 uToolPlan[4]; // mirror, by result quadrant: source quadrant, flip x, flip y
 uniform vec4 uToolMarks; // crop: the marked edge (1 top, 2 left, 3 right, 4 bottom) in x; mirror: 1 for each selected quadrant
+uniform sampler2D uToolProfile; // blend edges: the Canny depth of each row and column (imageops R66), N x 2 floats
 `;
 
 // R54: where the result point of tile coordinate `uv` reads the source; `flip` tells which components of a normal map a mirrored quadrant flips (R34).
@@ -43,6 +46,7 @@ vec4 toolSample(sampler2D s, vec2 uv, out vec2 flip) {
   if (uToolMode == 0) return texture2D(s, uv);
   vec2 gx = dFdx(uv);
   vec2 gy = dFdy(uv);
+  if (uToolMode == 3) return seamBlend(s, uToolProfile, uToolRect.z > 0.5, uToolRect.x, vec2(fract(uv.x), 1.0 - fract(uv.y)), 1.0, gx, gy); // blend edges (imageops R64)
   if (uToolMode == 1) {
     gx *= uToolRect.zw;
     gy *= uToolRect.zw;
@@ -66,7 +70,7 @@ vec4 toolNormalTexel(sampler2D s, vec2 uv) {
 }
 // R55, R56: the cyan line (alpha 0.7, 0.015 of the side) on the marked crop edge or the outer edges of the selected mirror quadrants of the result picture.
 float toolMark(vec2 uv) {
-  if (uToolMode == 0) return 0.0;
+  if (uToolMode == 0 || uToolMode == 3) return 0.0;
   vec2 p = vec2(fract(uv.x), 1.0 - fract(uv.y));
   float w = 0.015;
   bool on = false;
@@ -90,10 +94,11 @@ vec3 toolMarked(vec3 color, vec2 uv) {
 export const TOOL_VERTEX = `
 vec4 toolTexelVertex(sampler2D s, vec2 uv) {
   if (uToolMode == 0) return texture2D(s, uv);
+  if (uToolMode == 3) return texture2D(s, uv); // R76: the blend is not computed per vertex
   vec2 flip;
   return texture2D(s, toolCoord(uv, flip));
 }
 `;
 
-export const TOOL_FRAGMENT_SUPPORT = NORMAL_FLIP_UNIFORM + TOOL_UNIFORMS + TOOL_COORD + TOOL_SAMPLE + TOOL_FRAGMENT;
+export const TOOL_FRAGMENT_SUPPORT = NORMAL_FLIP_UNIFORM + TOOL_UNIFORMS + SEAM_GLSL + TOOL_COORD + TOOL_SAMPLE + TOOL_FRAGMENT;
 export const TOOL_VERTEX_SUPPORT = TOOL_UNIFORMS + TOOL_COORD + TOOL_VERTEX;

@@ -1,4 +1,5 @@
-import { ShaderChunk, Vector2, Vector4, type IUniform, type Material, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
+import { ShaderChunk, Vector2, Vector4, type DataTexture, type IUniform, type Material, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
+import { createSeamProfileTexture } from '@mat/imageops';
 import { TOOL_FRAGMENT_SUPPORT, TOOL_VERTEX_SUPPORT } from './toolShaderCode';
 import { toolUniformValues, type ToolTransform } from './toolTransform';
 
@@ -7,6 +8,7 @@ export interface ToolUniforms {
   uToolRect: IUniform<Vector4>;
   uToolPlan: IUniform<Vector4[]>;
   uToolMarks: IUniform<Vector4>;
+  uToolProfile: IUniform<DataTexture>; // Blend edges (imageops R67): the Canny depth of each row and column; a dummy 1 x 2 texture while there is none
   uToolTile: IUniform<Vector2>; // the tiling, for the marker of the Shaded view
   uNormalFlipY: IUniform<number>; // preview R60: 1 turns the green of every normal-map read (a DirectX map); 0 leaves it
 }
@@ -39,14 +41,34 @@ export function createToolShading(): ToolShading {
     uToolRect: { value: new Vector4(0, 0, 1, 1) },
     uToolPlan: { value: [new Vector4(), new Vector4(), new Vector4(), new Vector4()] },
     uToolMarks: { value: new Vector4() },
+    uToolProfile: { value: createSeamProfileTexture(null) },
     uToolTile: { value: new Vector2(1, 1) },
     uNormalFlipY: { value: 0 },
+  };
+  const dummyProfile = uniforms.uToolProfile.value;
+
+  // R67: the profile texture is rebuilt in place while its size holds (a 4 KB upload per slider step) and freed when the Canny profile goes.
+  const setProfile = (profile: Float32Array | null): void => {
+    const held = uniforms.uToolProfile.value;
+    if (profile === null) {
+      if (held !== dummyProfile) held.dispose();
+      uniforms.uToolProfile.value = dummyProfile;
+      return;
+    }
+    if (held !== dummyProfile && held.image.width * 2 === profile.length) {
+      (held.image.data as unknown as Float32Array).set(profile);
+      held.needsUpdate = true;
+      return;
+    }
+    if (held !== dummyProfile) held.dispose();
+    uniforms.uToolProfile.value = createSeamProfileTexture(profile);
   };
 
   return {
     uniforms,
     set(transform) {
       const values = toolUniformValues(transform);
+      setProfile(transform !== null && transform.kind === 'seam' ? transform.profile : null);
       uniforms.uToolMode.value = values.mode;
       uniforms.uToolRect.value.set(...values.rect);
       uniforms.uToolPlan.value.forEach((quadrant, index) => quadrant.fromArray(values.plan, index * 4));

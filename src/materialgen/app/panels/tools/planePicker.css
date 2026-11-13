@@ -1,0 +1,106 @@
+/* Imageops R71, R72: the plane picker of Crop and Mirror: a tilted square carrying one set of handles. Grey at rest, muted white on hover or focus, the accent when active. */
+.plane-picker {
+  --plane-side: 11rem;
+  --edge-length: 60%;
+  --handle-rest: #5d5a54;
+  --handle-hover: #cfcbc3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 12.5rem;
+  perspective: 38rem;
+}
+
+.plane-picker__plane {
+  position: relative;
+  flex: none;
+  width: var(--plane-side);
+  height: var(--plane-side);
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+  box-shadow: inset 0 0 0 1px #2c2c31;
+  transform-style: preserve-3d;
+}
+
+.plane-picker__edge,
+.plane-picker__corner {
+  position: absolute;
+  box-sizing: border-box;
+  padding: 0;
+  border: none;
+  background: var(--handle-rest);
+  cursor: pointer;
+  transition: background 90ms;
+}
+
+.plane-picker__edge:hover,
+.plane-picker__edge:focus-visible,
+.plane-picker__corner:hover,
+.plane-picker__corner:focus-visible {
+  background: var(--handle-hover);
+}
+
+.plane-picker__edge[data-active='true'],
+.plane-picker__corner[data-active='true'] {
+  background: var(--accent);
+}
+
+.plane-picker__edge:focus-visible,
+.plane-picker__corner:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.plane-picker__edge {
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: var(--radius-control);
+}
+
+.plane-picker__edge[data-edge='top'],
+.plane-picker__edge[data-edge='bottom'] {
+  left: calc((100% - var(--edge-length)) / 2);
+  width: var(--edge-length);
+}
+
+.plane-picker__edge[data-edge='left'],
+.plane-picker__edge[data-edge='right'] {
+  top: calc((100% - var(--edge-length)) / 2);
+  height: var(--edge-length);
+}
+
+.plane-picker__edge[data-edge='top'] { top: 0; }
+.plane-picker__edge[data-edge='bottom'] { bottom: 0; }
+.plane-picker__edge[data-edge='left'] { left: 0; }
+.plane-picker__edge[data-edge='right'] { right: 0; }
+
+.plane-picker__corner {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-control);
+}
+
+.plane-picker__corner[data-corner='TL'] { top: 0; left: 0; }
+.plane-picker__corner[data-corner='TR'] { top: 0; right: 0; }
+.plane-picker__corner[data-corner='BL'] { bottom: 0; left: 0; }
+.plane-picker__corner[data-corner='BR'] { bottom: 0; right: 0; }
+
+/* The quadrants a mirror copies from are tinted, so the whole half or corner reads at a glance. */
+.plane-picker__quadrant {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  border-radius: var(--radius-control);
+  pointer-events: none;
+}
+
+.plane-picker__quadrant[data-selected='true'] {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.plane-picker__quadrant[data-quadrant='TL'] { top: 0; left: 0; }
+.plane-picker__quadrant[data-quadrant='TR'] { top: 0; right: 0; }
+.plane-picker__quadrant[data-quadrant='BL'] { bottom: 0; left: 0; }
+.plane-picker__quadrant[data-quadrant='BR'] { bottom: 0; right: 0; }

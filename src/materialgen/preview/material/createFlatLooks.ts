@@ -44,6 +44,7 @@ export function createFlatLooks(adjust: MapAdjustUniforms, mask: MaskUniforms, t
     uToolRect: tool.uToolRect,
     uToolPlan: tool.uToolPlan,
     uToolMarks: tool.uToolMarks,
+    uToolProfile: tool.uToolProfile,
     uToolTile: tool.uToolTile,
     uNormalFlipY: tool.uNormalFlipY,
   };
