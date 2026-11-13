@@ -47,10 +47,11 @@ interface Inputs {
   placeGenerated(maps: readonly GeneratedMap[]): Promise<boolean>; // R42
   maxTextureSize: number;
   masksSteps: MasksStepsFactory; // masks R1-R16: the describe step and the hand-over of the decomposition image, bound by the app
+  beforeDecomposition?: () => Promise<void>; // masks-package R6: the app's question before a metal-roughness run
 }
 
 /** Materialgen generation: everything the left panel's Preset, Generate, Model settings and Reference images parts show, built from the record, the key vault and the maps. */
-export function useGenerationPanel({ store, projectId, record, canWrite, project, mapsState, placeGenerated, maxTextureSize, masksSteps }: Inputs): GenerationPanel {
+export function useGenerationPanel({ store, projectId, record, canWrite, project, mapsState, placeGenerated, maxTextureSize, masksSteps, beforeDecomposition }: Inputs): GenerationPanel {
   const backends = useAppBackends();
   const models = useModelCatalogFeed();
   const choice = usePlanChoice({ record, catalog: models.catalog, maxTextureSize, onEdit: project.edit, store });
@@ -84,6 +85,7 @@ export function useGenerationPanel({ store, projectId, record, canWrite, project
   const run = useRunSession({
     masksRun: masks.masksRun,
     readAlbedoReference: masks.masksRun.readAlbedoReference,
+    ...(beforeDecomposition === undefined ? {} : { beforeDecomposition }),
     plan: choice.plan,
     report,
     planSummary: hint.summary,

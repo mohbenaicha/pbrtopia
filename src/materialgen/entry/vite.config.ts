@@ -1,6 +1,7 @@
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { dropOrtWasm } from './dropOrtWasm';
 
 // The material app's own build (materialgen app R2, R3, R5, R51). After the repo split only `sharedRoot` changes.
 const entryDir = import.meta.dirname;
@@ -15,9 +16,9 @@ export default defineConfig({
   root: entryDir,
   envDir: repoRoot,
   publicDir: path.resolve(sharedRoot, '../public'), // the HDRI files, resolved from the shared root
-  plugins: [react()],
+  plugins: [react(), dropOrtWasm()],
   assetsInclude: ['**/*.bin'], // the material ball's packed mesh is imported as an asset
-  // `@ort` is the onnx runtime's runtime files, which the MiniLM worker serves from the app itself (masks R73)
-  resolve: { alias: { '@shared': sharedRoot, '@mat': materialRoot, '@ort': path.resolve(repoRoot, 'node_modules/onnxruntime-web/dist') }, dedupe: DEDUPED_PACKAGES },
+  // The MiniLM model and the onnx runtime are not part of the build: they are downloaded after approval (masks-package R2)
+  resolve: { alias: { '@shared': sharedRoot, '@mat': materialRoot }, dedupe: DEDUPED_PACKAGES },
   build: { outDir: path.resolve(repoRoot, 'builds/web/material'), emptyOutDir: true },
 });

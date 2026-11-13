@@ -11,9 +11,17 @@ export interface MapPromptInput {
   follower: boolean; // any image other than Image 1: it gets the albedo reference
 }
 
-/** R38: the tileability sentence of every prompt, and what a packed image adds. */
-export const TILEABLE_SENTENCE = 'The result must be seamless and tileable, with no visible seams at the image edges.';
-const PACKED_TILEABLE_SENTENCE = 'Each map is seamless on its own edges.';
+/** R38: the tileability text of every prompt (both directions, and no large features at the edges); a packed image adds a sentence built from its map names. */
+export const TILEABLE_SENTENCE =
+  'The image must tile seamlessly in both directions: the right edge must continue exactly into the left edge, and the bottom edge exactly into the top edge, as if copies of the image were placed side by side. Keep large features, strong gradients and lighting falloff away from the edges; only fine, evenly spread detail may touch the borders.';
+
+/** R38: tiling is asked of each map on its own; naming the maps keeps it from being read as one map blending into another. */
+function describePackedTiling(layout: PackedLayout, names: readonly string[]): string {
+  const [first, ...others] = names;
+  const area = layout.grid.cols === 2 && layout.grid.rows === 2 ? 'quadrant' : 'area';
+  const sameFor = others.length === 0 ? '' : ` The same holds for the ${others.join(' and the ')}.`;
+  return `Tiling applies to each map separately. The ${first}'s right edge continues into the ${first}'s own left edge, and its bottom edge into its own top edge.${sameFor} The maps stay completely separate: no colour, relief or detail of one map crosses into the ${area} of another.`;
+}
 
 const ORDINALS = ['first', 'second', 'third'] as const;
 const TOP_DOWN = 'a top-down view of the material';
@@ -67,13 +75,13 @@ function buildRecipe({ maps, layout, colorMode, follower }: Omit<MapPromptInput,
 }
 
 /**
- * Generation R31-R36, R38: the prompt of a map image: the recipe of its maps, the user's text verbatim ("Material: ..." when it has a non-space character), then the
- * tileability sentence. The text is built before the call and is what the run log shows (R68); the adapter adds nothing.
+ * Generation R31-R36, R38: the prompt of a map image: the recipe of its maps, the tileability text, then the user's text verbatim ("Material: ..." when it has a
+ * non-space character). The text is built before the call and is what the run log shows (R68); the adapter adds nothing.
  */
 export function buildMapPrompt(input: MapPromptInput): string {
-  const sections = [buildRecipe(input)];
+  const names = input.maps.map((map) => `${mapName(map, input.colorMode)} map`);
+  const sections = [buildRecipe(input), input.maps.length > 1 ? `${TILEABLE_SENTENCE} ${describePackedTiling(input.layout, names)}` : TILEABLE_SENTENCE];
   if (input.userText.trim() !== '') sections.push(`Material: ${input.userText}`);
-  sections.push(input.maps.length > 1 ? `${TILEABLE_SENTENCE} ${PACKED_TILEABLE_SENTENCE}` : TILEABLE_SENTENCE);
   return sections.join('\n\n');
 }
 

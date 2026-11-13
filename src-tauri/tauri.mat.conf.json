@@ -1,5 +1,5 @@
 {
-  "productName": "Texturium Materials",
+  "productName": "pbrtopia",
   "identifier": "com.texturium.materials",
   "build": {
     "frontendDist": "../builds/web/material",
@@ -15,7 +15,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Texturium Materials",
+        "title": "pbrtopia",
         "width": 1440,
         "height": 900,
         "minWidth": 900,

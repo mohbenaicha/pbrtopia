@@ -15,13 +15,14 @@ interface Inputs {
   project: ProjectEditing;
   mapsState: MapsState;
   maps: Pick<MapsController, 'placeGenerated' | 'commitMasks'>;
+  beforeDecomposition?: () => Promise<void>; // masks-package R6
 }
 
 const OPENING: MaterialRecord = newMaterialRecord({ id: '', name: '', size: null, now: '' }); // stands in until the record is read, so the hooks below run in one order
 
 /** The generation panel of the open project, built once for the left panel and the setup overlay (generation R1-R70). */
-export function useMaterialGeneration({ store, projectId, record, canWrite, project, mapsState, maps }: Inputs): GenerationPanel {
+export function useMaterialGeneration({ store, projectId, record, canWrite, project, mapsState, maps, beforeDecomposition }: Inputs): GenerationPanel {
   const maxTextureSize = useMemo(() => readMaxTextureSize(), []);
   const masksSteps = useModelMasksSteps({ record, mapsState, maps });
-  return useGenerationPanel({ store, projectId, record: record ?? OPENING, canWrite: canWrite && record !== null, project, mapsState, placeGenerated: maps.placeGenerated, maxTextureSize, masksSteps });
+  return useGenerationPanel({ store, projectId, record: record ?? OPENING, canWrite: canWrite && record !== null, project, mapsState, placeGenerated: maps.placeGenerated, maxTextureSize, masksSteps, ...(beforeDecomposition === undefined ? {} : { beforeDecomposition }) });
 }

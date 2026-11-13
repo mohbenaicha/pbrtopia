@@ -7,6 +7,7 @@ import { parseMasksRecord } from '@mat/masks';
 import { PreviewViewport, type PreviewMasks, type PreviewShading, type PreviewThumbnailSink, type PreviewTool, type ToolView } from '@mat/preview';
 import { DEFAULT_PREVIEW_VALUES, type MaterialProjectStore, type PreviewValues } from '@mat/storage';
 import { APP_ID } from '../appIdentity';
+import { useMasksPackagePrompt } from '../masksPackage/useMasksPackagePrompt';
 import { createGpuResizer } from '../imageops/createGpuResizer';
 import { useImageopsSessions } from '../imageops/useImageopsSessions';
 import { ExportSection, exportUnavailableReason } from '../panels/export/ExportSection';
@@ -68,7 +69,8 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
     void rememberOpenProject(store, projectId);
   }, [store, projectId]);
 
-  const generation = useMaterialGeneration({ store, projectId, record, canWrite, project, mapsState, maps });
+  const masksPackage = useMasksPackagePrompt(); // masks-package R6: asked before a metal-roughness run, its dialog drawn at the end of the shell
+  const generation = useMaterialGeneration({ store, projectId, record, canWrite, project, mapsState, maps, beforeDecomposition: masksPackage.ensure });
   // The Material Masks controls live in the viewport's Mask display popover (masks R48); the popover builds them only while it is open.
   const previewMasks: PreviewMasks = {
     palette: maskPalette,
@@ -137,6 +139,7 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
           {project.error !== null && <p className="material-viewport__message" role="alert">{project.error}</p>}
           {record !== null && <PreviewViewport store={store} mapsState={mapsState} readBlob={readBlob} values={record.preview} onValuesChange={changePreviewValues} shading={shading} thumbnail={thumbnail} masks={previewMasks} tool={previewTool} pending={maps.pending} />}
           {record !== null && setupOpen && <MaterialSetupOverlay generation={generation} colorMode={record.colorMode} onClose={() => setSetupOpen(false)} />}
+          {masksPackage.dialog}
         </div>
       }
       right={

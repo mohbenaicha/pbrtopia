@@ -57,6 +57,7 @@ interface Inputs {
   keys: Pick<KeyVault, 'ensureUnlocked'>;
   masksRun?: MasksRunInputs;
   readAlbedoReference?: () => Promise<Blob | null>; // R6: the existing Albedo as the albedo reference of a plan that holds no Albedo; null when the project has none
+  beforeDecomposition?: () => Promise<void>; // masks-package R6: awaited before the first model call of a run that has the decomposition (metal-roughness) job; never rejects
 }
 
 /** Generation R6-R8, R43, R55-R57, R60, R61, R65, R68: runs the plan, with Cancel and Retry, and keeps the last ten runs in memory. */
@@ -132,6 +133,11 @@ export function useRunSession(inputs: Inputs): RunSession {
       const colorMode = checkpoint?.colorMode ?? current.colorMode;
       const references = checkpoint?.references ?? current.references;
       lastRun.current = { report, materialSize, mode };
+      const jobs = buildJobs(report, colorMode);
+      if (jobs.some((job) => job.kind === 'decomposition')) {
+        await current.beforeDecomposition?.(); // masks-package R6: the package question, before any paid call
+        if (!mounted.current) return;
+      }
       const controller = new AbortController();
       abort.current = controller;
       setRunning(true);
@@ -139,7 +145,7 @@ export function useRunSession(inputs: Inputs): RunSession {
       const startedAt = current.ports.now();
       try {
         const finished = await runGeneration({
-          jobs: buildJobs(report, colorMode),
+          jobs,
           plan,
           userText: prompt,
           colorMode,

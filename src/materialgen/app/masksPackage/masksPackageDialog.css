@@ -1,0 +1,11 @@
+/* The download bar of the masks package: the same look as the export dialog's bar (the accent-coloured progress element with its label under it). */
+.masks-package__progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.masks-package__progress progress {
+  width: 100%;
+  accent-color: var(--accent);
+}

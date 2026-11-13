@@ -15,15 +15,15 @@ const prompt = (maps: PlanMap[], layout: PackedLayout, extra: { userText?: strin
   buildMapPrompt({ maps, layout, userText: extra.userText ?? '', colorMode: extra.colorMode ?? 'albedo', follower: extra.follower ?? false });
 
 describe('materialgen/generation R31 R38 order of the parts', () => {
-  it('R31 the recipe comes first, then the user text verbatim as "Material: ...", then the tileability sentence', () => {
+  it('R31 the recipe comes first, then the tileability text, then the user text verbatim as "Material: ..."', () => {
     const text = prompt(['albedo'], one, { userText: 'Weathered red brick wall, lime mortar' });
-    const recipeAt = text.indexOf('Generate the albedo map');
+    const recipeAt = text.indexOf('Generate the albedo');
     const materialAt = text.indexOf('Material: Weathered red brick wall, lime mortar');
     const tileAt = text.indexOf(TILEABLE_SENTENCE);
     expect(recipeAt).toBe(0);
-    expect(materialAt).toBeGreaterThan(recipeAt);
-    expect(tileAt).toBeGreaterThan(materialAt);
-    expect(text.endsWith(TILEABLE_SENTENCE)).toBe(true);
+    expect(tileAt).toBeGreaterThan(recipeAt);
+    expect(materialAt).toBeGreaterThan(tileAt);
+    expect(text.endsWith('Material: Weathered red brick wall, lime mortar')).toBe(true);
   });
 
   it('R31 an empty or all-space user text leaves the Material line out', () => {
@@ -31,12 +31,26 @@ describe('materialgen/generation R31 R38 order of the parts', () => {
     expect(prompt(['albedo'], one, { userText: '  \n ' })).not.toContain('Material:');
   });
 
-  it('R38 every prompt has the tileability sentence; a packed one adds that each map is seamless on its own edges', () => {
+  it('R38 the tileability text names both directions and keeps large features off the edges', () => {
+    expect(TILEABLE_SENTENCE).toBe(
+      'The image must tile seamlessly in both directions: the right edge must continue exactly into the left edge, and the bottom edge exactly into the top edge, as if copies of the image were placed side by side. Keep large features, strong gradients and lighting falloff away from the edges; only fine, evenly spread detail may touch the borders.',
+    );
+  });
+
+  it('R38 every prompt has the tileability text; a single map adds nothing about other maps', () => {
     expect(prompt(['normal'], one)).toContain(TILEABLE_SENTENCE);
-    expect(prompt(['normal'], one)).not.toContain('on its own edges');
-    const packed = prompt(['albedo', 'normal'], layoutOf(2, [[1024, 512]]));
-    expect(packed).toContain(TILEABLE_SENTENCE);
-    expect(packed).toContain('Each map is seamless on its own edges.');
+    expect(prompt(['normal'], one)).not.toContain('Tiling applies to each map separately');
+  });
+
+  it('R38 a packed image adds a sentence built from its map names, so no map can be read as blending into another', () => {
+    const two = prompt(['albedo', 'normal'], layoutOf(2, [[1024, 512]]));
+    expect(two).toContain(TILEABLE_SENTENCE);
+    expect(two).toContain(
+      "Tiling applies to each map separately. The albedo map's right edge continues into the albedo map's own left edge, and its bottom edge into its own top edge. The same holds for the normal map. The maps stay completely separate: no colour, relief or detail of one map crosses into the area of another.",
+    );
+    const three = prompt(['albedo', 'normal', 'height'], layoutOf(3, [[1024, 1024]]));
+    expect(three).toContain('The same holds for the normal map and the height map.');
+    expect(three).toContain('crosses into the quadrant of another.');
   });
 
   it('R38 no prompt asks for roughness, metal or an AO map', () => {
