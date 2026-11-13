@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-file-free-space"
+description = "Enables the file_free_space command without any pre-configured scope."
+commands.allow = ["file_free_space"]
+
+[[permission]]
+identifier = "deny-file-free-space"
+description = "Denies the file_free_space command without any pre-configured scope."
+commands.deny = ["file_free_space"]

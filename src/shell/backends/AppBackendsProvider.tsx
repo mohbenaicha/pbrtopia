@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { discoverModels } from '../../generation';
 import { KeyPasswordPrompts, KeyVault, usePasswordPrompt } from '../../keys';
-import type { AppBackends, ResolvedBackends } from './appBackends';
+import type { AppBackends, DesktopPickers, ResolvedBackends } from './appBackends';
 
 const BackendsContext = createContext<ResolvedBackends | null>(null);
 
@@ -39,8 +39,17 @@ export function AppBackendsProvider({ backends, children }: AppBackendsProviderP
   const discover = backends.discoverModels ?? discoverModels;
   const { answer, refuseRequests } = prompt;
   const value = useMemo<ResolvedBackends>(
-    () => ({ createImageGenerator: backends.createImageGenerator, createPromptEnhancer: backends.createPromptEnhancer, discoverModels: discover, keys, passwordPrompt: { answer, refuseRequests }, keysLoaded }),
-    [backends.createImageGenerator, backends.createPromptEnhancer, discover, keys, answer, refuseRequests, keysLoaded],
+    () => ({
+      createImageGenerator: backends.createImageGenerator,
+      createPromptEnhancer: backends.createPromptEnhancer,
+      discoverModels: discover,
+      keys,
+      passwordPrompt: { answer, refuseRequests },
+      keysLoaded,
+      ...(backends.location === undefined ? {} : { location: backends.location }),
+      ...(backends.pickers === undefined ? {} : { pickers: backends.pickers }),
+    }),
+    [backends.createImageGenerator, backends.createPromptEnhancer, backends.location, backends.pickers, discover, keys, answer, refuseRequests, keysLoaded],
   );
   return (
     <BackendsContext.Provider value={value}>
@@ -48,6 +57,16 @@ export function AppBackendsProvider({ backends, children }: AppBackendsProviderP
       <KeyPasswordPrompts vault={keys} prompt={prompt} />
     </BackendsContext.Provider>
   );
+}
+
+/** The desktop dialogs the exports use, or undefined in the browser and wherever no provider is mounted (storage-backends R13). */
+export function useDesktopPickers(): DesktopPickers | undefined {
+  return useContext(BackendsContext)?.pickers;
+}
+
+/** True in the desktop app (the library's place is known), false in the browser and wherever no provider is mounted (storage-backends R10). */
+export function useIsDesktopApp(): boolean {
+  return useContext(BackendsContext)?.location !== undefined;
 }
 
 export function useAppBackends(): ResolvedBackends {

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-handle-commit"
+description = "Enables the handle_commit command without any pre-configured scope."
+commands.allow = ["handle_commit"]
+
+[[permission]]
+identifier = "deny-handle-commit"
+description = "Denies the handle_commit command without any pre-configured scope."
+commands.deny = ["handle_commit"]

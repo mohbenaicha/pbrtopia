@@ -1,0 +1,27 @@
+{
+  "productName": "Texturium Materials",
+  "identifier": "com.texturium.materials",
+  "build": {
+    "frontendDist": "../builds/web/material",
+    "devUrl": "http://localhost:5174",
+    "beforeDevCommand": "npm run dev:mat -- --port 5174 --strictPort",
+    "beforeBuildCommand": "npm run build:mat"
+  },
+  "bundle": {
+    "active": false,
+    "icon": ["icons-mat/32x32.png", "icons-mat/128x128.png", "icons-mat/icon.ico"]
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Texturium Materials",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 900,
+        "minHeight": 600,
+        "dragDropEnabled": false
+      }
+    ]
+  }
+}

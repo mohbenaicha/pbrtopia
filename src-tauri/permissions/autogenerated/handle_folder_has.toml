@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-handle-folder-has"
+description = "Enables the handle_folder_has command without any pre-configured scope."
+commands.allow = ["handle_folder_has"]
+
+[[permission]]
+identifier = "deny-handle-folder-has"
+description = "Denies the handle_folder_has command without any pre-configured scope."
+commands.deny = ["handle_folder_has"]

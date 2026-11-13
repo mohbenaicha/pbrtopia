@@ -1,0 +1,32 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The page may call the app's own storage commands and nothing else: no dialog, file-system or shell plugin permission (storage-backends R12).",
+  "windows": ["main"],
+  "permissions": [
+    "allow-db-get",
+    "allow-db-list",
+    "allow-db-commit",
+    "allow-file-read-chunk",
+    "allow-file-write-begin",
+    "allow-file-write-chunk",
+    "allow-file-write-commit",
+    "allow-file-write-abort",
+    "allow-file-remove",
+    "allow-file-list",
+    "allow-file-free-space",
+    "allow-library-status",
+    "allow-library-open",
+    "allow-library-use-default",
+    "allow-library-choose",
+    "allow-library-show-in-folder",
+    "allow-pick-save-file",
+    "allow-pick-folder",
+    "allow-handle-folder-has",
+    "allow-handle-create-file",
+    "allow-handle-write-chunk",
+    "allow-handle-commit",
+    "allow-handle-abort",
+    "allow-handle-release"
+  ]
+}

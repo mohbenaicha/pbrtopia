@@ -1,0 +1,30 @@
+[package]
+name = "texturium"
+version = "0.1.0"
+description = "The desktop shell of the Texturium apps: one window, the library folder, and the commands that reach it."
+edition = "2021"
+
+[lib]
+name = "texturium_lib"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-single-instance = "2"
+texturium-core = { path = "core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[workspace]
+members = ["core"]
+resolver = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
