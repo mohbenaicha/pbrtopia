@@ -1,4 +1,4 @@
-import { pickEnhancerModel, type EnhancerChoice, type ModelCatalog } from '../../generation';
+import { arrangeModelOptions, pickEnhancerModel, type EnhancerChoice, type ModelCatalog } from '../../generation';
 import { PROVIDERS, type Provider } from '../../keys';
 import type { SelectOption } from '../../ui-kit';
 import { PROVIDER_NAMES } from './providerNames';
@@ -17,19 +17,17 @@ export function parseEnhancerValue(value: string): EnhancerChoice | null {
  * the app uses: GPT-6 Luna with an OpenAI key, else Gemini 3.8 Flash with a Gemini key (there is no "Automatic" row).
  */
 export function buildEnhancerOptions(input: { keyed: readonly Provider[]; catalog: ModelCatalog; stored: EnhancerChoice | null }): { options: SelectOption[]; value: string } {
-  const options: SelectOption[] = [];
-  for (const provider of PROVIDERS) {
-    if (!input.keyed.includes(provider)) continue;
-    for (const model of input.catalog[provider]) {
-      if (model.role !== 'vision-text') continue;
-      options.push({ value: `${provider}:${model.id}`, label: `${PROVIDER_NAMES[provider]} · ${model.displayName}${model.verified ? '' : ' (unverified)'}` });
-    }
-  }
+  const options: SelectOption[] = arrangeModelOptions(
+    PROVIDERS.filter((provider) => input.keyed.includes(provider)).flatMap((provider) =>
+      input.catalog[provider].filter((model) => model.role === 'vision-text').map((model) => ({ provider, value: `${provider}:${model.id}`, displayName: model.displayName, verified: model.verified, ...(model.deprecated === true ? { deprecated: true } : {}) })),
+    ),
+    (provider, displayName) => `${PROVIDER_NAMES[provider]} · ${displayName}`,
+  );
   if (input.stored === null) {
     const hasKey: Record<Provider, boolean> = { gemini: input.keyed.includes('gemini'), openai: input.keyed.includes('openai') };
     const fallback = pickEnhancerModel({ enhancer: null, provider: null, catalog: input.catalog, hasKey });
     const shown = fallback === null ? null : enhancerValue(fallback);
-    return { options, value: shown !== null && options.some((option) => option.value === shown) ? shown : (options[0]?.value ?? '') };
+    return { options, value: shown !== null && options.some((option) => option.value === shown) ? shown : (options.find((option) => option.disabled !== true)?.value ?? '') };
   }
   const value = enhancerValue(input.stored);
   if (!options.some((option) => option.value === value)) options.push({ value, label: `${input.stored.modelId} (not in the list)` });

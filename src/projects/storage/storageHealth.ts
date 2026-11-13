@@ -4,6 +4,14 @@ export interface StorageManagerLike {
   estimate?: () => Promise<{ usage?: number; quota?: number }>;
 }
 
+/** Desktop mode only (storage-backends R10): where the library folder is, and the two things Settings can do about it. */
+export interface StorageLocation {
+  path: string;
+  showInFolder(): Promise<void>;
+  /** Opens the native folder dialog; `changed` means the app was pointed at another library and the page is reloading, `cancelled` that nothing changed, `refused` that the folder cannot be a library (the reason, for Settings to show). */
+  change(): Promise<'changed' | 'cancelled' | { refused: string }>;
+}
+
 export interface StorageEstimate {
   usedBytes: number;
   quotaBytes: number;

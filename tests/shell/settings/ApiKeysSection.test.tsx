@@ -31,6 +31,16 @@ describe('ApiKeysSection', () => {
     expect(row('OpenAI').getByRole('button', { name: 'Add key' })).toBeTruthy();
   });
 
+  it('settings R20 the page has one description sentence about encryption and at-rest protection, and nothing else repeats it', async () => {
+    show();
+    await waitFor(() => expect(row('Gemini').getByRole('button', { name: 'Add key' })).toBeTruthy());
+    expect(document.querySelector('.settings-page__description')?.textContent).toBe(
+      'Keys are encrypted with your password and stay in this browser; this protects them at rest only, not against XSS or a malicious extension.',
+    );
+    expect(screen.getAllByText(/at rest only/i)).toHaveLength(1);
+    expect(screen.getAllByText(/stay in this browser/i)).toHaveLength(1);
+  });
+
   it('settings R3 saving a key goes through the app\'s own password question and then reports the provider once', async () => {
     const { user, onKeySaved } = show();
     await user.click(await within(await screen.findByRole('group', { name: 'Gemini' })).findByRole('button', { name: 'Add key' }));

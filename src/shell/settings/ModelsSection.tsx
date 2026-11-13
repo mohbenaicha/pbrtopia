@@ -30,7 +30,7 @@ export function ModelsSection({ store, vault, keysLoaded, refresh }: ModelsSecti
   const noKey = models.keyed.length === 0;
 
   return (
-    <SettingsPage title="Models" description="Choose the model that improves your prompts, set how large your pictures are when sent, and keep the lists of models up to date.">
+    <SettingsPage title="Models">
       {!models.loaded || !sizes.loaded ? (
         <p role="status">Loading…</p>
       ) : (
@@ -39,7 +39,7 @@ export function ModelsSection({ store, vault, keysLoaded, refresh }: ModelsSecti
             <SettingsRow label="Prompt enhancer model" hint="Needed for material decomposition. Also improves your prompts.">
               <Select label="Prompt enhancer model" hideLabel options={models.options} value={models.value} disabled={noKey} onChange={(value) => void models.choose(value)} {...(models.saveError === null ? {} : { error: models.saveError })} />
             </SettingsRow>
-            <SettingsRow label="Max image size for enhancer" hint="Smaller images save tokens.">
+            <SettingsRow label="Max image size for enhancer" hint="Max image size sent to the model above (smaller images save on token costs)">
               <Select
                 label="Max image size for enhancer"
                 hideLabel
@@ -51,7 +51,7 @@ export function ModelsSection({ store, vault, keysLoaded, refresh }: ModelsSecti
             </SettingsRow>
           </SettingsGroup>
           <SettingsGroup title="Max reference image size">
-            <SettingsRow label="Reference image size" hint="Smaller references save tokens. Original sends them as uploaded.">
+            <SettingsRow label="Reference image size" hint="If you add a reference image, it can be scaled to this resolution to save on token costs">
               <Select
                 label="Reference image size"
                 hideLabel
@@ -82,7 +82,7 @@ export function ModelsSection({ store, vault, keysLoaded, refresh }: ModelsSecti
               </Button>
             }
           >
-            <SettingsRow label="Model list" hint="Asks each service you have a key for which models it offers.">
+            <SettingsRow label="Model list">
               <span className="settings-note">{models.updatedAt === null ? 'Showing the built-in list' : `Updated ${new Date(models.updatedAt).toLocaleString()}`}</span>
             </SettingsRow>
           </SettingsGroup>

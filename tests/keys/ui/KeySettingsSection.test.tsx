@@ -56,13 +56,10 @@ describe('KeySettingsSection', () => {
     await waitFor(() => expect(onKeySaved).toHaveBeenCalledTimes(2));
   });
 
-  it('R9 the section says keys stay in this browser, and that this protects keys at rest only', () => {
+  it('R9 the section itself carries no notes: the one sentence about encryption and at-rest protection is the page description (settings R20)', () => {
     renderKeys();
-    expect(screen.getByText('Keys are encrypted with your password and stay in this browser.')).toBeTruthy();
-    const warning = screen.getByText(/at rest only/i).textContent ?? '';
-    expect(warning).toMatch(/XSS/);
-    expect(warning).toMatch(/malicious extension/);
-    expect(warning).toMatch(/garbage collection/);
+    expect(screen.queryByText(/at rest only/i)).toBeNull();
+    expect(screen.queryByText(/stay in this browser/i)).toBeNull();
   });
 
   it('R1 the key field is a password field, so a pasted key is not shown', async () => {

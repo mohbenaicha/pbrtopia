@@ -115,6 +115,11 @@ describe('knownModels', () => {
     expect(findStaleKnownModels(KNOWN_MODELS, '2027-01-16').length).toBe(KNOWN_MODELS.filter((entry) => entry.verifiedAt === '2026-10-17').length);
   });
 
+  it('R4 GPT Image 2 is marked deprecated (still listed, not selectable) and no other model is', () => {
+    expect(findKnownModel('openai', 'gpt-image-2')?.deprecated).toBe(true);
+    expect(KNOWN_MODELS.filter((entry) => entry.deprecated === true).map((entry) => entry.id)).toEqual(['gpt-image-2']);
+  });
+
   it('R4 warnAboutStaleKnownModels prints one line naming the stale models and the day they were checked, and nothing when none is stale', () => {
     const warn = vi.fn();
     warnAboutStaleKnownModels(KNOWN_MODELS, '2026-10-19', warn);

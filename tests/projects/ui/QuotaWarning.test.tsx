@@ -21,6 +21,15 @@ describe('QuotaWarning', () => {
     expect(screen.getByRole('button', { name: 'Export project' })).toBeTruthy();
   });
 
+  it('storage-backends R10 in the desktop app low space talks about the disk, not the browser', () => {
+    show({ onDisk: true, estimate: { usedBytes: 0, quotaBytes: 120 * MIB } });
+    expect(screen.getByRole('status').textContent).toContain('The disk is almost full: 120 MB free.');
+    expect(screen.getByRole('status').textContent).not.toMatch(/browser/i);
+    cleanup();
+    show({ onDisk: true, full: true });
+    expect(screen.getByRole('status').textContent).toContain('The disk is full, so changes cannot be saved.');
+  });
+
   it('R2 the Export project button calls back', () => {
     const { onExport } = show();
     fireEvent.click(screen.getByRole('button', { name: 'Export project' }));

@@ -3,7 +3,7 @@ import './SettingsSections.css';
 
 interface SettingsPageProps {
   title: string;
-  description: string; // one plain line under the title
+  description?: string; // one plain line under the title; a section with nothing to add has none (settings R20)
   children: ReactNode; // the groups, stacked
 }
 
@@ -16,7 +16,7 @@ export function SettingsPage({ title, description, children }: SettingsPageProps
         <h2 className="settings-page__title" id={titleId}>
           {title}
         </h2>
-        <p className="settings-page__description">{description}</p>
+        {description !== undefined && <p className="settings-page__description">{description}</p>}
       </header>
       {children}
     </section>

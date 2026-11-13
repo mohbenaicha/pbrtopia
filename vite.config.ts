@@ -17,6 +17,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: { alias: SOURCE_ALIASES, dedupe: DEDUPED_PACKAGES },
   assetsInclude: ['**/*.bin'], // the material ball's packed mesh is imported as an asset
+  build: { outDir: 'builds/web/projection', emptyOutDir: true }, // app/builds R1
   test: {
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     exclude: ['tests/gpu/**', 'tests/ui/**', 'node_modules/**', 'upstream/tests/**'],

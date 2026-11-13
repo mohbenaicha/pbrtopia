@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import { storeFailure } from '../../src/projects';
 import { saveZipFile, zipFileName, type DownloadEnvironment } from '../../src/shell';
@@ -16,6 +17,30 @@ describe('zipFileName', () => {
     expect(zipFileName('CON', 'x.zip')).toBe('_CON.x.zip');
     expect(zipFileName('nul.txt', 'x.zip')).toBe('_nul.txt.x.zip');
     expect(zipFileName('Console', 'x.zip')).toBe('Console.x.zip');
+  });
+});
+
+describe('saveZipFile in a browser', () => {
+  it('projects R16 never asks the browser save picker and downloads the zip as a named link', async () => {
+    const picker = vi.fn();
+    Object.assign(window, { showSaveFilePicker: picker });
+    URL.createObjectURL = vi.fn(() => 'blob:x');
+    URL.revokeObjectURL = vi.fn();
+    const clicked: string[] = [];
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      clicked.push(this.download);
+    });
+    const write = async (sink: WritableStream<Uint8Array>) => {
+      const writer = sink.getWriter();
+      await writer.write(new Uint8Array([1]));
+      await writer.close();
+      return { ok: true as const, value: 'done' };
+    };
+    expect(await saveZipFile('p.zip', 'A', write, 'cancelled')).toEqual({ ok: true, value: 'done' });
+    expect(picker).not.toHaveBeenCalled();
+    expect(clicked).toEqual(['p.zip']);
+    click.mockRestore();
+    Reflect.deleteProperty(window, 'showSaveFilePicker');
   });
 });
 

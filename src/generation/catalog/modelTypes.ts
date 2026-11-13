@@ -25,6 +25,7 @@ export interface ProviderModelRecord {
   experimentalResolutions?: ResolutionKey[]; // sizes the provider documents as experimental
   canvases?: CanvasRule; // custom generation R12: the shapes the model can return per resolution key (image models in the table)
   retiring?: { shutdownDate: string }; // YYYY-MM-DD
+  deprecated?: boolean; // still listed, labelled "(deprecated)", but cannot be chosen (generate R4)
 }
 
 // A shipped table row: a verified model, dated, with where the facts came from.

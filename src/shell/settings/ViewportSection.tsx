@@ -28,7 +28,6 @@ export function ViewportSection({ store, renderControls, saveDelayMs, onResetExt
       {loaded && renderControls({ settings, onChange: change })}
       <SettingsGroup
         title="Defaults"
-        hint="Puts every viewport setting back to the value it starts with."
         actions={
           <Button
             disabled={!loaded}

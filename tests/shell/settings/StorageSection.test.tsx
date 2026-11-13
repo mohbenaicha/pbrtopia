@@ -62,6 +62,15 @@ describe('StorageSection', () => {
     expect(within(within(page).getByRole('group', { name: 'Import project' })).getByRole('button', { name: 'Import project' }).closest('[data-actions]')).not.toBeNull();
   });
 
+  it('settings R20 the browser Storage page says "Manage browser storage", and Keep my data says it asks the browser not to delete the data', async () => {
+    show();
+    await waitFor(() => expect(screen.getByText('412 MB of 8 GB used')).toBeTruthy());
+    const page = screen.getByRole('region', { name: 'Storage' });
+    expect(page.querySelector('.settings-page__description')?.textContent).toBe('Manage browser storage');
+    expect(within(page).getByText(/asks the browser to keep your data and not delete it when storage runs low/i)).toBeTruthy();
+    expect(within(page).queryByText(/Use Export project in the top bar/)).toBeNull();
+  });
+
   it('settings R12 the answer to Keep my data shows in its own card, under the rows and above the button', async () => {
     show();
     await userEvent.click(screen.getByRole('button', { name: 'Keep my data' }));
@@ -106,10 +115,9 @@ describe('StorageSection', () => {
     expect(await screen.findByText(/did not agree \(or does not support it\)\. Export your projects to keep copies\./)).toBeTruthy();
   });
 
-  it('settings R10 the note explains eviction and where Export is', () => {
+  it('settings R10 the Keep my data hint says it asks the browser not to delete the data when storage runs low (settings R20)', () => {
     show();
-    expect(screen.getByText(/may delete site data when space runs low/)).toBeTruthy();
-    expect(screen.getByText(/Export project/)).toBeTruthy();
+    expect(screen.getByText(/not delete it when storage runs low/)).toBeTruthy();
   });
 
   it('settings R11 has the shared Import project control, and after an import says what was imported and where it is', () => {
@@ -291,7 +299,7 @@ describe('StorageSection delete all data (settings R13)', () => {
 });
 
 describe('StorageSection app text (shared/materialgen-prep R53)', () => {
-  it('R53 the delete-all text and the closing note come from the app, not from the shell', async () => {
+  it('R53 the delete-all text comes from the app, not from the shell, and there is no "Other apps" card (settings R20)', async () => {
     const store = {
       estimateStorage: vi.fn(async () => null),
       requestPersistence: vi.fn(async () => true),
@@ -299,9 +307,8 @@ describe('StorageSection app text (shared/materialgen-prep R53)', () => {
       deleteProjects: vi.fn(),
       saveAppSettings: vi.fn(),
     };
-    render(<StorageSection store={store as never} projectImport={idleImport()} deleteAllText={DELETE_ALL_TEXT} note="Kept apart from the other app." />);
-    expect(screen.getByRole('heading', { level: 3, name: 'Other apps' })).toBeTruthy();
-    expect(screen.getByText('Kept apart from the other app.')).toBeTruthy();
+    render(<StorageSection store={store as never} projectImport={idleImport()} deleteAllText={DELETE_ALL_TEXT} />);
+    expect(screen.queryByRole('heading', { level: 3, name: 'Other apps' })).toBeNull();
     await waitFor(() => expect(store.estimateStorage).toHaveBeenCalled());
   });
 });

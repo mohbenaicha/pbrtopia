@@ -3,6 +3,7 @@ import type { Provider } from '../../keys';
 import { Select, type SelectOption } from '../../ui-kit';
 import { KNOWN_MODELS, warnAboutStaleKnownModels } from '../catalog/knownModels';
 import type { ModelCatalog } from '../generateStore';
+import { arrangeModelOptions } from './arrangeModelOptions';
 
 interface ModelSelectProps {
   catalog: ModelCatalog;
@@ -24,9 +25,12 @@ export function ModelSelect({ catalog, hasKey, provider, modelId, today, onSelec
     if (import.meta.env.DEV) warnAboutStaleKnownModels(KNOWN_MODELS, today);
   }, []);
 
-  const options: SelectOption[] = PROVIDERS_IN_ORDER.filter((name) => hasKey[name])
-    .flatMap((name) => catalog[name].filter((model) => model.role === 'image').map((model) => ({ value: `${name}:${model.id}`, label: `${PROVIDER_NAME[name]}: ${model.displayName}${model.verified ? '' : ' (unverified)'}` })))
-    .sort((a, b) => a.label.localeCompare(b.label));
+  const options: SelectOption[] = arrangeModelOptions(
+    PROVIDERS_IN_ORDER.filter((name) => hasKey[name]).flatMap((name) =>
+      catalog[name].filter((model) => model.role === 'image').map((model) => ({ provider: name, value: `${name}:${model.id}`, displayName: model.displayName, verified: model.verified, ...(model.deprecated === true ? { deprecated: true } : {}) })),
+    ),
+    (name, displayName) => `${PROVIDER_NAME[name]}: ${displayName}`,
+  );
   const value = provider !== null && modelId !== null ? `${provider}:${modelId}` : '';
 
   return (

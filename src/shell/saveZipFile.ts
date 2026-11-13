@@ -10,9 +10,9 @@ export interface DownloadEnvironment {
   saveBlob(blob: Blob, fileName: string): void; // used when there is no file picker
 }
 
+// App/projects R16: a browser downloads the zip as a link into its download folder; its save picker is not used (it failed silently). The desktop app passes its own environment.
 function browserEnvironment(): DownloadEnvironment {
-  const picker = (window as unknown as { showSaveFilePicker?: DownloadEnvironment['showSaveFilePicker'] }).showSaveFilePicker;
-  return picker === undefined ? { saveBlob: saveBlobAsFile } : { showSaveFilePicker: picker.bind(window), saveBlob: saveBlobAsFile };
+  return { saveBlob: saveBlobAsFile };
 }
 
 const isCancel = (error: unknown): boolean => error instanceof DOMException && error.name === 'AbortError';
@@ -30,7 +30,7 @@ export function zipFileName(projectName: string, extension: string, fallback = '
 }
 
 /**
- * Writes a zip the user keeps: streamed to a file they pick where the browser has a save picker, else collected and downloaded as a link.
+ * Writes a zip the user keeps: streamed to a file they pick where the environment gives a save picker (the desktop app's native dialog), else collected and downloaded as a link (every browser).
  * `writeZip` fills the sink; cancelling the picker is not a failure and returns `whenCancelled`.
  */
 export async function saveZipFile<T>(

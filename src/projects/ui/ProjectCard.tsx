@@ -15,10 +15,13 @@ interface ProjectCardProps {
   saveName: (name: string) => Promise<string | null>;
   cancelRename: () => void;
   remove: () => void;
+  exportProject?: () => void; // absent where the app gives no exporter
+  exporting?: boolean; // this card's export is running
+  exportRunning?: boolean; // some export is running: the card is not exported or deleted meanwhile
 }
 
 // One project in the list: thumbnail, name, size and last change, with selection and the actions.
-export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, toggleSelected, startRename, saveName, cancelRename, remove }: ProjectCardProps): React.JSX.Element {
+export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, toggleSelected, startRename, saveName, cancelRename, remove, exportProject, exporting = false, exportRunning = false }: ProjectCardProps): React.JSX.Element {
   const thumbnail = useThumbnailUrl(loadThumbnail, summary.id);
   const card = useRef<HTMLLIElement>(null);
   const wasRenaming = useRef(false);
@@ -48,7 +51,17 @@ export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, 
           <div className="project-card__actions">
             <IconButton label="Open" icon={<Icon name="open-project" />} {...unreadable} onClick={open} />
             <IconButton label="Rename" icon={<Icon name="pencil" />} {...unreadable} onClick={startRename} />
-            <IconButton label="Delete" icon={<Icon name="trash" />} onClick={remove} />
+            {exportProject !== undefined && (
+              <IconButton
+                label={`Export ${summary.name}`}
+                hint="Export project"
+                icon={<Icon name="download" />}
+                loading={exporting}
+                {...(summary.unreadable === undefined ? { disabled: exportRunning && !exporting } : unreadable)}
+                onClick={exportProject}
+              />
+            )}
+            <IconButton label="Delete" icon={<Icon name="trash" />} disabled={exportRunning} onClick={remove} />
           </div>
         </>
       )}

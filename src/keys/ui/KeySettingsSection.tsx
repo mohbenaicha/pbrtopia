@@ -46,7 +46,6 @@ export function KeySettingsSection({ vault, prompt, rejectedKeys, onKeySaved }: 
         <h3 className="key-settings__title" id="key-settings-title">API keys</h3>
         {status === 'unlocked' && <Button variant="secondary" onClick={() => vault.lock()}>Lock</Button>}
       </div>
-      <p className="key-settings__note">Keys are encrypted with your password and stay in this browser.</p>
       {(problem !== null || deletion.deleting || deletion.failure !== null) && <ResetSavedKeys problem={problem} deletion={deletion} />}
       {PROVIDERS.map((provider) => (
         <KeyRow
@@ -66,10 +65,6 @@ export function KeySettingsSection({ vault, prompt, rejectedKeys, onKeySaved }: 
           }
         />
       ))}
-      <p className="key-settings__note">
-        This protects keys at rest only. It does not protect against XSS or a malicious extension, and a decrypted key is a JavaScript
-        string that can stay in memory until garbage collection, even after locking.
-      </p>
     </section>
   );
 }

@@ -33,6 +33,26 @@ describe('ModelSelect (R4)', () => {
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Gemini: Nano Image', 'OpenAI: GPT Image', 'OpenAI: Zed Image (unverified)']);
   });
 
+  it('R4 verified models sit under a heading per provider, and the unverified one is last under a separator with no heading', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('combobox', { name: 'Model' }));
+    expect(screen.getAllByText(/^(Google|OpenAI)$/).map((heading) => heading.textContent)).toEqual(['Google', 'OpenAI']);
+    expect(screen.getAllByRole('separator')).toHaveLength(1);
+    const items = [...screen.getByRole('listbox').children].map((node) => node.getAttribute('role') + ':' + node.textContent);
+    expect(items.at(-2)).toBe('separator:');
+    expect(items.at(-1)).toBe('option:OpenAI: Zed Image (unverified)');
+  });
+
+  it('R4 a deprecated model is listed but cannot be chosen', async () => {
+    const catalog: ModelCatalog = { gemini: [], openai: [model('openai', 'o-old', 'Old Image', { deprecated: true }), model('openai', 'o-image', 'GPT Image')] };
+    const { user, onSelect } = setup({ catalog });
+    await user.click(screen.getByRole('combobox', { name: 'Model' }));
+    const old = screen.getByRole('option', { name: 'OpenAI: Old Image (deprecated)' });
+    expect(old.getAttribute('aria-disabled')).toBe('true');
+    await user.click(old);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it('R4 a provider without a key lists no models', async () => {
     const { user } = setup({ hasKey: { gemini: false, openai: true } });
     await user.click(screen.getByRole('combobox', { name: 'Model' }));

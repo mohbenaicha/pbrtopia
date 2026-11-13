@@ -22,13 +22,20 @@ describe('buildEnhancerOptions', () => {
     expect(buildEnhancerOptions({ keyed: ['gemini'], catalog, stored: null }).value).toBe('gemini:g-text');
   });
 
-  it('settings R5 lists only vision-text models of keyed providers, labelled with provider and name, unverified marked', () => {
+  it('settings R5 lists only vision-text models of keyed providers, labelled with provider and name; verified ones grouped per provider, unverified last below a separator', () => {
     const built = buildEnhancerOptions({ keyed: ['gemini', 'openai'], catalog, stored: null });
     expect(built.options).toEqual([
-      { value: 'gemini:g-text', label: 'Gemini · Name g-text' },
-      { value: 'gemini:g-new', label: 'Gemini · Name g-new (unverified)' },
-      { value: 'openai:o-text', label: 'OpenAI · Name o-text' },
+      { value: 'gemini:g-text', label: 'Gemini · Name g-text', group: 'Google' },
+      { value: 'openai:o-text', label: 'OpenAI · Name o-text', group: 'OpenAI' },
+      { value: 'gemini:g-new', label: 'Gemini · Name g-new (unverified)', separatorBefore: true },
     ]);
+  });
+
+  it('settings R5 a deprecated model is listed as "(deprecated)" and disabled, and is never the model shown by default', () => {
+    const deprecated: ModelCatalog = { gemini: [], openai: [{ ...model('openai', 'o-old'), deprecated: true }, model('openai', 'o-text')] };
+    const built = buildEnhancerOptions({ keyed: ['openai'], catalog: deprecated, stored: null });
+    expect(built.options.find((option) => option.value === 'openai:o-old')).toMatchObject({ label: 'OpenAI · Name o-old (deprecated)', disabled: true });
+    expect(built.value).toBe('openai:o-text');
   });
 
   it('settings R5 a provider without a key contributes nothing', () => {

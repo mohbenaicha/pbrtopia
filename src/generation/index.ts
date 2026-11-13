@@ -39,6 +39,7 @@ export { KNOWN_MODELS } from './catalog/knownModels';
 export type { ProviderModelRecord, ResolutionKey, ResolutionOption } from './catalog/modelTypes';
 export { describeImageModelProblem } from './catalog/describeImageModelProblem';
 export { ModelSelect } from './ui/ModelSelect';
+export { arrangeModelOptions, type ModelChoice } from './ui/arrangeModelOptions';
 export { QualitySelect } from './ui/QualitySelect';
 export { ResolutionSelect } from './ui/ResolutionSelect';
 export { ReferenceStrip } from './ui/ReferenceStrip';

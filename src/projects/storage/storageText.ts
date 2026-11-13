@@ -15,6 +15,12 @@ export function formatBytes(bytes: number): string {
   return `${text} ${UNITS[unit]}`;
 }
 
+/** Storage-backends R10: the sentence for a nearly full or full disk in the desktop app (the estimate's quota is the free space there). */
+export function describeDiskShortage(estimate: StorageEstimate | null, full: boolean): string {
+  if (full || estimate === null) return 'The disk is full, so changes cannot be saved.';
+  return `The disk is almost full: ${formatBytes(estimate.quotaBytes - estimate.usedBytes)} free.`;
+}
+
 /** The sentence for low or full browser storage (projects R2). */
 export function describeStorageShortage(estimate: StorageEstimate | null, full: boolean): string {
   if (full || estimate === null) return 'Browser storage is full, so changes cannot be saved.';

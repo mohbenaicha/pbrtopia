@@ -15,7 +15,7 @@ export { MAX_PROJECT_NAME_LENGTH, isSafeBlobKey, normalizeProjectName, type Proj
 export { isSafeProjectId, type BlobStore } from './storage/BlobStore';
 export { createOpfsBlobStore, openOpfsRoot } from './storage/opfsBlobStore';
 export { openRecordDatabase, runRecordTransaction, settle } from './storage/recordTransactions';
-export { createStorageOperations, isStorageLow, type StorageEstimate, type StorageManagerLike } from './storage/storageHealth';
+export { createStorageOperations, isStorageLow, type StorageEstimate, type StorageLocation, type StorageManagerLike } from './storage/storageHealth';
 
 export { streamZipEntries, encodeJsonBytes, isDeflatable, type ZipFileEntry } from './zip/streamZipEntries';
 export { describeFailure, readZipEntries, type ZipEntry } from './zip/readZipEntries';
@@ -30,4 +30,5 @@ export { flushOnTabHide } from './autosave/flushOnTabHide';
 
 export { ImportProjectButton, ImportProjectStatus, type ProjectImportState } from './ui/ImportProjectButton';
 export { ProjectListView, type ListViewStore } from './ui/ProjectListView';
+export type { ExportTarget, ListExportBatch, ListExportResult, ProjectListExporter } from './ui/listExport';
 export { QuotaWarning, type QuotaWarningProps } from './ui/QuotaWarning';
