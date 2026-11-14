@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import { CommitSlider, Select, Toggle, type SelectOption } from '@shared/ui-kit';
+import { CommitSlider, Select, Toggle, Tooltip, type SelectOption } from '@shared/ui-kit';
 import { findMaterial, GENERIC, listMaterialOptions, type BaseMaterialTable } from '../table/baseMaterials';
 import { DEFAULT_MIX, mixOf, type MaskRow, type RowMix } from '../record/maskRows';
+import { MASK_TIPS } from './maskTooltips';
 import './masksPanel.css';
 
 interface MaskRowViewProps {
@@ -48,9 +49,16 @@ export function MaskRowView({ row, others = 0, table, disabled, onMaterial, onRo
   const options = useMemo(() => materialOptions(row, table), [row, table]);
   const chosen = findMaterial(table, row.material);
   const mix = mixOf(row);
+  const heightRow = (
+    <div className="mask-row__height" style={{ minWidth: 0 }} data-blocked={heightDisabledReason === null ? undefined : ''}>
+      <CommitSlider label="Height" hint={MASK_TIPS.height} layout="row" value={row.height} onCommit={onHeight} disabled={disabled || heightDisabledReason !== null} resetTo={0} range={HEIGHT_RANGE} />
+    </div>
+  );
   return (
     <div className="mask-row" role="group" aria-label={row.name}>
-      <span className="mask-row__name" title={row.description === '' ? undefined : row.description}>{others > 0 ? `${row.name} +${others}` : row.name}</span>
+      <Tooltip heading={row.name} text={row.description}>
+        <span className="mask-row__name">{others > 0 ? `${row.name} +${others}` : row.name}</span>
+      </Tooltip>
       <Select
         label={`Base material of ${row.name}`}
         hideLabel
@@ -60,19 +68,17 @@ export function MaskRowView({ row, others = 0, table, disabled, onMaterial, onRo
         disabled={disabled}
         searchable
         noMatchText="No material matches"
-        title="Estimated default"
+        title={MASK_TIPS.material}
       />
-      <CommitSlider label="Roughness" layout="row" value={row.rough} onCommit={onRough} disabled={disabled} resetTo={chosen?.roughness ?? row.rough} />
-      <CommitSlider label="Metalness" layout="row" value={row.metal} onCommit={onMetal} disabled={disabled} resetTo={chosen?.metal ?? row.metal} />
-      <div style={{ minWidth: 0 }} {...(heightDisabledReason === null ? {} : { title: heightDisabledReason })}>
-        <CommitSlider label="Height" layout="row" value={row.height} onCommit={onHeight} disabled={disabled || heightDisabledReason !== null} resetTo={0} range={HEIGHT_RANGE} />
-      </div>
+      <CommitSlider label="Roughness" hint={MASK_TIPS.roughness} layout="row" value={row.rough} onCommit={onRough} disabled={disabled} resetTo={chosen?.roughness ?? row.rough} />
+      <CommitSlider label="Metalness" hint={MASK_TIPS.metalness} layout="row" value={row.metal} onCommit={onMetal} disabled={disabled} resetTo={chosen?.metal ?? row.metal} />
+      {heightDisabledReason === null ? heightRow : <Tooltip heading="Height" text={heightDisabledReason}>{heightRow}</Tooltip>}
       <Toggle label="Colour mixin" checked={mix.on} onChange={(on) => onMix({ on })} disabled={disabled || mixDisabledReason !== null} hint={mixDisabledReason ?? 'Shapes roughness and metalness by the albedo inside this component'} />
       {mix.on && (
         <div className="mask-row__mixin" role="group" aria-label="Colour mixin">
-          <Toggle label="Invert" checked={mix.invert} onChange={(invert) => onMix({ invert })} disabled={disabled} />
-          <CommitSlider label="Roughness" layout="row" value={mix.rough} onCommit={(rough) => onMix({ rough })} disabled={disabled} resetTo={DEFAULT_MIX.rough} />
-          <CommitSlider label="Metalness" layout="row" value={mix.metal} onCommit={(metal) => onMix({ metal })} disabled={disabled} resetTo={DEFAULT_MIX.metal} />
+          <Toggle label="Invert" hint={MASK_TIPS.mixinInvert} checked={mix.invert} onChange={(invert) => onMix({ invert })} disabled={disabled} />
+          <CommitSlider label="Roughness" hint={MASK_TIPS.mixinRoughness} layout="row" value={mix.rough} onCommit={(rough) => onMix({ rough })} disabled={disabled} resetTo={DEFAULT_MIX.rough} />
+          <CommitSlider label="Metalness" hint={MASK_TIPS.mixinMetalness} layout="row" value={mix.metal} onCommit={(metal) => onMix({ metal })} disabled={disabled} resetTo={DEFAULT_MIX.metal} />
         </div>
       )}
     </div>

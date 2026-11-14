@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { AssignmentOverlay, PlanToolbar, findCatalogModel, type AssignmentCardView, type AssignmentItem } from '@shared/generation';
+import { Tooltip } from '@shared/ui-kit';
 import {
   buildPresetPlan, describePreset, detectPlanEntry, MAX_MAP_IMAGES, PLAN_MAPS, PRESET_IDS, mapDisplayName, savedSetupValue,
   type GenerationPanel, type PlanMap,
@@ -64,11 +65,13 @@ export function MaterialSetupOverlay({ generation, colorMode, onClose }: Materia
       items={items}
       rowExtra={
         <figure className="setup-snapshots__item" data-assigned={plan.decomposition === null ? 'false' : 'true'}>
-          <button type="button" className="setup-snapshots__button" aria-label="Metal-Roughness" aria-disabled="true" title={METAL_ROUGHNESS_NOTE}>
-            <span className="setup-thumb-slot">
-              <span className="map-chip-thumb map-chip-thumb--metal-roughness" aria-hidden="true" />
-            </span>
-          </button>
+          <Tooltip heading="Metal-Roughness" text={METAL_ROUGHNESS_NOTE}>
+            <button type="button" className="setup-snapshots__button" aria-label="Metal-Roughness" aria-disabled="true">
+              <span className="setup-thumb-slot">
+                <span className="map-chip-thumb map-chip-thumb--metal-roughness" aria-hidden="true" />
+              </span>
+            </button>
+          </Tooltip>
           <figcaption>Metal-Roughness</figcaption>
         </figure>
       }

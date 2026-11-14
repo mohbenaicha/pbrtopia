@@ -7,6 +7,7 @@ import { AppBackendsProvider, setRouteGuard } from '@shared/shell';
 import { MaterialProjectView } from '@mat/app/project/MaterialProjectView';
 import { encodePng } from '../../../../src/materialgen/maps/png/pngCodec';
 import { createMemoryVaultStorage } from '../../../keys/memoryVaultStorage';
+import { describeTooltipOf } from '../../../support/tooltipDescription';
 import { createTestMaterialStore, png, type TestMaterialStore } from '../../storage/materialStoreFixtures';
 
 const lockState = vi.hoisted(() => ({ held: true }));
@@ -83,7 +84,7 @@ describe('materialgen/app project view', () => {
     open();
     const bar = screen.getByTestId('top-bar');
     expect(within(bar).getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(['Projects', 'Export material', 'Add-ons', 'Settings']);
-    expect([...bar.children].map((child) => child.getAttribute('data-region'))).toEqual(['name', 'actions']);
+    expect([...bar.children].filter((child) => child.hasAttribute('data-region')).map((child) => child.getAttribute('data-region'))).toEqual(['name', 'actions']);
     await waitFor(() => expect(bar.querySelector('[data-region="name"]')?.textContent).toBe('Bricks'));
   });
 
@@ -93,7 +94,7 @@ describe('materialgen/app project view', () => {
     await waitFor(() => expect(bar.querySelector('[data-region="name"]')?.textContent).toBe('Bricks'));
     const button = within(bar).getByRole('button', { name: 'Export material' }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
-    expect(button.getAttribute('title')).toContain('There is nothing to export yet.');
+    expect(describeTooltipOf(button)).toContain('There is nothing to export yet.');
     expect(screen.getAllByRole('button', { name: 'Export material' })).toHaveLength(1);
   });
 
@@ -147,7 +148,7 @@ describe('materialgen/app project view', () => {
     const saved = await test.store.loadProject(made.value.id);
     if (!saved.ok) throw new Error('load');
     expect((await test.store.readBlob(made.value.id, saved.value.maps.normal!.workingKey))?.size).toBeGreaterThan(0);
-    expect(within(card).getByTestId('map-caption').getAttribute('title')).toBe('Normal 256 x 256 · Dropped: n.png');
+    expect(describeTooltipOf(within(card).getByTestId('map-caption'))).toBe('Normal. 256 x 256 · Dropped: n.png');
   }, 15000);
 
   it('R30 a file dropped while the opening sweep is still running waits: nothing is written until the sweep has finished', async () => {

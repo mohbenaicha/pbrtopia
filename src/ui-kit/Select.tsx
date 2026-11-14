@@ -1,6 +1,7 @@
-import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactElement } from 'react';
 import { describedBy, FieldMessage } from './FieldMessage';
 import { Icon } from './Icon';
+import { Tooltip } from './Tooltip';
 import { useDismiss } from './useDismiss';
 import './Select.css';
 
@@ -9,7 +10,7 @@ export interface SelectOption {
   label: string;
   group?: string; // a heading drawn above the first option of each run of options with the same group
   detail?: string; // drawn after the label in the list, not in the closed box (a value, a unit)
-  hint?: string; // a tooltip on the option in the list, saying what it is about
+  hint?: string; // the tooltip's text on the option in the list (its label is the heading): what it is about
   separatorBefore?: boolean; // a divider line drawn above the option
   disabled?: boolean; // shown dimmed in the list; ignores clicks and keys, and the arrow keys skip it
 }
@@ -26,10 +27,14 @@ interface SelectProps {
   opensUp?: boolean; // the list opens above the box, for a select near the bottom of a panel where a list below would cover the controls under it
   searchable?: boolean; // the list opens with a filter box; typing keeps the options whose label holds the text (case-insensitive)
   noMatchText?: string; // shown in the list when the filter keeps nothing
-  title?: string; // a tooltip on the box
+  title?: string; // the tooltip's text on the box (the label is its heading); none while the select is disabled
 }
 
 // A dropdown that draws its own list so it matches the rest of the UI. Focus stays on the box; the list is driven by the keyboard or the mouse.
+/** App tooltips R3: the element with a styled tooltip (heading `heading`, text `text`) when it has text to give; as it is when it has none. No wrapper: the handlers go on the element itself. */
+const tipped = (heading: string, text: string | undefined, element: ReactElement<Record<string, unknown>>): ReactElement =>
+  text === undefined ? element : <Tooltip heading={heading} text={text}>{element}</Tooltip>;
+
 export function Select({
   label, options, value, onChange, disabled = false, emptyText = 'Nothing to choose', error, hideLabel = false, opensUp = false, searchable = false, noMatchText = 'No matches', title,
 }: SelectProps): React.JSX.Element {
@@ -106,20 +111,23 @@ export function Select({
         <Fragment key={option.value}>
           {option.separatorBefore === true && <li role="separator" className="ui-select__separator" />}
           {option.group !== undefined && option.group !== shown[index - 1]?.group && <li role="presentation" className="ui-select__heading">{option.group}</li>}
-          <li
-            id={`${id}-option-${index}`}
-            role="option"
-            aria-selected={option.value === value}
-            aria-disabled={option.disabled === true ? true : undefined}
-            title={option.hint}
-            className="ui-select__option"
-            data-highlighted={index === highlighted && option.disabled !== true ? '' : undefined}
-            onPointerEnter={() => option.disabled !== true && setHighlighted(index)}
-            onClick={() => choose(index)}
-          >
-            <span className="ui-select__option-label">{option.label}</span>
-            {option.detail !== undefined && <span className="ui-select__option-detail">{option.detail}</span>}
-          </li>
+          {tipped(
+            option.label,
+            option.hint,
+            <li
+              id={`${id}-option-${index}`}
+              role="option"
+              aria-selected={option.value === value}
+              aria-disabled={option.disabled === true ? true : undefined}
+              className="ui-select__option"
+              data-highlighted={index === highlighted && option.disabled !== true ? '' : undefined}
+              onPointerEnter={() => option.disabled !== true && setHighlighted(index)}
+              onClick={() => choose(index)}
+            >
+              <span className="ui-select__option-label">{option.label}</span>
+              {option.detail !== undefined && <span className="ui-select__option-detail">{option.detail}</span>}
+            </li>,
+          )}
         </Fragment>
       ))}
     </ul>
@@ -127,13 +135,15 @@ export function Select({
 
   return (
     <div className="ui-field" ref={region}>
-      <span className="ui-field__label" id={`${id}-label`} data-hidden={hideLabel ? '' : undefined}>{label}</span>
+      <Tooltip heading={label} text={title ?? ''}><span className="ui-field__label" id={`${id}-label`} data-hidden={hideLabel ? '' : undefined}>{label}</span></Tooltip>
       <div className="ui-select">
-        <button
+        {tipped(
+          label,
+          title ?? '',
+          <button
           ref={box}
           type="button"
           role="combobox"
-          title={title}
           className="ui-select__box"
           aria-labelledby={`${id}-label`}
           aria-haspopup="listbox"
@@ -150,7 +160,8 @@ export function Select({
         >
           <span className="ui-select__value" data-placeholder={selected ? undefined : ''}>{empty ? emptyText : (selected?.label ?? '')}</span>
           <Icon name="chevron-down" size={14} />
-        </button>
+        </button>,
+        )}
         {open && !searchable && renderList()}
         {open && searchable && (
           <div className="ui-select__popup" data-opens-up={opensUp ? '' : undefined}>

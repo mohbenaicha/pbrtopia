@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { QuotaWarning, type StorageEstimate } from '@shared/projects';
 import { ReadOnlyBanner, RightPanel, useIsDesktopApp } from '@shared/shell';
-import { Disclosure, SegmentedControl, Tabs, type SegmentOption, type TabOption } from '@shared/ui-kit';
+import { Disclosure, SegmentedControl, Tabs, Tooltip, type SegmentOption, type TabOption } from '@shared/ui-kit';
 import type { GenerationPanel } from '@mat/generation';
 import type { ColorMode, MaterialRecord, MaterialSize } from '@mat/storage';
 import { GenerateSection } from './generate/GenerateSection';
@@ -15,8 +15,8 @@ import './generate/generatePanels.css';
 import './materialPanels.css';
 
 const COLOR_MODE_OPTIONS: SegmentOption<ColorMode>[] = [
-  { value: 'albedo', label: 'Albedo' },
-  { value: 'diffuse', label: 'Diffuse' },
+  { value: 'albedo', label: 'Albedo', hint: 'Makes a flat base colour with the lighting removed, for physically based rendering.' },
+  { value: 'diffuse', label: 'Diffuse', hint: 'Keeps the shading and shadows in the colour, as a plain photo-style texture.' },
 ];
 
 const carriesFiles = (event: React.DragEvent): boolean => Array.from(event.dataTransfer.types).includes('Files');
@@ -54,6 +54,19 @@ export function MaterialGeneratePanel({ record, canWrite, readOnly, generation, 
   const [modelsOpen, setModelsOpen] = useState(false);
   const running = generation.run.running;
   const editable = canWrite && !running;
+  const promptField = (
+    <textarea
+      id={promptId}
+      className="material-panel__prompt"
+      rows={8}
+      value={record.prompt}
+      disabled={!canWrite}
+      onChange={(event) => {
+        const prompt = event.target.value; // read now: the updater may run after the field is reset to the stored value
+        onEdit((current) => ({ ...current, prompt }));
+      }}
+    />
+  );
 
   return (
     <RightPanel>
@@ -71,9 +84,11 @@ export function MaterialGeneratePanel({ record, canWrite, readOnly, generation, 
         <Tabs label="Generate panel" tabs={TABS} value={tab} onChange={setTab} />
         <div className="material-panel material-panel--padded" role="tabpanel" aria-label="Generate fields" hidden={tab !== 'generate'}>
           <div className="material-panel__field">
-            <label className="material-panel__label" htmlFor={promptId}>
-              Prompt
-            </label>
+            <Tooltip heading="Prompt" text="Describes the surface the image model should make.">
+              <label className="material-panel__label" htmlFor={promptId}>
+                Prompt
+              </label>
+            </Tooltip>
             <div
               className="prompt-field"
               onDragOver={(event) => {
@@ -86,24 +101,13 @@ export function MaterialGeneratePanel({ record, canWrite, readOnly, generation, 
                 generation.references.addFiles(files);
               }}
             >
-              <textarea
-                id={promptId}
-                className="material-panel__prompt"
-                rows={8}
-                value={record.prompt}
-                disabled={!canWrite}
-                title={canWrite ? undefined : READ_ONLY_REASON}
-                onChange={(event) => {
-                  const prompt = event.target.value; // read now: the updater may run after the field is reset to the stored value
-                  onEdit((current) => ({ ...current, prompt }));
-                }}
-              />
+              {canWrite ? promptField : <Tooltip heading="Prompt" text={READ_ONLY_REASON}><span className="material-panel__prompt-tip">{promptField}</span></Tooltip>}
               <PromptIdeasStrip ideas={generation.ideas} readOnlyReason={canWrite ? null : READ_ONLY_REASON} />
             </div>
             {generation.ideas.error !== null && <p role="alert">{generation.ideas.error}</p>}
           </div>
           <ReferenceImagesSection generation={generation} canWrite={editable} />
-          <SegmentedControl label="Color mode" options={COLOR_MODE_OPTIONS} value={record.colorMode} disabled={!editable} onChange={(colorMode) => onEdit((current) => ({ ...current, colorMode }))} />
+          <SegmentedControl label="Color mode" hint="Whether the generated colour map carries lighting or not." options={COLOR_MODE_OPTIONS} value={record.colorMode} disabled={!editable} onChange={(colorMode) => onEdit((current) => ({ ...current, colorMode }))} />
           <SizeField record={record} canWrite={editable} resizing={resizing} onSizeChange={(size) => onEdit((current) => ({ ...current, size }))} onResizeMaps={onResizeMaps} />
           <Disclosure title="Model settings" open={modelsOpen} onOpenChange={setModelsOpen}>
             <ModelSettingsSection generation={generation} colorMode={record.colorMode} disabled={!editable} />

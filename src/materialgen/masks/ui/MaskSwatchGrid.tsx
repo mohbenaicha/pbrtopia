@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { Tooltip } from '@shared/ui-kit';
 import type { MaskRow } from '../record/maskRows';
 import type { PaletteEntry } from '../record/masksRecord';
 import './masksPanel.css';
@@ -25,20 +26,20 @@ export function MaskSwatchGrid({ rows, palette, selected, onSelect, onHighlight,
       <p className="mask-swatches__hint">{hint}</p>
       <div className="mask-swatches" style={{ '--mask-swatch-columns': COLUMNS } as CSSProperties}>
         {rows.map((row) => (
-          <button
-            key={row.label}
-            type="button"
-            className="mask-swatch"
-            aria-label={row.name}
-            aria-pressed={selected.includes(row.label)}
-            title={row.description === '' ? row.name : `${row.name}: ${row.description}`}
-            style={{ backgroundColor: colourOf(row.label) }}
-            onClick={() => onSelect(row.label)}
-            onPointerEnter={() => onHighlight?.(row.label)}
-            onPointerLeave={() => onHighlight?.(null)}
-            onFocus={() => onHighlight?.(row.label)}
-            onBlur={() => onHighlight?.(null)}
-          />
+          <Tooltip key={row.label} heading={row.name} text={row.description}>
+            <button
+              type="button"
+              className="mask-swatch"
+              aria-label={row.name}
+              aria-pressed={selected.includes(row.label)}
+              style={{ backgroundColor: colourOf(row.label) }}
+              onClick={() => onSelect(row.label)}
+              onPointerEnter={() => onHighlight?.(row.label)}
+              onPointerLeave={() => onHighlight?.(null)}
+              onFocus={() => onHighlight?.(row.label)}
+              onBlur={() => onHighlight?.(null)}
+            />
+          </Tooltip>
         ))}
       </div>
     </>

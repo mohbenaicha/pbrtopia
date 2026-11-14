@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Tooltip } from '@shared/ui-kit';
 import { listMaterialOptions, type BaseMaterial, type BaseMaterialTable } from '@mat/masks';
 import { MaterialBall } from './MaterialBall';
 import { PickerOverlay } from './PickerOverlay';
@@ -44,7 +45,7 @@ export function MaterialPicker({ loadTable, onChoose, onClose }: MaterialPickerP
           {options.map((option) => (
             <button key={option.name} type="button" className="material-picker__tile" onClick={() => onChoose(option)}>
               <MaterialBall material={option} size={BALL_PIXELS} />
-              <span className="material-picker__name">{option.name}</span>
+              <Tooltip heading={option.name} text="Click to use this material."><span className="material-picker__name">{option.name}</span></Tooltip>
               <span className="material-picker__values">{twoDecimals(option.roughness)} / {twoDecimals(option.metal)}</span>
             </button>
           ))}

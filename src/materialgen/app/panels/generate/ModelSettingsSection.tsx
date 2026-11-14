@@ -58,8 +58,8 @@ export function ModelSettingsSection({ generation, colorMode, disabled }: ModelS
 
   return (
     <div className="model-settings">
-      <Select label="Preset" options={choice.choices} value={choice.entry} disabled={disabled} onChange={choice.choose} />
-      <SegmentedControl label={single !== null ? 'Map' : 'Card'} options={options} value={selectedValue} onChange={pickTab} />
+      <Select label="Preset" title="A ready-made set of images and models; changing a setting below turns it into Custom." options={choice.choices} value={choice.entry} disabled={disabled} onChange={choice.choose} />
+      <SegmentedControl label={single !== null ? 'Map' : 'Card'} hint={single !== null ? 'Picks the one map this plan generates.' : 'Picks which generated image the settings below belong to.'} options={options} value={selectedValue} onChange={pickTab} />
       <section className="model-card" aria-label={card === undefined ? DECOMPOSITION_NAME : cardName(card, colorMode)}>
         {isDecomposition && (
           <Toggle

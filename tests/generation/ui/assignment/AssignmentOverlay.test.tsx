@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AssignmentOverlay, type AssignmentCardView, type AssignmentItem, type AssignmentOverlayProps } from '../../../../src/generation';
+import { describeTooltipOf } from '../../../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -114,9 +115,9 @@ describe('shared/materialgen-prep assignment overlay', () => {
 
   it('R22 an item\'s note is its tooltip and its accessible description', () => {
     show({ items: [{ id: 0, name: 'Alpha', thumb: <span />, pinned: true, note: 'Stays on the first image' }, items[1]!, items[2]!] });
-    expect(chip('Alpha').getAttribute('title')).toBe('Stays on the first image');
-    expect(chip('Alpha').getAttribute('aria-description')).toBe('Stays on the first image');
-    expect(chip('Beta').getAttribute('title')).toBeNull();
+    expect(chip('Alpha').getAttribute('title')).toBeNull();
+    expect(describeTooltipOf(chip('Alpha'))).toBe('Alpha. Stays on the first image');
+    expect(describeTooltipOf(chip('Beta'))).toBe('');
   });
 
   it('R22a without an assignedTo label the row carries no note', () => {

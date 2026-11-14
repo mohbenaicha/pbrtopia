@@ -11,6 +11,7 @@ type Which = 'low' | 'high';
 
 interface RangeSliderProps {
   label: string; // the row's label; the markers are named "<label>, low" and "<label>, high"
+  hint?: string; // what the setting does: the sentence of the label's tooltip
   low: number;
   high: number;
   min: number;
@@ -30,7 +31,7 @@ const decimalsOf = (step: number): number => (Number.isInteger(step) ? 0 : Math.
  * a gap of RANGE_MIN_GAP of the range keeps them distinct (the one being moved stops at the gap, it does not push the other). A press on the track moves the nearer
  * marker (low on a tie) and drags it. The reset arrow puts both markers back at the two ends. Memoised: pass stable callbacks.
  */
-function RangeSliderView({ label, low, high, min, max, step = 1, onChange, format = String, layout = 'stacked', marks = false, extra }: RangeSliderProps): React.JSX.Element {
+function RangeSliderView({ label, hint, low, high, min, max, step = 1, onChange, format = String, layout = 'stacked', marks = false, extra }: RangeSliderProps): React.JSX.Element {
   const track = useRef<HTMLSpanElement>(null);
   const lowThumb = useRef<HTMLSpanElement>(null);
   const highThumb = useRef<HTMLSpanElement>(null);
@@ -126,6 +127,7 @@ function RangeSliderView({ label, low, high, min, max, step = 1, onChange, forma
   return (
     <SliderFrame
       label={label}
+      hint={hint}
       layout={layout}
       marks={marks}
       disabled={false}

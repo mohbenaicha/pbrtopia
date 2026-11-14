@@ -1,4 +1,4 @@
-import { Button, Dialog, Select, SegmentedControl, Toggle } from '@shared/ui-kit';
+import { Button, Dialog, Select, SegmentedControl, Toggle, Tooltip } from '@shared/ui-kit';
 import { EXPORT_TARGET_CARDS, type ExportDialogTarget, type ExportKind } from '@mat/export';
 import { TARGET_LOGO_URLS } from '../../addons/addonFiles';
 import type { useExportDialog } from './useExportDialog';
@@ -18,7 +18,7 @@ function TargetCards({ dialog }: { dialog: ExportDialogState }): React.JSX.Eleme
           <label key={card.target} className="export-dialog__card" data-selected={selected ? '' : undefined}>
             <input type="radio" name="export-target" value={card.target} checked={selected} disabled={running} onChange={() => setOptions({ target: card.target as ExportDialogTarget })} />
             <img className="export-dialog__card-logo" src={TARGET_LOGO_URLS[card.target]} alt="" />
-            <span className="export-dialog__card-title">{card.title}</span>
+            <Tooltip heading={card.title} text={`Names and arranges the exported files the way ${card.title} expects.`}><span className="export-dialog__card-title">{card.title}</span></Tooltip>
             <span className="export-dialog__card-convention">{card.convention}</span>
             {selected && (
               <span className="export-dialog__card-details">
@@ -39,15 +39,16 @@ function OptionRows({ dialog }: { dialog: ExportDialogState }): React.JSX.Elemen
     <div className="export-dialog__options">
       <SegmentedControl
         label="Packing"
+        hint="Separate writes one file per map; Packed ORM puts occlusion, roughness and metalness in one file."
         options={[{ value: 'separate', label: 'Separate' }, { value: 'packed', label: 'Packed ORM' }]}
         value={options.packing}
         onChange={(packing) => setOptions({ packing })}
         disabled={running}
       />
-      <Toggle label="Include height" checked={options.includeHeight && !disabled.includeHeight} disabled={running || disabled.includeHeight} hint={disabled.includeHeight ? 'There is no height map.' : undefined} onChange={(includeHeight) => setOptions({ includeHeight })} />
-      <Toggle label="Include ambient occlusion" checked={options.includeAo && !disabled.includeAo} disabled={running || disabled.includeAo} hint={disabled.includeAo ? 'There is no ambient occlusion map.' : undefined} onChange={(includeAo) => setOptions({ includeAo })} />
-      <Toggle label="Include material masks" checked={options.includeMasks && !disabled.includeMasks} disabled={running || disabled.includeMasks} hint={disabled.includeMasks ? 'There are no material masks.' : undefined} onChange={(includeMasks) => setOptions({ includeMasks })} />
-      <Select label="Size" options={sizeChoices.map((side) => ({ value: String(side), label: `${side} px` }))} value={String(options.size)} onChange={(value) => setOptions({ size: Number(value) })} disabled={running || sizeChoices.length < 2} />
+      <Toggle label="Include height" checked={options.includeHeight && !disabled.includeHeight} disabled={running || disabled.includeHeight} hint={disabled.includeHeight ? 'There is no height map.' : 'Adds the height map to the export.'} onChange={(includeHeight) => setOptions({ includeHeight })} />
+      <Toggle label="Include ambient occlusion" checked={options.includeAo && !disabled.includeAo} disabled={running || disabled.includeAo} hint={disabled.includeAo ? 'There is no ambient occlusion map.' : 'Adds the ambient occlusion map to the export.'} onChange={(includeAo) => setOptions({ includeAo })} />
+      <Toggle label="Include material masks" checked={options.includeMasks && !disabled.includeMasks} disabled={running || disabled.includeMasks} hint={disabled.includeMasks ? 'There are no material masks.' : 'Adds the mask image and its component table to the export.'} onChange={(includeMasks) => setOptions({ includeMasks })} />
+      <Select label="Size" title="The side length of every exported map, in pixels." options={sizeChoices.map((side) => ({ value: String(side), label: `${side} px` }))} value={String(options.size)} onChange={(value) => setOptions({ size: Number(value) })} disabled={running || sizeChoices.length < 2} />
     </div>
   );
 }

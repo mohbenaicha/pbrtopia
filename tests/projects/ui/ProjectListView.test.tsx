@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectSummary } from '../../../src/projects/records/projectRecords';
 import { storeFailure } from '../../../src/projects/storeError';
 import { ProjectListView, type ListViewStore } from '../../../src/projects/ui/ProjectListView';
+import { openTooltipTextOf } from '../../support/tooltipDescription';
 
 beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:thumb');
@@ -128,7 +129,7 @@ describe('ProjectListView', () => {
       await showList([summary('a', 'Orc helmet')]);
       for (const name of ['Open', 'Rename', 'Delete']) {
         const button = within(cardOf('Orc helmet')).getByRole('button', { name });
-        expect(button.getAttribute('title')).toBe(name);
+        expect(openTooltipTextOf(button)).toBe(name);
         expect(button.textContent).toBe('');
       }
     });

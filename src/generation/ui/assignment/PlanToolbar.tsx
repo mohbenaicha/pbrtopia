@@ -71,11 +71,11 @@ export function PlanToolbar<Plan>({ presets, activePreset, chosenSetup, presetsE
   return (
     <div className="setup-toolbar">
       <span className="setup-toolbar__preset">
-        <Select label="Layout preset" options={options} value={value} onChange={choose} />
+        <Select label="Layout preset" title="A saved arrangement of which views go on which images." options={options} value={value} onChange={choose} />
         {chosenSetup !== null && <IconButton label="Delete setup" icon={<Icon name="trash" />} onClick={() => onDelete(chosenSetup)} />}
       </span>
       <span className="setup-toolbar__sync">
-        <Toggle label="Sync settings" checked={syncSettings} onChange={onSyncSettingsChange} />
+        <Toggle label="Sync settings" hint="Gives every image the same model, resolution and quality." checked={syncSettings} onChange={onSyncSettingsChange} />
       </span>
       <IconButton label="Save setup" icon={<Icon name="save" />} onClick={() => setNaming(true)} />
       <Dialog
@@ -95,7 +95,7 @@ export function PlanToolbar<Plan>({ presets, activePreset, chosenSetup, presetsE
             submit();
           }}
         >
-          <TextInput label="Name" value={name} onChange={setName} placeholder={namePlaceholder} />
+          <TextInput label="Name" tip="The name this layout is saved under in the preset list." value={name} onChange={setName} placeholder={namePlaceholder} />
         </form>
       </Dialog>
       <ConfirmDialog open={replacing !== null} title={`Replace setup "${replacing ?? ''}"?`} confirmLabel="Replace" busy={false} onConfirm={() => replacing !== null && finish(replacing)} onCancel={() => setReplacing(null)} />

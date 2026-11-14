@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Icon, IconButton } from '../ui-kit';
+import { Icon, IconButton, Tooltip } from '../ui-kit';
 import './TopBar.css';
 
 interface TopBarProps {
@@ -20,9 +20,11 @@ export function TopBar({ projectName, fallbackTitle, onOpenProjects, onOpenSetti
   const name = projectName ?? fallbackTitle;
   return (
     <header className="top-bar" data-testid="top-bar">
-      <div className="top-bar__name" data-region="name" title={name}>
-        {name}
-      </div>
+      <Tooltip heading={name} text={projectName === undefined ? 'The app you are using.' : 'The project you have open.'}>
+        <div className="top-bar__name" data-region="name">
+          {name}
+        </div>
+      </Tooltip>
       <div className="top-bar__actions" data-region="actions">
         <IconButton label="Projects" icon={<Icon name="projects-list" />} onClick={onOpenProjects} />
         <IconButton label={exportLabel} icon={<Icon name="download" />} loading={exporting} disabled={exportDisabledReason !== null} {...(exportDisabledReason === null ? {} : { disabledReason: exportDisabledReason })} onClick={onExportProject} />

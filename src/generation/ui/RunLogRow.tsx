@@ -1,4 +1,4 @@
-import { Disclosure, Icon, IconButton } from '../../ui-kit';
+import { Disclosure, Icon, IconButton, Tooltip } from '../../ui-kit';
 import type { RunLogRecord, RunOutcome } from '../runLogStore';
 import { RunLogPicture } from './RunLogPicture';
 import { RunLogPictureGrid } from './RunLogPictureGrid';
@@ -28,8 +28,8 @@ function RunLogBody({ record }: { record: RunLogRecord }): React.JSX.Element {
     <div className="run-log-row__body">
       {record.atlas !== null && <RunLogPicture blob={record.atlas} label="Atlas" alt="Atlas sent to the model" fileStem="atlas" />}
       {snapshots.length > 0 && <RunLogPictureGrid title="Snapshots" fileStem="snapshot" cells={snapshots} />}
-      <div className="run-log-row__part"><span className="run-log-row__caption">Prompt</span><p className="run-log-row__text">{record.prompt}</p></div>
-      {record.enhancedPrompt !== null && <div className="run-log-row__part"><span className="run-log-row__caption">Enhanced prompt</span><p className="run-log-row__text">{record.enhancedPrompt}</p></div>}
+      <div className="run-log-row__part"><Tooltip heading="Prompt" text="The text you wrote for this run."><span className="run-log-row__caption">Prompt</span></Tooltip><p className="run-log-row__text">{record.prompt}</p></div>
+      {record.enhancedPrompt !== null && <div className="run-log-row__part"><Tooltip heading="Enhanced prompt" text="Your prompt as the prompt enhancer model rewrote it."><span className="run-log-row__caption">Enhanced prompt</span></Tooltip><p className="run-log-row__text">{record.enhancedPrompt}</p></div>}
       {record.imagePreview !== null && <RunLogPicture blob={record.imagePreview} label="Generated image" alt="Generated image" fileStem="generated" />}
       {returned.length > 0 && <RunLogPictureGrid title="Returned images" fileStem="image" cells={returned} />}
       {record.errorMessage !== null && (

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Tooltip } from '../../ui-kit';
 
 interface SettingsRowProps {
   label: string;
@@ -11,7 +12,7 @@ export function SettingsRow({ label, hint, children }: SettingsRowProps): React.
   return (
     <div className="settings-field">
       <div className="settings-field__label" data-label="">
-        <span>{label}</span>
+        <Tooltip heading={label} text={hint ?? ''}><span>{label}</span></Tooltip>
         {hint !== undefined && (
           <span className="settings-field__hint" data-hint="">
             {hint}

@@ -37,11 +37,12 @@ export function ModelsSection({ store, vault, keysLoaded, refresh }: ModelsSecti
         <>
           <SettingsGroup title="Prompt enhancer" messages={noKey && <p className="settings-note">{NO_KEY_TEXT}</p>}>
             <SettingsRow label="Prompt enhancer model" hint="Needed for material decomposition. Also improves your prompts.">
-              <Select label="Prompt enhancer model" hideLabel options={models.options} value={models.value} disabled={noKey} onChange={(value) => void models.choose(value)} {...(models.saveError === null ? {} : { error: models.saveError })} />
+              <Select label="Prompt enhancer model" title="The language model that rewrites prompts and splits a material into components." hideLabel options={models.options} value={models.value} disabled={noKey} onChange={(value) => void models.choose(value)} {...(models.saveError === null ? {} : { error: models.saveError })} />
             </SettingsRow>
-            <SettingsRow label="Max image size for enhancer" hint="Max image size sent to the model above (smaller images save on token costs)">
+            <SettingsRow label="Max image size for enhancer" hint="Max image size sent to the model above (smaller images save on token costs).">
               <Select
                 label="Max image size for enhancer"
+                title="Images sent to the enhancer are shrunk to this size; smaller costs fewer tokens."
                 hideLabel
                 options={SIZE_OPTIONS}
                 value={String(sizes.enhancerMaxPx)}
@@ -51,9 +52,10 @@ export function ModelsSection({ store, vault, keysLoaded, refresh }: ModelsSecti
             </SettingsRow>
           </SettingsGroup>
           <SettingsGroup title="Max reference image size">
-            <SettingsRow label="Reference image size" hint="If you add a reference image, it can be scaled to this resolution to save on token costs">
+            <SettingsRow label="Reference image size" hint="If you add a reference image, it can be scaled to this resolution to save on token costs.">
               <Select
                 label="Reference image size"
+                title="Reference images you add are shrunk to this size before they are sent; smaller costs fewer tokens."
                 hideLabel
                 options={REFERENCE_SIZE_OPTIONS}
                 value={sizes.referenceMaxPx === null ? ORIGINAL_SIZE : String(sizes.referenceMaxPx)}

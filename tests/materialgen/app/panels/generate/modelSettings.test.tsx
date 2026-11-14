@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GenerationPlan } from '@mat/generation';
 import { ModelSettingsSection } from '@mat/app/panels/generate/ModelSettingsSection';
+import { describeTooltipOf } from '../../../../support/tooltipDescription';
 import { makeGenerationPanel } from './fakeGeneration';
 
 afterEach(cleanup);
@@ -32,7 +33,7 @@ describe('materialgen/generation Model settings', () => {
     fireEvent.click(screen.getByRole('combobox', { name: 'Preset' }));
     const options = screen.getAllByRole('option');
     expect(options.map((option) => option.textContent)).toEqual(['Full material: Gemini', 'Full material: GPT Image', 'Full material: Gemini + GPT Image', 'Single map']);
-    for (const option of options) expect((option.getAttribute('title') ?? '').length).toBeGreaterThan(10); // each says what it is about on hover
+    for (const option of options) expect(describeTooltipOf(option).length).toBeGreaterThan(10); // each says what it is about on hover
     fireEvent.click(screen.getByRole('option', { name: 'Full material: Gemini + GPT Image' }));
     expect(generation.choice.choose).toHaveBeenCalledWith('preset-3');
   });

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Button, LoadingOverlay } from '../../../ui-kit';
+import { Button, LoadingOverlay, Tooltip } from '../../../ui-kit';
 import type { AssignmentItem } from './assignmentTypes';
 
 interface ItemRowProps {
@@ -25,16 +25,21 @@ interface ItemRowProps {
 export function ItemRow({ label, busy, items, assigned, assignedNote, picked, extra, onPick, onUnassign, onDragStart, onDrop, onDragEnter, onDragLeave, targeted, onKeyDown, onKeyUp }: ItemRowProps): React.JSX.Element {
   return (
     <div className="setup-snapshots" role="group" aria-label={label} data-target={targeted ? 'true' : 'false'} onDragEnter={onDragEnter} onDragOver={(event) => event.preventDefault()} onDragLeave={onDragLeave} onDrop={onDrop}>
-      {items.map((item) => (
-        <figure key={item.id} className="setup-snapshots__item" data-assigned={assigned.has(item.id) ? 'true' : 'false'}>
-          <button type="button" className="setup-snapshots__button" aria-label={item.name} {...(item.note === undefined ? {} : { title: item.note, 'aria-description': item.note })} aria-pressed={picked === item.id} draggable onDragStart={(event) => onDragStart(item.id, event)} onClick={() => onPick(item.id)} onKeyDown={(event) => onKeyDown(item.id, event)} onKeyUp={onKeyUp}>
+      {items.map((item) => {
+        const pickButton = (
+          <button type="button" className="setup-snapshots__button" aria-label={item.name} aria-pressed={picked === item.id} draggable onDragStart={(event) => onDragStart(item.id, event)} onClick={() => onPick(item.id)} onKeyDown={(event) => onKeyDown(item.id, event)} onKeyUp={onKeyUp}>
             {item.thumb}
           </button>
+        );
+        return (
+        <figure key={item.id} className="setup-snapshots__item" data-assigned={assigned.has(item.id) ? 'true' : 'false'}>
+          {item.note === undefined ? pickButton : <Tooltip heading={item.name} text={item.note}>{pickButton}</Tooltip>}
           <figcaption>{item.name}</figcaption>
           {assignedNote !== undefined && assigned.has(item.id) && <span className="setup-snapshots__where">{assignedNote(assigned.get(item.id) ?? 0)}</span>}
           {picked === item.id && assigned.has(item.id) && item.pinned !== true && <Button onClick={() => onUnassign(item.id)}>{`Unassign ${item.name}`}</Button>}
         </figure>
-      ))}
+        );
+      })}
       {extra}
       {busy !== undefined && <LoadingOverlay label={busy} />}
     </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Icon, IconButton, ImageViewer, saveBlobAsFile } from '../../ui-kit';
+import { Icon, IconButton, ImageViewer, saveBlobAsFile, Tooltip } from '../../ui-kit';
 import { useObjectUrl } from './useObjectUrl';
 
 export interface RunLogGridCell {
@@ -27,7 +27,7 @@ function GridCell({ cell, fileStem }: { cell: RunLogGridCell; fileStem: string }
         <button type="button" className="run-log-row__enlarge" aria-label={`Enlarge ${cell.label}`} onClick={() => setEnlarged(true)}>
           <img className="run-log-row__cell-picture" src={url} alt={cell.label} />
         </button>
-        <figcaption className="run-log-row__cell-label">{cell.label}</figcaption>
+        <Tooltip heading={cell.label} text="The cameras shown in this picture; click it to enlarge."><figcaption className="run-log-row__cell-label">{cell.label}</figcaption></Tooltip>
         <span className="run-log-row__download">
           <IconButton label={`Download ${cell.label}`} icon={<Icon name="download" size={14} />} onClick={download} />
         </span>
@@ -42,7 +42,7 @@ export function RunLogPictureGrid({ title, fileStem, cells }: RunLogPictureGridP
   const columns = Math.max(1, Math.ceil(Math.sqrt(cells.length)));
   return (
     <div className="run-log-row__part">
-      <span className="run-log-row__caption">{title}</span>
+      <Tooltip heading={title} text="The pictures this run made, laid out in sheet order."><span className="run-log-row__caption">{title}</span></Tooltip>
       <div className="run-log-row__grid" role="group" aria-label={title} style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
         {cells.map((cell) => (
           <GridCell key={cell.number} cell={cell} fileStem={fileStem} />

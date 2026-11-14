@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RunReport } from '@mat/generation';
 import { GenerateSection } from '@mat/app/panels/generate/GenerateSection';
+import { describeTooltipOf } from '../../../../support/tooltipDescription';
 import { idleRun, makeGenerationPanel } from './fakeGeneration';
 
 afterEach(cleanup);
@@ -36,18 +37,18 @@ describe('materialgen/generation Generate section', () => {
   it('R65 a plan that uses GPT Image with only a Gemini key disables Generate with the OpenAI reason, and says it under the button', () => {
     renderSection(makeGenerationPanel({ presetId: 'preset-2', keyed: ['gemini'] }));
     expect(generateButton().disabled).toBe(true);
-    expect(generateButton().title).toBe('Add your OpenAI key in Settings > Keys');
+    expect(describeTooltipOf(generateButton())).toBe('Generate. Add your OpenAI key in Settings > Keys');
     expect(screen.getByText('Add your OpenAI key in Settings > Keys')).toBeTruthy();
   });
 
   it('R65 with no key at all Generate says to add an image model key in Settings', () => {
     renderSection(makeGenerationPanel({ keyed: [] }));
-    expect(generateButton().title).toBe('Add an image model key in Settings');
+    expect(describeTooltipOf(generateButton())).toBe('Generate. Add an image model key in Settings');
   });
 
   it('R9 an empty prompt with no reference image disables Generate', () => {
     renderSection(makeGenerationPanel(), '   ');
-    expect(generateButton().title).toBe('Enter a prompt or add a reference image.');
+    expect(describeTooltipOf(generateButton())).toBe('Generate. Enter a prompt or add a reference image.');
   });
 
   it('R43 while a run goes the button reads Cancel with the progress, and Cancel stops the run', () => {
@@ -72,7 +73,7 @@ describe('materialgen/generation Generate section', () => {
   it('R62 the Plan summary icon shows the plan line on hover and opens an overlay with one block per image and the describe step', () => {
     renderSection();
     const summary = screen.getByRole('button', { name: 'Plan summary' });
-    expect(summary.getAttribute('title')).toMatch(/images - maps 1024 px/);
+    expect(describeTooltipOf(summary)).toMatch(/images - maps 1024 px/);
     expect(screen.queryByRole('dialog')).toBeNull();
     fireEvent.click(summary);
     const dialog = within(screen.getByRole('dialog'));

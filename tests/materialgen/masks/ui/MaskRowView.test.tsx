@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseBaseMaterials, type MaskRow } from '@mat/masks';
 import { MaskRowView } from '../../../../src/materialgen/masks/ui/MaskRowView';
+import { describeTooltipOf } from '../../../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -20,7 +21,8 @@ function setup(overrides: Partial<Parameters<typeof MaskRowView>[0]> = {}) {
 describe('materialgen/masks MaskRowView (masks R48 R57)', () => {
   it('R48 a block shows the component name with its description as tooltip, and nothing else around it', () => {
     setup();
-    expect(screen.getByText('Wall').getAttribute('title')).toBe('The brick wall');
+    expect(screen.getByText('Wall').getAttribute('title')).toBeNull();
+    expect(describeTooltipOf(screen.getByText('Wall'))).toBe('Wall. The brick wall');
     expect(document.querySelector('.mask-row__swatch')).toBeNull();
     expect(screen.queryByText('Not used')).toBeNull();
   });
@@ -75,7 +77,7 @@ describe('materialgen/masks MaskRowView (masks R48 R57)', () => {
 
   it('R35 the select says its values are estimated defaults', () => {
     setup();
-    expect(screen.getByRole('combobox', { name: 'Base material of Wall' }).getAttribute('title')).toBe('Estimated default');
+    expect(describeTooltipOf(screen.getByRole('combobox', { name: 'Base material of Wall' }))).toBe('Base material of Wall. The real-world material this component is made of; it sets the starting roughness and metalness.');
   });
 
   it('R48 the reset arrows are disabled while the sliders are at the chosen material\'s values, and a click saves that value', () => {
@@ -131,7 +133,7 @@ describe('materialgen/masks MaskRowView (masks R48 R57)', () => {
   it('R81 with no height map the Height slider is disabled and says "Add a height map first"; the other sliders still work', () => {
     setup({ heightDisabledReason: 'Add a height map first' });
     expect((screen.getByLabelText('Height') as HTMLInputElement).disabled).toBe(true);
-    expect(screen.getByLabelText('Height').closest('[title]')?.getAttribute('title')).toBe('Add a height map first');
+    expect(describeTooltipOf(screen.getByLabelText('Height'))).toBe('Height. Add a height map first');
     expect((screen.getByLabelText('Roughness') as HTMLInputElement).disabled).toBe(false);
   });
 
@@ -182,7 +184,7 @@ describe('materialgen/masks MaskRowView (masks R48 R57)', () => {
       withMix({ mixDisabledReason: 'No albedo map' });
       const toggle = screen.getByRole('switch', { name: 'Colour mixin' }) as HTMLInputElement;
       expect(toggle.disabled).toBe(true);
-      expect(toggle.closest('label')?.getAttribute('title')).toBe('No albedo map');
+      expect(describeTooltipOf(toggle)).toBe('Colour mixin. No albedo map');
     });
   });
 

@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ViewportSettingsPanel } from '../../../src/viewport/ui/ViewportSettingsPanel';
+import { describeTooltipOf } from '../../support/tooltipDescription';
 import { DEFAULT_VIEWPORT_SETTINGS, type ViewportSettings } from '../../../src/viewport/viewportSettings';
 
 afterEach(cleanup);
@@ -186,7 +187,7 @@ describe('ViewportSettingsPanel', () => {
     const studioSwitch = screen.getByRole('switch', { name: 'Background' }) as HTMLInputElement;
     expect(studioSwitch.checked).toBe(false);
     expect(studioSwitch.disabled).toBe(true);
-    expect(screen.getByText('Background').closest('label')!.getAttribute('title')).toBe('The built-in studio has no backdrop');
+    expect(describeTooltipOf(studioSwitch)).toBe('Background. The built-in studio has no backdrop.');
     unmount();
     panel({ ...DEFAULT_VIEWPORT_SETTINGS, hdri: 'venice_sunset' });
     expect((screen.getByRole('switch', { name: 'Background' }) as HTMLInputElement).disabled).toBe(false);

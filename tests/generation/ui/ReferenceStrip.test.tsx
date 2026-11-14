@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReferenceImage } from '../../../src/generation/generateStore';
 import { ReferenceStrip } from '../../../src/generation/ui/ReferenceStrip';
+import { describeTooltipOf } from '../../support/tooltipDescription';
 
 const image = (id: string): ReferenceImage => ({ id, name: `${id}.png`, width: 64, height: 64, blob: new Blob(['x'], { type: 'image/png' }) });
 
@@ -78,7 +79,8 @@ describe('ReferenceStrip (R2)', () => {
     setup();
     expect(screen.queryByRole('button', { name: 'Add images' })).toBeNull();
     const tile = screen.getByRole('button', { name: 'Add reference image' });
-    expect(tile.getAttribute('title')).toBe('Add reference image');
+    expect(tile.getAttribute('title')).toBeNull();
+    expect(describeTooltipOf(tile)).toBe('Add reference image. Adds pictures the image model should look at.');
     const items = screen.getAllByRole('listitem');
     expect(items[items.length - 1]!.contains(tile)).toBe(true);
     fireEvent.click(tile);

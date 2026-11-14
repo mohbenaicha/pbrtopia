@@ -1,5 +1,6 @@
 import { chooseLayout, describeLayoutProblem, gridName, type LayoutChoice } from '@mat/generation';
 import type { ProviderModelRecord } from '@shared/generation';
+import { Tooltip } from '@shared/ui-kit';
 import type { SheetSettings } from '@mat/generation';
 
 /** The layout the run will use for a card, from the very function the run calls (generation R14, R23); null while the model is not in the list. */
@@ -26,7 +27,7 @@ export function LayoutPreview({ choice, tileNames }: LayoutPreviewProps): React.
           className="setup-canvas__tile map-tile"
           style={{ left: percent(tile.x / canvas.width), top: percent(tile.y / canvas.height), width: percent(tile.width / canvas.width), height: percent(tile.height / canvas.height) }}
         >
-          <span className="map-tile__name">{tileNames[index]}</span>
+          <Tooltip heading={tileNames[index] ?? ''} text=""><span className="map-tile__name">{tileNames[index]}</span></Tooltip>
         </span>
       ))}
     </div>

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Icon, IconButton, ImageViewer, saveBlobAsFile } from '../../ui-kit';
+import { Icon, IconButton, ImageViewer, saveBlobAsFile, Tooltip } from '../../ui-kit';
 import type { ReferenceImage } from '../generateStore';
 import { useObjectUrl } from './useObjectUrl';
 
@@ -14,9 +14,11 @@ function Thumbnail({ reference, onEnlarge, onRemove }: { reference: ReferenceIma
   const url = useObjectUrl(reference.blob);
   return (
     <li className="reference-strip__item">
-      <button type="button" className="reference-strip__thumb" aria-label={`Enlarge ${reference.name}`} onClick={onEnlarge}>
-        <img src={url ?? undefined} alt={reference.name} />
-      </button>
+      <Tooltip heading={reference.name} text="Click to enlarge.">
+        <button type="button" className="reference-strip__thumb" aria-label={`Enlarge ${reference.name}`} onClick={onEnlarge}>
+          <img src={url ?? undefined} alt={reference.name} />
+        </button>
+      </Tooltip>
       <span className="reference-strip__remove">
         <IconButton label={`Remove ${reference.name}`} icon={<Icon name="close" size={10} />} compact onClick={onRemove} />
       </span>
@@ -51,9 +53,11 @@ export function ReferenceStrip({ references, notice, onFiles, onRemove }: Refere
           <Thumbnail key={reference.id} reference={reference} onEnlarge={() => setEnlarged(reference)} onRemove={() => onRemove(reference.id)} />
         ))}
         <li className="reference-strip__add-item">
-          <button type="button" className="reference-strip__add" aria-label="Add reference image" title="Add reference image" onClick={() => input.current?.click()}>
-            <Icon name="plus" size={20} />
-          </button>
+          <Tooltip heading="Add reference image" text="Adds pictures the image model should look at.">
+            <button type="button" className="reference-strip__add" aria-label="Add reference image" onClick={() => input.current?.click()}>
+              <Icon name="plus" size={20} />
+            </button>
+          </Tooltip>
           {references.length === 0 && <span className="reference-strip__hint">You can add images as references</span>}
         </li>
       </ul>

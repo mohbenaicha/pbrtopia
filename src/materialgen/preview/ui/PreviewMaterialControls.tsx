@@ -2,6 +2,7 @@ import { SettingsSubsection } from '@shared/viewport';
 import { CommitSlider, Slider } from '@shared/ui-kit';
 import { DEFAULT_PREVIEW_PREFS, DEFAULT_PREVIEW_VALUES, type PreviewPrefs, type PreviewValues } from '@mat/storage';
 import { segmentsFor } from '../math/meshSegments';
+import { PREVIEW_TIPS } from './previewTooltips';
 
 interface PreviewMaterialControlsProps {
   values?: PreviewValues; // per project; absent where no project is open (Settings), which leaves out Height and Tiling
@@ -23,23 +24,23 @@ export function PreviewMaterialControls({ values, onValuesChange, prefs, onPrefs
   return (
     <>
       {perProject !== null && (
-        <SettingsSubsection title="Height">
-          <Slider label="Scale" layout="row" value={perProject.values.heightScale} min={0} max={0.1} step={0.001} format={(value) => value.toFixed(3)} resetTo={DEFAULT_PREVIEW_VALUES.heightScale} onChange={(heightScale) => perProject.onValuesChange({ heightScale })} />
-          <Slider label="Level" layout="row" value={perProject.values.heightLevel} min={0} max={1} step={0.01} format={twoDecimals} resetTo={DEFAULT_PREVIEW_VALUES.heightLevel} onChange={(heightLevel) => perProject.onValuesChange({ heightLevel })} />
-          <Slider label="Contrast" layout="row" value={perProject.values.heightContrast} min={0} max={3} step={0.01} format={twoDecimals} resetTo={DEFAULT_PREVIEW_VALUES.heightContrast} onChange={(heightContrast) => perProject.onValuesChange({ heightContrast })} />
+        <SettingsSubsection title="Height" hint={PREVIEW_TIPS.height}>
+          <Slider label="Scale" hint={PREVIEW_TIPS.heightScale} layout="row" value={perProject.values.heightScale} min={0} max={0.1} step={0.001} format={(value) => value.toFixed(3)} resetTo={DEFAULT_PREVIEW_VALUES.heightScale} onChange={(heightScale) => perProject.onValuesChange({ heightScale })} />
+          <Slider label="Level" hint={PREVIEW_TIPS.heightLevel} layout="row" value={perProject.values.heightLevel} min={0} max={1} step={0.01} format={twoDecimals} resetTo={DEFAULT_PREVIEW_VALUES.heightLevel} onChange={(heightLevel) => perProject.onValuesChange({ heightLevel })} />
+          <Slider label="Contrast" hint={PREVIEW_TIPS.heightContrast} layout="row" value={perProject.values.heightContrast} min={0} max={3} step={0.01} format={twoDecimals} resetTo={DEFAULT_PREVIEW_VALUES.heightContrast} onChange={(heightContrast) => perProject.onValuesChange({ heightContrast })} />
         </SettingsSubsection>
       )}
-      <SettingsSubsection title="Occlusion">
-        <Slider label="Intensity" layout="row" value={prefs.aoIntensity} min={0} max={2} step={0.01} format={twoDecimals} resetTo={DEFAULT_PREVIEW_PREFS.aoIntensity} onChange={(aoIntensity) => onPrefsChange({ aoIntensity })} />
+      <SettingsSubsection title="Occlusion" hint={PREVIEW_TIPS.occlusion}>
+        <Slider label="Intensity" hint={PREVIEW_TIPS.occlusionIntensity} layout="row" value={prefs.aoIntensity} min={0} max={2} step={0.01} format={twoDecimals} resetTo={DEFAULT_PREVIEW_PREFS.aoIntensity} onChange={(aoIntensity) => onPrefsChange({ aoIntensity })} />
       </SettingsSubsection>
       {perProject !== null && (
-        <SettingsSubsection title="Tiling">
-          <Slider label="X" layout="row" value={perProject.values.tilingX} min={1} max={10} step={1} resetTo={DEFAULT_PREVIEW_VALUES.tilingX} onChange={(tilingX) => perProject.onValuesChange({ tilingX })} />
-          <Slider label="Y" layout="row" value={perProject.values.tilingY} min={1} max={10} step={1} resetTo={DEFAULT_PREVIEW_VALUES.tilingY} onChange={(tilingY) => perProject.onValuesChange({ tilingY })} />
+        <SettingsSubsection title="Tiling" hint={PREVIEW_TIPS.tiling}>
+          <Slider label="X" hint={PREVIEW_TIPS.tilingX} layout="row" value={perProject.values.tilingX} min={1} max={10} step={1} resetTo={DEFAULT_PREVIEW_VALUES.tilingX} onChange={(tilingX) => perProject.onValuesChange({ tilingX })} />
+          <Slider label="Y" hint={PREVIEW_TIPS.tilingY} layout="row" value={perProject.values.tilingY} min={1} max={10} step={1} resetTo={DEFAULT_PREVIEW_VALUES.tilingY} onChange={(tilingY) => perProject.onValuesChange({ tilingY })} />
         </SettingsSubsection>
       )}
-      <SettingsSubsection title="Mesh">
-        <CommitSlider label="Resolution" layout="row" value={prefs.meshResolution} range={MESH_RESOLUTION_RANGE} resetTo={DEFAULT_PREVIEW_PREFS.meshResolution} onCommit={(meshResolution) => onPrefsChange({ meshResolution })} />
+      <SettingsSubsection title="Mesh" hint={PREVIEW_TIPS.mesh}>
+        <CommitSlider label="Resolution" hint={PREVIEW_TIPS.meshResolution} layout="row" value={prefs.meshResolution} range={MESH_RESOLUTION_RANGE} resetTo={DEFAULT_PREVIEW_PREFS.meshResolution} onCommit={(meshResolution) => onPrefsChange({ meshResolution })} />
       </SettingsSubsection>
     </>
   );

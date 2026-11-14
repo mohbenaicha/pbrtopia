@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { IconButton } from '@shared/ui-kit';
 import { DEFAULT_PREVIEW_VALUES } from '@mat/storage';
+import { describeTooltipOf } from '../../../../support/tooltipDescription';
 import type { MapRecord, MapsState } from '@mat/maps';
 import { ExportSection, exportUnavailableReason } from '@mat/app/panels/export/ExportSection';
 import { useExportDialog } from '@mat/app/panels/export/useExportDialog';
@@ -17,7 +19,7 @@ function ExportHarness({ projectName, state }: { projectName: string; state: Map
   const reason = exportUnavailableReason(dialog);
   return (
     <>
-      <button type="button" aria-label="Export material" disabled={reason !== null} title={reason ?? undefined} onClick={dialog.show} />
+      <IconButton label="Export material" icon={null} disabled={reason !== null} {...(reason === null ? {} : { disabledReason: reason })} onClick={dialog.show} />
       <ExportSection dialog={dialog} />
     </>
   );
@@ -102,7 +104,7 @@ describe('materialgen/export R36 Escape, Cancel and an empty list', () => {
     render(<ExportHarness projectName="x" state={{ size: null, maps: {} }} />);
     const button = screen.getByRole('button', { name: 'Export material' }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
-    expect(button.title).toBe('There is nothing to export yet.');
+    expect(describeTooltipOf(button)).toBe('Export material. There is nothing to export yet.');
     cleanup();
     render(<ExportHarness projectName="x" state={full()} />);
     expect(exportUnavailableReason({ canExport: true } as never)).toBeNull();

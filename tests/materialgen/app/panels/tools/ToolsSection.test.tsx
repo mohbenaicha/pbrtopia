@@ -6,6 +6,7 @@ import { ToolLiveContext } from '@mat/app/panels/tools/ToolLiveContext';
 import { useGeometryTools } from '@mat/app/panels/tools/useGeometryTools';
 import { createToolLiveFeed } from '@mat/preview/ui/toolLiveFeed';
 import { encodePng, type PixelImage } from '../../../../../src/materialgen/maps/png/pngCodec';
+import { describeTooltipOf, openTooltipTextOf } from '../../../../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -57,6 +58,17 @@ function show(patch: Partial<ToolsInput> = {}) {
 const tool = (name: string): HTMLButtonElement => screen.getByRole('button', { name }) as HTMLButtonElement;
 
 describe('materialgen/app ToolsSection', () => {
+  it('app tooltips R1 R5 every button of the Maps bar has a tooltip: its name and one sentence, no native title', () => {
+    show();
+    for (const name of ['Crop', 'Mirror', 'Swap diagonals', 'Blend edges']) {
+      expect(tool(name).getAttribute('title')).toBeNull();
+      const words = openTooltipTextOf(tool(name));
+      expect(words.startsWith(`${name}. `)).toBe(true);
+      expect(words.length).toBeGreaterThan(name.length + 20);
+      expect(words.length).toBeLessThanOrEqual(name.length + 2 + 140);
+    }
+  });
+
   it('R20 Crop, Mirror and Swap diagonals are icon buttons for the Maps heading', () => {
     show();
     for (const name of ['Crop', 'Mirror', 'Swap diagonals']) expect(tool(name).disabled).toBe(false);
@@ -66,7 +78,7 @@ describe('materialgen/app ToolsSection', () => {
     show({ state: noMaps });
     for (const name of ['Crop', 'Mirror', 'Swap diagonals']) {
       expect(tool(name).disabled).toBe(true);
-      expect(tool(name).getAttribute('title')).toContain('no maps');
+      expect(describeTooltipOf(tool(name))).toContain('no maps');
     }
   });
 
@@ -79,13 +91,13 @@ describe('materialgen/app ToolsSection', () => {
   it('R13 in a read-only tab every tool is disabled with that reason', () => {
     show({ canWrite: false });
     expect(tool('Crop').disabled).toBe(true);
-    expect(tool('Swap diagonals').getAttribute('title')).toContain('Open in another tab');
+    expect(describeTooltipOf(tool('Swap diagonals'))).toContain('Open in another tab');
   });
 
   it('R9 while another op session is open every tool is disabled', () => {
     show({ opOpen: true });
     expect(tool('Mirror').disabled).toBe(true);
-    expect(tool('Mirror').getAttribute('title')).toContain('Another edit is open');
+    expect(describeTooltipOf(tool('Mirror'))).toContain('Another edit is open');
   });
 
   it('R21 while the maps are being changed every tool is disabled', () => {

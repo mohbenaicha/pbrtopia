@@ -1,4 +1,4 @@
-import { Button, Icon, IconButton } from '../../../ui-kit';
+import { Button, Icon, IconButton, Tooltip } from '../../../ui-kit';
 import type { AssignmentCardView, AssignmentItem } from './assignmentTypes';
 
 interface ImageCardProps {
@@ -34,7 +34,7 @@ export function ImageCard({ number, card, items, emptyDrop, pickedItem, isTarget
             <span aria-hidden="true">⠿</span>
           </button>
         )}
-        <h3 className="setup-card__title">Image {number}</h3>
+        <Tooltip heading={`Image ${number}`} text="One of the images this plan asks the model to make."><h3 className="setup-card__title">Image {number}</h3></Tooltip>
         {(card.lead ?? isFirst) && <span className="setup-card__lead">Lead</span>}
         <span className="setup-card__header-actions">
           {reorderable && (
@@ -51,7 +51,7 @@ export function ImageCard({ number, card, items, emptyDrop, pickedItem, isTarget
           {assigned.map((item) => (
             <li key={item.id} className="setup-card__camera" draggable onDragStart={(event) => onItemDragStart(item.id, event)}>
               {item.thumb}
-              <span className="setup-card__camera-name">{item.name}</span>
+              <Tooltip heading={item.name} text=""><span className="setup-card__camera-name">{item.name}</span></Tooltip>
               {item.pinned !== true && <IconButton label={`Remove ${item.name} from image ${number}`} icon={<Icon name="close" size={10} />} compact onClick={() => onRemoveItem(item.id)} />}
             </li>
           ))}

@@ -5,6 +5,7 @@ import { findKnownModel } from '../../../src/generation/catalog/knownModels';
 import { createGenerateStore } from '../../../src/generation/generateStore';
 import { createRunLogStore } from '../../../src/generation/runLogStore';
 import { GeneratePanel } from '../../../src/generation/ui/GeneratePanel';
+import { openTooltipTextOf } from '../../support/tooltipDescription';
 
 beforeEach(() => {
   let count = 0;
@@ -160,7 +161,7 @@ describe('GeneratePanel: custom mode (custom R1)', () => {
       store.getState().confirmCustomPlan({ sheets: [{ cameras: [0], settings }, { cameras: [1, 2], settings }], aux: { settings } });
     });
     const button = screen.getByRole('button', { name: 'Generate (custom)' });
-    expect(button.getAttribute('title')).toBe('3 images');
+    expect(openTooltipTextOf(button)).toBe('Generate (custom). 3 images');
     fireEvent.click(button);
     expect(onGenerate).toHaveBeenCalledTimes(1);
   });

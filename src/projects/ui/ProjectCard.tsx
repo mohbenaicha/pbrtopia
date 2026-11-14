@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Checkbox, Icon, IconButton } from '../../ui-kit';
+import { Checkbox, Icon, IconButton, Tooltip } from '../../ui-kit';
 import type { ProjectSummary } from '../records/projectRecords';
 import { RenameField } from './RenameField';
 import { useThumbnailUrl } from './useThumbnailUrl';
@@ -40,13 +40,13 @@ export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, 
     <li ref={card} className="project-card" data-testid="project-card" data-selected={selected ? '' : undefined}>
       <div className="project-card__thumbnail">{thumbnail !== null && <img src={thumbnail} alt={`${summary.name} thumbnail`} />}</div>
       <div className="project-card__select">
-        <Checkbox label={`Select ${summary.name}`} hideLabel checked={selected} onChange={toggleSelected} />
+        <Checkbox label={`Select ${summary.name}`} hint="Ticks this project so it can be deleted with the others." hideLabel checked={selected} onChange={toggleSelected} />
       </div>
       {renaming ? (
         <RenameField initialName={summary.name} save={saveName} cancel={cancelRename} />
       ) : (
         <>
-          <h2 className="project-card__name" title={summary.name}>{summary.name}</h2>
+          <Tooltip heading={summary.name} text="The project's name; click the card to open it."><h2 className="project-card__name">{summary.name}</h2></Tooltip>
           <p className="project-card__meta">{meta}</p>
           <div className="project-card__actions">
             <IconButton label="Open" icon={<Icon name="open-project" />} {...unreadable} onClick={open} />
@@ -54,7 +54,7 @@ export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, 
             {exportProject !== undefined && (
               <IconButton
                 label={`Export ${summary.name}`}
-                hint="Export project"
+                hint="Saves this project as a file you can keep or share."
                 icon={<Icon name="download" />}
                 loading={exporting}
                 {...(summary.unreadable === undefined ? { disabled: exportRunning && !exporting } : unreadable)}

@@ -1,9 +1,10 @@
 import { useId, useRef } from 'react';
-import { Icon, IconButton } from '@shared/ui-kit';
+import { Icon, IconButton, Tooltip } from '@shared/ui-kit';
 import type { MapKind } from '../mapKinds';
 import { MapThumbnail, type DrawThumbnail } from './MapThumbnail';
 import type { CardModel, HalfModel } from './buildCardModel';
 import { useDropZone } from './useDropZone';
+import { MAP_TIPS } from './mapTooltips';
 
 export interface MapCardActions {
   dropFiles(kind: MapKind, files: File[]): void;
@@ -49,7 +50,7 @@ export function MapHalf({ half, undo, extras, canWrite, readOnlyReason, busy, op
   };
   const viewReason = half.filled ? undefined : `There is no ${half.label} map yet.`;
   const captionText = [half.label, half.sizeText].filter((part) => part !== null).join(' '); // "Albedo 1024 x 1024", as the projection app's captions
-  const captionTitle = [captionText, half.sourceText].filter((part) => part !== null).join(' · ');
+  const captionWords = [half.sizeText, half.sourceText, half.stale ? 'The map this one was computed from has changed.' : null].filter((part) => part !== null).join(' · ');
   const writeReason = reasonFor(true);
   const chooseReason = !canWrite ? readOnlyReason : busy ? 'This map is being changed.' : undefined;
   const downloadReason = viewReason ?? (busy ? 'This map is being changed.' : undefined); // a download that races a commit could read a file just deleted
@@ -57,9 +58,7 @@ export function MapHalf({ half, undo, extras, canWrite, readOnlyReason, busy, op
   const filterReason = writeReason ?? (opOpen ? 'Another edit is open. Apply or cancel it first.' : undefined);
   const label = (verb: string): string => `${verb} ${half.label}`;
 
-  return (
-    <div className="map-half" data-testid="map-half" data-kind={half.kind}>
-      <div className="map-half__frame" data-filled={half.filled ? '' : undefined}>
+  const drop = (
         <div className="map-half__drop" data-dragging={dragging ? '' : undefined} aria-busy={busy || undefined} {...zoneProps}>
           {half.filled && half.workingKey !== null ? (
             <button type="button" className="map-half__picture" aria-label={label('View')} onClick={() => actions.view(half.kind)}>
@@ -72,7 +71,6 @@ export function MapHalf({ half, undo, extras, canWrite, readOnlyReason, busy, op
                 className="map-half__picture map-half__choose"
                 aria-label="Choose image"
                 disabled={!canWrite || busy}
-                {...(chooseReason ? { title: chooseReason } : {})}
                 onClick={() => input.current?.click()}
               >
                 <span>Drop an image here or click to choose one</span>
@@ -93,19 +91,27 @@ export function MapHalf({ half, undo, extras, canWrite, readOnlyReason, busy, op
             </>
           )}
         </div>
-        <p className="map-half__caption" data-testid="map-caption" title={half.stale ? `${captionTitle} · The map this one was computed from has changed.` : captionTitle}>
-          {captionText}
-          {half.stale && <span className="map-half__stale"> Stale, regenerate</span>}
-        </p>
+  );
+
+  return (
+    <div className="map-half" data-testid="map-half" data-kind={half.kind}>
+      <div className="map-half__frame" data-filled={half.filled ? '' : undefined}>
+        {!half.filled && chooseReason !== undefined ? <Tooltip heading="Choose image" text={chooseReason}>{drop}</Tooltip> : drop}
+        <Tooltip heading={half.label} text={captionWords}>
+          <p className="map-half__caption" data-testid="map-caption">
+            {captionText}
+            {half.stale && <span className="map-half__stale"> Stale, regenerate</span>}
+          </p>
+        </Tooltip>
         {(half.filled || extras) && (
           <div className="map-half__buttons">
             {half.filled && (
               <>
-            <IconButton label={label('Filter')} icon={<Icon name="pencil" size={16} />} disabled={filterReason !== undefined} {...(filterReason ? { disabledReason: filterReason } : {})} onClick={() => actions.filter(half.kind)} />
-            <IconButton label={label('Restore original')} icon={<Icon name="reset" size={16} />} disabled={restoreReason !== undefined} {...(restoreReason ? { disabledReason: restoreReason } : {})} onClick={() => actions.restoreOriginal(half.kind)} />
+            <IconButton label={label('Filter')} hint={MAP_TIPS.filter} icon={<Icon name="pencil" size={16} />} disabled={filterReason !== undefined} {...(filterReason ? { disabledReason: filterReason } : {})} onClick={() => actions.filter(half.kind)} />
+            <IconButton label={label('Restore original')} hint={MAP_TIPS.restoreOriginal} icon={<Icon name="reset" size={16} />} disabled={restoreReason !== undefined} {...(restoreReason ? { disabledReason: restoreReason } : {})} onClick={() => actions.restoreOriginal(half.kind)} />
             {undo && <UndoButton undo={undo} canWrite={canWrite} readOnlyReason={readOnlyReason} busy={busy} actions={actions} />}
-            <IconButton label={label('Download')} icon={<Icon name="download" size={16} />} disabled={downloadReason !== undefined} {...(downloadReason ? { disabledReason: downloadReason } : {})} onClick={() => actions.download(half.kind)} />
-            <IconButton label={label('Clear')} icon={<Icon name="trash" size={16} />} disabled={writeReason !== undefined} {...(writeReason ? { disabledReason: writeReason } : {})} onClick={() => actions.requestClear(half.kind)} />
+            <IconButton label={label('Download')} hint={MAP_TIPS.download} icon={<Icon name="download" size={16} />} disabled={downloadReason !== undefined} {...(downloadReason ? { disabledReason: downloadReason } : {})} onClick={() => actions.download(half.kind)} />
+            <IconButton label={label('Clear')} hint={MAP_TIPS.clear} icon={<Icon name="trash" size={16} />} disabled={writeReason !== undefined} {...(writeReason ? { disabledReason: writeReason } : {})} onClick={() => actions.requestClear(half.kind)} />
               </>
             )}
             {extras}

@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AoCardActions } from '@mat/app/panels/AoCardActions';
+import { describeTooltipOf, openTooltipTextOf } from '../../../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -14,6 +15,17 @@ const tool = (): HTMLButtonElement => screen.getByRole('button', { name: 'AO too
 const regenerate = (): HTMLButtonElement => screen.getByRole('button', { name: 'Regenerate AO' }) as HTMLButtonElement;
 
 describe('materialgen/app AoCardActions', () => {
+  it('app tooltips R1 R5 both buttons have a tooltip, a name and one sentence, and no native title', () => {
+    show();
+    for (const button of [tool(), regenerate()]) {
+      expect(button.getAttribute('title')).toBeNull();
+      const name = button.getAttribute('aria-label') ?? '';
+      const words = openTooltipTextOf(button);
+      expect(words.startsWith(`${name}. `)).toBe(true);
+      expect(words.length).toBeLessThanOrEqual(name.length + 2 + 140);
+    }
+  });
+
   it('R43 R44 both buttons work when a height or normal map exists', () => {
     const handlers = show();
     fireEvent.click(tool());
@@ -26,7 +38,7 @@ describe('materialgen/app AoCardActions', () => {
     show({ hasSource: false });
     for (const button of [tool(), regenerate()]) {
       expect(button.disabled).toBe(true);
-      expect(button.getAttribute('title')).toContain('Needs a height or normal map.');
+      expect(describeTooltipOf(button)).toContain('Needs a height or normal map.');
     }
   });
 
@@ -34,13 +46,13 @@ describe('materialgen/app AoCardActions', () => {
     show({ opOpen: true });
     expect(tool().disabled).toBe(true);
     expect(regenerate().disabled).toBe(true);
-    expect(regenerate().getAttribute('title')).toContain('Another edit is open');
+    expect(describeTooltipOf(regenerate())).toContain('Another edit is open');
   });
 
   it('R13 both are disabled in a read-only tab, with that reason', () => {
     show({ canWrite: false });
     expect(tool().disabled).toBe(true);
-    expect(regenerate().getAttribute('title')).toContain('Open in another tab');
+    expect(describeTooltipOf(regenerate())).toContain('Open in another tab');
   });
 
   it('R44 both are disabled while the AO map is being changed', () => {

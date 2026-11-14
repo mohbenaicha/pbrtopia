@@ -43,7 +43,7 @@ export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atl
             />
           )}
         </div>
-        <Checkbox label="Tile borders" checked={tileBorder} onChange={onTileBorderChange} />
+        <Checkbox label="Tile borders" hint="Asks the model to make the left and right edges, and the top and bottom, match so the texture tiles." checked={tileBorder} onChange={onTileBorderChange} />
       </div>
     </Disclosure>
   );

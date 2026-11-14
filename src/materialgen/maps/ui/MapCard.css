@@ -93,6 +93,7 @@
 
 .map-half__choose:disabled {
   cursor: default;
+  pointer-events: none; /* the drop area around it, which carries the tooltip, gets the pointer */
 }
 
 .map-half__file {

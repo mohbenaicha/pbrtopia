@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { Tooltip } from './Tooltip';
 import { useDismiss } from './useDismiss';
 import './Dialog.css';
 
@@ -49,7 +50,7 @@ export function Dialog({ open, title, onClose, actions, headerActions, size = 'd
     }
   };
 
-  const heading = <h2 className="ui-dialog__title" id={titleId}>{title}</h2>;
+  const heading = <Tooltip heading={title} text=""><h2 className="ui-dialog__title" id={titleId}>{title}</h2></Tooltip>;
   // viewport-layout R38: drawn through a portal into the body, so no panel or container above it in the tree can paint over it
   return createPortal(
     <div className="ui-dialog__backdrop">

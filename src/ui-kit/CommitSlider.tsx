@@ -3,6 +3,7 @@ import { Slider } from './Slider';
 
 interface CommitSliderProps {
   label: string; // the accessible name, e.g. "Roughness of Brick" (masks R57)
+  hint?: string; // what the setting does: the sentence of the label's tooltip
   value: number; // the saved value
   onCommit: (value: number) => void | Promise<unknown>;
   disabled?: boolean;
@@ -19,7 +20,7 @@ const ROW_VALUE_RANGE = { min: 0, max: 1, step: 0.01, format: (value: number): s
  * the person lets go: pointer up (anywhere on the page), pointer cancel, key up, or focus leaving with a change pending. A drag that ends on
  * the value it started from saves nothing.
  */
-export function CommitSlider({ label, value, onCommit, disabled = false, layout = 'stacked', range = ROW_VALUE_RANGE, resetTo }: CommitSliderProps): React.JSX.Element {
+export function CommitSlider({ label, hint, value, onCommit, disabled = false, layout = 'stacked', range = ROW_VALUE_RANGE, resetTo }: CommitSliderProps): React.JSX.Element {
   const [shown, setShown] = useState<number | null>(null); // what the person sees until the saved value takes over
   const pending = useRef<number | null>(null); // a value changed and not yet saved
   const latest = useRef({ value, onCommit });
@@ -58,6 +59,7 @@ export function CommitSlider({ label, value, onCommit, disabled = false, layout 
     <div style={{ minWidth: 0 }} onPointerDown={disabled ? undefined : startListening} onKeyUp={finish} onBlur={finish}>
       <Slider
         label={label}
+        {...(hint === undefined ? {} : { hint })}
         value={shown ?? value}
         min={range.min}
         max={range.max}

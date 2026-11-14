@@ -36,6 +36,7 @@ export function ModelSelect({ catalog, hasKey, provider, modelId, today, onSelec
   return (
     <Select
       label={label}
+      title="The image model that paints the texture; only providers with a saved key are listed."
       options={options}
       value={value}
       emptyText="Add a key in Settings to list models"

@@ -9,5 +9,5 @@ interface QualitySelectProps {
 
 // R5: the quality levels of the selected model, named as the provider names them.
 export function QualitySelect({ levels, value, onChange, label = 'Quality' }: QualitySelectProps): React.JSX.Element {
-  return <Select label={label} options={levels.map((level) => ({ value: level, label: level }))} value={value ?? ''} emptyText="No quality levels for this model" opensUp onChange={onChange} />;
+  return <Select label={label} title="How much effort the model spends on the picture; higher is slower and costs more." options={levels.map((level) => ({ value: level, label: level }))} value={value ?? ''} emptyText="No quality levels for this model" opensUp onChange={onChange} />;
 }

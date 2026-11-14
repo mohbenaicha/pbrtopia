@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectSummary } from '../../../src/projects/records/projectRecords';
 import { ProjectCard } from '../../../src/projects/ui/ProjectCard';
+import { openTooltipTextOf } from '../../support/tooltipDescription';
 
 beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:thumb');
@@ -30,7 +31,7 @@ describe('ProjectCard', () => {
   it('projects R7 the card names the project and gives its triangle count and the day of the last change', () => {
     show();
     expect(screen.getByRole('heading', { name: 'Orc helmet' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Orc helmet' }).getAttribute('title')).toBe('Orc helmet'); // viewport-layout R34: cut with an ellipsis, the full name as tooltip
+    expect(openTooltipTextOf(screen.getByRole('heading', { name: 'Orc helmet' }))).toBe("Orc helmet. The project's name; click the card to open it."); // viewport-layout R34: cut with an ellipsis, the full name as tooltip
     expect(screen.getByText(/^20,812 triangles · Oct 18, 2026$/)).toBeTruthy();
   });
 

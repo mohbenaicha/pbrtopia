@@ -1,4 +1,4 @@
-import { Icon } from '../../../ui-kit';
+import { Icon, Tooltip } from '../../../ui-kit';
 import type { AuxSheetPlan } from '../../custom/planTypes';
 import type { SheetPreview } from '../../custom/sheetPreview';
 import { SheetPreviewCanvas } from './SheetPreviewCanvas';
@@ -18,10 +18,12 @@ const HINT = 'Fills in what the main views cannot see. Uses one image.';
 export function AuxSheetCard({ aux, preview, fields, onIncludedChange, onSettings }: AuxSheetCardProps): React.JSX.Element {
   return (
     <section className="setup-card setup-card--aux" role="group" aria-label="Auxiliary image">
-      <label className="setup-card__include" title={HINT}>
-        <input type="checkbox" checked={aux !== null} onChange={(event) => onIncludedChange(event.target.checked)} />
-        <span>Include auxiliary cameras</span>
-      </label>
+      <Tooltip heading="Auxiliary cameras" text={HINT}>
+        <label className="setup-card__include">
+          <input type="checkbox" checked={aux !== null} onChange={(event) => onIncludedChange(event.target.checked)} />
+          <span>Include auxiliary cameras</span>
+        </label>
+      </Tooltip>
       {aux !== null && (
         <>
           <div className="setup-drop setup-drop--aux" data-testid="canvas-box">

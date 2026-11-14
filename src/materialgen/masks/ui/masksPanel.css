@@ -62,6 +62,11 @@
   color: var(--text);
 }
 
+/* a Height slider that cannot be used (no height map): the tooltip's hover target is its row, since a disabled slider swallows the pointer */
+.mask-row__height[data-blocked] * {
+  pointer-events: none;
+}
+
 /* Pinned to the bottom of the popover's scroll area, so Reset all and Re-run decomposition stay in reach however many components there are. */
 .masks-panel__buttons {
   position: sticky;

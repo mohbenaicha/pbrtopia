@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button, IconButton, Icon } from '../../src/ui-kit';
+import { describeTooltipOf, openTooltipTextOf } from '../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -69,9 +70,22 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'D' }).dataset['variant']).toBe('secondary'); // the default is not the accent
   });
 
-  it('R22 a button can carry a tooltip', () => {
+  it('R22 a button can carry a tooltip: its label as heading and the title as text, with no native title', () => {
     render(<Button title="Import project">Import</Button>);
-    expect(screen.getByRole('button', { name: 'Import' }).getAttribute('title')).toBe('Import project');
+    const button = screen.getByRole('button', { name: 'Import' });
+    expect(button.getAttribute('title')).toBeNull();
+    expect(openTooltipTextOf(button)).toBe('Import. Import project');
+  });
+
+  it('app tooltips R7 a title that only repeats the label gives the heading alone; a button without a title has no tooltip at all', () => {
+    render(
+      <>
+        <Button title="Generate">Generate</Button>
+        <Button>Plain</Button>
+      </>,
+    );
+    expect(openTooltipTextOf(screen.getByRole('button', { name: 'Generate' }))).toBe('Generate');
+    expect(screen.getByRole('button', { name: 'Plain' }).closest('.ui-button__tip')).toBeNull();
   });
 
   it('R22 a disabled button gives its tooltip as its description, so the reason is announced; an enabled one does not', () => {
@@ -82,6 +96,7 @@ describe('Button', () => {
       </>,
     );
     expect(screen.getByRole('button', { name: 'Off' }).getAttribute('aria-description')).toBe('Needs a height or normal map.');
+    expect(describeTooltipOf(screen.getByRole('button', { name: 'Off' }))).toBe('Off. Needs a height or normal map.'); // a disabled button's tooltip still exists, on its wrapper
     expect(screen.getByRole('button', { name: 'On' }).hasAttribute('aria-description')).toBe(false);
   });
 
@@ -122,14 +137,16 @@ describe('IconButton', () => {
   it('R22 a disabled icon button with a reason keeps its name and gives the reason as tooltip and description', () => {
     render(<IconButton label="Export project" icon={<Icon name="download" />} disabled disabledReason="Exit projection mode to export." onClick={() => undefined} />);
     const button = screen.getByRole('button', { name: 'Export project' });
-    expect(button.getAttribute('title')).toBe('Export project: Exit projection mode to export.');
+    expect(button.getAttribute('title')).toBeNull();
+    expect(describeTooltipOf(button)).toBe('Export project. Exit projection mode to export.');
     expect(button.getAttribute('aria-description')).toBe('Exit projection mode to export.');
   });
 
   it('R22 an enabled icon button ignores a reason it was given', () => {
     render(<IconButton label="Export project" icon={<Icon name="download" />} disabledReason="Exit projection mode to export." onClick={() => undefined} />);
     const button = screen.getByRole('button', { name: 'Export project' });
-    expect(button.getAttribute('title')).toBe('Export project');
+    expect(button.getAttribute('title')).toBeNull();
+    expect(describeTooltipOf(button)).toBe(''); // heading only (app tooltips R7)
     expect(button.getAttribute('aria-description')).toBeNull();
   });
 

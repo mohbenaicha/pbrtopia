@@ -38,7 +38,7 @@ export function RenameField({ initialName, save, cancel }: RenameFieldProps): Re
 
   return (
     <form ref={form} className="project-rename" onSubmit={(event) => void submit(event)} onKeyDown={cancelOnEscape}>
-      <TextInput label="Project name" value={value} onChange={setValue} disabled={saving} {...(error === undefined ? {} : { error })} />
+      <TextInput label="Project name" tip="The new name; press Enter to save or Escape to cancel." value={value} onChange={setValue} disabled={saving} {...(error === undefined ? {} : { error })} />
       <div className="project-rename__actions">
         <Button variant="primary" type="submit" loading={saving}>Save</Button>
         <Button variant="ghost" onClick={cancel}>Cancel</Button>

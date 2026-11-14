@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { Tooltip } from '@shared/ui-kit';
 import { OpActions } from './OpActions';
 import './opControls.css';
 
@@ -30,7 +31,7 @@ export function ToolPanel({ title, canApply, applying, error, onReset, onCancel,
   }, []);
   return (
     <section className="tool-panel" aria-labelledby={heading}>
-      <h3 className="tool-panel__title" id={heading}>{title}</h3>
+      <Tooltip heading={title} text="Apply keeps the result of this tool, Cancel throws it away."><h3 className="tool-panel__title" id={heading}>{title}</h3></Tooltip>
       <div className="tool-panel__body">
         {error !== null && <p className="op-dialog__error" role="alert">{error}</p>}
         {children}

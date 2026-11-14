@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Select } from '../../src/ui-kit';
+import { describeTooltipOf } from '../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -150,7 +151,19 @@ describe('Select', () => {
       await open();
       expect(document.activeElement).toBe(screen.getByRole('searchbox'));
       expect(screen.getByRole('option', { name: /Steel/ }).textContent).toContain('0.30 / 1.00');
-      expect(screen.getByRole('combobox', { name: 'Material' }).getAttribute('title')).toBe('Estimated default');
+      const box = screen.getByRole('combobox', { name: 'Material' });
+      expect(box.getAttribute('title')).toBeNull();
+      expect(describeTooltipOf(box)).toBe('Material. Estimated default');
+    });
+
+    it('app tooltips R3 an option with a hint has a tooltip of its own (name and hint), and no native title', async () => {
+      const user = userEvent.setup();
+      render(<Select label="Model" options={[{ value: 'a', label: 'Fast', hint: 'Cheaper and quicker, less detail.' }, { value: 'b', label: 'Plain' }]} value="a" onChange={() => undefined} />);
+      await user.click(screen.getByRole('combobox', { name: 'Model' }));
+      const fast = screen.getByRole('option', { name: /Fast/ });
+      expect(fast.getAttribute('title')).toBeNull();
+      expect(describeTooltipOf(fast)).toBe('Fast. Cheaper and quicker, less detail.');
+      expect(screen.getByRole('option', { name: /Plain/ }).getAttribute('aria-describedby')).toBeNull();
     });
 
     it('R37 typing filters by a case-insensitive part of the name, and the headings follow the options that are left', async () => {

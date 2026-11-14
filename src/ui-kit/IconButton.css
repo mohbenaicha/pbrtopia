@@ -1,3 +1,18 @@
+/* The hover target of the tooltip; it takes the pointer for a disabled button too. */
+.ui-icon-button__tip {
+  display: inline-flex;
+  flex: none;
+}
+
+/* A disabled button takes no pointer events in the browser, so the wrapper must receive them for its tooltip to open. */
+.ui-icon-button__tip > .ui-icon-button:disabled {
+  pointer-events: none;
+}
+
+.ui-icon-button__tip:has(> .ui-icon-button:disabled) {
+  cursor: not-allowed;
+}
+
 .ui-icon-button {
   display: inline-flex;
   align-items: center;

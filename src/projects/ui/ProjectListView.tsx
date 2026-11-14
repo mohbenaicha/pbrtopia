@@ -98,7 +98,7 @@ export function ProjectListView({ store, onOpen, createActions, headerActions, s
       )}
       {(projects.length > 0 || arriving) && (
         <div className={projects.length > 0 ? 'project-list__toolbar' : 'project-list__toolbar project-list__toolbar--reserved'} role="toolbar" aria-label="Select projects">
-          <Checkbox label="Select all" checked={selected.size === projects.length} onChange={(all) => setSelected(all ? new Set(projects.map((project) => project.id)) : new Set())} />
+          <Checkbox label="Select all" hint="Ticks every project so they can be deleted together." checked={selected.size === projects.length} onChange={(all) => setSelected(all ? new Set(projects.map((project) => project.id)) : new Set())} />
           {selected.size > 0 && (
             <SelectionBar
               count={selected.size}

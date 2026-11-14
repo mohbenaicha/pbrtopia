@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GenerationPanel, GenerationPlan } from '@mat/generation';
 import { MaterialSetupOverlay } from '@mat/app/panels/setup/MaterialSetupOverlay';
+import { describeTooltipOf } from '../../../../support/tooltipDescription';
 import { makeGenerationPanel } from '../generate/fakeGeneration';
 
 afterEach(cleanup);
@@ -88,7 +89,7 @@ describe('materialgen/generation setup overlay', () => {
     const metal = chip('Metal-Roughness');
     expect(metal.getAttribute('draggable')).not.toBe('true');
     expect(metal.getAttribute('aria-disabled')).toBe('true');
-    expect(metal.getAttribute('title')).toMatch(/Include box of the Metal-Roughness card/);
+    expect(describeTooltipOf(metal)).toMatch(/Include box of the Metal-Roughness card/);
     fireEvent.click(metal);
     expect(screen.queryByRole('button', { name: /Add Metal-Roughness/ })).toBeNull();
   });
@@ -178,7 +179,7 @@ describe('materialgen/generation setup overlay', () => {
   it('R18 Confirm is off, with the reason as its tooltip, when a model has no key', () => {
     open(makeGenerationPanel({ keyed: [] }));
     expect(confirm().disabled).toBe(true);
-    expect(confirm().title).toMatch(/key/i);
+    expect(describeTooltipOf(confirm())).toMatch(/key/i);
   });
 
   it('R20 Save setup asks for a name and stores the draft under it', () => {
@@ -219,7 +220,7 @@ describe('materialgen/generation setup overlay', () => {
   it('R18 Confirm is off, with the reason as its tooltip, when the describe step has no model', () => {
     open(makeGenerationPanel({ describeProvider: null }));
     expect(confirm().disabled).toBe(true);
-    expect(confirm().title).toBe('Choose a prompt enhancer model in Settings.');
+    expect(describeTooltipOf(confirm())).toBe('Confirm. Choose a prompt enhancer model in Settings.');
   });
 
   it('R19 a plan that names a model the catalog does not list keeps its settings, shows the card as unavailable and keeps Confirm off', () => {
@@ -228,7 +229,7 @@ describe('materialgen/generation setup overlay', () => {
     generation.choice.plan = { ...generation.choice.plan, images: [{ ...image, settings: { ...image.settings, modelId: 'retired-model' } }, ...generation.choice.plan.images.slice(1)] };
     open(generation);
     expect(confirm().disabled).toBe(true);
-    expect(confirm().title).toMatch(/no longer available|not available/i);
+    expect(describeTooltipOf(confirm())).toMatch(/no longer available|not available/i);
     expect(within(card('Image 1')).getByRole('alert').textContent).toMatch(/no longer available|not available/i);
   });
 

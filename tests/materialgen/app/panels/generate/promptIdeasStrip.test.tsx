@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PromptIdeasStrip } from '@mat/app/panels/generate/PromptIdeasStrip';
+import { describeTooltipOf } from '../../../../support/tooltipDescription';
 import { idleIdeas } from './fakeGeneration';
 
 afterEach(cleanup);
@@ -22,7 +23,7 @@ describe('PromptIdeasStrip', () => {
     view.rerender(<PromptIdeasStrip ideas={idleIdeas({ request, disabledReason: 'Write a prompt first' })} readOnlyReason={null} />);
     const blocked = screen.getByRole('button', { name: 'Get prompt ideas' }) as HTMLButtonElement;
     expect(blocked.disabled).toBe(true);
-    expect(blocked.title).toContain('Write a prompt first');
+    expect(describeTooltipOf(blocked)).toContain('Write a prompt first');
     view.rerender(<PromptIdeasStrip ideas={idleIdeas({ request, busy: true })} readOnlyReason={null} />);
     fireEvent.click(screen.getByRole('button', { name: 'Get prompt ideas' }));
     expect(request).toHaveBeenCalledTimes(1);
@@ -36,7 +37,7 @@ describe('PromptIdeasStrip', () => {
   it('materialgen/generation R73 a number shows its idea in full as the tooltip, clicking it picks that idea, and the selected one is drawn pressed', () => {
     const pick = vi.fn();
     render(<PromptIdeasStrip ideas={idleIdeas({ ideas: IDEAS, selected: 1, pick })} readOnlyReason={null} />);
-    expect(screen.getByRole('button', { name: 'Idea 2' }).getAttribute('title')).toBe(IDEAS[1]);
+    expect(describeTooltipOf(screen.getByRole('button', { name: 'Idea 2' }))).toBe(`Idea 2. ${IDEAS[1]}`);
     expect(screen.getByRole('button', { name: 'Idea 2' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('button', { name: 'Idea 1' }).getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(screen.getByRole('button', { name: 'Idea 3' }));
@@ -48,7 +49,7 @@ describe('PromptIdeasStrip', () => {
     const view = render(<PromptIdeasStrip ideas={idleIdeas({ ideas: IDEAS, canReset: false, reset })} readOnlyReason={null} />);
     const off = screen.getByRole('button', { name: 'Reset' }) as HTMLButtonElement;
     expect(off.disabled).toBe(true);
-    expect(off.title).toContain('Nothing to go back to');
+    expect(describeTooltipOf(off)).toContain('Nothing to go back to');
     view.rerender(<PromptIdeasStrip ideas={idleIdeas({ ideas: IDEAS, canReset: true, reset })} readOnlyReason={null} />);
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
     expect(reset).toHaveBeenCalledTimes(1);
@@ -58,7 +59,7 @@ describe('PromptIdeasStrip', () => {
     render(<PromptIdeasStrip ideas={idleIdeas({ ideas: IDEAS, canReset: true })} readOnlyReason="Open in another tab" />);
     for (const button of screen.getAllByRole('button') as HTMLButtonElement[]) {
       expect(button.disabled).toBe(true);
-      expect(button.title).toContain('Open in another tab');
+      expect(describeTooltipOf(button)).toContain('Open in another tab');
     }
   });
 });

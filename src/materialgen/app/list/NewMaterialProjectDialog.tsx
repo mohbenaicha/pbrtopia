@@ -44,8 +44,8 @@ export function NewMaterialProjectDialog({ busy, error, onCreate, onCancel }: Ne
       }
     >
       <div className="new-material-dialog" onKeyDown={createOnEnter}>
-        <TextInput label="Project name" placeholder="Project name" value={value} onChange={setValue} disabled={busy} {...(nameError === undefined ? {} : { error: nameError })} />
-        <Select label="Size" options={SIZE_OPTIONS} value={choice} onChange={setChoice} disabled={busy} />
+        <TextInput label="Project name" tip="What this material project is called in the list." placeholder="Project name" value={value} onChange={setValue} disabled={busy} {...(nameError === undefined ? {} : { error: nameError })} />
+        <Select label="Size" title="The side length, in pixels, of the maps; Auto picks it from the first map you add." options={SIZE_OPTIONS} value={choice} onChange={setChoice} disabled={busy} />
         {error !== null && !busy && <p className="new-material-dialog__error" role="alert">{error}</p>}
       </div>
     </Dialog>

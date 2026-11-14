@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MaskDisplayControl } from '../../../../src/materialgen/preview/ui/MaskDisplayControl';
+import { describeTooltipOf } from '../../../support/tooltipDescription';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -97,7 +98,7 @@ describe('materialgen/preview R28 R40 the Material Masks icon', () => {
     await userEvent.click(icon());
     const toggle = screen.getByRole('switch', { name: 'Mask overlay' }) as HTMLInputElement;
     expect(toggle.disabled).toBe(true);
-    expect(toggle.closest('label')?.getAttribute('title')).toBe('There are no masks yet. Generate the material first.');
+    expect(describeTooltipOf(toggle)).toBe('Mask overlay. There are no masks yet. Generate the material first.');
     expect(screen.getByRole('slider', { name: 'Overlay opacity' })).toBeTruthy();
     expect(screen.queryByTestId('masks-controls')).toBeNull();
   });

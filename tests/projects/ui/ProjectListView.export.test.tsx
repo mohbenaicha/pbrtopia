@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectSummary } from '../../../src/projects/records/projectRecords';
 import type { ListExportResult, ProjectListExporter } from '../../../src/projects/ui/listExport';
 import { ProjectListView, type ListViewStore } from '../../../src/projects/ui/ProjectListView';
+import { describeTooltipOf, openTooltipTextOf } from '../../support/tooltipDescription';
 
 beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:thumb');
@@ -47,7 +48,7 @@ const selectAll = async (): Promise<void> => void (await userEvent.click(screen.
 describe('ProjectListView export of one project (app/projects R16)', () => {
   it('R16 a card has an Export button named for its project with the tooltip "Export project", only when the app gives an exporter', async () => {
     await showList([summary('a', 'Orc helmet')], exporterOf());
-    expect(exportButton('Orc helmet').title).toBe('Export project');
+    expect(openTooltipTextOf(exportButton('Orc helmet'))).toBe('Export Orc helmet. Saves this project as a file you can keep or share.'); // heading names the project, text says what it does
     cleanup();
     await showList([summary('a', 'Orc helmet')], undefined);
     expect(screen.queryByRole('button', { name: /^Export / })).toBeNull();
@@ -109,7 +110,7 @@ describe('ProjectListView export of one project (app/projects R16)', () => {
   it('R16 a project of an older version has Export disabled with its reason', async () => {
     await showList([summary('a', 'Old one', { unreadable: 'Saved by an older version.' })], exporterOf());
     expect(exportButton('Old one').disabled).toBe(true);
-    expect(exportButton('Old one').title).toContain('Saved by an older version.');
+    expect(describeTooltipOf(exportButton('Old one'))).toContain('Saved by an older version.');
   });
 });
 

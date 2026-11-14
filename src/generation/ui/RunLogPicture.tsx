@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Icon, IconButton, ImageViewer, saveBlobAsFile } from '../../ui-kit';
+import { Icon, IconButton, ImageViewer, saveBlobAsFile, Tooltip } from '../../ui-kit';
 import { useObjectUrl } from './useObjectUrl';
 
 interface RunLogPictureProps {
@@ -23,7 +23,7 @@ export function RunLogPicture({ blob, label, alt, fileStem }: RunLogPictureProps
         <button type="button" className="run-log-row__enlarge" aria-label={`Enlarge ${label}`} onClick={() => setEnlarged(true)}>
           <img className="run-log-row__picture" src={url} alt={alt} />
         </button>
-        <figcaption className="run-log-row__label">{label}</figcaption>
+        <Tooltip heading={label} text="What this picture is; click the picture to enlarge it."><figcaption className="run-log-row__label">{label}</figcaption></Tooltip>
         <span className="run-log-row__download">
           <IconButton label={`Download ${label}`} icon={<Icon name="download" size={16} />} onClick={download} />
         </span>

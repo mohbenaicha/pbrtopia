@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, TextInput } from '../../ui-kit';
+import { Button, TextInput, Tooltip } from '../../ui-kit';
 import type { KeyVault } from '../KeyVault';
 import type { Provider } from '../vaultTypes';
 import './keysUi.css';
@@ -68,7 +68,7 @@ export function KeyRow({ provider, label, vault, message, rejected, onMessage, o
   return (
     <div className="key-row" role="group" aria-label={label} ref={row}>
       <div className="key-row__line">
-        <span className="key-row__name">{label}</span>
+        <Tooltip heading={label} text={`The service this API key is for; its models become available once a key is saved.`}><span className="key-row__name">{label}</span></Tooltip>
         <span className="key-row__value">{hasKey ? `••••${vault.hint(provider) ?? ''}` : 'Not set'}</span>
         {hasKey && <span className="key-row__status">{vault.status() === 'unlocked' ? 'Encrypted, unlocked' : 'Encrypted, locked'}</span>}
         <span className="key-row__actions">
@@ -86,6 +86,7 @@ export function KeyRow({ provider, label, vault, message, rejected, onMessage, o
         <div className="key-row__edit">
           <TextInput
             label={`${label} key`}
+            tip={`Paste your ${label} API key; it is stored encrypted on this computer.`}
             type="password"
             value={draft}
             onChange={setDraft}

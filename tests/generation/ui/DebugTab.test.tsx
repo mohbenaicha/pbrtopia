@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RunLogRecord } from '../../../src/generation/runLogStore';
 import { DebugTab } from '../../../src/generation/ui/DebugTab';
+import { describeTooltipOf } from '../../support/tooltipDescription';
 
 const created: Blob[] = [];
 const revoked: string[] = [];
@@ -146,7 +147,7 @@ describe('DebugTab: delete (R26)', () => {
     show([record({ outcome: 'running' })]);
     const button = screen.getByRole('button', { name: 'Delete log row' }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
-    expect(button.title).toMatch(/still going|running/i);
+    expect(describeTooltipOf(button)).toMatch(/still going|running/i);
   });
 });
 
@@ -253,8 +254,9 @@ describe('DebugTab: a custom run row (custom R27)', () => {
     open([sheet(0, 'Front'), sheet(1, 'Left, Right'), sheet(2, 'Aux')]);
     const snapshots = screen.getByRole('group', { name: 'Snapshots' });
     const images = screen.getByRole('group', { name: 'Returned images' });
-    expect(within(snapshots).getAllByRole('figure').map((cell) => cell.textContent)).toEqual(['Front', 'Left, Right', 'Aux']);
-    expect(within(images).getAllByRole('figure').map((cell) => cell.textContent)).toEqual(['Front', 'Left, Right', 'Aux']);
+    const captions = (group: HTMLElement): (string | undefined)[] => within(group).getAllByRole('figure').map((cell) => cell.querySelector('figcaption')?.textContent);
+    expect(captions(snapshots)).toEqual(['Front', 'Left, Right', 'Aux']);
+    expect(captions(images)).toEqual(['Front', 'Left, Right', 'Aux']);
     expect(screen.queryByRole('button', { name: 'Enlarge Atlas' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Enlarge Generated image' })).toBeNull();
   });

@@ -22,5 +22,6 @@ export default defineConfig({
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     exclude: ['tests/gpu/**', 'tests/ui/**', 'node_modules/**', 'upstream/tests/**'],
     environment: 'node',
+    setupFiles: ['tests/support/testingLibrarySetup.ts'],
   },
 });

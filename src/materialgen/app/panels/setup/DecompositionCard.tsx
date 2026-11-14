@@ -19,7 +19,7 @@ export function DecompositionCard({ generation, card, canInclude, onIncludedChan
   const choice = settings === null ? null : layoutForCard(model, settings, 1);
   return (
     <section className="setup-card setup-card--aux" role="group" aria-label="Metal-Roughness">
-      <Checkbox label="Include" checked={card !== undefined} disabled={card === undefined && !canInclude} onChange={onIncludedChange} />
+      <Checkbox label="Include" hint="Also generates the image that roughness and metalness are worked out from." checked={card !== undefined} disabled={card === undefined && !canInclude} onChange={onIncludedChange} />
       <p className="material-panel__hint">Segmentation image used to derive roughness and metal.</p>
       {settings !== null && (
         <>

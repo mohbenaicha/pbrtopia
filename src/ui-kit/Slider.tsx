@@ -1,13 +1,14 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from './Icon';
 import { IconButton } from './IconButton';
-import { TOOLTIP_SKIP_ATTRIBUTE } from './Tooltip';
+import { Tooltip, TOOLTIP_SKIP_ATTRIBUTE } from './Tooltip';
 import './Slider.css';
 
 const SKIP_TOOLTIP = { [TOOLTIP_SKIP_ATTRIBUTE]: '' };
 
 interface SliderProps {
   label: string; // shown above the track and used as the accessible name
+  hint?: string; // what the setting does: the sentence of the label's tooltip
   value: number;
   min: number;
   max: number;
@@ -55,6 +56,7 @@ export function SliderReadout({ number, extra, resetLabel, resetDisabled, onRese
 
 interface SliderFrameProps {
   label: string;
+  hint?: string | undefined; // the sentence under the label's tooltip heading; none: the label alone
   layout: 'stacked' | 'row';
   marks: boolean;
   disabled: boolean;
@@ -64,8 +66,8 @@ interface SliderFrameProps {
 }
 
 /** The label, the track and the value of one slider, laid out as a row or stacked; Slider and RangeSlider both draw through it. */
-export function SliderFrame({ label, layout, marks, disabled, resettable, track, valueText }: SliderFrameProps): React.JSX.Element {
-  const labelText = <span className="ui-slider__label">{label}</span>;
+export function SliderFrame({ label, hint, layout, marks, disabled, resettable, track, valueText }: SliderFrameProps): React.JSX.Element {
+  const labelText = <Tooltip heading={label} text={hint ?? ''}><span className="ui-slider__label">{label}</span></Tooltip>;
   const marked = marks ? '' : undefined;
   const dragPart = (part: ReactNode): React.JSX.Element => <span className="ui-slider__part" {...SKIP_TOOLTIP}>{part}</span>; // no pointer tooltip over the track or the number (compositing R49)
   if (layout === 'row') {
@@ -88,7 +90,7 @@ export function SliderFrame({ label, layout, marks, disabled, resettable, track,
   );
 }
 
-export function Slider({ label, value, min, max, step = 1, onChange, format = String, disabled = false, layout = 'stacked', readout, resetTo, onReset, marks = false, extra }: SliderProps): React.JSX.Element {
+export function Slider({ label, hint, value, min, max, step = 1, onChange, format = String, disabled = false, layout = 'stacked', readout, resetTo, onReset, marks = false, extra }: SliderProps): React.JSX.Element {
   const fill = max > min ? ((value - min) / (max - min)) * 100 : 0;
   const number = readout ?? <output className="ui-slider__value">{format(value)}</output>;
   const resettable = resetTo !== undefined;
@@ -123,5 +125,5 @@ export function Slider({ label, value, min, max, step = 1, onChange, format = St
   ) : (
     input
   );
-  return <SliderFrame label={label} layout={layout} marks={marks} disabled={disabled} resettable={resettable} track={track} valueText={valueText} />;
+  return <SliderFrame label={label} hint={hint} layout={layout} marks={marks} disabled={disabled} resettable={resettable} track={track} valueText={valueText} />;
 }

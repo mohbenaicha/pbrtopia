@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseBaseMaterials, type MaskRow, type MasksRecord } from '@mat/masks';
 import { MasksPanel, type MasksModelControls, type MasksPanelProps } from '../../../../src/materialgen/masks/ui/MasksPanel';
+import { describeTooltipOf } from '../../../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -134,7 +135,7 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     expect(follows(first, wall)).toBe(true);
     expect(follows(wall, resetAll)).toBe(true);
     expect(follows(resetAll, rerun)).toBe(true);
-    expect(resetAll.parentElement).toBe(rerun.parentElement);
+    expect(rerun.closest('.masks-panel__buttons')).toBe(resetAll.closest('.masks-panel__buttons')); // same row (a tooltip wrapper may sit between)
     expect(screen.queryByRole('switch', { name: /overlay/i })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Re-quantise' })).toBeNull();
   });
@@ -214,7 +215,7 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     fireEvent.click(swatch('Wall'));
     const toggle = screen.getByRole('switch', { name: 'Colour mixin' }) as HTMLInputElement;
     expect(toggle.disabled).toBe(true);
-    expect(toggle.closest('label')?.getAttribute('title')).toBe('No albedo map');
+    expect(describeTooltipOf(toggle)).toBe('Colour mixin. No albedo map');
     cleanup();
     setup({ record: record({ rows: [{ ...row(0, 'Wall'), mix: { on: true, invert: false, rough: 0.5, metal: 0.5 } }, row(1, 'Trim')] }) });
     expect((screen.getByRole('button', { name: 'Reset all' }) as HTMLButtonElement).disabled).toBe(false);
@@ -224,7 +225,7 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     setup({ hasHeightMap: false });
     const height = within(block('Wall')).getByLabelText('Height') as HTMLInputElement;
     expect(height.disabled).toBe(true);
-    expect(height.closest('[title]')?.getAttribute('title')).toBe('Add a height map first');
+    expect(describeTooltipOf(height)).toBe('Height. Add a height map first');
     cleanup();
     setup({ record: record({ rows: [{ ...row(0, 'Wall'), height: 0.3 }, row(1, 'Trim')] }) });
     expect((screen.getByRole('button', { name: 'Reset all' }) as HTMLButtonElement).disabled).toBe(false);
@@ -299,7 +300,7 @@ describe('materialgen/masks MasksPanel (masks R48-R57 R59 R66-R68)', () => {
     expect(screen.queryByRole('radio')).toBeNull();
     const rerun = screen.getByRole('button', { name: 'Re-run decomposition' }) as HTMLButtonElement;
     expect(rerun.disabled).toBe(true);
-    expect(rerun.title).toBe('Needs the image models.');
+    expect(describeTooltipOf(rerun)).toBe('Re-run decomposition. Needs the image models.');
   });
 
   it('R67 R68 while masks exist a running re-run shows its message and Cancel; a failed step shows Retry only', () => {

@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react';
+import { Tooltip } from '../../ui-kit';
 
 interface SettingsGroupProps {
   title: string;
@@ -15,9 +16,11 @@ export function SettingsGroup({ title, hint, children, messages, actions }: Sett
   const headingId = useId();
   return (
     <div className="settings-card" role="group" aria-labelledby={headingId}>
-      <h3 className="settings-card__heading" id={headingId}>
-        {title}
-      </h3>
+      <Tooltip heading={title} text={hint ?? ''}>
+        <h3 className="settings-card__heading" id={headingId}>
+          {title}
+        </h3>
+      </Tooltip>
       {hint !== undefined && <p className="settings-card__hint">{hint}</p>}
       {isDrawn(children) && <div className="settings-card__rows">{children}</div>}
       {isDrawn(messages) && (

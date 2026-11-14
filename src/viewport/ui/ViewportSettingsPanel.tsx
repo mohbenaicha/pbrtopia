@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { HdriControls, LightControls, MeshControls, MetalControls, NormalControls, RoughnessControls, ShadingControls, type ViewportControlsProps } from './ViewportSettingsControls';
 import { SettingsSection, SettingsSubsection } from './SettingsSection';
+import { VIEWPORT_TIPS } from './viewportTooltips';
 import './ViewportSettingsPanel.css';
 
 export type ViewportSectionId = 'environment' | 'material' | 'view';
@@ -17,24 +18,24 @@ export function ViewportSettingsPanel({ hiddenSections = [], normalExtras, mater
   return (
     <div className="viewport-settings">
       {shown('environment') && (
-        <SettingsSection title="Environment">
-          <SettingsSubsection title="Light">
+        <SettingsSection title="Environment" hint={VIEWPORT_TIPS.environment}>
+          <SettingsSubsection title="Light" hint={VIEWPORT_TIPS.light}>
             <LightControls {...controls} />
           </SettingsSubsection>
-          <SettingsSubsection title="HDRI">
+          <SettingsSubsection title="HDRI" hint={VIEWPORT_TIPS.hdri}>
             <HdriControls {...controls} />
           </SettingsSubsection>
         </SettingsSection>
       )}
       {shown('material') && (
-        <SettingsSection title="Material">
-          <SettingsSubsection title="Metal">
+        <SettingsSection title="Material" hint={VIEWPORT_TIPS.material}>
+          <SettingsSubsection title="Metal" hint={VIEWPORT_TIPS.metal}>
             <MetalControls {...controls} />
           </SettingsSubsection>
-          <SettingsSubsection title="Roughness">
+          <SettingsSubsection title="Roughness" hint={VIEWPORT_TIPS.roughness}>
             <RoughnessControls {...controls} />
           </SettingsSubsection>
-          <SettingsSubsection title="Normal">
+          <SettingsSubsection title="Normal" hint={VIEWPORT_TIPS.normal}>
             <NormalControls {...controls} />
             {normalExtras}
           </SettingsSubsection>
@@ -42,11 +43,11 @@ export function ViewportSettingsPanel({ hiddenSections = [], normalExtras, mater
         </SettingsSection>
       )}
       {shown('view') && (
-        <SettingsSection title="View">
-          <SettingsSubsection title="Shading">
+        <SettingsSection title="View" hint={VIEWPORT_TIPS.view}>
+          <SettingsSubsection title="Shading" hint={VIEWPORT_TIPS.shading}>
             <ShadingControls {...controls} />
           </SettingsSubsection>
-          <SettingsSubsection title="Mesh">
+          <SettingsSubsection title="Mesh" hint={VIEWPORT_TIPS.mesh}>
             <MeshControls {...controls} />
           </SettingsSubsection>
         </SettingsSection>

@@ -1,4 +1,4 @@
-import { Dialog } from '@shared/ui-kit';
+import { Dialog, Tooltip } from '@shared/ui-kit';
 
 interface PickerOverlayProps {
   title: string;
@@ -13,15 +13,17 @@ export function PickerOverlay({ title, onClose, search, children }: PickerOverla
   return (
     <Dialog open title={title} onClose={onClose} size="large">
       {search !== undefined && (
-        <input
-          className="picker-overlay__search"
-          type="search"
-          aria-label={search.label}
-          placeholder={search.label}
-          value={search.value}
-          onChange={(event) => search.onChange(event.target.value)}
-          autoFocus
-        />
+        <Tooltip heading={search.label} text="Type to narrow the list by name.">
+          <input
+            className="picker-overlay__search"
+            type="search"
+            aria-label={search.label}
+            placeholder={search.label}
+            value={search.value}
+            onChange={(event) => search.onChange(event.target.value)}
+            autoFocus
+          />
+        </Tooltip>
       )}
       <div className="picker-overlay__grid-scroll">{children}</div>
     </Dialog>

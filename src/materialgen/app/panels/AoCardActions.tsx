@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Icon, IconButton } from '@shared/ui-kit';
+import { DISCLOSURE_ICON_PIXELS, Icon, IconButton } from '@shared/ui-kit';
 
 interface AoCardActionsProps {
   hasSource: boolean; // a height or a normal map exists
@@ -25,8 +25,8 @@ export function AoCardActions({ hasSource, canWrite, readOnlyReason, opOpen, bus
   };
   return (
     <>
-      <IconButton label="AO tool" icon={<Icon name="occlusion" size={16} />} disabled={reason !== undefined} {...(reason ? { disabledReason: reason } : {})} onClick={onOpenTool} />
-      <IconButton label="Regenerate AO" icon={<Icon name="reset" size={16} />} loading={regenerating} disabled={reason !== undefined && !regenerating} {...(reason ? { disabledReason: reason } : {})} onClick={() => void run()} />
+      <IconButton label="AO tool" hint="Opens the settings for the occlusion map." icon={<Icon name="occlusion" size={DISCLOSURE_ICON_PIXELS} />} disabled={reason !== undefined} {...(reason ? { disabledReason: reason } : {})} onClick={onOpenTool} />
+      <IconButton label="Regenerate AO" hint="Recalculates the occlusion map from the current height or normal map." icon={<Icon name="reset" size={DISCLOSURE_ICON_PIXELS} />} loading={regenerating} disabled={reason !== undefined && !regenerating} {...(reason ? { disabledReason: reason } : {})} onClick={() => void run()} />
     </>
   );
 }

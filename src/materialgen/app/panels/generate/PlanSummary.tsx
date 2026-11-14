@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Dialog, Icon, IconButton } from '@shared/ui-kit';
+import { Button, Dialog, Icon, IconButton, Tooltip } from '@shared/ui-kit';
 import type { CostHint } from '@mat/generation';
 
 const describeRow = (row: CostHint['rows'][number]): string =>
@@ -20,7 +20,7 @@ export function PlanSummary({ hint }: { hint: CostHint }): React.JSX.Element {
         <ul className="plan-summary__rows">
           {hint.rows.map((row) => (
             <li key={row.label} className="plan-summary__row">
-              <span className="plan-summary__name">{row.label}</span>
+              <Tooltip heading={row.label} text="One image the plan will generate; its cost is shown beside it."><span className="plan-summary__name">{row.label}</span></Tooltip>
               <span className="plan-summary__cost">{row.costText}</span>
               <span className="plan-summary__detail">{describeRow(row)}</span>
             </li>

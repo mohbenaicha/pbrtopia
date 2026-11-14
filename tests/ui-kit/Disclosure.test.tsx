@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Disclosure } from '../../src/ui-kit';
+import { openTooltipTextOf } from '../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -12,7 +13,8 @@ describe('Disclosure', () => {
     render(<Disclosure title={`Original ${long}`} open={false} onOpenChange={() => undefined}>body</Disclosure>);
     const text = screen.getByText(`Original ${long}`);
     expect(text.className).toBe('ui-disclosure__title');
-    expect(text.getAttribute('title')).toBe(`Original ${long}`);
+    expect(text.getAttribute('title')).toBeNull();
+    expect(openTooltipTextOf(text)).toBe(`Original ${long}. Click to show this section.`);
   });
 
   it('R22 it is a button that says whether its section is open, and the open section is a region named by it', () => {

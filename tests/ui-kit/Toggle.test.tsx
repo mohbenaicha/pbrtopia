@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Toggle } from '../../src/ui-kit';
+import { describeTooltipOf } from '../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -39,6 +40,13 @@ describe('Toggle', () => {
     expect(toggle.disabled).toBe(true);
     await userEvent.click(toggle);
     expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByText('Background').closest('label')!.getAttribute('title')).toBe('The built-in studio has no backdrop');
+    const row = screen.getByText('Background').closest('label')!;
+    expect(row.getAttribute('title')).toBeNull();
+    expect(describeTooltipOf(row)).toBe('Background. The built-in studio has no backdrop'); // the label row is the hover target, so a disabled switch still has it
+  });
+
+  it('app tooltips R1 a switch with no hint has no tooltip', () => {
+    render(<Toggle label="Mask overlay" checked onChange={() => undefined} />);
+    expect(screen.getByRole('switch', { name: 'Mask overlay' }).closest('label')!.getAttribute('aria-describedby')).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Tooltip } from '@shared/ui-kit';
 import { QUADRANTS, type CropEdge, type Quadrant } from '@mat/imageops';
 import { useViewAngle } from './ViewAngleContext';
 import './planePicker.css';
@@ -47,24 +48,24 @@ function EdgeHandles({ edgeTitle, onEdge, onEdgeMark }: Extract<PlanePickerProps
   return (
     <>
       {EDGES.map(({ edge, label }) => (
-        <button
-          key={edge}
-          type="button"
-          className="plane-picker__edge"
-          data-edge={edge}
-          data-active={String(flash === edge || down === edge)}
-          aria-label={label}
-          title={edgeTitle(edge)}
-          onClick={() => click(edge)}
-          onPointerDown={() => setDown(edge)}
-          onPointerUp={release}
-          onPointerLeave={release}
-          onPointerCancel={release}
-          onMouseEnter={() => onEdgeMark(edge)}
-          onMouseLeave={() => onEdgeMark(null)}
-          onFocus={() => onEdgeMark(edge)}
-          onBlur={() => onEdgeMark(null)}
-        />
+        <Tooltip key={edge} heading={edgeTitle(edge)} text="Click to trim the map from this edge; the viewport marks where the cut falls.">
+          <button
+            type="button"
+            className="plane-picker__edge"
+            data-edge={edge}
+            data-active={String(flash === edge || down === edge)}
+            aria-label={label}
+            onClick={() => click(edge)}
+            onPointerDown={() => setDown(edge)}
+            onPointerUp={release}
+            onPointerLeave={release}
+            onPointerCancel={release}
+            onMouseEnter={() => onEdgeMark(edge)}
+            onMouseLeave={() => onEdgeMark(null)}
+            onFocus={() => onEdgeMark(edge)}
+            onBlur={() => onEdgeMark(null)}
+          />
+        </Tooltip>
       ))}
     </>
   );
@@ -77,17 +78,17 @@ function CornerHandles({ selected, onCorner }: Extract<PlanePickerProps, { handl
         <span key={`tint-${quadrant}`} className="plane-picker__quadrant" data-quadrant={quadrant} data-selected={String(selected.has(quadrant))} aria-hidden="true" />
       ))}
       {QUADRANTS.map((quadrant) => (
-        <button
-          key={quadrant}
-          type="button"
-          className="plane-picker__corner"
-          data-corner={quadrant}
-          data-active={String(selected.has(quadrant))}
-          aria-label={quadrant}
-          aria-pressed={selected.has(quadrant)}
-          title={CORNER_TITLE[quadrant]}
-          onClick={() => onCorner(quadrant)}
-        />
+        <Tooltip key={quadrant} heading={CORNER_TITLE[quadrant]} text="Click to add or remove this quarter of the map from the mirror selection.">
+          <button
+            type="button"
+            className="plane-picker__corner"
+            data-corner={quadrant}
+            data-active={String(selected.has(quadrant))}
+            aria-label={quadrant}
+            aria-pressed={selected.has(quadrant)}
+            onClick={() => onCorner(quadrant)}
+          />
+        </Tooltip>
       ))}
     </>
   );

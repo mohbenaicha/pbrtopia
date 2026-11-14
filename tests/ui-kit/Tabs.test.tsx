@@ -4,6 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Tabs } from '../../src/ui-kit';
+import { openTooltipTextOf } from '../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -55,7 +56,8 @@ describe('Tabs browser-tab look', () => {
   it('R32 an icon-only tab draws the icon with no text, and keeps its label as tooltip and accessible name', () => {
     render(<Tabs label="Generate panel" tabs={panelTabs} value="generate" onChange={() => undefined} />);
     const debug = screen.getByRole('tab', { name: 'Debug' });
-    expect(debug.getAttribute('title')).toBe('Debug');
+    expect(debug.getAttribute('title')).toBeNull();
+    expect(openTooltipTextOf(debug)).toBe('Debug');
     expect(debug.getAttribute('data-compact')).not.toBeNull();
     expect(debug.textContent).toBe('');
     expect(debug.querySelector('[data-icon="bug"]')).not.toBeNull();

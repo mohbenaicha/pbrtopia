@@ -18,7 +18,7 @@ describe('imageops/ui ControlPanel', () => {
   it('R17 controls sit in an accordion of the categories the map kind has, the first open and one open at a time', () => {
     renderPanel();
     const headings = screen.getAllByRole('button', { expanded: true }).concat(screen.getAllByRole('button', { expanded: false }));
-    expect(headings.map((button) => button.textContent)).toEqual(expect.arrayContaining(['Tone', 'Colour', 'Detail', 'Surface']));
+    expect(headings.map((button) => button.querySelector('.ui-disclosure__title')?.textContent)).toEqual(expect.arrayContaining(['Tone', 'Colour', 'Detail', 'Surface']));
     expect(screen.getByRole('button', { name: 'Tone' }).getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByRole('slider', { name: 'Exposure' })).toBeTruthy();
     expect(screen.queryByRole('slider', { name: 'Saturation' })).toBeNull();

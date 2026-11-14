@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CustomPlanRecord } from '../../../../src/generation';
+import { describeTooltipOf } from '../../../support/tooltipDescription';
 import { camerasIn, CAMERAS, card, chooseOption, dataTransfer, NANO, planOf, setupOverlay, snapshotButton, SUNBURST } from './setupHarness';
 
 beforeEach(() => {
@@ -371,24 +372,24 @@ describe('SetupOverlay: Confirm and Cancel (custom R7)', () => {
     setupOverlay({ activePlan: planOf([[]]) });
     const confirm = screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
-    expect(confirm.getAttribute('title')).toBe('Assign at least one camera to an image.');
+    expect(describeTooltipOf(confirm)).toBe('Confirm. Assign at least one camera to an image.');
   });
 
   it('custom R7 an image without a camera blocks Confirm', () => {
     setupOverlay({ activePlan: planOf([[0], []]) });
     expect((screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByRole('button', { name: 'Confirm' }).getAttribute('title')).toBe('Image 2 has no camera.');
+    expect(describeTooltipOf(screen.getByRole('button', { name: 'Confirm' }))).toBe('Confirm. Image 2 has no camera.');
   });
 
   it('custom R28 a sheet whose model is gone from the list blocks Confirm with the generate reason', () => {
     setupOverlay({ activePlan: { sheets: [{ cameras: [0], settings: { ...SUNBURST, modelId: 'gone' } }], aux: null } });
     expect((screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByRole('button', { name: 'Confirm' }).getAttribute('title')).toBe('Image 1: The chosen image model is no longer available. Choose another.');
+    expect(describeTooltipOf(screen.getByRole('button', { name: 'Confirm' }))).toBe('Confirm. Image 1: The chosen image model is no longer available. Choose another.');
   });
 
   it('custom R19 a sheet whose provider has no key blocks Confirm', () => {
     setupOverlay({ hasKey: { gemini: true, openai: false } });
-    expect(screen.getByRole('button', { name: 'Confirm' }).getAttribute('title')).toBe('Image 1: Add a OpenAI key in Settings.');
+    expect(describeTooltipOf(screen.getByRole('button', { name: 'Confirm' }))).toBe('Confirm. Image 1: Add a OpenAI key in Settings.');
   });
 
   it('custom R7 Cancel and Escape close without handing anything over', () => {

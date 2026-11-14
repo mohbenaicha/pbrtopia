@@ -1,4 +1,5 @@
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { Tooltip } from './Tooltip';
 import './SegmentedControl.css';
 
 export interface SegmentOption<T extends string> {
@@ -7,10 +8,12 @@ export interface SegmentOption<T extends string> {
   short?: string; // shown in place of the label
   hoverIcon?: ReactNode; // replaces the text while the option is hovered or focused
   disabled?: boolean;
+  hint?: string; // what choosing this does, one sentence
 }
 
 interface SegmentedControlProps<T extends string> {
   label: string; // accessible name of the group
+  hint?: string; // what the group sets, shown when the pointer rests between the choices
   options: SegmentOption<T>[];
   value: T;
   onChange: (value: T) => void;
@@ -18,7 +21,7 @@ interface SegmentedControlProps<T extends string> {
 }
 
 // One choice out of a few, always visible. Arrow keys move the choice, skipping disabled options; only the chosen one is in the tab order.
-export function SegmentedControl<T extends string>({ label, options, value, onChange, disabled = false }: SegmentedControlProps<T>): React.JSX.Element {
+export function SegmentedControl<T extends string>({ label, hint, options, value, onChange, disabled = false }: SegmentedControlProps<T>): React.JSX.Element {
   const buttons = useRef(new Map<T, HTMLButtonElement>());
   const choosable = options.filter((option) => !option.disabled);
 
@@ -44,11 +47,11 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
     choose(target[event.key]);
   };
 
-  return (
+  const group = (
     <div className="ui-segmented" role="radiogroup" aria-label={label} aria-disabled={disabled || undefined} onKeyDown={onKeyDown}>
       {options.map((option) => {
         const selected = option.value === value;
-        return (
+        const segment = (
           <button
             key={option.value}
             ref={(element) => {
@@ -63,7 +66,7 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
             className="ui-segmented__option"
             data-selected={selected ? '' : undefined}
             data-hover-icon={option.hoverIcon === undefined ? undefined : ''}
-            {...(option.short === undefined ? {} : { title: option.label, 'aria-label': option.label })}
+            {...(option.short === undefined ? {} : { 'aria-label': option.label })}
             onClick={() => choose(option.value)}
           >
             <span className="ui-segmented__text">{option.short ?? option.label}</span>
@@ -74,7 +77,10 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
             )}
           </button>
         );
+        // Every choice explains itself (app tooltips R1); a short form also gives its full name as the heading.
+        return <Tooltip key={option.value} heading={option.label} text={option.hint ?? ''}>{segment}</Tooltip>;
       })}
     </div>
   );
+  return hint === undefined ? group : <Tooltip heading={label} text={hint}>{group}</Tooltip>;
 }

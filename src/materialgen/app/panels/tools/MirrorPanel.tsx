@@ -10,11 +10,11 @@ interface MirrorPanelProps {
   onClose(): void;
 }
 
-const MODES: ReadonlyArray<{ value: MirrorMode; label: string }> = [
-  { value: 'pair', label: 'Pair' },
-  { value: 'x', label: 'X' },
-  { value: 'y', label: 'Y' },
-  { value: 'around', label: 'Around' },
+const MODES: ReadonlyArray<{ value: MirrorMode; label: string; hint: string }> = [
+  { value: 'pair', label: 'Pair', hint: 'Copies the selected quadrant onto the one beside it.' },
+  { value: 'x', label: 'X', hint: 'Mirrors the selected half across the vertical centre line.' },
+  { value: 'y', label: 'Y', hint: 'Mirrors the selected half across the horizontal centre line.' },
+  { value: 'around', label: 'Around', hint: 'Copies the selected quadrant into the other three, turning it each time.' },
 ];
 const START: ReadonlySet<Quadrant> = new Set<Quadrant>(['TL', 'TR']);
 
@@ -50,7 +50,8 @@ export function MirrorPanel({ onChange, onApply, onClose }: MirrorPanelProps): R
       <div className="tool-panel__center">
         <SegmentedControl
           label="Mirror mode"
-          options={MODES.map(({ value, label }) => ({ value, label, disabled: !available.includes(value) }))}
+          hint="Which side of the selected plane is copied onto the other."
+          options={MODES.map(({ value, label, hint }) => ({ value, label, hint, disabled: !available.includes(value) }))}
           value={mode ?? chosen}
           onChange={setChosen}
         />

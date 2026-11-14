@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Icon, IconButton } from '@shared/ui-kit';
+import { DISCLOSURE_ICON_PIXELS, Icon, IconButton } from '@shared/ui-kit';
 import { editKindOf, type CropRect, type MirrorPlan, type PixelImage, type SeamParams } from '@mat/imageops';
 import { kindLabel, readMapPixels, type MapKind, type MapsController, type MapsState } from '@mat/maps';
 import type { ToolTransform, ToolView } from '@mat/preview';
@@ -31,6 +31,14 @@ interface GeometryToolsInput {
   /** Gives the viewport the transform to put on the maps, or null to show the maps as they are (imageops R53, R59). */
   onToolViewChange(view: HeldToolView | null): void;
 }
+
+/** App tooltips R5: what each button of the Maps bar does, one sentence under its name; every one changes all the maps at once. */
+const TOOL_HINT = {
+  Crop: 'Cuts every map to the area you pick.',
+  Mirror: 'Mirrors every map as a pair, along one axis, or around the centre.',
+  'Swap diagonals': 'Swaps opposite corners of every map so the seams move to the middle.',
+  'Blend edges': 'Softens the outer edges of every map so the picture tiles without a visible seam.',
+} as const;
 
 const TOOL_LABEL: Record<GeometryToolName, string> = { crop: 'Crop', mirror: 'Mirror', seam: 'Blend edges' };
 const EDGE_SOURCE_KINDS = ['albedo', 'height']; // imageops R66: the map the Canny edges are found in, the first one the project has; any picture map when neither is there
@@ -117,8 +125,8 @@ export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, o
     const kind = EDGE_SOURCE_KINDS.find((candidate) => baseKeys[candidate] !== undefined) ?? Object.keys(baseKeys)[0];
     return kind === undefined ? null : readMapPixels(await readBlob(baseKeys[kind]!));
   };
-  const button = (label: string, icon: 'crop' | 'mirror' | 'swap' | 'seam', onClick: () => void): React.JSX.Element => (
-    <IconButton label={label} icon={<Icon name={icon} size={16} />} disabled={reason !== undefined} {...(reason ? { disabledReason: reason } : {})} onClick={onClick} />
+  const button = (label: keyof typeof TOOL_HINT, icon: 'crop' | 'mirror' | 'swap' | 'seam', onClick: () => void): React.JSX.Element => (
+    <IconButton label={label} hint={TOOL_HINT[label]} icon={<Icon name={icon} size={DISCLOSURE_ICON_PIXELS} />} disabled={reason !== undefined} {...(reason ? { disabledReason: reason } : {})} onClick={onClick} />
   );
   // R75: the first Blend edges transform opens the viewport's view through the owner's state; every tick after it goes to the live feed alone (no render above the viewport).
   const onTransform = (transform: ToolTransform): void => {

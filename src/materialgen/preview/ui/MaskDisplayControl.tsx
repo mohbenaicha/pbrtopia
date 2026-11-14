@@ -25,8 +25,8 @@ export function MaskDisplayControl({ hasLabels, overlay, onOverlayChange, opacit
   return (
     <Popover open={open} onClose={() => setOpen(false)} closeOnOutsideClick={false} label="Mask display" trigger={trigger}>
       <div className="mask-display">
-        <Toggle label="Mask overlay" checked={overlay && hasLabels} onChange={onOverlayChange} disabled={!hasLabels} hint={hasLabels ? undefined : NO_MASKS} />
-        <Slider label="Overlay opacity" layout="row" value={opacity} min={0} max={1} step={0.01} format={(value) => value.toFixed(2)} onChange={onOpacityChange} />
+        <Toggle label="Mask overlay" checked={overlay && hasLabels} onChange={onOverlayChange} disabled={!hasLabels} hint={hasLabels ? 'Colours each material component on the model so you can see the masks.' : NO_MASKS} />
+        <Slider label="Overlay opacity" hint="How strongly the mask colours cover the material." layout="row" value={opacity} min={0} max={1} step={0.01} format={(value) => value.toFixed(2)} onChange={onOpacityChange} />
         {hasLabels ? controls : null}
       </div>
     </Popover>

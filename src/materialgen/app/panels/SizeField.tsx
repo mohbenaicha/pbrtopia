@@ -27,7 +27,7 @@ export function SizeField({ record, canWrite, resizing, onSizeChange, onResizeMa
 
   return (
     <>
-      <Select label="Size" options={SIZE_OPTIONS} value={choiceOfSize(record.size)} onChange={choose} disabled={!canWrite || resizing} {...(hasMaps ? { title: 'Choosing another size resizes every map.' } : {})} />
+      <Select label="Size" options={SIZE_OPTIONS} value={choiceOfSize(record.size)} onChange={choose} disabled={!canWrite || resizing} title={hasMaps ? 'The side length of every map; choosing another size resizes them all.' : 'The side length, in pixels, of the maps this material will make.'} />
       <ConfirmDialog
         open={pendingSize !== null}
         title={`Change the size to ${pendingSize ?? ''} px?`}

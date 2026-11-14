@@ -88,7 +88,8 @@ export function AoDialog({ maps, settings, ...rest }: AoDialogProps): React.JSX.
   const switcher = both ? (
     <SegmentedControl
       label="AO source"
-      options={[{ value: 'height', label: 'Height' }, { value: 'normal', label: 'Normal' }]}
+      hint="Which map the occlusion is calculated from."
+      options={[{ value: 'height', label: 'Height', hint: 'Calculates occlusion from the height map.' }, { value: 'normal', label: 'Normal', hint: 'Calculates occlusion from the normal map.' }]}
       value={source}
       onChange={setChosen}
     />

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Spinner } from './Spinner';
+import { Tooltip } from './Tooltip';
 import './Button.css';
 
 type ButtonVariant ='primary' | 'secondary' | 'ghost' | 'danger';
@@ -10,7 +11,7 @@ interface ButtonProps {
   loading?: boolean; // ignores clicks, shows a spinner, announced as busy; the button keeps focus
   disabled?: boolean; // not focusable, ignores input
   icon?: ReactNode;
-  title?: string; // a tooltip, for a button whose label can be hidden when space runs out
+  title?: string; // the tooltip's text under the label as its heading: what the button does, or why it is disabled (a styled Tooltip, not the native title)
   type?: 'button' | 'submit';
   pressed?: boolean; // for a choice among buttons: reported as aria-pressed and drawn selected
   onClick?: () => void;
@@ -18,11 +19,12 @@ interface ButtonProps {
 }
 
 export function Button({ variant = 'secondary', size = 'default', loading = false, disabled = false, icon, title, type = 'button', pressed, onClick, children }: ButtonProps): React.JSX.Element {
-  return (
+  const heading = typeof children === 'string' ? children : (title ?? '');
+  const words = title === undefined || title === heading ? '' : title; // a title that only repeats the label adds nothing under it (app tooltips R7)
+  const button = (
     <button
       type={type}
-      title={title}
-      aria-description={disabled ? title : undefined} // a disabled button's tooltip is its reason: it is read out too
+      aria-description={disabled && words !== '' ? words : undefined} // a disabled button's tooltip is its reason: it is read out too
       aria-pressed={pressed}
       className="ui-button"
       data-variant={variant}
@@ -38,4 +40,10 @@ export function Button({ variant = 'secondary', size = 'default', loading = fals
       <span>{children}</span>
     </button>
   );
+  if (title === undefined) return button;
+  return (
+    <Tooltip heading={heading} text={words}>
+      <span className="ui-button__tip">{button}</span>
+    </Tooltip>
+  ); // the wrapper is the hover target, so a disabled button still shows its reason
 }

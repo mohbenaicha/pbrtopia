@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Quaternion } from 'three';
 import type { ViewAxis } from '../cameraRig';
+import { Tooltip } from '../../ui-kit';
 import { computeGizmoDiscs } from './gizmoDiscs';
 import './AxisGizmo.css';
 
@@ -18,19 +19,19 @@ export function AxisGizmo({ quaternion, onSelectAxis }: AxisGizmoProps): React.J
       {computeGizmoDiscs(quaternion, DISC_ORBIT_RADIUS).map((disc) => {
         const style = { '--disc-x': `${disc.x}px`, '--disc-y': `${disc.y}px`, zIndex: Math.round((disc.depth + 1) * 10) + 1 } as CSSProperties;
         return (
-          <button
-            key={disc.axis}
-            type="button"
-            className="axis-gizmo__disc"
-            data-axis={disc.axis}
-            data-positive={disc.positive ? '' : undefined}
-            aria-label={`View from ${disc.axis.toUpperCase()}`}
-            title={`View from ${disc.axis.toUpperCase()}`}
-            style={style}
-            onClick={() => onSelectAxis(disc.axis)}
-          >
-            {disc.positive ? disc.label : ''}
-          </button>
+          <Tooltip key={disc.axis} heading={`View from ${disc.axis.toUpperCase()}`} text={`Turns the camera to look at the model from the ${disc.axis.toUpperCase()} side.`}>
+            <button
+              type="button"
+              className="axis-gizmo__disc"
+              data-axis={disc.axis}
+              data-positive={disc.positive ? '' : undefined}
+              aria-label={`View from ${disc.axis.toUpperCase()}`}
+              style={style}
+              onClick={() => onSelectAxis(disc.axis)}
+            >
+              {disc.positive ? disc.label : ''}
+            </button>
+          </Tooltip>
         );
       })}
     </div>

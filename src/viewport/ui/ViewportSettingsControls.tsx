@@ -1,5 +1,6 @@
 import { SegmentedControl, Select, type SegmentOption, Slider, Toggle } from '../../ui-kit';
 import { HDRI_CHOICES } from '../hdriCatalog';
+import { VIEWPORT_TIPS } from './viewportTooltips';
 import { DEFAULT_VIEWPORT_SETTINGS, type MapAdjust, type ViewportSettings } from '../viewportSettings';
 
 export interface ViewportControlsProps {
@@ -21,6 +22,7 @@ export function LightControls({ settings, onChange }: ViewportControlsProps): Re
     <>
       <Slider
         label="Intensity"
+        hint={VIEWPORT_TIPS.intensity}
         layout="row"
         value={settings.environmentIntensity}
         min={0}
@@ -32,6 +34,7 @@ export function LightControls({ settings, onChange }: ViewportControlsProps): Re
       />
       <Slider
         label="Rotation"
+        hint={VIEWPORT_TIPS.rotation}
         layout="row"
         resetTo={DEFAULT_VIEWPORT_SETTINGS.environmentRotationDeg}
         value={settings.environmentRotationDeg}
@@ -42,7 +45,7 @@ export function LightControls({ settings, onChange }: ViewportControlsProps): Re
         disabled={settings.autoRotate}
         onChange={(environmentRotationDeg) => onChange({ environmentRotationDeg })}
       />
-      <Toggle label="Auto rotate" checked={settings.autoRotate} onChange={(autoRotate) => onChange({ autoRotate })} />
+      <Toggle label="Auto rotate" hint={VIEWPORT_TIPS.autoRotate} checked={settings.autoRotate} onChange={(autoRotate) => onChange({ autoRotate })} />
     </>
   );
 }
@@ -55,10 +58,10 @@ export function HdriControls({ settings, onChange }: ViewportControlsProps): Rea
         label="Background"
         checked={settings.backgroundVisible}
         disabled={builtIn}
-        hint={builtIn ? 'The built-in studio has no backdrop' : undefined}
+        hint={builtIn ? VIEWPORT_TIPS.backgroundBuiltIn : VIEWPORT_TIPS.background}
         onChange={(backgroundVisible) => onChange({ backgroundVisible })}
       />
-      <Select label="HDRI" hideLabel options={HDRI_OPTIONS} value={settings.hdri} onChange={(hdri) => onChange({ hdri })} />
+      <Select label="HDRI" title={VIEWPORT_TIPS.hdriChoice} hideLabel options={HDRI_OPTIONS} value={settings.hdri} onChange={(hdri) => onChange({ hdri })} />
     </>
   );
 }
@@ -67,8 +70,8 @@ function MapAdjustSliders({ settings, onChange, strength, contrast }: ViewportCo
   const adjust = (key: keyof MapAdjust, value: number): void => onChange({ mapAdjust: { ...settings.mapAdjust, [key]: value } });
   return (
     <>
-      <Slider label="Strength" layout="row" value={settings.mapAdjust[strength]} min={0} max={3} step={0.01} format={twoDecimals} resetTo={DEFAULT_VIEWPORT_SETTINGS.mapAdjust[strength]} onChange={(value) => adjust(strength, value)} />
-      <Slider label="Contrast" layout="row" value={settings.mapAdjust[contrast]} min={0} max={3} step={0.01} format={twoDecimals} resetTo={DEFAULT_VIEWPORT_SETTINGS.mapAdjust[contrast]} onChange={(value) => adjust(contrast, value)} />
+      <Slider label="Strength" hint={VIEWPORT_TIPS.strength} layout="row" value={settings.mapAdjust[strength]} min={0} max={3} step={0.01} format={twoDecimals} resetTo={DEFAULT_VIEWPORT_SETTINGS.mapAdjust[strength]} onChange={(value) => adjust(strength, value)} />
+      <Slider label="Contrast" hint={VIEWPORT_TIPS.contrast} layout="row" value={settings.mapAdjust[contrast]} min={0} max={3} step={0.01} format={twoDecimals} resetTo={DEFAULT_VIEWPORT_SETTINGS.mapAdjust[contrast]} onChange={(value) => adjust(contrast, value)} />
     </>
   );
 }
@@ -85,6 +88,7 @@ export function ShadingControls({ settings, onChange }: ViewportControlsProps): 
       <SegmentedControl label="Shading" options={SHADING_OPTIONS} value={settings.flatShading ? 'flat' : 'smooth'} onChange={(choice) => onChange({ flatShading: choice === 'flat' })} />
       <Slider
         label="Angle"
+        hint={VIEWPORT_TIPS.angle}
         layout="row"
         value={settings.smoothAngleDeg}
         min={0}
@@ -100,5 +104,5 @@ export function ShadingControls({ settings, onChange }: ViewportControlsProps): 
 }
 
 export function MeshControls({ settings, onChange }: ViewportControlsProps): React.JSX.Element {
-  return <Toggle label="Wireframe" checked={settings.wireframe} onChange={(wireframe) => onChange({ wireframe })} />;
+  return <Toggle label="Wireframe" hint={VIEWPORT_TIPS.wireframe} checked={settings.wireframe} onChange={(wireframe) => onChange({ wireframe })} />;
 }

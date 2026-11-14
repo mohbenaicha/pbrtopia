@@ -1,3 +1,22 @@
+/* The hover target of the tooltip of a button that has a title; it takes the pointer for a disabled button too. */
+.ui-button__tip {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.ui-button__tip > .ui-button {
+  flex: 1;
+  min-width: 0;
+}
+
+.ui-button__tip > .ui-button:disabled {
+  pointer-events: none;
+}
+
+.ui-button__tip:has(> .ui-button:disabled) {
+  cursor: not-allowed;
+}
+
 .ui-button {
   display: inline-flex;
   align-items: center;

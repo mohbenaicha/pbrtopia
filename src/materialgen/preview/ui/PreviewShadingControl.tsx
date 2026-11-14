@@ -5,13 +5,13 @@ import './previewShadingControl.css';
 const eye = <Icon name="eye" size={16} />;
 
 const OPTIONS: SegmentOption<PreviewShading>[] = [
-  { value: 'lit', label: 'Shaded' },
-  { value: 'albedo', label: 'Albedo', short: 'A', hoverIcon: eye },
-  { value: 'normal', label: 'Normal', short: 'N', hoverIcon: eye },
-  { value: 'rough', label: 'Rough', short: 'R', hoverIcon: eye },
-  { value: 'metal', label: 'Metal', short: 'M', hoverIcon: eye },
-  { value: 'height', label: 'Height', short: 'H', hoverIcon: eye },
-  { value: 'ao', label: 'AO', short: 'AO', hoverIcon: eye },
+  { value: 'lit', label: 'Shaded', hint: 'Shows the finished material, lit by the environment.' },
+  { value: 'albedo', label: 'Albedo', short: 'A', hoverIcon: eye, hint: 'Shows only the base colour, with no lighting.' },
+  { value: 'normal', label: 'Normal', short: 'N', hoverIcon: eye, hint: 'Shows the normal map as colours.' },
+  { value: 'rough', label: 'Rough', short: 'R', hoverIcon: eye, hint: 'Shows roughness as grey: white is matte, black is shiny.' },
+  { value: 'metal', label: 'Metal', short: 'M', hoverIcon: eye, hint: 'Shows metalness as grey: white is metal, black is not.' },
+  { value: 'height', label: 'Height', short: 'H', hoverIcon: eye, hint: 'Shows the height map as grey: white is high, black is low.' },
+  { value: 'ao', label: 'AO', short: 'AO', hoverIcon: eye, hint: 'Shows ambient occlusion: how much each spot is hidden from light.' },
 ];
 
 /** Preview R51: the shading-mode selector of the projection app, extended with Height and AO; the app puts it at the top of the left panel, as the projection app does. */

@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PlanePicker } from '@mat/app/panels/tools/PlanePicker';
 import { ViewAngleContext } from '@mat/app/panels/tools/ViewAngleContext';
 import { createViewAngleStore } from '@mat/app/panels/tools/viewAngleStore';
+import { openTooltipTextOf } from '../../../../support/tooltipDescription';
 
 afterEach(() => {
   cleanup();
@@ -35,8 +36,9 @@ describe('materialgen/app PlanePicker', () => {
 
   it('R71 R57 an edge handle carries the tooltip of what it removes', () => {
     render(<PlanePicker {...edgeProps()} />);
-    expect(handle('Top').title).toBe('Remove 8 px from the top');
-    expect(handle('Bottom').title).toBe('Remove 8 px from the bottom');
+    expect(openTooltipTextOf(handle('Top'))).toBe('Remove 8 px from the top. Click to trim the map from this edge; the viewport marks where the cut falls.');
+    expect(openTooltipTextOf(handle('Bottom'))).toBe('Remove 8 px from the bottom. Click to trim the map from this edge; the viewport marks where the cut falls.');
+    expect(handle('Top').title).toBe('');
   });
 
   it('R71 corner handles are gold while selected and grey otherwise, and keep that until clicked again', () => {

@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react';
+import { Tooltip } from '../../ui-kit';
 import './SettingsSections.css';
 
 interface SettingsPageProps {
@@ -13,9 +14,11 @@ export function SettingsPage({ title, description, children }: SettingsPageProps
   return (
     <section className="settings-page" aria-labelledby={titleId}>
       <header className="settings-page__header">
-        <h2 className="settings-page__title" id={titleId}>
-          {title}
-        </h2>
+        <Tooltip heading={title} text={description ?? ''}>
+          <h2 className="settings-page__title" id={titleId}>
+            {title}
+          </h2>
+        </Tooltip>
         {description !== undefined && <p className="settings-page__description">{description}</p>}
       </header>
       {children}

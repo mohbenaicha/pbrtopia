@@ -7,6 +7,7 @@ import { MAX_FEATHER } from '../bake/bakeMasks';
 import { MaskRowView } from './MaskRowView';
 import { MaskSwatchGrid } from './MaskSwatchGrid';
 import { ModelRunNotice, RerunDecompositionButton } from './ModelRunParts';
+import { MASK_TIPS } from './maskTooltips';
 import './masksPanel.css';
 
 /** Masks R64-R68: the model path as the panel sees it; the app binds it to a run of the describe step and the decomposition image. */
@@ -86,7 +87,7 @@ export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
 
   return (
     <div className="masks-panel">
-      <CommitSlider label="Feather" layout="row" value={record.feather} onCommit={props.onFeather} disabled={locked} range={FEATHER_RANGE} />
+      <CommitSlider label="Feather" hint={MASK_TIPS.feather} layout="row" value={record.feather} onCommit={props.onFeather} disabled={locked} range={FEATHER_RANGE} />
 
       {table === null ? (
         <p className="masks-panel__notice" role={tableProblem === null ? 'status' : 'alert'}>{tableProblem ?? 'Loading the materials'}</p>

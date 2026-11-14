@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describeTooltipOf } from '../../../support/tooltipDescription';
 import { camerasIn, card, dataTransfer, NANO, planOf, setupOverlay, SUNBURST } from './setupHarness';
 
 beforeEach(() => {
@@ -112,7 +113,7 @@ describe('AuxSheetCard (custom R5)', () => {
     setupOverlay();
     const aux = card('Auxiliary image');
     expect((within(aux).getByRole('checkbox', { name: 'Include auxiliary cameras' }) as HTMLInputElement).checked).toBe(true);
-    expect(within(aux).getByTitle('Fills in what the main views cannot see. Uses one image.')).toBeTruthy();
+    expect(describeTooltipOf(within(aux).getByRole('checkbox', { name: 'Include auxiliary cameras' }))).toBe('Auxiliary cameras. Fills in what the main views cannot see. Uses one image.');
     for (const field of ['model', 'resolution', 'quality']) expect(screen.getByRole('combobox', { name: `Auxiliary ${field}` })).toBeTruthy();
     expect(within(aux).queryByRole('button', { name: /^Remove/ })).toBeNull();
   });

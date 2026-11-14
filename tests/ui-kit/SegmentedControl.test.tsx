@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SegmentedControl } from '../../src/ui-kit';
+import { openTooltipTextOf } from '../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -25,7 +26,8 @@ describe('SegmentedControl', () => {
     render(<SegmentedControl label="Shading mode" options={[{ value: 'albedo', label: 'Albedo', short: 'A' }]} value="albedo" onChange={() => undefined} />);
     const radio = screen.getByRole('radio', { name: 'Albedo' });
     expect(radio.textContent).toBe('A');
-    expect(radio.getAttribute('title')).toBe('Albedo');
+    expect(radio.getAttribute('title')).toBeNull();
+    expect(openTooltipTextOf(radio)).toBe('Albedo'); // the full label, as the heading of a heading-only tooltip
   });
 
   it('R22 an option with a hover icon draws it hidden from the accessibility tree, beside its text', () => {

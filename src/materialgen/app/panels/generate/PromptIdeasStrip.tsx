@@ -20,7 +20,7 @@ export function PromptIdeasStrip({ ideas, readOnlyReason }: PromptIdeasStripProp
     <div className="prompt-ideas" role="group" aria-label="Prompt ideas">
       {hasSet && (
         <>
-          <IconButton label="Reset" hint="Back to what you wrote before" icon={<Icon name="reset" />} {...because(readOnlyReason ?? (ideas.canReset ? null : NOTHING_TO_GO_BACK_TO))} onClick={ideas.reset} />
+          <IconButton label="Reset" hint="Puts back what you wrote before the ideas." icon={<Icon name="reset" />} {...because(readOnlyReason ?? (ideas.canReset ? null : NOTHING_TO_GO_BACK_TO))} onClick={ideas.reset} />
           {NUMBERS.map((number, index) => (
             <IconButton
               key={number}

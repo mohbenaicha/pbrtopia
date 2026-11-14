@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ConfirmDialog, Icon, IconButton } from '@shared/ui-kit';
+import { ConfirmDialog, DISCLOSURE_ICON_PIXELS, Icon, IconButton } from '@shared/ui-kit';
 import {
   DEFAULT_BRUSH, EMPTY_PALETTE, createPaintController, loadBrushAtlas, loadPaintMaps, MaterialPicker, paintEntryReason, paintedPicturesOf, paintMaterialOf, PaintToolPanel,
   planCommitPaint, removeMaterial, removeShape, setMaterial, setShape, ShapePicker, shapeSlotsOf, toggleActive, toggleInvert,
@@ -202,7 +202,7 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
 
   return {
     open: phase !== 'idle',
-    button: <IconButton label="Paint" icon={<Icon name="brush" size={16} />} disabled={entryHint !== undefined} {...(entryHint ? { disabledReason: entryHint } : {})} loading={phase === 'loading'} onClick={() => void open()} testId="paint-open" />,
+    button: <IconButton label="Paint" hint="Paints stamps of a material onto the maps, on the plane." icon={<Icon name="brush" size={DISCLOSURE_ICON_PIXELS} />} disabled={entryHint !== undefined} {...(entryHint ? { disabledReason: entryHint } : {})} loading={phase === 'loading'} onClick={() => void open()} testId="paint-open" />,
     panel:
       phase === 'open' || phase === 'saving' ? (
         <PaintToolPanel

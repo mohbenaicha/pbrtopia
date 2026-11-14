@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent } from 'react';
 import { Icon, type IconName } from './Icon';
+import { Tooltip } from './Tooltip';
 import './Tabs.css';
 
 export interface TabOption<T extends string> {
@@ -46,7 +47,7 @@ export function Tabs<T extends string>({ label, tabs, value, onChange }: TabsPro
     <div className="ui-tabs" role="tablist" aria-label={label} onKeyDown={onKeyDown}>
       {tabs.map((tab) => {
         const selected = tab.value === value;
-        return (
+        const tabButton = (
           <button
             key={tab.value}
             ref={(element) => {
@@ -61,13 +62,15 @@ export function Tabs<T extends string>({ label, tabs, value, onChange }: TabsPro
             className="ui-tabs__tab"
             data-selected={selected ? '' : undefined}
             data-compact={tab.iconOnly === true ? '' : undefined}
-            {...(tab.iconOnly === true ? { title: tab.label, 'aria-label': tab.label } : {})}
+            {...(tab.iconOnly === true ? { 'aria-label': tab.label } : {})}
             onClick={() => choose(tab.value)}
           >
             {tab.icon !== undefined && <Icon name={tab.icon} />}
             {tab.iconOnly === true ? null : tab.label}
           </button>
         );
+        // An icon-only tab has no text, so the tooltip names it (app tooltips R1, R7).
+        return tab.iconOnly === true ? <Tooltip key={tab.value} heading={tab.label} text="">{tabButton}</Tooltip> : tabButton;
       })}
     </div>
   );

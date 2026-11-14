@@ -1,5 +1,9 @@
 import { createContext, useContext, useId, useState, type ReactNode } from 'react';
+import { Tooltip } from './Tooltip';
 import './Disclosure.css';
+
+/** The icon size of the buttons in a panel's heading bar (Crop, Mirror, Swap diagonals, Blend edges, Paint, AO): 20 px in the 38 px button. */
+export const DISCLOSURE_ICON_PIXELS = 20;
 
 const DisclosureOpenContext = createContext(true);
 
@@ -10,6 +14,7 @@ export function useDisclosureOpen(): boolean {
 
 interface DisclosureProps {
   title: string;
+  hint?: string; // what the section holds; without it the tooltip says what a click does
   open: boolean;
   onOpenChange: (open: boolean) => void;
   disabled?: boolean; // dimmed, not focusable, ignores clicks and keys
@@ -20,7 +25,7 @@ interface DisclosureProps {
 }
 
 // A heading button that opens and closes a section below it. Closed content is not drawn at all, unless keepMounted.
-export function Disclosure({ title, open, onOpenChange, disabled = false, keepMounted = false, actions, tone, children }: DisclosureProps): React.JSX.Element {
+export function Disclosure({ title, hint, open, onOpenChange, disabled = false, keepMounted = false, actions, tone, children }: DisclosureProps): React.JSX.Element {
   const buttonId = useId();
   const regionId = useId();
   const [wasOpened, setWasOpened] = useState(open);
@@ -28,7 +33,7 @@ export function Disclosure({ title, open, onOpenChange, disabled = false, keepMo
   const header = (
     <button type="button" id={buttonId} className="ui-disclosure__header" data-tone={tone} aria-expanded={open} aria-controls={open ? regionId : undefined} disabled={disabled} onClick={() => onOpenChange(!open)}>
       <span className="ui-disclosure__arrow" data-open={open ? '' : undefined} aria-hidden="true" />
-      <span className="ui-disclosure__title" title={title}>{title}</span>
+      <Tooltip heading={title} text={hint ?? (open ? 'Click to hide this section.' : 'Click to show this section.')}><span className="ui-disclosure__title">{title}</span></Tooltip>
     </button>
   );
   return (

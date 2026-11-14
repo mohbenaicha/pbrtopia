@@ -76,7 +76,7 @@ function TooltipPanel({ id, heading, text, anchor }: { id: string; heading: stri
       style={{ left: placement?.left ?? 0, top: placement?.top ?? 0, visibility: placement === null ? 'hidden' : 'visible', ['--tooltip-arrow-x' as string]: `${placement?.arrowX ?? 0}px` }}
     >
       <p className="ui-tooltip__heading">{heading}</p>
-      <p className="ui-tooltip__text">{text}</p>
+      {text !== '' && <p className="ui-tooltip__text">{text}</p>}
     </div>,
     document.body,
   );
@@ -152,11 +152,13 @@ export function Tooltip({ heading, text, children }: TooltipProps): React.JSX.El
   });
   const onBlur = chain<React.FocusEvent<HTMLElement>>(own.onBlur, close);
 
-  const describedBy = typeof own['aria-describedby'] === 'string' ? `${own['aria-describedby']} ${descriptionId}` : descriptionId;
+  const hasText = text !== ''; // app tooltips R7: a heading-only tooltip adds no description, the control's own name already says it
+  const ownDescription = typeof own['aria-describedby'] === 'string' ? own['aria-describedby'] : undefined;
+  const describedBy = hasText ? (ownDescription === undefined ? descriptionId : `${ownDescription} ${descriptionId}`) : ownDescription;
   return (
     <>
       {cloneElement(child, { onPointerOver, onPointerOut, onPointerDown, onFocus, onBlur, 'aria-describedby': describedBy })}
-      <span id={descriptionId} className="ui-tooltip__description">{`${heading}. ${text}`}</span>
+      {hasText && <span id={descriptionId} className="ui-tooltip__description" hidden>{`${heading}. ${text}`}</span>}
       {isOpen && anchor.current !== null && <TooltipPanel id={id} heading={heading} text={text} anchor={anchor.current} />}
     </>
   );

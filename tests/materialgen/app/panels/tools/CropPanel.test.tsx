@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CropPanel } from '@mat/app/panels/tools/CropPanel';
+import { openTooltipTextOf } from '../../../../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -49,9 +50,9 @@ describe('materialgen/app CropPanel', () => {
 
   it('R57 each edge button says in its tooltip what it removes', () => {
     show();
-    expect(button('Top').title).toBe('Remove 8 px from the top');
+    expect(openTooltipTextOf(button('Top'))).toBe('Remove 8 px from the top. Click to trim the map from this edge; the viewport marks where the cut falls.');
     setAmount('3');
-    expect(button('Right').title).toBe('Remove 3 px from the right');
+    expect(openTooltipTextOf(button('Right'))).toBe('Remove 3 px from the right. Click to trim the map from this edge; the viewport marks where the cut falls.');
   });
 
   it('R53 R55 every click on an edge button reports the new rectangle at once, so the viewport follows each click', () => {
@@ -128,7 +129,7 @@ describe('materialgen/app CropPanel', () => {
     setAmount('2');
     fireEvent.click(screen.getByRole('button', { name: 'Reset Pixels to remove' }));
     expect(amount().value).toBe('8');
-    expect(button('Top').title).toBe('Remove 8 px from the top');
+    expect(openTooltipTextOf(button('Top'))).toBe('Remove 8 px from the top. Click to trim the map from this edge; the viewport marks where the cut falls.');
   });
 
   it('R29 a click that would leave fewer than 16 pixels is ignored', () => {

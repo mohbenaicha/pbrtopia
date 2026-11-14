@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button } from '../../ui-kit';
+import { Button, Tooltip } from '../../ui-kit';
 import type { KeyVault } from '../KeyVault';
 import { PROVIDERS, type Provider } from '../vaultTypes';
 import { KeyRow } from './KeyRow';
@@ -43,7 +43,7 @@ export function KeySettingsSection({ vault, prompt, rejectedKeys, onKeySaved }: 
   return (
     <section className="key-settings" aria-labelledby="key-settings-title">
       <div className="key-settings__header">
-        <h3 className="key-settings__title" id="key-settings-title">API keys</h3>
+        <Tooltip heading="API keys" text="The keys that let the app use the image model providers."><h3 className="key-settings__title" id="key-settings-title">API keys</h3></Tooltip>
         {status === 'unlocked' && <Button variant="secondary" onClick={() => vault.lock()}>Lock</Button>}
       </div>
       {(problem !== null || deletion.deleting || deletion.failure !== null) && <ResetSavedKeys problem={problem} deletion={deletion} />}

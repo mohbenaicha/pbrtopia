@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MapCard } from '../../../../src/materialgen/maps/ui/MapCard';
+import { describeTooltipOf } from '../../../support/tooltipDescription';
 import { buildCardModel } from '../../../../src/materialgen/maps/ui/buildCardModel';
 import type { MapCardActions } from '../../../../src/materialgen/maps/ui/MapHalf';
 import { editMaps, placeMap } from '../../../../src/materialgen/maps/mapOperations';
@@ -96,7 +97,8 @@ describe('materialgen/maps R44 R45 R47 a filled card', () => {
     await waitFor(() => expect(draw).toHaveBeenCalledTimes(1));
     const caption = screen.getByTestId('map-caption'); // over the picture: the map and its size, the source in its tooltip
     expect(caption.textContent).toBe('Albedo 1024 x 1024');
-    expect(caption.getAttribute('title')).toBe('Albedo 1024 x 1024 · Dropped: brick.png');
+    expect(caption.getAttribute('title')).toBeNull();
+    expect(describeTooltipOf(caption)).toBe('Albedo. 1024 x 1024 · Dropped: brick.png');
     expect(screen.getByRole('img', { name: 'Albedo thumbnail' })).toBeTruthy();
   });
 
@@ -158,6 +160,17 @@ describe('materialgen/maps R44 R45 R47 a filled card', () => {
 });
 
 
+describe('materialgen/app tooltips R3 R5 the buttons of a map say what they do', () => {
+  it('R3 R5 Filter, Restore original, Download and Clear each carry a sentence on hover', () => {
+    show(editMaps(put(empty, 'albedo', 'a1'), [{ kind: 'albedo', workingKey: 'a2' }], 'Filter'), 'color'); // an edited map, so Restore is on
+    const words = (name: string): string => describeTooltipOf(screen.getByRole('button', { name }));
+    expect(words('Filter Albedo')).toBe('Filter Albedo. Opens the filters to edit this map.');
+    expect(words('Restore original Albedo')).toBe('Restore original Albedo. Puts back the map as it was first made or added.');
+    expect(words('Download Albedo')).toBe('Download Albedo. Saves this map as a PNG file.');
+    expect(words('Clear Albedo')).toBe('Clear Albedo. Removes this map from the project.');
+  });
+});
+
 describe('materialgen/maps R45 imageops R9 the Filter button', () => {
   const filled = (): MapsState => put(empty, 'albedo', 'a1');
   const filterButton = (): HTMLButtonElement => screen.getByRole('button', { name: 'Filter Albedo' }) as HTMLButtonElement;
@@ -177,7 +190,7 @@ describe('materialgen/maps R45 imageops R9 the Filter button', () => {
   it('R9 is disabled, with a reason, while another op session is open', () => {
     show(filled(), 'color', { opOpen: true });
     expect(filterButton().disabled).toBe(true);
-    expect(filterButton().getAttribute('title')).toContain('Another edit is open');
+    expect(describeTooltipOf(filterButton())).toContain('Another edit is open');
   });
 
   it('R45 is disabled while the map is being changed and when the project is read-only', () => {

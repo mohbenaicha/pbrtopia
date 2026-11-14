@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore, type StoreApi } from 'zustand';
-import { Icon, IconButton, Tabs } from '../../ui-kit';
+import { Icon, IconButton, Tabs, Tooltip } from '../../ui-kit';
 import { listAtlasSizes } from '../catalog/atlasSizes';
 import { optionsForModel } from '../catalog/optionsForModel';
 import { countImages } from '../custom/planEditing';
@@ -141,7 +141,7 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
       <div className="generate-panel__page" role="tabpanel" aria-label="Generate fields" hidden={tab !== 'generate'}>
         <div className="generate-panel__locked" inert={setupLocked}>
           <label className="generate-panel__field">
-            <span className="generate-panel__label">Prompt</span>
+            <Tooltip heading="Prompt" text="Describes the texture the image model should paint."><span className="generate-panel__label">Prompt</span></Tooltip>
             <textarea
               className="generate-panel__prompt"
               rows={10}

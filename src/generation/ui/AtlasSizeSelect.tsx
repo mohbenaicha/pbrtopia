@@ -12,6 +12,7 @@ export function AtlasSizeSelect({ options, value, onChange }: AtlasSizeSelectPro
   return (
     <Select
       label="Atlas size"
+      title="The size of the picture of your views sent to the model; larger shows more detail but costs more."
       options={options.map((option) => ({ value: option.key, label: `${option.key} (${option.sizePx} px)` }))}
       value={value}
       emptyText="No atlas sizes on this device"

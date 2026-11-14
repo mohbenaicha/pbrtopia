@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GenerateAvailability } from '../../../src/generation/generateAvailability';
 import { GenerateButton } from '../../../src/generation/ui/GenerateButton';
+import { openTooltipTextOf } from '../../support/tooltipDescription';
 
 afterEach(cleanup);
 
@@ -44,14 +45,14 @@ describe('GenerateButton: custom runs (custom R1)', () => {
   it('custom R1 a custom plan reads Generate (custom) and the number of images is the tooltip', () => {
     const { onGenerate } = setup({ action: 'generate', enabled: true, reason: null, imageCount: 3 });
     const button = screen.getByRole('button', { name: 'Generate (custom)' });
-    expect(button.getAttribute('title')).toBe('3 images');
+    expect(openTooltipTextOf(button)).toBe('Generate (custom). 3 images');
     fireEvent.click(button);
     expect(onGenerate).toHaveBeenCalledTimes(1);
   });
 
   it('custom R1 one image reads "1 image"', () => {
     setup({ action: 'generate', enabled: true, reason: null, imageCount: 1 });
-    expect(screen.getByRole('button', { name: 'Generate (custom)' }).getAttribute('title')).toBe('1 image');
+    expect(openTooltipTextOf(screen.getByRole('button', { name: 'Generate (custom)' }))).toBe('Generate (custom). 1 image');
   });
 
   it('custom R1 four images start at once without a question', () => {

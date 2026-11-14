@@ -69,6 +69,7 @@ function PasswordForm({ purpose, onAnswer, onForgotPassword }: PasswordFormProps
         {creating && <p className="key-dialog__text">This password encrypts your keys. It cannot be recovered if you forget it.</p>}
         <TextInput
           label="Password"
+          tip="Unlocks your saved API keys; it never leaves this computer."
           type="password"
           value={password}
           onChange={setPassword}
@@ -77,6 +78,7 @@ function PasswordForm({ purpose, onAnswer, onForgotPassword }: PasswordFormProps
         {creating && (
           <TextInput
             label="Confirm password"
+            tip="Type the same password again to rule out a typo."
             type="password"
             value={confirm}
             onChange={setConfirm}

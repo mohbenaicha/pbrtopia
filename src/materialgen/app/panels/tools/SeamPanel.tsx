@@ -81,7 +81,7 @@ export function SeamPanel({ onChange, readEdgeSource, onApply, onClose }: SeamPa
       <div onPointerDown={holdFade}>
         <ControlRow control={FADE_START} value={fade} onChange={changeFade} />
       </div>
-      <Toggle label="Canny edges" checked={canny} disabled={reading || applying} onChange={() => void toggleCanny()} />
+      <Toggle label="Canny edges" hint="Shows the edges the seam fix detects, so you can see where it will blend." checked={canny} disabled={reading || applying} onChange={() => void toggleCanny()} />
       <p className="tool-panel__readout">{canny ? `Fade up to ${percentOf(shownDepth)} % of the side, ending at the first edge` : `Fade ${percentOf(shownDepth)} % of the side`}</p>
     </ToolPanel>
   );

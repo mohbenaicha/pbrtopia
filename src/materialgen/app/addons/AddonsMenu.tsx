@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { IconButton, Popover, Spinner } from '@shared/ui-kit';
+import { IconButton, Popover, Spinner, Tooltip } from '@shared/ui-kit';
 import type { StoreResult } from '@shared/projects';
 import { ADDONS, ADDONS_ICON_URL, type AddonEntry } from './addonFiles';
 import './addonsMenu.css';
@@ -34,13 +34,15 @@ export function AddonsMenu({ download, addons = ADDONS }: AddonsMenuProps): Reac
       <div className="addons-menu">
         <div className="addons-menu__items">
           {addons.map((addon) => (
-            <button key={addon.id} type="button" className="addons-menu__item" aria-label={`Download the ${addon.name} add-on`} title={`Download the ${addon.name} add-on`} onClick={() => void start(addon)}>
-              <span className="addons-menu__logo">
-                <img src={addon.logoUrl} alt="" />
-                <span className="addons-menu__arrow" aria-hidden="true">{busy === addon.id ? <Spinner decorative /> : '↓'}</span>
-              </span>
-              <span>{addon.name}</span>
-            </button>
+            <Tooltip key={addon.id} heading={addon.name} text="Downloads this add-on.">
+              <button type="button" className="addons-menu__item" aria-label={`Download the ${addon.name} add-on`} onClick={() => void start(addon)}>
+                <span className="addons-menu__logo">
+                  <img src={addon.logoUrl} alt="" />
+                  <span className="addons-menu__arrow" aria-hidden="true">{busy === addon.id ? <Spinner decorative /> : '↓'}</span>
+                </span>
+                <span>{addon.name}</span>
+              </button>
+            </Tooltip>
           ))}
         </div>
         {failure !== null && <p role="alert" className="addons-menu__failure">{failure}</p>}

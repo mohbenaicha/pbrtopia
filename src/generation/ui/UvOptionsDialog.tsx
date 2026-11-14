@@ -45,8 +45,8 @@ function UvOptionsForm({ onCancel, onConfirm, notice }: Omit<UvOptionsDialogProp
       }
     >
       {notice !== undefined && <p>{notice}</p>}
-      <Select label="Atlas resolution" options={SIZES} value={resolution} onChange={setResolution} />
-      <TextInput label="Padding (texels)" value={padding} onChange={setPadding} {...(parsed === null ? { error: PADDING_ERROR } : {})} />
+      <Select label="Atlas resolution" title="The side length of the UV atlas; larger keeps more texture detail." options={SIZES} value={resolution} onChange={setResolution} />
+      <TextInput label="Padding (texels)" tip="The gap left around each UV island so colours do not bleed across seams." value={padding} onChange={setPadding} {...(parsed === null ? { error: PADDING_ERROR } : {})} />
     </Dialog>
   );
 }

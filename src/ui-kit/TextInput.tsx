@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { describedBy, FieldMessage } from './FieldMessage';
+import { Tooltip } from './Tooltip';
 import './TextInput.css';
 
 interface TextInputProps {
@@ -9,18 +10,19 @@ interface TextInputProps {
   type?: 'text' | 'password';
   placeholder?: string;
   hint?: string; // shown under the field; replaced by `error` when there is one
+  tip?: string; // what the field is for, as the sentence of the label's tooltip (the hint is its fallback)
   error?: string;
   disabled?: boolean;
   readOnly?: boolean;
   onBlur?: () => void; // when focus leaves the field, e.g. to tidy what was typed
 }
 
-export function TextInput({ label, value, onChange, type = 'text', placeholder, hint, error, disabled = false, readOnly = false, onBlur }: TextInputProps): React.JSX.Element {
+export function TextInput({ label, value, onChange, type = 'text', placeholder, hint, tip, error, disabled = false, readOnly = false, onBlur }: TextInputProps): React.JSX.Element {
   const id = useId();
   const messageId = `${id}-message`;
   return (
     <div className="ui-field">
-      <label className="ui-field__label" htmlFor={id}>{label}</label>
+      <Tooltip heading={label} text={tip ?? hint ?? ''}><label className="ui-field__label" htmlFor={id}>{label}</label></Tooltip>
       <input
         id={id}
         className="ui-text-input"

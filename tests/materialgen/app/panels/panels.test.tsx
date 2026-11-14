@@ -8,6 +8,7 @@ import { DEFAULT_PREVIEW_VALUES, newMaterialRecord, type MaterialRecord } from '
 import { MaterialGeneratePanel } from '@mat/app/panels/MaterialGeneratePanel';
 import { MaterialMapsPanel } from '@mat/app/panels/MaterialMapsPanel';
 import { describeGenerateBlock } from '@mat/app/panels/generateReason';
+import { describeTooltipOf } from '../../../support/tooltipDescription';
 import { CARD_SLOTS, slotTitle } from '@mat/app/panels/slotCards';
 import type { MapsController } from '@mat/maps';
 import { makeGenerationPanel } from './generate/fakeGeneration';
@@ -126,7 +127,7 @@ describe('materialgen/app right panel (Generate)', () => {
     renderGenerate(record());
     const generate = screen.getByRole('button', { name: 'Generate' }) as HTMLButtonElement;
     expect(generate.disabled).toBe(true);
-    expect(generate.title).toBe('Enter a prompt or add a reference image.');
+    expect(describeTooltipOf(generate)).toBe('Generate. Enter a prompt or add a reference image.');
   });
 
   it('R18 generation R9 a plan that does not generate Albedo needs no prompt and no reference image', () => {
