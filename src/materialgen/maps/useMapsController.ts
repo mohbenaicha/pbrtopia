@@ -59,6 +59,8 @@ export interface MapsController {
   applyEdits(edits: readonly ImageEdit[], label: string, grouped: boolean): Promise<boolean>;
   /** Masks R47: new labels and/or a new bake of rough and metal, stored in one commit with the masks record. True when committed. */
   commitMasks(commit: MasksCommit, masks: RawRecord): Promise<boolean>;
+  /** Compositing R22: one commit of a plan the caller builds from the maps as they are when it runs (a painting session's result); `targets` are the maps it writes. True when committed. */
+  commitPlanned(targets: readonly MapKind[], plan: (state: MapsState, io: { newKey(): string }) => Promise<MapPlan>): Promise<boolean>;
   /** Generation R42: cut tiles become the originals of their maps in one commit (maps R12-R14). True when committed. */
   placeGenerated(generated: readonly GeneratedMap[]): Promise<boolean>;
   restoreOriginal(kind: MapKind): Promise<void>;
@@ -209,6 +211,14 @@ export function useMapsController(host: MapsHost): MapsController {
         const targets: MapKind[] = [...(commit.labels !== undefined ? ['labels' as const] : []), ...(commit.bake !== undefined ? ['rough' as const, 'metal' as const] : [])];
         await guarded(targets, async () => {
           stored = await commitPlan(await planCommitMasks(stateRef.current, commit, { newKey: () => hostRef.current.newKey() }), masks);
+        });
+        return stored;
+      },
+
+      commitPlanned: async (targets, plan) => {
+        let stored = false;
+        await guarded([...targets], async () => {
+          stored = await commitPlan(await plan(stateRef.current, { newKey: () => hostRef.current.newKey() }));
         });
         return stored;
       },

@@ -1,4 +1,4 @@
-import { Color, MeshPhysicalMaterial, NoColorSpace, SRGBColorSpace, type DataTexture } from 'three';
+import { Color, MeshPhysicalMaterial, NoColorSpace, SRGBColorSpace, type DataTexture, type Texture } from 'three';
 import { DEFAULT_PREVIEW_VALUES, type PreviewValues } from '@mat/storage';
 import { ORM_DEFAULTS, type PixelImage } from '@mat/workerapi';
 import { displacementFor } from '../math/displacement';
@@ -11,9 +11,11 @@ type Slot = PreviewTextureSlot;
 
 export interface PreviewMaterial {
   readonly material: MeshPhysicalMaterial; // the one material all three preview meshes share (preview R7)
-  readonly textures: Readonly<Partial<Record<PreviewTextureSlot, DataTexture>>>; // what is bound now; the flat views (R51) draw the same ones
+  readonly textures: Readonly<Partial<Record<PreviewTextureSlot, Texture>>>; // what is bound now; the flat views (R51) draw the same ones
   readonly values: PreviewValues; // the tiling and height values now applied (R15, R17)
   bind(maps: PreviewMaps): void; // the working copies now shown; a map that is absent shows its default (R45, R48)
+  /** Compositing R25: textures that stand in for the stored ones of their slot while a painting session is open (null puts the stored ones back); the owner disposes them. */
+  setOverrides(overrides: Readonly<Partial<Record<PreviewTextureSlot, Texture>>> | null): void;
   setValues(values: PreviewValues): void; // tiling and height values (R15, R17)
   setAoIntensity(intensity: number): void; // R14
   textureCount(): number;
@@ -31,13 +33,23 @@ const MISSING_METALNESS = ORM_DEFAULTS.metal / 255;
  */
 export function createPreviewMaterial(): PreviewMaterial {
   const material = new MeshPhysicalMaterial({ color: MISSING_ALBEDO, roughness: MISSING_ROUGHNESS, metalness: MISSING_METALNESS }); // the side is set by the scene from the mesh (R2)
-  const textures: Partial<Record<Slot, DataTexture>> = {}; // what is bound now
+  const owned: Partial<Record<Slot, DataTexture>> = {}; // made from the stored pictures
+  const textures: Partial<Record<Slot, Texture>> = {}; // what is bound now: the owned ones, with an open painting session's standing in
   const sources: Partial<Record<keyof PreviewMaps, PixelImage>> = {}; // the pictures the textures were last made from
+  let overrides: Readonly<Partial<Record<Slot, Texture>>> = {};
   let values: PreviewValues = DEFAULT_PREVIEW_VALUES;
 
+  const SLOTS: readonly Slot[] = ['albedo', 'normal', 'height', 'orm'];
+  const refresh = (): void => {
+    for (const slot of SLOTS) {
+      const shown = overrides[slot] ?? owned[slot];
+      if (shown === undefined) delete textures[slot];
+      else textures[slot] = shown;
+    }
+  };
   const release = (slot: Slot): void => {
-    textures[slot]?.dispose();
-    delete textures[slot];
+    owned[slot]?.dispose();
+    delete owned[slot];
   };
 
   const place = (slot: 'albedo' | 'normal' | 'height', image: PixelImage | undefined, colorSpace: typeof SRGBColorSpace | typeof NoColorSpace): void => {
@@ -45,7 +57,7 @@ export function createPreviewMaterial(): PreviewMaterial {
     if (image === undefined) delete sources[slot];
     else sources[slot] = image;
     release(slot);
-    if (image !== undefined) textures[slot] = createPixelTexture(toRgbaBytes(image), image.width, image.height, colorSpace);
+    if (image !== undefined) owned[slot] = createPixelTexture(toRgbaBytes(image), image.width, image.height, colorSpace);
   };
 
   const placeOrm = (maps: PreviewMaps): void => {
@@ -57,7 +69,7 @@ export function createPreviewMaterial(): PreviewMaterial {
     }
     release('orm');
     const packed = packOrmBytes(maps);
-    if (packed !== null) textures.orm = createPixelTexture(packed.rgba, packed.side, packed.side, NoColorSpace);
+    if (packed !== null) owned.orm = createPixelTexture(packed.rgba, packed.side, packed.side, NoColorSpace);
   };
 
   const applyValues = (): void => {
@@ -92,6 +104,13 @@ export function createPreviewMaterial(): PreviewMaterial {
       place('normal', maps.normal, NoColorSpace);
       place('height', maps.height, NoColorSpace);
       placeOrm(maps);
+      refresh();
+      applyBindings();
+      applyValues();
+    },
+    setOverrides(next) {
+      overrides = next ?? {};
+      refresh();
       applyBindings();
       applyValues();
     },
@@ -107,8 +126,8 @@ export function createPreviewMaterial(): PreviewMaterial {
     },
     textureCount: () => Object.keys(textures).length,
     dispose() {
-      for (const texture of Object.values(textures)) texture.dispose();
-      for (const slot of Object.keys(textures) as Slot[]) delete textures[slot];
+      for (const slot of SLOTS) release(slot);
+      refresh();
       material.dispose();
     },
   };

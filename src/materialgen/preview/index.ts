@@ -10,5 +10,7 @@ export { NormalDirectionSelect } from './ui/NormalDirectionSelect';
 export { usePreviewPrefs } from './ui/usePreviewPrefs';
 export { PreviewViewport, type PreviewMasks, type PreviewThumbnailSink, type PreviewTool, type PreviewViewportProps } from './ui/PreviewViewport';
 export type { ToolView } from './ui/useToolViewRelease';
+export { createPaintBridge, usePaintBridgeState, type PaintBridge, type PaintBridgeState } from './ui/paintBridge';
+export type { LocalRay, PaintHost, PaintSurface, PaintTextures } from './scene/paintHost';
 export { createToolLiveFeed, type ToolLiveFeed } from './ui/toolLiveFeed';
 export type { ToolEdge, ToolMarks, ToolPlan, ToolQuadrant, ToolTransform } from './material/toolTransform';

@@ -7,6 +7,7 @@ import type { ColorMode } from '@mat/storage';
 import { applyGeometryOp, type GeometryOpResult, type GeometryPorts } from '../../imageops/applyGeometryOp';
 import type { GeometryOps } from '../../imageops/useImageopsSessions';
 import { GeometryToolPanel, type GeometryToolName } from './GeometryToolPanel';
+import { mapsSignature } from './mapsSignature';
 import { ToolLiveContext } from './ToolLiveContext';
 import type { ToolOutcome } from './useToolApply';
 
@@ -34,10 +35,6 @@ interface GeometryToolsInput {
 const TOOL_LABEL: Record<GeometryToolName, string> = { crop: 'Crop', mirror: 'Mirror', seam: 'Blend edges' };
 const EDGE_SOURCE_KINDS = ['albedo', 'height']; // imageops R66: the map the Canny edges are found in, the first one the project has; any picture map when neither is there
 
-/** The working keys of every map and the side, joined: changes when anything under an open panel changes (imageops R61). */
-const signatureOf = (state: MapsState): string =>
-  `${state.size ?? ''}|${(Object.keys(state.maps) as MapKind[]).map((kind) => `${kind}:${state.maps[kind]?.workingKey ?? ''}`).join(',')}`;
-
 /**
  * Imageops R20, R29-R36, R52-R70: Crop, Mirror, Swap diagonals and Blend edges, each changing every picture map at once and undone as one step.
  * The buttons go in the Maps heading bar; the open panel is drawn where the caller puts it, in place of the cards.
@@ -51,7 +48,7 @@ export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, o
   const seamShown = useRef(false); // R75: the viewport's view is already open for Blend edges
   const live = useContext(ToolLiveContext);
   const size = state.size;
-  const signature = signatureOf(state);
+  const signature = mapsSignature(state);
   const hasMaps = size !== null && (Object.keys(state.maps) as MapKind[]).some((kind) => editKindOf(kind) !== null); // the labels are not edited as a picture
   const reason = !canWrite ? readOnlyReason : !hasMaps ? 'There are no maps yet.' : opOpen || tool !== null ? 'Another edit is open. Apply or cancel it first.' : busy ? 'The maps are being changed.' : undefined;
   const baseKeys: Record<string, string> = {}; // the working key of every picture map the viewport shows (a diffuse map and the labels are not), for the release of a held view

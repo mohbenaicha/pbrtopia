@@ -12,6 +12,7 @@ import { FilterDialog } from './FilterDialog';
 import { READ_ONLY_REASON } from './generateReason';
 import { CARD_SLOTS } from './slotCards';
 import { useGeometryTools, type HeldToolView } from './tools/useGeometryTools';
+import { usePaintTool } from './tools/usePaintTool';
 import { useStoredPicture } from './useMapPictures';
 import { useUndoShortcut } from './useUndoShortcut';
 
@@ -47,9 +48,10 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
   const [filtering, setFiltering] = useState<{ kind: MapKind; map: MapRecord } | null>(null);
   const [aoToolOpen, setAoToolOpen] = useState(false);
   const [geometryToolOpen, setGeometryToolOpen] = useState(false);
+  const [paintOpen, setPaintOpen] = useState(false); // the splat painter's session (compositing R2): exclusive with every other op
   const [working, setWorking] = useState(false); // Swap diagonals or Regenerate is running: they have no dialog but are ops too
   const dialogOpen = filtering !== null || aoToolOpen;
-  const opOpen = dialogOpen || geometryToolOpen || working; // imageops R9: one op at a time
+  const opOpen = dialogOpen || geometryToolOpen || paintOpen || working; // imageops R9: one op at a time
   const exclusive = async (work: () => Promise<void>): Promise<void> => {
     setWorking(true);
     try {
@@ -80,11 +82,18 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
   const { busy, message } = controller;
   useUndoShortcut({ state, colorMode, canWrite, busy: busy.size > 0 || opOpen, undo: (kinds) => void controller.undo(kinds) });
   const geometryTools = useGeometryTools({
-    state, colorMode, canWrite, readOnlyReason: READ_ONLY_REASON, opOpen: dialogOpen || working, busy: busy.size > 0, exclusive,
+    state, colorMode, canWrite, readOnlyReason: READ_ONLY_REASON, opOpen: dialogOpen || working || paintOpen, busy: busy.size > 0, exclusive,
     geometry: sessions.geometry, controller, readBlob, onToolViewChange,
     onToolOpenChange: (open) => {
       setGeometryToolOpen(open);
       if (open) setMapsOpen(true); // R52: the panel is in the Maps section, so it must be in view
+    },
+  });
+  const paintTool = usePaintTool({
+    state, canWrite, readOnlyReason: READ_ONLY_REASON, opOpen: dialogOpen || working || geometryToolOpen, busy: busy.size > 0, controller, readBlob, hasMasks: masksRecord !== undefined,
+    onToolOpenChange: (open) => {
+      setPaintOpen(open);
+      if (open) setMapsOpen(true); // the panel is in the Maps section, so it must be in view
     },
   });
   const aoButtons = (
@@ -129,8 +138,8 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
           <button type="button" className="map-message__dismiss" onClick={controller.dismissMessage}>Dismiss</button>
         </p>
       )}
-      <Disclosure title="Maps" open={mapsOpen} onOpenChange={setMapsOpen} keepMounted actions={geometryTools.buttons}>
-        {geometryTools.panel ?? (
+      <Disclosure title="Maps" open={mapsOpen} onOpenChange={setMapsOpen} keepMounted actions={<>{geometryTools.buttons}{paintTool.button}</>}>
+        {geometryTools.panel ?? paintTool.panel ?? (
           <div className="map-grid">
             {CARD_SLOTS.map((slot) => (
               <MapCard
@@ -148,6 +157,7 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
           </div>
         )}
       </Disclosure>
+      {paintTool.overlays}
       <ConfirmDialog
         open={clearing !== null}
         title={clearing === null ? 'Clear' : `Clear ${kindLabel(clearing, colorMode)}?`}

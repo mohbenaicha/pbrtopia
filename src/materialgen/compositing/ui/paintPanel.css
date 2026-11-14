@@ -1,0 +1,199 @@
+/* Compositing R5: the swatches look as the reference strip under the Generate text input (generation/ui/GeneratePanel.css), restated here so they do not depend on it. */
+.palette-swatches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.palette-swatches .reference-strip__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.palette-swatches .reference-strip__item {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+.palette-swatches .reference-strip__thumb,
+.palette-swatches .reference-strip__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  background: var(--bg-input);
+  border: 1px solid var(--bg-hover);
+  border-radius: var(--radius-control);
+}
+
+.palette-swatches .reference-strip__thumb {
+  cursor: pointer;
+}
+
+.palette-swatches .reference-strip__add {
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.palette-swatches .reference-strip__add:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.palette-swatches .reference-strip__remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}
+
+.palette-swatches__invert {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+}
+
+.palette-swatches__ball {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.shape-thumbnail {
+  display: block;
+  flex: none;
+  background-repeat: no-repeat;
+  background-color: #000;
+}
+
+.paint-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.paint-panel__history,
+.paint-panel__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.paint-panel__actions {
+  justify-content: flex-end;
+}
+
+.paint-panel__hint,
+.paint-panel__notice {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.paint-panel__error {
+  margin: 0;
+  color: var(--error);
+  font-size: var(--font-size-small);
+}
+
+.brush-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The pickers (R6, R7). */
+.picker-overlay__search {
+  width: 100%;
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text);
+  background: var(--bg-input);
+  border: 1px solid var(--bg-hover);
+  border-radius: var(--radius-control);
+}
+
+.picker-overlay__grid-scroll {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.picker-overlay__message {
+  margin: var(--space-3) 0;
+  color: var(--text-dim);
+}
+
+.shape-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shape-picker__tile {
+  display: block;
+  padding: 2px;
+  background: var(--bg-input);
+  border: 1px solid var(--bg-hover);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.shape-picker__tile:hover {
+  border-color: var(--text-dim);
+}
+
+.shape-picker__tile--taken {
+  border-color: var(--accent, var(--text-dim));
+  opacity: 0.6;
+}
+
+.material-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: var(--space-3);
+}
+
+.material-picker__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-2);
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.material-picker__tile:hover {
+  background: var(--bg-hover);
+}
+
+.material-picker__ball {
+  width: 80px;
+  height: 80px;
+}
+
+.material-picker__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--font-size-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.material-picker__values {
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}

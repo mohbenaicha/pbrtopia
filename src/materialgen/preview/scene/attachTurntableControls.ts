@@ -5,6 +5,12 @@ export interface TurntableTarget {
   setDragging?(active: boolean): void; // a drag started or ended (R53: a thumbnail waits for it)
 }
 
+/** Compositing R4: events something else on the element handles (the painter takes the left button and Ctrl + wheel); the controls leave those alone. */
+export interface TurntableFilter {
+  ignoresPointer?(event: PointerEvent): boolean;
+  ignoresWheel?(event: WheelEvent): boolean;
+}
+
 const WHEEL_NOTCH = 100; // wheel units per dolly step
 const LINE_UNITS = 33; // a wheel that reports lines rather than pixels: about three lines to a notch
 
@@ -13,7 +19,7 @@ const LINE_UNITS = 33; // a wheel that reports lines rather than pixels: about t
  * anywhere in the window, and also when a move reports that no button is held, so a release outside the page never leaves the mesh turning.
  * Returns the function that removes the listeners.
  */
-export function attachTurntableControls(element: HTMLElement, target: TurntableTarget): () => void {
+export function attachTurntableControls(element: HTMLElement, target: TurntableTarget, filter: () => TurntableFilter | null = () => null): () => void {
   let dragging = false;
   let activeId: number | undefined; // the pointer that started the drag; a second finger is ignored
   let wheelRemainder = 0;
@@ -32,6 +38,7 @@ export function attachTurntableControls(element: HTMLElement, target: TurntableT
       return;
     }
     if (event.button !== 0 && event.button !== 2) return;
+    if (filter()?.ignoresPointer?.(event as PointerEvent)) return;
     if (dragging) return; // a second finger or button while one is already turning the mesh
     activeId = (event as PointerEvent).pointerId;
     dragging = true;
@@ -53,6 +60,7 @@ export function attachTurntableControls(element: HTMLElement, target: TurntableT
     if (dx !== 0 || dy !== 0) target.turn(dx, dy, Math.min(element.clientWidth, element.clientHeight));
   };
   const onWheel = (event: WheelEvent): void => {
+    if (filter()?.ignoresWheel?.(event)) return;
     event.preventDefault();
     const units = event.deltaMode === 1 ? event.deltaY * LINE_UNITS : event.deltaY; // a notch is 100 units; a trackpad sends many small ones
     if (units === 0) return;

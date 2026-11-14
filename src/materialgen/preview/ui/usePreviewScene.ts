@@ -39,7 +39,7 @@ export function usePreviewScene(viewport: Viewport | null, inputs: PreviewSceneI
     created.setMaskOverlay(latest.current.maskOverlay);
     created.setMaskHighlight(latest.current.maskHighlight ?? null);
     created.setToolTransform(latest.current.toolTransform);
-    const detach = attachTurntableControls(viewport.renderer.domElement, created);
+    const detach = attachTurntableControls(viewport.renderer.domElement, created, created.orbitFilter);
     const stopResizing = viewport.on('resized', created.fitCamera);
     setScene(created);
     return () => {

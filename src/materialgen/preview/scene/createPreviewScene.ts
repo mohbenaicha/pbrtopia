@@ -1,4 +1,4 @@
-import { DoubleSide, FrontSide, Group, Mesh, Vector3, type BufferGeometry, type Material, type PerspectiveCamera, type Scene } from 'three';
+import { DoubleSide, FrontSide, Group, Matrix4, Mesh, Vector3, type BufferGeometry, type Material, type PerspectiveCamera, type Scene } from 'three';
 import { createLitLook, createMapAdjustUniforms, setMapAdjust, type MapAdjust } from '@shared/viewport';
 import type { NormalDirection, PreviewMesh, PreviewPrefs, PreviewValues } from '@mat/storage';
 import { createFlatLooks } from '../material/createFlatLooks';
@@ -13,6 +13,8 @@ import { orbitPlane, PLANE_DEFAULT_POSE, planeCameraDirection } from '../math/pl
 import { DEFAULT_POSE, dollyBy, isDefaultView, turnPose, type TurntablePose } from '../math/turntable';
 import { buildPreviewGeometry } from '../meshes/buildPreviewGeometry';
 import { halfExtentsOf } from '../meshes/halfExtentsOf';
+import type { TurntableFilter } from './attachTurntableControls';
+import type { LocalRay, PaintSurface, PaintTextures } from './paintHost';
 
 /** What the preview needs from the shared viewport (a `Viewport` provides all of it: `scene`, `cameraRig`, `invalidate`). */
 export interface PreviewHost {
@@ -48,6 +50,13 @@ export interface PreviewScene {
   resetView(): void;
   fitCamera(): void; // the viewport changed shape: the default distance follows, the user's dolly stays
   view(): PreviewView;
+  // Compositing R4, R14, R25, R27: what a painting session needs of the preview.
+  setPaintTextures(textures: PaintTextures | null): void; // the session's textures stand in for the stored ones in every look; null puts the stored ones back
+  setOrbitFilter(filter: TurntableFilter | null): void; // events the painter takes itself, which the turntable leaves alone
+  orbitFilter(): TurntableFilter | null;
+  planeRay(ndcX: number, ndcY: number): LocalRay | null; // the ray under a canvas point in the Plane's own frame; null unless the mesh is the Plane
+  paintSurface(): PaintSurface; // the displacement the Plane has now (preview R15) and the tiling
+  overlayRoot(): Group; // a child of it is in the Plane's frame (x, y in [-0.5, 0.5], z up)
   dispose(): void;
 }
 
@@ -87,6 +96,7 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
   let facing = false; // R62, R53: the thumbnail shows the Plane square-on, not from its orbit view
   const orbits = (): boolean => meshKind === 'plane' && !facing; // R62: the Plane lies flat and the camera moves
   let dragging = false;
+  let orbitFilter: TurntableFilter | null = null;
   let disposed = false;
   let dragEndWaiters: Array<() => void> = [];
 
@@ -266,6 +276,29 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
       host.invalidate();
     },
     view: () => ({ mesh: meshKind, yaw: pose.yaw, pitch: pose.pitch, dolly }),
+    setPaintTextures(textures) {
+      preview.setOverrides(textures);
+      applyShading();
+      host.invalidate();
+    },
+    setOrbitFilter(filter) {
+      orbitFilter = filter;
+    },
+    orbitFilter: () => orbitFilter,
+    planeRay(ndcX, ndcY) {
+      if (meshKind !== 'plane') return null;
+      const camera = host.rig.perspective;
+      camera.updateMatrixWorld();
+      group.updateMatrixWorld(true);
+      const origin = new Vector3().setFromMatrixPosition(camera.matrixWorld);
+      const direction = new Vector3(ndcX, ndcY, 0.5).unproject(camera).sub(origin);
+      const inverse = new Matrix4().copy(group.matrixWorld).invert();
+      origin.applyMatrix4(inverse);
+      direction.transformDirection(inverse);
+      return { origin: [origin.x, origin.y, origin.z], direction: [direction.x, direction.y, direction.z] };
+    },
+    paintSurface: () => ({ scale: preview.material.displacementScale, bias: preview.material.displacementBias, tilingX: preview.values.tilingX, tilingY: preview.values.tilingY }),
+    overlayRoot: () => group,
     dispose() {
       disposed = true;
       litLook.detach(group);

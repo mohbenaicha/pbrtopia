@@ -4,7 +4,7 @@ import { AddonsButton } from '../addons/AddonsButton';
 import { AppShell, TopBar, rememberOpenProject, usePanelWidths, useProjectLock, useStorageWarning } from '@shared/shell';
 import { LoadingOverlay } from '@shared/ui-kit';
 import { parseMasksRecord } from '@mat/masks';
-import { PreviewViewport, createToolLiveFeed, type PreviewMasks, type PreviewShading, type PreviewThumbnailSink, type PreviewTool, type ToolView } from '@mat/preview';
+import { PreviewViewport, createPaintBridge, createToolLiveFeed, type PreviewMasks, type PreviewShading, type PreviewThumbnailSink, type PreviewTool, type ToolView } from '@mat/preview';
 import { DEFAULT_PREVIEW_VALUES, type MaterialProjectStore, type PreviewValues } from '@mat/storage';
 import { APP_ID } from '../appIdentity';
 import { useMasksPackagePrompt } from '../masksPackage/useMasksPackagePrompt';
@@ -14,6 +14,7 @@ import { ExportSection, exportUnavailableReason } from '../panels/export/ExportS
 import { useExportDialog } from '../panels/export/useExportDialog';
 import { MaterialGeneratePanel } from '../panels/MaterialGeneratePanel';
 import { MaterialMapsPanel } from '../panels/MaterialMapsPanel';
+import { PaintBridgeContext } from '../panels/tools/PaintBridgeContext';
 import { ToolLiveContext } from '../panels/tools/ToolLiveContext';
 import { ViewAngleContext, useViewAngleWatched } from '../panels/tools/ViewAngleContext';
 import { createViewAngleStore } from '../panels/tools/viewAngleStore';
@@ -68,6 +69,7 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
     () => ({ view: toolView, onSettled: releaseToolView, live: toolLive, ...(pickerOpen ? { onViewAngle: viewAngle.set } : {}) }),
     [toolView, releaseToolView, toolLive, viewAngle, pickerOpen],
   );
+  const paintBridge = useMemo(createPaintBridge, []); // the painting tool in the Maps section reaches the preview's scene and mesh through it (compositing R1)
   const maskView = useMaskView();
   const maskPalette = useMemo(() => (record === null ? null : (parseMasksRecord(record.masks)?.palette ?? null)), [record?.masks]);
 
@@ -126,6 +128,7 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
       left={
         record === null ? null : (
           <ViewAngleContext.Provider value={viewAngle}>
+          <PaintBridgeContext.Provider value={paintBridge}>
           <ToolLiveContext.Provider value={toolLive}>
           <MaterialMapsPanel
             shading={shading}
@@ -144,6 +147,7 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
             <ExportSection dialog={exportDialog} />
           </MaterialMapsPanel>
           </ToolLiveContext.Provider>
+          </PaintBridgeContext.Provider>
           </ViewAngleContext.Provider>
         )
       }
@@ -151,7 +155,7 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
         <div className="material-viewport" data-testid="material-viewport">
           {project.loading && <LoadingOverlay label="Opening project" />}
           {project.error !== null && <p className="material-viewport__message" role="alert">{project.error}</p>}
-          {record !== null && <PreviewViewport store={store} mapsState={mapsState} readBlob={readBlob} values={record.preview} onValuesChange={changePreviewValues} shading={shading} thumbnail={thumbnail} masks={previewMasks} tool={previewTool} pending={maps.pending} />}
+          {record !== null && <PreviewViewport store={store} mapsState={mapsState} readBlob={readBlob} values={record.preview} onValuesChange={changePreviewValues} shading={shading} thumbnail={thumbnail} masks={previewMasks} tool={previewTool} pending={maps.pending} paint={paintBridge} />}
           {record !== null && setupOpen && <MaterialSetupOverlay generation={generation} colorMode={record.colorMode} onClose={() => setSetupOpen(false)} />}
           {masksPackage.dialog}
         </div>

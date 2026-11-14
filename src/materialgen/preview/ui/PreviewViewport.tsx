@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useViewportSettings } from '@shared/shell';
 import { DEFAULT_VIEWPORT_SETTINGS, ViewportCanvas, ViewportCorner, type Viewport } from '@shared/viewport';
 import { withPendingMaps, type MapsState, type PendingMaps } from '@mat/maps';
@@ -6,6 +6,7 @@ import type { PaletteEntry } from '@mat/workerapi';
 import { DEFAULT_PREVIEW_VALUES, type MaterialProjectStore, type PreviewValues } from '@mat/storage';
 import type { PreviewShading } from '../math/flatViews';
 import { adaptViewportForPreview } from './adaptViewportForPreview';
+import type { PaintBridge } from './paintBridge';
 import { MaskDisplayControl } from './MaskDisplayControl';
 import { MeshPicker } from './MeshPicker';
 import { OpenImageButton } from './OpenImageButton';
@@ -30,6 +31,7 @@ export interface PreviewViewportProps {
   masks: PreviewMasks;
   tool?: PreviewTool; // the transform an open Crop or Mirror puts on the maps (R58)
   pending?: PendingMaps; // pictures shown before they are saved (maps R71)
+  paint?: PaintBridge; // compositing R1, R3: how the painting tool reaches the scene, and how it guards the mesh choice
 }
 
 /** Preview R58, R59: the tool view applied to the maps, and what to tell the owner when a held view has been replaced by the committed maps. */
@@ -62,7 +64,7 @@ const NO_PENDING: PendingMaps = {};
 const NO_REPORT = (): void => undefined;
 
 /** The 3D preview of the open material (preview spec): the shared viewport without a model, one mesh in previewGroup, turned by dragging. */
-export function PreviewViewport({ store, mapsState, readBlob, values, onValuesChange, shading, thumbnail, masks, tool = NO_TOOL, pending = NO_PENDING }: PreviewViewportProps): React.JSX.Element {
+export function PreviewViewport({ store, mapsState, readBlob, values, onValuesChange, shading, thumbnail, masks, tool = NO_TOOL, pending = NO_PENDING, paint }: PreviewViewportProps): React.JSX.Element {
   const [viewport, setViewport] = useState<Viewport | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsTarget = useMemo(() => (viewport === null ? null : adaptViewportForPreview(viewport)), [viewport]);
@@ -75,6 +77,13 @@ export function PreviewViewport({ store, mapsState, readBlob, values, onValuesCh
   // the scene is built once the saved mesh and resolution are known, so a saved Plane never shows a Ball first
   const scene = usePreviewScene(prefsLoaded ? viewport : null, { prefs, values, mapAdjust: settings.mapAdjust, maps, shading, maskOverlay, maskHighlight: masks.highlight ?? null, toolTransform });
   useLiveToolFeed(scene, tool.view, tool.live);
+  const normalDirectionNow = useRef(prefs.normalDirection);
+  normalDirectionNow.current = prefs.normalDirection;
+  useEffect(() => {
+    if (paint === undefined) return undefined;
+    paint.publish({ host: scene === null || viewport === null ? null : { scene, renderer: viewport.renderer, element: viewport.renderer.domElement, normalDirection: () => normalDirectionNow.current, invalidate: viewport.invalidate }, mesh: prefs.mesh });
+    return () => paint.publish({ host: null, mesh: prefs.mesh });
+  }, [paint, scene, viewport, prefs.mesh]);
   const { onViewAngle } = tool;
   useViewAngleReport(scene, onViewAngle !== undefined, onViewAngle ?? NO_REPORT); // the owner hands the reader over only while it wants the angle
 
@@ -107,7 +116,7 @@ export function PreviewViewport({ store, mapsState, readBlob, values, onValuesCh
         onResetView={() => scene?.resetView()}
         moreButtons={
           <>
-            <MeshPicker mesh={prefs.mesh} onChoose={(mesh) => changePrefs({ mesh })} />
+            <MeshPicker mesh={prefs.mesh} onChoose={(mesh) => void (paint === undefined ? Promise.resolve(true) : paint.allowMeshChange(mesh)).then((allowed) => allowed && changePrefs({ mesh }))} />
             <MaskDisplayControl
               hasLabels={mapsState.maps.labels !== undefined}
               overlay={masks.overlay}

@@ -45,6 +45,9 @@ export const LINE_ICON_PATHS = {
   mirror: ['M4 7.5l5 4.5-5 4.5z', 'M20 7.5L15 12l5 4.5z', 'M12 3v2.5', 'M12 8.5v2', 'M12 13.5v2', 'M12 18.5V21'],
   seam: ['M4 4v16', 'M4 4h16', 'M9 9v11', 'M9 9h11', 'M14 14v6', 'M14 14h6'], // Blend edges: the left and top borders fading into the picture (nested corners)
   swap: ['M3 7h3.5c1.5 0 2.8.7 3.6 1.9l3.8 6.2c.8 1.2 2.1 1.9 3.6 1.9H21', 'M18 14.5l3 3-3 3', 'M3 17h3.5c1.5 0 2.8-.7 3.6-1.9', 'M13.9 8.9c.8-1.2 2.1-1.9 3.6-1.9H21', 'M18 4l3 3-3 3'],
+  // The splat painter (compositing R1): a brush; and a shape's Invert (R5): a disc half filled.
+  brush: ['M20 4l-9 9', 'M9.5 12.5c-2.2 0-3.5 1.6-3.5 3.5 0 1.5-.8 2.6-2 3.2 4.2.6 8.5-.4 8.5-4.2 0-1-.7-2.5-3-2.5z'],
+  invert: ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M12 3.5v17', 'M12 3.5a8.5 8.5 0 0 1 0 17z'],
   occlusion: ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M12 3.5v17', 'M12 8a4 4 0 0 1 0 8'],
   // The plan summary beside Generate (materialgen generation R62): a sheet with lines.
   summary: ['M7 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2z', 'M8.5 8.5h7', 'M8.5 12h7', 'M8.5 15.5h4'],

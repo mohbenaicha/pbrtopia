@@ -208,6 +208,7 @@ describe('materialgen/app left panel (the material)', () => {
     undo: vi.fn(),
     applyEdits: vi.fn(),
     commitMasks: vi.fn(),
+    commitPlanned: vi.fn(),
     placeGenerated: vi.fn(),
     restoreOriginal: vi.fn(),
     clear: vi.fn(),

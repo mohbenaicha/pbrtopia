@@ -1,4 +1,4 @@
-import { ShaderMaterial, Vector2, Vector3, type DataTexture, type IUniform } from 'three';
+import { ShaderMaterial, Vector2, Vector3, type IUniform, type Texture } from 'three';
 import type { MapAdjustUniforms } from '@shared/viewport';
 import { ORM_DEFAULTS } from '@mat/workerapi';
 import { FLAT_VIEWS, type FlatView } from '../math/flatViews';
@@ -35,7 +35,7 @@ const constant = (value: number): IUniform<number> => ({ value });
  */
 export function createFlatLooks(adjust: MapAdjustUniforms, mask: MaskUniforms, tool: ToolUniforms): FlatLooks {
   const shared = {
-    uHeight: { value: null as DataTexture | null },
+    uHeight: { value: null as Texture | null },
     uHasHeight: { value: false },
     uTile: { value: new Vector2(1, 1) },
     uDisplacementScale: constant(0),
