@@ -84,6 +84,11 @@ export function PreviewViewport({ store, mapsState, readBlob, values, onValuesCh
     paint.publish({ host: scene === null || viewport === null ? null : { scene, renderer: viewport.renderer, element: viewport.renderer.domElement, normalDirection: () => normalDirectionNow.current, invalidate: viewport.invalidate }, mesh: prefs.mesh });
     return () => paint.publish({ host: null, mesh: prefs.mesh });
   }, [paint, scene, viewport, prefs.mesh]);
+  useEffect(() => {
+    if (paint === undefined) return undefined;
+    paint.setMeshChanger((mesh) => changePrefs({ mesh })); // compositing R55: the Paint entry asks for the Plane through the bridge
+    return () => paint.setMeshChanger(null);
+  }, [paint, changePrefs]);
   const { onViewAngle } = tool;
   useViewAngleReport(scene, onViewAngle !== undefined, onViewAngle ?? NO_REPORT); // the owner hands the reader over only while it wants the angle
 

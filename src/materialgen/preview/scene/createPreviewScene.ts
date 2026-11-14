@@ -35,6 +35,7 @@ export interface PreviewScene {
   setToolTransform(transform: ToolTransform | null): void; // R58: an open Crop or Mirror, applied to every map sample in the next frame; allocates nothing
   toolTransform(): ToolTransform | null; // what is shown now (null while the thumbnail is taken)
   setValues(values: PreviewValues): void;
+  onValuesChange(listener: () => void): () => void; // compositing R56: told after every setValues (the painter's ghost follows the tiling); returns the unsubscribe
   setMaskOverlay(settings: MaskOverlaySettings): void; // R18, R40: the palette colours drawn into the albedo (display only)
   setMaskHighlight(label: number | null): void; // masks R80: one label's colour alone, with the switch on or off (display only)
   maskHighlight(): number | null; // the highlight shown now (null while the thumbnail is taken)
@@ -74,6 +75,7 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
   preview.setAoIntensity(prefs.aoIntensity);
   const adjust = createMapAdjustUniforms();
   const litLook = createLitLook(adjust);
+  const valueListeners = new Set<() => void>();
   const overlay = createMaskOverlay();
   overlay.setTile(initialValues.tilingX, initialValues.tilingY);
   overlay.patchLitMaterial(preview.material); // before the look's own patch, which wraps it
@@ -176,6 +178,11 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
       toolShading.setTile(values.tilingX, values.tilingY);
       applyShading();
       host.invalidate();
+      for (const listener of [...valueListeners]) listener();
+    },
+    onValuesChange(listener) {
+      valueListeners.add(listener);
+      return () => void valueListeners.delete(listener);
     },
     setMaskHighlight(label) {
       if (label === highlight) return;

@@ -2,11 +2,12 @@ import type { PaintHost } from '@mat/preview';
 import type { BrushAtlas } from '../atlas/readBrushAtlas';
 import type { PaintMaterial } from '../gpu/paintMaterial';
 import type { PainterMaps } from '../gpu/createStampPainter';
-import { stepRotation, type BrushParams } from '../plan/brushParams';
+import { stepRotation, updateBrushValue, type BrushParams } from '../plan/brushParams';
 import type { Point, ShapeSlot } from '../plan/planStamps';
 import { createPaintSession, type PaintedBytes, type PaintSession } from '../session/createPaintSession';
 import { createHeightProxy, pickSurface } from '../session/pickSurface';
 import { createGhostOverlay, type GhostStamp } from './createGhostOverlay';
+import { followSurface } from './followSurface';
 
 export interface PaintControllerOptions {
   host: PaintHost;
@@ -74,6 +75,7 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
   let stroking = false;
   let orbiting = false;
   let lastPoint: Point | null = null;
+  let lastClient: { clientX: number; clientY: number } | null = null; // the pointer over the canvas, to pick the ghost's point again when the surface changes (R56)
   let markerPoint: Point | null = null;
   let modifiers = { alt: false, shift: false };
   let wheelRemainder = 0;
@@ -134,7 +136,7 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
       ghost.hide();
       return;
     }
-    ghost.show([{ shape: next.shape, invert: next.invert, x: point.x, y: point.y, size: session.brush().size, angle: next.angle }], tint, heightOf(point));
+    ghost.show([{ shape: next.shape, invert: next.invert, x: point.x, y: point.y, size: next.size, angle: next.angle }], tint, heightOf(point));
   };
   const updateMarker = (): void => ghost.setMarker(markerPoint, markerPoint === null ? 0 : heightOf(markerPoint));
 
@@ -209,9 +211,11 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
     rememberModifiers(event);
     if (event.target !== element && !stroking) {
       lastPoint = null;
+      lastClient = null;
       ghost.hide();
       return;
     }
+    lastClient = { clientX: event.clientX, clientY: event.clientY };
     const point = pointOf(event);
     lastPoint = point;
     if (stroking && point !== null) {
@@ -246,8 +250,8 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
     if (notches === 0) return;
     const current = session.brush();
     const shown = session.peekNext();
-    const from = current.randomRotation && shown !== null ? (shown.angle * 180) / Math.PI : current.rotation; // R12: continues from the ghost's angle
-    const next: BrushParams = { ...current, randomRotation: false, rotation: stepRotation(from, notches, event.shiftKey) };
+    const from = current.rotation.random && shown !== null ? (shown.angle * 180) / Math.PI : current.rotation.value; // R12: continues from the ghost's angle
+    const next: BrushParams = updateBrushValue(current, 'rotation', { random: false, value: stepRotation(from, notches, event.shiftKey) }); // the wheel turns the dice off
     session.setBrush(next);
     options.onBrushChange(session.brush());
     updateGhost();
@@ -299,7 +303,20 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
   const onLeave = (): void => {
     if (stroking) return;
     lastPoint = null;
+    lastClient = null;
     ghost.hide();
+  };
+  // R56: a change of Tiling (or of the height Scale and Level) moves the ghost's picture-to-plane mapping, so the ghost and the marker follow at once.
+  const onSurfaceChange = (): void => {
+    followSurface({
+      surface: () => scene.paintSurface(),
+      setGhostTiling: (x, y) => ghost.setTiling(x, y),
+      placeMarker: updateMarker,
+      repickGhost: () => {
+        if (!orbiting && lastClient !== null) lastPoint = pointOf(lastClient);
+      },
+      showGhost: updateGhost,
+    });
   };
   const onContextLost = (event: Event): void => {
     event.preventDefault();
@@ -310,6 +327,7 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
   const previousCursor = element.style.cursor;
   element.style.cursor = 'crosshair';
   ghost.setTiling(scene.paintSurface().tilingX, scene.paintSurface().tilingY);
+  const stopFollowingSurface = scene.onValuesChange(onSurfaceChange);
   element.addEventListener('pointerdown', onPointerDown);
   element.addEventListener('pointerleave', onLeave);
   element.addEventListener('wheel', onWheel, { passive: false });
@@ -350,6 +368,7 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
       if (disposed) return;
       disposed = true;
       cancelAnimationFrame(frame);
+      stopFollowingSurface();
       element.removeEventListener('pointerdown', onPointerDown);
       element.removeEventListener('pointerleave', onLeave);
       element.removeEventListener('wheel', onWheel);

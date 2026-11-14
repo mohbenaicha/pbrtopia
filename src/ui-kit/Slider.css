@@ -4,6 +4,10 @@
   gap: var(--space-2);
 }
 
+.ui-slider__part {
+  display: contents; /* a wrapper only to carry data-tooltip-skip: it adds no box */
+}
+
 .ui-slider[data-layout='row'] {
   display: grid;
   grid-template-columns: 5.5rem minmax(0, 1fr) 3rem;
@@ -58,13 +62,40 @@
 .ui-slider input[type='range']::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(to right, var(--accent) var(--slider-fill), var(--bg-button) var(--slider-fill));
+  background: linear-gradient(to right, var(--accent) var(--slider-fill), var(--slider-track, var(--bg-button)) var(--slider-fill));
 }
 
 .ui-slider input[type='range']::-moz-range-track {
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(to right, var(--accent) var(--slider-fill), var(--bg-button) var(--slider-fill));
+  background: linear-gradient(to right, var(--accent) var(--slider-fill), var(--slider-track, var(--bg-button)) var(--slider-fill));
+}
+
+/* Marks (compositing R46): a stronger track and three muted ticks (left end, middle, right end), positioned where the thumb's centre travels. */
+.ui-slider[data-marks] {
+  --slider-track: var(--slider-track-strong);
+}
+
+.ui-slider__track {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.ui-slider__marks {
+  position: absolute;
+  inset: 0 7px;
+  pointer-events: none;
+}
+
+.ui-slider__mark {
+  position: absolute;
+  top: 50%;
+  width: 2px;
+  height: 10px;
+  margin: -5px 0 0 -1px;
+  border-radius: 1px;
+  background: var(--text-hint);
 }
 
 .ui-slider input[type='range']::-webkit-slider-thumb {
@@ -102,4 +133,69 @@
 
 .ui-slider[data-disabled] {
   opacity: 0.45;
+}
+
+/* RangeSlider (compositing R51): one track, two thin markers, the accent-coloured area between them. --range-low, --range-high and --range-position are 0 to 1. */
+.ui-range {
+  position: relative;
+  display: block;
+  height: 18px;
+  min-width: 0;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.ui-range__rail,
+.ui-range__fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+}
+
+.ui-range__rail {
+  right: 0;
+  left: 0;
+  border-radius: 2px;
+  background: var(--slider-track, var(--bg-button));
+}
+
+.ui-range__fill {
+  left: calc(7px + (100% - 14px) * var(--range-low));
+  width: calc((100% - 14px) * (var(--range-high) - var(--range-low)));
+  background: var(--accent);
+}
+
+.ui-range__thumb {
+  position: absolute;
+  top: 50%;
+  left: calc(7px + (100% - 14px) * var(--range-position));
+  width: 2px;
+  height: 16px;
+  margin: -8px 0 0 -1px;
+  border-radius: 1px;
+  background: var(--text);
+}
+
+/* A wider area to grab than the 2 px line. */
+.ui-range__thumb::before {
+  position: absolute;
+  inset: -2px -6px;
+  content: '';
+}
+
+.ui-range__thumb:hover,
+.ui-range__thumb:focus-visible {
+  background: var(--accent-hover);
+}
+
+.ui-range__thumb:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* A range reads as two numbers, so its readout is allowed more room than a single value's. */
+.ui-slider__value[data-range] {
+  min-width: 4.5rem;
+  white-space: nowrap;
 }

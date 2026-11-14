@@ -5,6 +5,7 @@
   --bg-input: #17171a;
   --bg-button: #212125;
   --bg-hover: #2b2b30;
+  --slider-track-strong: #45454d; /* a slider track that has to stand out from the cards behind it (Slider `marks`) */
 
   --text: #ece8e1;
   --text-dim: #96928a;
@@ -71,4 +72,5 @@
   --layer-brand: 30;
   --layer-setup: 50;
   --layer-dialog: 100;
+  --layer-tooltip: 200; /* above a dialog: a tooltip explains a control inside one (compositing R48) */
 }

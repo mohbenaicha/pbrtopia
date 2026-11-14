@@ -3,6 +3,7 @@ import { acquireProjectLock } from '@shared/projects';
 import { AddonsButton } from '../addons/AddonsButton';
 import { AppShell, TopBar, rememberOpenProject, usePanelWidths, useProjectLock, useStorageWarning } from '@shared/shell';
 import { LoadingOverlay } from '@shared/ui-kit';
+import { LEFT_PANEL_FLOOR } from '@mat/compositing';
 import { parseMasksRecord } from '@mat/masks';
 import { PreviewViewport, createPaintBridge, createToolLiveFeed, type PreviewMasks, type PreviewShading, type PreviewThumbnailSink, type PreviewTool, type ToolView } from '@mat/preview';
 import { DEFAULT_PREVIEW_VALUES, type MaterialProjectStore, type PreviewValues } from '@mat/storage';
@@ -39,7 +40,7 @@ const acquireMaterialLock = (projectId: string) => acquireProjectLock(projectId,
 
 /** An open project (materialgen app R10-R14): the shell around the preview viewport, the left panel of settings and the right panel of map slots. */
 export function MaterialProjectView({ store, projectId }: { store: MaterialViewStore; projectId: string }): React.JSX.Element {
-  const panels = usePanelWidths(store);
+  const panels = usePanelWidths(store, LEFT_PANEL_FLOOR); // the left panel never gets narrower than its controls need (compositing R47)
   const storage = useStorageWarning(store);
   const lock = useProjectLock(projectId, acquireMaterialLock);
   const canWrite = lock === 'held'; // another tab holding the project makes this one read-only (R13)

@@ -9,6 +9,10 @@
   user-select: none;
 }
 
+.ui-toggle[data-dense] {
+  min-height: 20px; /* the track's own height: no taller than a slider row */
+}
+
 .ui-toggle:hover:not([data-disabled]) {
   color: var(--text);
 }

@@ -1,0 +1,89 @@
+/* Compositing R48: the template of every tooltip. Gold is the app's accent, so a theme change reaches it. */
+.ui-tooltip {
+  position: fixed;
+  z-index: var(--layer-tooltip);
+  box-sizing: border-box;
+  max-width: 260px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text);
+  background: var(--bg-panel);
+  border-radius: var(--radius-control);
+  box-shadow: 0 0 0 1px var(--accent), var(--shadow-overlay); /* the gold outline is a ring, not a border: ui-kit draws no borders (ui-kit R1) */
+  font-size: var(--font-size-small);
+  line-height: 1.4;
+  pointer-events: none; /* it never takes the pointer (R48) */
+  animation: ui-tooltip-in 120ms ease-out;
+}
+
+.ui-tooltip__heading {
+  margin: 0 0 2px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ui-tooltip__text {
+  margin: 0;
+}
+
+/* The arrow on the edge facing the control: a gold triangle with a slightly smaller panel-coloured one over it, so its two slanted sides read as the outline. */
+.ui-tooltip::before,
+.ui-tooltip::after {
+  position: absolute;
+  left: var(--tooltip-arrow-x);
+  content: '';
+  transform: translateX(-50%);
+}
+
+.ui-tooltip::before {
+  width: 12px;
+  height: 6px;
+  background: var(--accent);
+}
+
+.ui-tooltip::after {
+  width: 10px;
+  height: 6px;
+  background: var(--bg-panel);
+}
+
+.ui-tooltip[data-side='below']::before {
+  top: -7px;
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+}
+
+.ui-tooltip[data-side='below']::after {
+  top: -6px;
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+}
+
+.ui-tooltip[data-side='above']::before {
+  bottom: -7px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.ui-tooltip[data-side='above']::after {
+  bottom: -6px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+/* The text a screen reader reads on focus: present in the page, never seen. */
+.ui-tooltip__description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes ui-tooltip-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-tooltip {
+    animation: none;
+  }
+}

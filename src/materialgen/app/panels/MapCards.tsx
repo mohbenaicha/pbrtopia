@@ -90,7 +90,7 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
     },
   });
   const paintTool = usePaintTool({
-    state, canWrite, readOnlyReason: READ_ONLY_REASON, opOpen: dialogOpen || working || geometryToolOpen, busy: busy.size > 0, controller, readBlob, hasMasks: masksRecord !== undefined,
+    state, canWrite, readOnlyReason: READ_ONLY_REASON, opOpen: dialogOpen || working || geometryToolOpen, busy: busy.size > 0, controller, readBlob,
     onToolOpenChange: (open) => {
       setPaintOpen(open);
       if (open) setMapsOpen(true); // the panel is in the Maps section, so it must be in view

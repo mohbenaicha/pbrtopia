@@ -96,6 +96,13 @@ export function createPaintSession(renderer: WebGLRenderer, options: PaintSessio
 
   const contextOf = (params: BrushParams): PlanContext => ({ params, shapes, texel: 1 / options.side });
   const newSeed = (): number => Math.floor(random() * 0xffffffff);
+  // The seed the next stroke or line will use is chosen ahead, so the ghost can show that stroke's first stamp exactly (R12, R53).
+  let pendingSeed = newSeed();
+  const takeSeed = (): number => {
+    const seed = pendingSeed;
+    pendingSeed = newSeed();
+    return seed;
+  };
   const headerOf = (id: number, seed: number): StrokeHeader => ({ id, seed, params: brush, shapes, settings: paintSettingsOf(brush, material) });
   const enqueue = (id: number, stamps: Stamp[]): void => { if (queue.push(id, stamps).tooMany) notice = 'too-many-stamps'; };
 
@@ -153,7 +160,7 @@ export function createPaintSession(renderer: WebGLRenderer, options: PaintSessio
     setMaterial: (next) => { material = next; },
     pointerDown: (point) => {
       if (shapes.length === 0 || input !== null) return;
-      const seed = newSeed();
+      const seed = takeSeed();
       input = startInput(point, seed, startStroke(seed));
       input.path.push(point);
       stampsInto(input, point, point);
@@ -169,7 +176,7 @@ export function createPaintSession(renderer: WebGLRenderer, options: PaintSessio
       queue.closeStroke(input.id);
       input = null;
     },
-    setLineMarker: (point) => { const seed = newSeed(); marker = { point, seed, state: startStroke(seed) }; },
+    setLineMarker: (point) => { const seed = takeSeed(); marker = { point, seed, state: startStroke(seed) }; },
     hasLineMarker: () => marker !== null,
     clearLineMarker: () => { marker = null; },
     ghostLine: (to) => (marker === null || shapes.length === 0 ? [] : planSegment(contextOf(brush), marker.state, marker.point, to).stamps),
@@ -182,8 +189,7 @@ export function createPaintSession(renderer: WebGLRenderer, options: PaintSessio
       marker = { point: to, seed: marker.seed, state: open.state }; // the next line continues the spacing from here (R13)
     },
     peekNext: () => {
-      const state = input?.state ?? marker?.state ?? startStroke(0);
-      return peekNextStamp(contextOf(brush), state);
+      return peekNextStamp(contextOf(brush), input?.state ?? startStroke(pendingSeed));
     },
     step,
     undo: () => {

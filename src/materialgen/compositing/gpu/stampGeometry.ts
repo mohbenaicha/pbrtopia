@@ -1,3 +1,17 @@
+import { SQUARE_SHAPE } from '../plan/planStamps';
+
+/**
+ * Compositing R43, A15: the plain square has no atlas tile, so a stamp's shape flag (the float both shaders already carry for Invert: 0 as drawn, 1 inverted) takes
+ * this third value, "full coverage". The TS side writes it through `shapeFlagOf` and both shaders read it through `shapeCoverageGlsl`, so the contract has one name.
+ */
+export const SQUARE_COVERAGE = 2;
+
+/** The shape flag of a stamp: SQUARE_COVERAGE for the square, 1 for an inverted shape, 0 otherwise. */
+export const shapeFlagOf = (stamp: { shape: number; invert: boolean }): number => (stamp.shape === SQUARE_SHAPE ? SQUARE_COVERAGE : stamp.invert ? 1 : 0);
+
+/** The GLSL expression of a stamp's shape coverage from the tile's alpha (`shape`) and its flag: full for the square, else the tile or its inverse. */
+export const shapeCoverageGlsl = (shape: string, flag: string): string => `${flag} > ${SQUARE_COVERAGE - 0.5} ? 1.0 : mix(${shape}, 1.0 - ${shape}, ${flag})`;
+
 /** The atlas grid: `columns x rows` equal cells, each tile shrunk by `inset` (fraction of the cell, per side) so filtering never reads a neighbour (R5, A10). */
 export interface AtlasGrid {
   columns: number;

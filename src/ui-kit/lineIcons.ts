@@ -48,6 +48,8 @@ export const LINE_ICON_PATHS = {
   // The splat painter (compositing R1): a brush; and a shape's Invert (R5): a disc half filled.
   brush: ['M20 4l-9 9', 'M9.5 12.5c-2.2 0-3.5 1.6-3.5 3.5 0 1.5-.8 2.6-2 3.2 4.2.6 8.5-.4 8.5-4.2 0-1-.7-2.5-3-2.5z'],
   invert: ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M12 3.5v17', 'M12 3.5a8.5 8.5 0 0 1 0 17z'],
+  // The random-range dice (compositing R50): a die seen from a corner, three faces, a pip on the top and on each side.
+  dice: ['M12 2.8l7.8 4.5v9.4L12 21.2l-7.8-4.5V7.3z', 'M4.2 7.3L12 11.8l7.8-4.5', 'M12 11.8v9.4', 'M12 7.3h.01', 'M6.6 12.3h.01', 'M9.7 16.2h.01', 'M14.2 12.3h.01', 'M15.9 14.25h.01', 'M17.6 16.2h.01'],
   occlusion: ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M12 3.5v17', 'M12 8a4 4 0 0 1 0 8'],
   // The plan summary beside Generate (materialgen generation R62): a sheet with lines.
   summary: ['M7 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2z', 'M8.5 8.5h7', 'M8.5 12h7', 'M8.5 15.5h4'],

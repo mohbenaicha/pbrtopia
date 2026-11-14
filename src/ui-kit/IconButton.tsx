@@ -12,11 +12,12 @@ interface IconButtonProps {
   disabledReason?: string; // why it is disabled: added to the tooltip and given as the description
   loading?: boolean; // ignores clicks, shows a spinner, announced as busy
   compact?: boolean; // a small round badge for a corner of something else, such as the remove mark on a thumbnail
+  untitled?: boolean; // no native title: a Tooltip around the button says it instead (the accessible name stays the label)
   onClick: () => void;
   testId?: string; // a stable hook for the end-to-end tests
 }
 
-export function IconButton({ label, hint, icon, pressed, expanded, disabled = false, disabledReason, loading = false, compact = false, onClick, testId }: IconButtonProps): React.JSX.Element {
+export function IconButton({ label, hint, icon, pressed, expanded, disabled = false, disabledReason, loading = false, compact = false, untitled = false, onClick, testId }: IconButtonProps): React.JSX.Element {
   const reason = disabled ? disabledReason : undefined;
   return (
     <button
@@ -25,7 +26,7 @@ export function IconButton({ label, hint, icon, pressed, expanded, disabled = fa
       aria-label={label}
       aria-description={reason}
       aria-busy={loading ? true : undefined}
-      title={reason === undefined ? (hint ?? label) : `${label}: ${reason}`}
+      title={untitled ? undefined : reason === undefined ? (hint ?? label) : `${label}: ${reason}`}
       aria-pressed={pressed}
       aria-expanded={expanded}
       data-pressed={pressed || expanded ? '' : undefined}

@@ -45,4 +45,13 @@ describe('panel widths', () => {
   it('viewport-layout R25 a width that is not a finite number is replaced by the default', () => {
     expect(clampPanelWidths({ left: Number.NaN, right: Number.POSITIVE_INFINITY }, 3000)).toEqual({ left: 296, right: 288 });
   });
+
+  it('compositing R47 a screen can raise a panel minimum (never lower it); the other panel and the default screens are unchanged', () => {
+    const floors = { left: 300 } as const;
+    expect(clampPanelWidths({ left: 100, right: 100 }, 3000, floors)).toEqual({ left: 300, right: 240 });
+    expect(resizePanel({ left: 400, right: 400 }, 'left', 100, 3000, floors)).toEqual({ left: 300, right: 400 });
+    expect(panelLimits('left', { left: 300, right: 240 }, 3000, floors)).toEqual({ min: 300, max: 520 });
+    expect(clampPanelWidths({ left: 100, right: 100 }, 3000, { left: 100 })).toEqual({ left: 220, right: 240 });
+    expect(clampPanelWidths({ left: Number.NaN, right: 288 }, 3000, floors)).toEqual({ left: 300, right: 288 });
+  });
 });

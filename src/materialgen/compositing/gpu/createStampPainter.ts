@@ -8,7 +8,7 @@ import type { Stamp } from '../plan/planStamps';
 import { DEFAULT_MAP_BYTES, toLinearColour, type PaintMaterial } from './paintMaterial';
 import { flipRows, rebuildMipmapsOf, uploadPictureBytes } from './rawGl';
 import { createComposeMaterial, createRedCopyMaterial, createStampMaterial } from './stampShaders';
-import { stampBounds, tileRect, unionRect, type AtlasGrid, type TexelRect } from './stampGeometry';
+import { shapeFlagOf, stampBounds, tileRect, unionRect, type AtlasGrid, type TexelRect } from './stampGeometry';
 import { withRendererState } from './withRendererState';
 
 /** Compositing R19: the tilt added per unit of stamp-local coverage slope. Tunable by eye (T3 value). */
@@ -241,11 +241,12 @@ export function createStampPainter(renderer: WebGLRenderer, options: StampPainte
         beforeDraw(rect, kinds); // A6: the tiles about to change are saved before this frame's draws
       }
       for (const stamp of stamps) {
-        const { u0, v0, du, dv } = tileRect(grid, stamp.shape);
+        const { u0, v0, du, dv } = tileRect(grid, Math.max(stamp.shape, 0)); // the square (R43) samples nothing, so any tile will do
+        const shapeFlag = shapeFlagOf(stamp);
         for (const centre of wrapInstances({ x: stamp.x, y: stamp.y, size: stamp.size })) {
           instances.place.set([centre.x, centre.y, stamp.size, stamp.angle], count * 4);
           instances.tile.set([u0, v0, du, dv], count * 4);
-          instances.brush.set([stamp.strength, stamp.hardness, stamp.invert ? 1 : 0, 0], count * 4);
+          instances.brush.set([stamp.strength, stamp.hardness, shapeFlag, 0], count * 4);
           count += 1;
           if (count === INSTANCES_PER_DRAW) { drawInstances(count); count = 0; }
         }

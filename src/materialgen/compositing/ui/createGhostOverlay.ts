@@ -3,7 +3,7 @@ import {
   ShaderMaterial, Vector2, type Object3D, type Texture,
 } from 'three';
 import type { AtlasGrid } from '../gpu/stampGeometry';
-import { tileRect } from '../gpu/stampGeometry';
+import { shapeCoverageGlsl, shapeFlagOf, tileRect } from '../gpu/stampGeometry';
 
 /** One ghost stamp: the position is a picture coordinate (plane uv x tiling), the angle in radians; the same fields as a real stamp. */
 export interface GhostStamp {
@@ -48,7 +48,7 @@ varying vec4 vTile;
 varying float vInvert;
 void main() {
   float shape = texture2D(uAtlas, vTile.xy + vec2(vLocal.x, 1.0 - vLocal.y) * vTile.zw).r;
-  shape = mix(shape, 1.0 - shape, vInvert);
+  shape = ${shapeCoverageGlsl('shape', 'vInvert')}; // vInvert is the shape flag (stampGeometry.ts)
   vec2 box = abs(vLocal * 2.0 - 1.0);
   float inside = 1.0 - step(1.0, max(box.x, box.y));
   float outline = step(0.985, max(box.x, box.y)) * inside * 0.35;
@@ -103,10 +103,10 @@ export function createGhostOverlay(root: Object3D, atlas: Texture, grid: AtlasGr
       const count = Math.min(stamps.length, MAX_GHOSTS);
       for (let index = 0; index < count; index += 1) {
         const stamp = stamps[index]!;
-        const rect = tileRect(grid, stamp.shape);
+        const rect = tileRect(grid, Math.max(stamp.shape, 0));
         place.set([stamp.x, stamp.y, stamp.size, stamp.angle], index * 4);
         tile.set([rect.u0, rect.v0, rect.du, rect.dv], index * 4);
-        invert.array[index] = stamp.invert ? 1 : 0;
+        invert.array[index] = shapeFlagOf(stamp);
       }
       place.needsUpdate = true;
       tile.needsUpdate = true;

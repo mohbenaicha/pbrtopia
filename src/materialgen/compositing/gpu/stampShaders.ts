@@ -3,6 +3,8 @@ import {
   type Blending, type BlendingDstFactor, type BlendingEquation, type BlendingSrcFactor, type IUniform, type Texture,
 } from 'three';
 
+import { shapeCoverageGlsl } from './stampGeometry';
+
 // Compositing A4: the shaders of the stamp painter. One instanced draw per map per frame; no read of the target while it is written (hardware blending).
 
 /** How a map target takes a stamp: `mix` blends towards the value by the stamp alpha, `add` and `subtract` move the target by value x alpha, `slope` sums the Edge burn tilt. */
@@ -43,7 +45,7 @@ varying vec2 vTurn;
 varying float vSize;
 float coverage(vec2 local) {
   float shape = texture2D(uAtlas, vTile.xy + vec2(local.x, 1.0 - local.y) * vTile.zw).r;
-  shape = mix(shape, 1.0 - shape, vBrush.z);
+  shape = ${shapeCoverageGlsl('shape', 'vBrush.z')}; // vBrush.z is the shape flag (stampGeometry.ts)
   vec2 box = abs(local * 2.0 - 1.0);
   float edge = max(box.x, box.y);
   float fade = vBrush.y >= 0.9999 ? 1.0 - step(1.0, edge) : 1.0 - smoothstep(vBrush.y, 1.0, edge);

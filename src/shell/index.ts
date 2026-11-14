@@ -7,7 +7,7 @@ export { ReadOnlyBanner } from './ReadOnlyBanner';
 export { PlainLeftPanel } from './PlainLeftPanel';
 export { RightPanel } from './RightPanel';
 export { TopBar } from './TopBar';
-export { clampPanelWidths, DEFAULT_PANEL_WIDTHS, PANEL_GAPS_PX, panelLimits, resizePanel, type PanelSide, type PanelWidths } from './panelWidths';
+export { clampPanelWidths, DEFAULT_PANEL_WIDTHS, PANEL_GAPS_PX, panelLimits, resizePanel, type PanelFloors, type PanelSide, type PanelWidths } from './panelWidths';
 export { usePanelWidths } from './usePanelWidths';
 export { useProjectLock } from './useProjectLock';
 export { useProjectZipImport, type RunProjectImport } from './useProjectZipImport';

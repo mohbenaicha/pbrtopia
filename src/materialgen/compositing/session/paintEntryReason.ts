@@ -1,7 +1,6 @@
 import { BRUSH_ATLAS_ERROR } from '../atlas/readBrushAtlas';
 
 export interface PaintEntryFacts {
-  mesh: string; // the preview mesh shown
   size: number | null; // S; null while the project has no map
   canWrite: boolean;
   readOnlyReason: string;
@@ -11,9 +10,8 @@ export interface PaintEntryFacts {
   previewReady: boolean;
 }
 
-/** Compositing R1, R36: why the painter's entry is disabled, or undefined when it can open. */
+/** Compositing R1, R36, R55: why the painter's entry is disabled, or undefined when it can open (the mesh is not a reason: opening switches to the Plane). */
 export function paintEntryReason(facts: PaintEntryFacts): string | undefined {
-  if (facts.mesh !== 'plane') return 'Painting needs the Plane';
   if (facts.size === null) return 'Add a map first';
   if (!facts.canWrite) return facts.readOnlyReason;
   if (facts.otherEditOpen) return 'Another edit is open. Apply or cancel it first.';

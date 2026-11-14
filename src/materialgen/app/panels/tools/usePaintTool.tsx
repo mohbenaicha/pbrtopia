@@ -1,8 +1,8 @@
 import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ConfirmDialog, Icon, IconButton } from '@shared/ui-kit';
 import {
-  DEFAULT_BRUSH, EMPTY_PALETTE, canPaint, createPaintController, loadBrushAtlas, loadPaintMaps, MaterialPicker, paintEntryReason, paintedPicturesOf, paintMaterialOf, PaintToolPanel,
-  planCommitPaint, removeMaterial, removeShape, setMaterial, setShape, ShapePicker, shapeSlotsOf, toggleInvert,
+  DEFAULT_BRUSH, EMPTY_PALETTE, createPaintController, loadBrushAtlas, loadPaintMaps, MaterialPicker, paintEntryReason, paintedPicturesOf, paintMaterialOf, PaintToolPanel,
+  planCommitPaint, removeMaterial, removeShape, setMaterial, setShape, ShapePicker, shapeSlotsOf, toggleActive, toggleInvert,
   type BrushAtlas, type BrushParams, type LoadedPaintMaps, type PaintController, type PaintState, type Palette, type ShapeSlotNumber,
 } from '@mat/compositing';
 import { readMapPixels, type MapKind, type MapsController, type MapsState } from '@mat/maps';
@@ -19,7 +19,6 @@ interface PaintToolInput {
   busy: boolean; // maps are being changed
   controller: MapsController;
   readBlob(key: string): Promise<Blob | null>;
-  hasMasks: boolean; // the material has a decomposition (R41)
   /** Tells the host the painter opened or closed, so the other op buttons step aside and the Maps list folds (compositing R2). */
   onToolOpenChange(open: boolean): void;
 }
@@ -36,8 +35,10 @@ type Phase = 'idle' | 'loading' | 'open' | 'saving';
 type PickerTarget = { kind: 'shape'; slot: ShapeSlotNumber } | { kind: 'material' } | null;
 
 const IDLE_STATE: PaintState = { canUndo: false, canRedo: false, hasStrokes: false, notice: null };
-const NEUTRAL_MATERIAL = { albedo: [128, 128, 128] as const, roughness: 128, metalness: 0 };
 const SAVE_FAILED = 'Could not save the painting. Nothing changed.'; // R23
+const PLANE_SWITCH_ERROR = 'The preview could not switch to the Plane.'; // R55
+
+class PlaneSwitchError extends Error {}
 
 const kindsOf = (pictures: ReturnType<typeof paintedPicturesOf>, colourKind: 'albedo' | 'diffuse'): MapKind[] => [
   ...(pictures.colour ? [colourKind] : []), ...(pictures.rough ? ['rough' as const] : []), ...(pictures.metal ? ['metal' as const] : []),
@@ -55,8 +56,7 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
   const [atlas, setAtlas] = useState<BrushAtlas | null>(null);
   const [atlasFailed, setAtlasFailed] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
-  const [palette, setPalette] = useState<Palette>(EMPTY_PALETTE);
-  const [brush, setBrush] = useState<BrushParams>(DEFAULT_BRUSH);
+  const [palette, setPalette] = useState<Palette>(EMPTY_PALETTE);  const [brush, setBrush] = useState<BrushParams>(DEFAULT_BRUSH);
   const [paintState, setPaintState] = useState<PaintState>(IDLE_STATE);
   const [picker, setPicker] = useState<PickerTarget>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
@@ -68,7 +68,7 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
   const signature = mapsSignature(state);
 
   useEffect(() => {
-    if (mesh !== 'plane' || atlas !== null) return undefined;
+    if (atlas !== null) return undefined; // R55: the shapes load whatever mesh the preview shows
     let cancelled = false;
     loadBrushAtlas().then(
       (loaded) => !cancelled && setAtlas(loaded),
@@ -77,7 +77,7 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
     return () => {
       cancelled = true;
     };
-  }, [mesh, atlas]);
+  }, [atlas]);
 
   const closeSession = useCallback((): void => {
     const open = session.current;
@@ -126,14 +126,14 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
   useEffect(() => {
     const open = session.current;
     if (open === null) return;
-    open.controller.setShapes(canPaint(palette) ? shapeSlotsOf(palette) : []); // no ghost and no stroke until R5 is met
-    open.controller.setMaterial(paintMaterialOf(palette.material) ?? NEUTRAL_MATERIAL);
+    open.controller.setShapes(shapeSlotsOf(palette)); // the square when none is chosen (R43)
+    open.controller.setMaterial(paintMaterialOf(palette.material)); // the grey default when none is chosen (R42)
   }, [palette, phase]);
   useEffect(() => {
     session.current?.controller.setBrush(brush);
   }, [brush, phase]);
 
-  const reason = paintEntryReason({ mesh, size: state.size, canWrite, readOnlyReason: input.readOnlyReason, otherEditOpen: input.opOpen, mapsBusy: input.busy, atlasFailed, previewReady: host !== null && atlas !== null });
+  const reason = paintEntryReason({ size: state.size, canWrite, readOnlyReason: input.readOnlyReason, otherEditOpen: input.opOpen, mapsBusy: input.busy, atlasFailed, previewReady: host !== null && atlas !== null });
 
   const open = async (): Promise<void> => {
     if (reason !== undefined || host === null || atlas === null || state.size === null || phase !== 'idle') return;
@@ -142,9 +142,12 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
     setError(null);
     input.onToolOpenChange(true);
     try {
+      if (!(await bridge.showMesh('plane'))) throw new PlaneSwitchError(); // R55: another mesh is switched to the Plane first
+      const planeHost = bridge.state().host; // the scene may have been rebuilt by the switch: the host of now
+      if (planeHost === null) throw new PlaneSwitchError();
       const loaded = await loadPaintMaps(state, async (key) => readMapPixels(await input.readBlob(key)));
       const controller = createPaintController({
-        host, atlas, maps: loaded.maps, side, material: paintMaterialOf(palette.material) ?? NEUTRAL_MATERIAL, shapes: canPaint(palette) ? shapeSlotsOf(palette) : [], brush,
+        host: planeHost, atlas, maps: loaded.maps, side, material: paintMaterialOf(palette.material), shapes: shapeSlotsOf(palette), brush,
         onBrushChange: setBrush,
         onInterrupted: () => {
           closeSession();
@@ -155,10 +158,10 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
       session.current = { controller, loaded, side, signature, unsubscribe };
       setPaintState(controller.state());
       setPhase('open');
-    } catch {
+    } catch (failure) {
       input.onToolOpenChange(false);
       setPhase('idle');
-      maps.refuse('Could not open the painter. Nothing changed.');
+      maps.refuse(failure instanceof PlaneSwitchError ? PLANE_SWITCH_ERROR : 'Could not open the painter. Nothing changed.');
     }
   };
 
@@ -207,6 +210,7 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
           brush={brush}
           onBrushChange={setBrush}
           onPickShape={(slot) => setPicker({ kind: 'shape', slot })}
+          onToggleShapeActive={(slot) => setPalette((current) => toggleActive(current, slot))}
           onRemoveShape={(slot) => setPalette((current) => removeShape(current, slot))}
           onToggleInvert={(slot) => setPalette((current) => toggleInvert(current, slot))}
           onPickMaterial={() => setPicker({ kind: 'material' })}
@@ -216,7 +220,6 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
           onUndo={() => session.current?.controller.undo()}
           onRedo={() => session.current?.controller.redo()}
           notice={paintState.notice}
-          hasMasks={input.hasMasks}
           error={error}
           busy={busy}
           onDone={() => void done()}

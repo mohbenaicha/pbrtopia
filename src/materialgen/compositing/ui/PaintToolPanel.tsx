@@ -1,17 +1,15 @@
 import { Button, Icon, IconButton } from '@shared/ui-kit';
 import type { BrushParams } from '../plan/brushParams';
 import type { Palette, ShapeSlotNumber } from '../session/palette';
-import { canPaint } from '../session/palette';
 import { BrushControls } from './BrushControls';
+import { PaintTip } from './PaintTip';
 import { PaletteSwatches } from './PaletteSwatches';
 import './paintPanel.css';
 
-/** The words of the panel's messages (compositing R3, R21, R23, R37, R39-R41). */
+/** The words of the panel's messages (compositing R3, R21, R23, R37, R39, R40). */
 export const PAINT_TEXT = {
-  needPalette: 'Pick a shape and a material',
   tooLargeToUndo: 'This stroke is too large to undo.',
   tooManyStamps: 'Too many stamps in one stroke',
-  masksStale: 'A later Material Masks change replaces painted roughness and metal.',
 } as const;
 
 interface PaintToolPanelProps {
@@ -19,6 +17,7 @@ interface PaintToolPanelProps {
   brush: BrushParams;
   onBrushChange: (brush: BrushParams) => void;
   onPickShape: (slot: ShapeSlotNumber) => void;
+  onToggleShapeActive: (slot: ShapeSlotNumber) => void;
   onRemoveShape: (slot: ShapeSlotNumber) => void;
   onToggleInvert: (slot: ShapeSlotNumber) => void;
   onPickMaterial: () => void;
@@ -28,7 +27,6 @@ interface PaintToolPanelProps {
   onUndo: () => void;
   onRedo: () => void;
   notice: 'too-many-stamps' | 'too-large-to-undo' | null;
-  hasMasks: boolean;
   error: string | null;
   busy: boolean;
   onDone: () => void;
@@ -41,19 +39,17 @@ export function PaintToolPanel(props: PaintToolPanelProps): React.JSX.Element {
   const message = props.notice === 'too-large-to-undo' ? PAINT_TEXT.tooLargeToUndo : props.notice === 'too-many-stamps' ? PAINT_TEXT.tooManyStamps : null;
   return (
     <div className="paint-panel" data-testid="paint-panel" aria-busy={busy}>
-      <PaletteSwatches palette={palette} onPickShape={props.onPickShape} onRemoveShape={props.onRemoveShape} onToggleInvert={props.onToggleInvert} onPickMaterial={props.onPickMaterial} onRemoveMaterial={props.onRemoveMaterial} />
-      {!canPaint(palette) && <p className="paint-panel__hint">{PAINT_TEXT.needPalette}</p>}
-      <BrushControls brush={brush} onChange={props.onBrushChange} />
+      <PaletteSwatches palette={palette} onPickShape={props.onPickShape} onToggleShapeActive={props.onToggleShapeActive} onRemoveShape={props.onRemoveShape} onToggleInvert={props.onToggleInvert} onPickMaterial={props.onPickMaterial} onRemoveMaterial={props.onRemoveMaterial} />
       <div className="paint-panel__history">
-        <IconButton label="Undo" icon={<Icon name="undo" size={16} />} disabled={!props.canUndo || busy} onClick={props.onUndo} />
-        <IconButton label="Redo" icon={<Icon name="redo" size={16} />} disabled={!props.canRedo || busy} onClick={props.onRedo} />
+        <PaintTip tip="undo" layout="inline"><IconButton untitled label="Undo" icon={<Icon name="undo" size={16} />} disabled={!props.canUndo || busy} onClick={props.onUndo} /></PaintTip>
+        <PaintTip tip="redo" layout="inline"><IconButton untitled label="Redo" icon={<Icon name="redo" size={16} />} disabled={!props.canRedo || busy} onClick={props.onRedo} /></PaintTip>
       </div>
+      <BrushControls brush={brush} onChange={props.onBrushChange} />
       {message !== null && <p className="paint-panel__notice" role="status">{message}</p>}
-      {props.hasMasks && <p className="paint-panel__hint">{PAINT_TEXT.masksStale}</p>}
       {props.error !== null && <p className="paint-panel__error" role="alert">{props.error}</p>}
       <div className="paint-panel__actions">
-        <Button variant="ghost" disabled={busy} onClick={props.onCancel}>Cancel</Button>
-        <Button variant="primary" loading={busy} disabled={busy} onClick={props.onDone}>Done</Button>
+        <PaintTip tip="cancel" layout="inline"><Button variant="ghost" disabled={busy} onClick={props.onCancel}>Cancel</Button></PaintTip>
+        <PaintTip tip="done" layout="inline"><Button variant="primary" loading={busy} disabled={busy} onClick={props.onDone}>Done</Button></PaintTip>
       </div>
     </div>
   );

@@ -35,7 +35,8 @@ describe('Slider', () => {
     expect(slider.closest('.ui-slider')?.getAttribute('data-layout')).toBe('row');
     expect(label.compareDocumentPosition(slider) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(slider.compareDocumentPosition(value) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(label.parentElement).toBe(slider.parentElement); // no header row above the track
+    expect(label.closest('.ui-slider__header')).toBeNull(); // no header row above the track: the label is a child of the row itself
+    expect(label.parentElement).toBe(slider.closest('.ui-slider'));
   });
 
   it('R23 a readout given by the caller replaces the number readout', () => {

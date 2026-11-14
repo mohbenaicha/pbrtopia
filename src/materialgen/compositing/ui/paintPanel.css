@@ -38,6 +38,13 @@
   cursor: pointer;
 }
 
+/* R57: the active outline of the mask swatches (masksPanel.css) */
+.palette-swatches .reference-strip__thumb:focus-visible,
+.palette-swatches .reference-strip__thumb[aria-pressed='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .palette-swatches .reference-strip__add {
   color: var(--text-dim);
   cursor: pointer;
@@ -78,6 +85,39 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  container-type: inline-size; /* the readouts hide below READOUT_HIDE_PX (paintLayout.ts, R47) */
+}
+
+/* Compositing R47: 340 px is READOUT_HIDE_PX and 420 px RANGE_READOUT_HIDE_PX; CSS cannot read the constants, so they are repeated here. */
+@container (max-width: 340px) {
+  .paint-panel .ui-slider__value {
+    display: none;
+  }
+}
+
+@container (max-width: 420px) {
+  .paint-panel .ui-slider__value[data-range] {
+    display: none;
+  }
+}
+
+/* Compositing R49: the hover target of one tooltip; a disabled button inside lets the pointer through to it. */
+.paint-tip[data-layout='row'] {
+  display: block;
+}
+
+.paint-tip[data-layout='inline'] {
+  display: inline-flex;
+}
+
+.paint-tip[data-layout='fill'] {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.paint-tip button:disabled {
+  pointer-events: none;
 }
 
 .paint-panel__history,
@@ -109,6 +149,14 @@
   gap: var(--space-2);
 }
 
+/* Compositing R44: the controls that follow a switch sit indented under it. */
+.brush-controls__nested {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: var(--space-3);
+}
+
 /* The pickers (R6, R7). */
 .picker-overlay__search {
   width: 100%;
@@ -120,9 +168,28 @@
   border-radius: var(--radius-control);
 }
 
+/* R58: one fixed height, so the dialog does not grow when the material table loads or shrink while searching. */
 .picker-overlay__grid-scroll {
-  max-height: 70vh;
+  height: 70vh;
   overflow-y: auto;
+}
+
+.shape-picker__tile,
+.material-picker__tile {
+  animation: picker-tile-in 160ms ease-out;
+}
+
+@keyframes picker-tile-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shape-picker__tile,
+  .material-picker__tile {
+    animation: none;
+  }
 }
 
 .picker-overlay__message {
@@ -180,9 +247,11 @@
   background: var(--bg-hover);
 }
 
-.material-picker__ball {
-  width: 80px;
-  height: 80px;
+.material-ball {
+  display: block;
+  flex: none;
+  border-radius: 50%;
+  background-repeat: no-repeat;
 }
 
 .material-picker__name {

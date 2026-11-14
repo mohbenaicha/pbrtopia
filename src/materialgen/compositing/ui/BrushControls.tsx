@@ -1,5 +1,8 @@
-import { SegmentedControl, Slider, Toggle } from '@shared/ui-kit';
-import { DEFAULT_BRUSH, type BrushParams } from '../plan/brushParams';
+import { memo, useCallback, useRef } from 'react';
+import { Icon, IconButton, RangeSlider, Slider, Toggle } from '@shared/ui-kit';
+import { BRUSH_CONTROLS, DEFAULT_BRUSH, updateBrushValue, type BrushControlKey, type BrushParams, type BrushValue } from '../plan/brushParams';
+import { PaintTip } from './PaintTip';
+import type { PaintTooltipKey } from './paintTooltips';
 
 interface BrushControlsProps {
   brush: BrushParams;
@@ -10,28 +13,87 @@ const twoDecimals = (value: number): string => value.toFixed(2);
 const degrees = (value: number): string => `${Math.round(value)}°`;
 const signed = (value: number): string => `${value > 0 ? '+' : ''}${value.toFixed(2)}`;
 
-/** Compositing R9: every brush control with its range; each slider has the reset arrow (preview R61). Height and Edge burn enable their own sub-controls. */
+interface ControlRowSpec {
+  key: BrushControlKey;
+  label: string;
+  tip: PaintTooltipKey;
+  format: (value: number) => string;
+}
+
+/** The five randomisable controls, in the order they are drawn: the one place their labels, words and number formats are named (compositing R9, R50). */
+const CONTROL_ROWS: readonly ControlRowSpec[] = [
+  { key: 'size', label: 'Size', tip: 'size', format: twoDecimals },
+  { key: 'strength', label: 'Strength', tip: 'strength', format: twoDecimals },
+  { key: 'hardness', label: 'Hardness', tip: 'hardness', format: twoDecimals },
+  { key: 'distance', label: 'Distance', tip: 'distance', format: twoDecimals },
+  { key: 'rotation', label: 'Rotation', tip: 'rotation', format: degrees },
+];
+
+type PatchValue = (key: BrushControlKey, patch: Partial<BrushValue>) => void;
+
+interface ControlRowProps {
+  spec: ControlRowSpec;
+  control: BrushValue;
+  onPatch: PatchValue;
+}
+
+/**
+ * Compositing R50: label, slider, readout, dice and reset arrow of one control. With the dice off it is the single-value slider; on, the range slider in its place
+ * (R44), the single value kept for when the dice goes off again. Memoised: a row redraws only when its own control changes (the optimisation of A15).
+ */
+const ControlRow = memo(function ControlRow({ spec, control, onPatch }: ControlRowProps): React.JSX.Element {
+  const { key, label, tip, format } = spec;
+  const limits = BRUSH_CONTROLS[key];
+  const toggleDice = useCallback(() => onPatch(key, { random: !control.random }), [onPatch, key, control.random]);
+  const changeValue = useCallback((value: number) => onPatch(key, { value }), [onPatch, key]);
+  const changeRange = useCallback((low: number, high: number) => onPatch(key, { low, high }), [onPatch, key]);
+  const dice = (
+    <PaintTip tip="dice" layout="inline">
+      <IconButton compact untitled label={`Random ${label}`} pressed={control.random} icon={<Icon name="dice" size={14} />} onClick={toggleDice} />
+    </PaintTip>
+  );
+  return (
+    <PaintTip tip={tip}>
+      {control.random ? (
+        <RangeSlider label={label} layout="row" marks low={control.low} high={control.high} min={limits.min} max={limits.max} step={limits.step} format={format} extra={dice} onChange={changeRange} />
+      ) : (
+        <Slider label={label} layout="row" value={control.value} min={limits.min} max={limits.max} step={limits.step} format={format} resetTo={limits.initial} extra={dice} onChange={changeValue} />
+      )}
+    </PaintTip>
+  );
+});
+
+/**
+ * Compositing R9, R44, R45, R49, R50: every brush control with its range and its tooltip; each slider has the reset arrow (preview R61), the muted marks (R46, range sliders only) and,
+ * for the five randomisable ones, the dice. A control that only matters while another is on is not drawn while that one is off (R44): Height level and Additive
+ * follow Height, Raise | Dent follows Edge burn, a range follows its dice.
+ */
 export function BrushControls({ brush, onChange }: BrushControlsProps): React.JSX.Element {
+  const latest = useRef(brush);
+  latest.current = brush;
+  const onPatch = useCallback<PatchValue>((key, patch) => {
+    latest.current = updateBrushValue(latest.current, key, patch); // two edits before the next render both land
+    onChange(latest.current);
+  }, [onChange]);
   const set = (patch: Partial<BrushParams>): void => onChange({ ...brush, ...patch });
   return (
     <div className="brush-controls">
-      <Slider label="Size" layout="row" value={brush.size} min={0.02} max={0.5} step={0.005} format={twoDecimals} resetTo={DEFAULT_BRUSH.size} onChange={(size) => set({ size })} />
-      <Slider label="Strength" layout="row" value={brush.strength} min={0} max={1} step={0.01} format={twoDecimals} resetTo={DEFAULT_BRUSH.strength} onChange={(strength) => set({ strength })} />
-      <Slider label="Hardness" layout="row" value={brush.hardness} min={0} max={1} step={0.01} format={twoDecimals} resetTo={DEFAULT_BRUSH.hardness} onChange={(hardness) => set({ hardness })} />
-      <Slider label="Distance" layout="row" value={brush.distance} min={0.05} max={2} step={0.05} format={twoDecimals} resetTo={DEFAULT_BRUSH.distance} onChange={(distance) => set({ distance })} />
-      <Slider label="Rotation" layout="row" value={brush.rotation} min={-180} max={180} step={1} format={degrees} resetTo={DEFAULT_BRUSH.rotation} disabled={brush.randomRotation} onChange={(rotation) => set({ rotation })} />
-      <Toggle label="Random rotation" checked={brush.randomRotation} onChange={(randomRotation) => set({ randomRotation })} />
-      <Toggle label="Height" checked={brush.height.on} onChange={(on) => set({ height: { ...brush.height, on } })} />
-      <Slider label="Height level" layout="row" value={brush.height.level} min={-1} max={1} step={0.01} format={signed} resetTo={DEFAULT_BRUSH.height.level} disabled={!brush.height.on} onChange={(level) => set({ height: { ...brush.height, level } })} />
-      <Toggle label="Additive" checked={brush.height.additive} disabled={!brush.height.on} onChange={(additive) => set({ height: { ...brush.height, additive } })} />
-      <Toggle label="Edge burn" checked={brush.edgeBurn.on} onChange={(on) => set({ edgeBurn: { ...brush.edgeBurn, on } })} />
-      <SegmentedControl
-        label="Edge burn direction"
-        options={[{ value: 'raise', label: 'Raise' }, { value: 'dent', label: 'Dent' }]}
-        value={brush.edgeBurn.direction}
-        disabled={!brush.edgeBurn.on}
-        onChange={(direction) => set({ edgeBurn: { ...brush.edgeBurn, direction } })}
-      />
+      {CONTROL_ROWS.map((spec) => (
+        <ControlRow key={spec.key} spec={spec} control={brush[spec.key]} onPatch={onPatch} />
+      ))}
+      <PaintTip tip="height"><Toggle dense label="Height" checked={brush.height.on} onChange={(on) => set({ height: { ...brush.height, on } })} /></PaintTip>
+      {brush.height.on && (
+        <div className="brush-controls__nested">
+          <PaintTip tip="heightLevel"><Slider label="Height level" layout="row" value={brush.height.level} min={-1} max={1} step={0.01} format={signed} resetTo={DEFAULT_BRUSH.height.level} onChange={(level) => set({ height: { ...brush.height, level } })} /></PaintTip>
+          <PaintTip tip="additive"><Toggle dense label="Additive" checked={brush.height.additive} onChange={(additive) => set({ height: { ...brush.height, additive } })} /></PaintTip>
+        </div>
+      )}
+      <PaintTip tip="edgeBurn"><Toggle dense label="Edge burn" checked={brush.edgeBurn.on} onChange={(on) => set({ edgeBurn: { ...brush.edgeBurn, on } })} /></PaintTip>
+      {brush.edgeBurn.on && (
+        <div className="brush-controls__nested">
+          <PaintTip tip="raiseDent"><Toggle dense label={brush.edgeBurn.direction === 'dent' ? 'Dent' : 'Raise'} checked={brush.edgeBurn.direction === 'dent'} onChange={(dent) => set({ edgeBurn: { ...brush.edgeBurn, direction: dent ? 'dent' : 'raise' } })} /></PaintTip>
+        </div>
+      )}
     </div>
   );
 }
