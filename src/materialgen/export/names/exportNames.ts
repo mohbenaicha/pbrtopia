@@ -1,5 +1,5 @@
-/** The things an export can write: the six maps, the packed ORM and the labels (export R3, R23). */
-export type ExportKind = 'albedo' | 'normal' | 'height' | 'roughness' | 'metallic' | 'ao' | 'orm' | 'labels' | 'masks';
+/** The things an export can write: the six maps, the authored emissive map, the packed ORM and the labels (export R3, R23, R41). */
+export type ExportKind = 'albedo' | 'normal' | 'height' | 'roughness' | 'metallic' | 'ao' | 'emissive' | 'orm' | 'labels' | 'masks';
 export type ExportTarget = 'blender' | 'maya' | 'substance' | 'generic';
 
 const MAX_NAME_LENGTH = 120; // proposal (export R1)
@@ -27,6 +27,7 @@ export const EXPORT_FILE_SUFFIXES: Readonly<Record<ExportKind, string>> = {
   roughness: 'Roughness',
   metallic: 'Metallic',
   ao: 'AmbientOcclusion',
+  emissive: 'Emissive',
   orm: 'ORM',
   labels: 'Labels',
   masks: 'Masks',

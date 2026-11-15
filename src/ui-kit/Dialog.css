@@ -8,6 +8,10 @@
   background: var(--backdrop);
 }
 
+.ui-dialog__backdrop[data-stacked] {
+  z-index: var(--layer-dialog-stacked);
+}
+
 .ui-dialog {
   box-sizing: border-box;
   display: flex;

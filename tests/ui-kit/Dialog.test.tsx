@@ -80,4 +80,23 @@ describe('Dialog', () => {
     await user.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+
+  it('R44 a stacked dialog is marked for the higher layer, and a press inside it never dismisses the dialog behind it; Escape reaches only it', async () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <>
+        <Dialog open title="Export" onClose={outer}>behind</Dialog>
+        <Dialog open stacked title="Emissive" onClose={inner} closeOnOutsideClick={false}>in front</Dialog>
+      </>,
+    );
+    expect((screen.getByRole('dialog', { name: 'Emissive' }).parentElement as HTMLElement).hasAttribute('data-stacked')).toBe(true);
+    expect((screen.getByRole('dialog', { name: 'Export' }).parentElement as HTMLElement).hasAttribute('data-stacked')).toBe(false);
+    await user.pointer({ keys: '[MouseLeft]', target: screen.getByText('in front') });
+    expect(outer).not.toHaveBeenCalled();
+    await user.keyboard('{Escape}');
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
+  });
 });

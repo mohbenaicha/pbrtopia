@@ -9,7 +9,7 @@ export { createWorkerEmbedder } from './embed/createWorkerEmbedder';
 export { EMBEDDER_TIMEOUT_MS, keywordMatch, matchBaseMaterials, type Embedder, type MaterialMatch, type MatchKind } from './table/matchMaterials';
 export { MAX_FEATHER, bakeMasks, type BakeInput, type BakeRow } from './bake/bakeMasks';
 export { buildCoverage, sampleLabels, type CoverageInput } from './bake/coverage';
-export { paintLabelOverlay } from './palette/labelOverlay';
+export { paintCoverageOverlay, paintLabelOverlay } from './palette/labelOverlay';
 export { MaskSwatchGrid } from './ui/MaskSwatchGrid';
 export { DEFAULT_FEATHER, parseMasksRecord, serializeMasksRecord, type MasksRecord, type PaletteEntry } from './record/masksRecord';
 export { parseDescribedComponents, serializeDescribedComponents } from './record/describedComponents';

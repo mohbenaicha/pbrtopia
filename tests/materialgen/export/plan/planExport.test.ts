@@ -168,4 +168,31 @@ describe('materialgen/export R10 R12 R13 material.json', () => {
   it('R10 the date comes from the injected clock', () => {
     expect(build().exportedAt).toBe('2026-11-10T12:00:00.000Z');
   });
+
+  it('R41 an emissive map is listed under files as Non-Color; without one it is absent', () => {
+    expect(build().files.emissive).toBeUndefined();
+    const json = build({ includeEmissive: true });
+    expect(json.files.emissive).toBe('emissive.png');
+    expect(json.colorSpaces.emissive).toBe('Non-Color');
+  });
+});
+
+describe('materialgen/export R41 the emissive file in the plan', () => {
+  it('R41 it is listed after ao and before orm, only when the option is on', () => {
+    expect(names(planExport(input(full()), options()))).not.toContain('emissive.png');
+    expect(names(planExport(input(full()), options({ includeEmissive: true })))).toEqual(['albedo.png', 'normal.png', 'height.png', 'roughness.png', 'metallic.png', 'ao.png', 'emissive.png']);
+    expect(names(planExport(input(full()), options({ includeEmissive: true, packing: 'packed' })))).toEqual(['albedo.png', 'normal.png', 'height.png', 'emissive.png', 'orm.png']);
+  });
+
+  it('R41 it is written at the export size, is not a missing map and is never part of the ORM', () => {
+    const plan = planExport(input(full()), options({ includeEmissive: true, size: 512, packing: 'packed' }));
+    expect(plan.files.find((file) => file.kind === 'emissive')?.sizePx).toBe(512);
+    expect(plan.missing).toEqual([]);
+    expect(plan.orm).toEqual({ ao: true, rough: true, metal: true });
+  });
+
+  it('R41 it is written even when no stored map exists, and the Substance name carries the project name', () => {
+    expect(names(planExport(input({ size: null, maps: {} }), options({ includeEmissive: true })))).toEqual(['emissive.png']);
+    expect(names(planExport(input(full()), options({ target: 'substance', includeEmissive: true })))).toContain('Mossy bricks_Emissive.png');
+  });
 });

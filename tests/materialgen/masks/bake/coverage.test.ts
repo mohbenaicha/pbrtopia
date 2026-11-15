@@ -49,4 +49,13 @@ describe('materialgen/masks buildCoverage (imageops R79)', () => {
     expect(at(scaled, 3, 2)).toBeGreaterThan(0);
     expect(at(scaled, 3, 2)).toBeLessThan(255);
   });
+
+  it('export R40 the feather is held to MAX_FEATHER (4) unless the caller raises the limit with maxFeather', () => {
+    const asked = (extra: { maxFeather?: number }) => buildCoverage({ labels: halves(), selected: [1], feather: 8, side: 16, ...extra })!;
+    const capped = asked({});
+    expect(capped.data).toEqual(buildCoverage({ labels: halves(), selected: [1], feather: 4, side: 16 })!.data);
+    const wide = asked({ maxFeather: 30 });
+    expect(wide.data).not.toEqual(capped.data);
+    expect(wide.data).toEqual(buildCoverage({ labels: halves(), selected: [1], feather: 8, side: 16, maxFeather: 8 })!.data); // radius 8, not clamped
+  });
 });

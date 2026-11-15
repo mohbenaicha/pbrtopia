@@ -11,6 +11,10 @@ interface FilterMaskScopeInput {
   size: number; // S: the labels must be this size to be used (imageops R78)
   previewSize: number; // P: the size the preview and the hover overlay are drawn at
   readBlob(key: string): Promise<Blob | null>;
+  /** The feather (pixels at the labels' size) to build the coverage with instead of the project's: the emissive dialog's Softness (export R40). */
+  feather?: number | undefined;
+  /** The limit of that feather, when it may exceed the masks' own 4 pixels. */
+  maxFeather?: number | undefined;
 }
 
 export interface FilterMaskScope {
@@ -31,7 +35,7 @@ export interface FilterMaskScope {
  * Imageops R78-R81: the mask scope of one filter dialog. The labels are read once, when masks exist; a click changes the selection, which builds one coverage at P
  * (tens of milliseconds at most, never during a slider drag); the coverage at S is built only when Apply asks. Only the labels at P and the coverage planes are kept.
  */
-export function useFilterMaskScope({ masksRecord, labelsKey, size, previewSize, readBlob }: FilterMaskScopeInput): FilterMaskScope {
+export function useFilterMaskScope({ masksRecord, labelsKey, size, previewSize, readBlob, feather: featherOverride, maxFeather }: FilterMaskScopeInput): FilterMaskScope {
   const record = useMemo(() => parseMasksRecord(masksRecord), [masksRecord]);
   const [labels, setLabels] = useState<PixelImage | null>(null);
   const [selected, setSelected] = useState<readonly number[]>([]);
@@ -53,15 +57,15 @@ export function useFilterMaskScope({ masksRecord, labelsKey, size, previewSize, 
     return () => { cancelled = true; };
   }, [record === null, labelsKey, size]); // read once per dialog
 
-  const feather = record?.feather ?? 0;
+  const feather = featherOverride ?? record?.feather ?? 0;
   const labelsAtPreview = useMemo(() => (labels === null ? null : sampleLabels(labels, previewSize)), [labels, previewSize]);
-  const previewCoverage = useMemo(() => (labels === null ? null : buildCoverage({ labels, selected, feather, side: previewSize })), [labels, selected, feather, previewSize]);
+  const previewCoverage = useMemo(() => (labels === null ? null : buildCoverage({ labels, selected, feather, side: previewSize, ...(maxFeather === undefined ? {} : { maxFeather }) })), [labels, selected, feather, maxFeather, previewSize]);
   const overlay = useMemo<StageOverlay | null>(() => {
     const entry = record?.palette.find((candidate) => candidate.label === hover);
     if (labelsAtPreview === null || hover === null || entry === undefined) return null;
     return { width: labelsAtPreview.width, height: labelsAtPreview.height, rgba: paintLabelOverlay(labelsAtPreview, hover, entry.hex) };
   }, [record, labelsAtPreview, hover]);
-  const finalCoverage = useCallback(() => (labels === null ? null : buildCoverage({ labels, selected, feather, side: size })), [labels, selected, feather, size]);
+  const finalCoverage = useCallback(() => (labels === null ? null : buildCoverage({ labels, selected, feather, side: size, ...(maxFeather === undefined ? {} : { maxFeather }) })), [labels, selected, feather, maxFeather, size]);
   const toggle = useCallback((label: number) => setSelected((current) => (current.includes(label) ? current.filter((other) => other !== label) : [...current, label])), []);
 
   return {

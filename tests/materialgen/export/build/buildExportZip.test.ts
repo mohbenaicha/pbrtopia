@@ -155,6 +155,40 @@ describe('materialgen/export R8 R22 R23 content', () => {
   });
 });
 
+describe('materialgen/export R41 R42 the emissive map', () => {
+  const plane = (side: number): PixelImage => ({ width: side, height: side, channels: 1, data: Uint8Array.from({ length: side * side }, (_, pixel) => (pixel % side < side / 2 ? 255 : 0)) });
+
+  it('R41 it is a grey PNG after ao, at the export size, taken from the plane and not from any stored map', async () => {
+    const plane8 = plane(8);
+    const read = vi.fn(async (kind: MapKind) => pictures()[kind] ?? null);
+    const { bytes } = await buildExportZip(inputFor({ includeEmissive: true, size: 4 }, { emissive: plane8 }, read));
+    const entries = unzip(bytes);
+    expect(Object.keys(entries)).toEqual(['material.json', 'albedo.png', 'normal.png', 'height.png', 'roughness.png', 'metallic.png', 'ao.png', 'emissive.png']);
+    const emissive = png(entries['emissive.png']);
+    expect([emissive.width, emissive.height, emissive.channels]).toEqual([4, 4, 1]);
+    expect(Array.from(emissive.data.slice(0, 4))).toEqual([255, 255, 0, 0]); // the plane's left half is white, averaged down by area
+    expect(JSON.parse(new TextDecoder().decode(entries['material.json'])).files.emissive).toBe('emissive.png');
+    expect(read).not.toHaveBeenCalledWith('emissive');
+  });
+
+  it('R41 the plane is not changed by the export (the caller keeps its one copy)', async () => {
+    const plane8 = plane(8);
+    const before = Array.from(plane8.data);
+    await buildExportZip(inputFor({ includeEmissive: true, size: 4 }, { emissive: plane8 }));
+    expect(Array.from(plane8.data)).toEqual(before);
+  });
+
+  it('R41 it stays out of the packed ORM', async () => {
+    const { bytes } = await buildExportZip(inputFor({ includeEmissive: true, packing: 'packed' }, { emissive: plane(4) }));
+    const orm = png(unzip(bytes)['orm.png']);
+    expect([orm.data[0], orm.data[1], orm.data[2]]).toEqual([200, 60, 5]);
+  });
+
+  it('R41 an emissive file without a plane fails before any zip is made', async () => {
+    await expect(buildExportZip(inputFor({ includeEmissive: true }))).rejects.toThrow(/emissive/i);
+  });
+});
+
 describe('materialgen/export R29 R30 R33 reading, failure and cancel', () => {
   it('R30 a map that cannot be read fails the export and names the map; no zip is returned', async () => {
     const maps = pictures();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PixelImage } from '@mat/imageops';
-import { paintLabelOverlay } from '@mat/masks/palette/labelOverlay';
+import { paintCoverageOverlay, paintLabelOverlay } from '@mat/masks/palette/labelOverlay';
 
 const labels: PixelImage = { width: 2, height: 2, channels: 1, data: Uint8Array.from([0, 1, 1, 2]) };
 
@@ -17,5 +17,18 @@ describe('materialgen/masks paintLabelOverlay (imageops R80)', () => {
   it('R80 a colour that is not a hex colour paints grey rather than failing', () => {
     const rgba = paintLabelOverlay(labels, 2, 'not a colour');
     expect(Array.from(rgba.slice(12, 16))).toEqual([128, 128, 128, 191]);
+  });
+});
+
+describe('materialgen/masks paintCoverageOverlay (export R39)', () => {
+  const coverage: PixelImage = { width: 2, height: 2, channels: 1, data: Uint8Array.from([0, 255, 128, 64]) };
+
+  it('R39 each pixel is the colour with alpha = coverage x 0.75, and transparent where the coverage is 0', () => {
+    const rgba = paintCoverageOverlay(coverage, '#FFC83D');
+    expect(rgba.length).toBe(16);
+    expect(Array.from(rgba.slice(0, 4))).toEqual([0, 0, 0, 0]);
+    expect(Array.from(rgba.slice(4, 8))).toEqual([255, 200, 61, 191]);
+    expect(Array.from(rgba.slice(8, 12))).toEqual([255, 200, 61, 96]);
+    expect(Array.from(rgba.slice(12, 16))).toEqual([255, 200, 61, 48]);
   });
 });

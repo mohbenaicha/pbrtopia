@@ -1,12 +1,13 @@
 import { Button, Dialog, Select, SegmentedControl, Toggle, Tooltip } from '@shared/ui-kit';
 import { EXPORT_TARGET_CARDS, type ExportDialogTarget, type ExportKind } from '@mat/export';
 import { TARGET_LOGO_URLS } from '../../addons/addonFiles';
+import { EmissiveDialog } from './EmissiveDialog';
 import type { useExportDialog } from './useExportDialog';
 import './exportDialog.css';
 
 export type ExportDialogState = ReturnType<typeof useExportDialog>;
 
-const KIND_NAMES: Record<ExportKind, string> = { albedo: 'Albedo', normal: 'Normal', height: 'Height', roughness: 'Roughness', metallic: 'Metallic', ao: 'Ambient occlusion', orm: 'Packed ORM', labels: 'Labels', masks: 'Masks' };
+const KIND_NAMES: Record<ExportKind, string> = { albedo: 'Albedo', normal: 'Normal', height: 'Height', roughness: 'Roughness', metallic: 'Metallic', ao: 'Ambient occlusion', orm: 'Packed ORM', labels: 'Labels', masks: 'Masks', emissive: 'Emissive' };
 
 function TargetCards({ dialog }: { dialog: ExportDialogState }): React.JSX.Element {
   const { options, setOptions, cardFiles, running } = dialog;
@@ -34,7 +35,7 @@ function TargetCards({ dialog }: { dialog: ExportDialogState }): React.JSX.Eleme
 }
 
 function OptionRows({ dialog }: { dialog: ExportDialogState }): React.JSX.Element {
-  const { options, setOptions, disabled, sizeChoices, running } = dialog;
+  const { options, setOptions, disabled, sizeChoices, running, emissive } = dialog;
   return (
     <div className="export-dialog__options">
       <SegmentedControl
@@ -48,6 +49,7 @@ function OptionRows({ dialog }: { dialog: ExportDialogState }): React.JSX.Elemen
       <Toggle label="Include height" checked={options.includeHeight && !disabled.includeHeight} disabled={running || disabled.includeHeight} hint={disabled.includeHeight ? 'There is no height map.' : 'Adds the height map to the export.'} onChange={(includeHeight) => setOptions({ includeHeight })} />
       <Toggle label="Include ambient occlusion" checked={options.includeAo && !disabled.includeAo} disabled={running || disabled.includeAo} hint={disabled.includeAo ? 'There is no ambient occlusion map.' : 'Adds the ambient occlusion map to the export.'} onChange={(includeAo) => setOptions({ includeAo })} />
       <Toggle label="Include material masks" checked={options.includeMasks && !disabled.includeMasks} disabled={running || disabled.includeMasks} hint={disabled.includeMasks ? 'There are no material masks.' : 'Adds the mask image and its component table to the export.'} onChange={(includeMasks) => setOptions({ includeMasks })} />
+      <Toggle label="Create emissive map" checked={emissive.plane !== null} disabled={running || disabled.includeEmissive} hint={disabled.includeEmissive ? 'There are no material masks.' : 'Pick the materials that glow and add an emissive map to the export.'} onChange={(on) => (on ? emissive.ask() : emissive.drop())} />
       <Select label="Size" title="The side length of every exported map, in pixels." options={sizeChoices.map((side) => ({ value: String(side), label: `${side} px` }))} value={String(options.size)} onChange={(value) => setOptions({ size: Number(value) })} disabled={running || sizeChoices.length < 2} />
     </div>
   );
@@ -77,7 +79,7 @@ function FileList({ dialog }: { dialog: ExportDialogState }): React.JSX.Element 
 
 /** Export R20-R22, R27, R28, R33, R34, R36: the export dialog. All state lives in `useExportDialog`; this draws it. */
 export function ExportDialog({ dialog }: { dialog: ExportDialogState }): React.JSX.Element | null {
-  const { open, close, running, progress, error, phase, canExport, start, cancel } = dialog;
+  const { open, close, running, progress, error, phase, canExport, start, cancel, emissive } = dialog;
   return (
     <Dialog
       open={open}
@@ -103,6 +105,9 @@ export function ExportDialog({ dialog }: { dialog: ExportDialogState }): React.J
         )}
         {error !== null && <p className="export-dialog__error" role="alert">{error}</p>}
       </div>
+      {emissive.asking && emissive.source.labelsKey !== null && (
+        <EmissiveDialog {...emissive.source} labelsKey={emissive.source.labelsKey} onConfirm={emissive.confirm} onCancel={emissive.cancelAsk} />
+      )}
     </Dialog>
   );
 }

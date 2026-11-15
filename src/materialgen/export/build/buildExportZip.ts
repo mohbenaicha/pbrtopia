@@ -20,6 +20,8 @@ export interface BuildExportInput {
   state: MapsState;
   preview: { tilingX: number; tilingY: number; heightScale: number; heightLevel: number };
   masks: MasksRecord | null;
+  /** The authored emissive plane (export R41), one grey channel; required when the plan lists `emissive`. Never changed here. */
+  emissive?: PixelImage | null;
   app: { name: string; version: string };
   now: () => string;
   /** The target's import script (export R14, R17), or none (Substance Painter, generic). */
@@ -67,7 +69,7 @@ function toRgb(image: PixelImage): PixelImage {
 const pngBytes = (image: PixelImage): Uint8Array => encodePng(image);
 
 /**
- * Export R6-R12, R22-R23, R29-R31, R33: reads the planned maps one at a time, writes each in its file format (resampled, normal flipped for the
+ * Export R6-R12, R22-R23, R29-R31, R33, R41: reads the planned maps one at a time, writes each in its file format (resampled, normal flipped for the
  * target, ORM packed, labels in palette colours), and zips them in the fixed order behind `material.json`. Nothing is returned when a map cannot
  * be read or the export is cancelled. Reads and writes no project data.
  */
@@ -107,6 +109,9 @@ export async function buildExportZip(input: BuildExportInput): Promise<{ bytes: 
     else if (file.kind === 'normal') {
       const normal = await sized('normal', toRgb);
       put(file.fileName, pngBytes(normalConventionFor(options.target) === 'directx' ? flipNormalGreen(normal) : normal));
+    } else if (file.kind === 'emissive') {
+      if (input.emissive == null) throw new Error('Emissive map: it was not made, so nothing was exported.');
+      put(file.fileName, pngBytes(resampleMapForExport(toGrey(input.emissive), options.size, false))); // R41: like every grey map (R22)
     } else if (GREY_KINDS.includes(file.kind)) put(file.fileName, pngBytes(await greyAtSize(file.kind)));
     else if (file.kind === 'orm' && plan.orm !== null) {
       const packed = packOrmPixels({

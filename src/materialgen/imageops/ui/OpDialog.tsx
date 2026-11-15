@@ -13,6 +13,7 @@ interface OpDialogProps {
   error: string | null;
   scope?: ReactNode; // above the controls: the mask swatches of the filter dialog (R78)
   overlay?: StageOverlay | null; // drawn over both sides of the reveal (R80)
+  stacked?: boolean; // opened over another dialog: drawn on the stacked layer (viewport-layout R38)
   onReset: () => void;
   onCancel: () => void;
   onApply: () => void;
@@ -20,11 +21,12 @@ interface OpDialogProps {
 }
 
 /** Imageops R17, R50: the panel of an op session: the before and after pictures beside the controls, and Reset, Cancel and Apply. */
-export function OpDialog({ title, sources, canApply, applying, applyLabel = 'Apply', error, scope, overlay = null, onReset, onCancel, onApply, children }: OpDialogProps): React.JSX.Element {
+export function OpDialog({ title, sources, canApply, applying, applyLabel = 'Apply', error, scope, overlay = null, stacked = false, onReset, onCancel, onApply, children }: OpDialogProps): React.JSX.Element {
   return (
     <Dialog
       open
       size="large"
+      stacked={stacked}
       title={title}
       dismissible={!applying} // Escape does not cancel a save that is running
       closeOnOutsideClick={false} // viewport-layout R38: a press on the panels behind never ends an edit; only Cancel, Apply and Escape do

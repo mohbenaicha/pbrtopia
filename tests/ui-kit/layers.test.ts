@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const TOKENS = { panel: 1, gutter: 2, popover: 10, loading: 20, brand: 30, setup: 50, dialog: 100 } as const;
+const TOKENS = { panel: 1, gutter: 2, popover: 10, loading: 20, brand: 30, setup: 50, dialog: 100, 'dialog-stacked': 110 } as const; // export R44: a dialog opened from inside another
 
 // The stylesheets (and the one inline style) of the cross-component stack: each must take its z-index from a token.
 const USERS: Record<string, keyof typeof TOKENS> = {
@@ -20,6 +20,13 @@ describe('viewport-layout layers', () => {
 
   it('R38 tokens.css names every layer with its number', () => {
     for (const [name, value] of Object.entries(TOKENS)) expect(tokens).toMatch(new RegExp(`--layer-${name}:\\s*${value};`));
+  });
+
+  it('R44 a stacked dialog sits above a dialog and below the tooltip layer', () => {
+    expect(TOKENS['dialog-stacked']).toBeGreaterThan(TOKENS.dialog);
+    expect(tokens).toMatch(/--layer-tooltip:\s*200;/);
+    expect(TOKENS['dialog-stacked']).toBeLessThan(200);
+    expect(readFileSync('src/ui-kit/Dialog.css', 'utf8')).toMatch(/\[data-stacked\][^{]*\{[^}]*z-index:\s*var\(--layer-dialog-stacked\)/);
   });
 
   it('R38 the dialog is the topmost layer and the brand mark sits below the setup overlay and every dialog', () => {

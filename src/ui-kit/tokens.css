@@ -72,5 +72,6 @@
   --layer-brand: 30;
   --layer-setup: 50;
   --layer-dialog: 100;
+  --layer-dialog-stacked: 110; /* a dialog opened from inside another (export R44) */
   --layer-tooltip: 200; /* above a dialog: a tooltip explains a control inside one (compositing R48) */
 }

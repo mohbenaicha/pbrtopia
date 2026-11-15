@@ -16,7 +16,7 @@ const pngBuffer = (channels: 1 | 3, value: number): ArrayBuffer => {
 function jobFor(files: ExportJob['files']): ExportJob {
   return {
     plan: plan(), options, projectName: 'Tile', colorMode: 'albedo', state: state(), preview: { tilingX: 1, tilingY: 1, heightScale: 0.02, heightLevel: 0.5 },
-    masks: null, app: { name: 'material-lab', version: '0.0.0' }, exportedAt: '2026-11-10T12:00:00.000Z', script: null, files,
+    masks: null, app: { name: 'material-lab', version: '0.0.0' }, exportedAt: '2026-11-10T12:00:00.000Z', script: null, files, emissive: null,
   };
 }
 

@@ -6,7 +6,7 @@ import { storedKindOf, type ExportPlan } from '../plan/planExport';
 export function storedKindsRead(plan: ExportPlan, state: MapsState): MapKind[] {
   const kinds = new Set<MapKind>();
   for (const file of plan.files) {
-    if (file.kind === 'masks') continue;
+    if (file.kind === 'masks' || file.kind === 'emissive') continue; // the emissive plane is not stored: it travels in the job (R41)
     if (file.kind === 'labels') kinds.add('labels');
     else if (file.kind === 'orm') {
       if (plan.orm?.ao) kinds.add('ao');

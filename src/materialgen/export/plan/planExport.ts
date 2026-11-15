@@ -10,6 +10,8 @@ export interface ExportOptions {
   includeHeight: boolean;
   includeAo: boolean;
   includeMasks: boolean;
+  /** R41: an authored emissive plane goes with the export; false or absent when there is none. */
+  includeEmissive?: boolean;
   size: number; // the side written (R22)
 }
 
@@ -60,7 +62,7 @@ export function exportSizeChoices(side: number): number[] {
 }
 
 /**
- * Export R3-R4, R8, R9, R21-R24, R27-R28: the files an export with these choices writes, in zip order (maps in order, then the ORM, then the
+ * Export R3-R4, R8, R9, R21-R24, R27-R28, R41: the files an export with these choices writes, in zip order (maps in order, then the ORM, then the
  * extras), with the maps it could not write, the derived maps that are out of date and the warnings. Reads the record only.
  */
 export function planExport(input: ExportInput, options: ExportOptions): ExportPlan {
@@ -88,6 +90,7 @@ export function planExport(input: ExportInput, options: ExportOptions): ExportPl
     if (options.packing === 'packed' && PACKED_KINDS.includes(kind)) continue;
     add(kind);
   }
+  if (options.includeEmissive === true) add('emissive'); // R41: after ao, before the ORM; not a stored map, so never missing
   const orm = options.packing === 'packed' && PACKED_KINDS.some((kind) => present.has(kind)) ? { ao: present.has('ao'), rough: present.has('roughness'), metal: present.has('metallic') } : null;
   if (orm !== null) add('orm');
   if (options.includeMasks && state.maps.labels !== undefined && input.hasMasks) {

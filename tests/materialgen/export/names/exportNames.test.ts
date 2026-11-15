@@ -64,6 +64,8 @@ describe('materialgen/export R3 R4 file names', () => {
     expect(exportFileName('substance', 'ao', 'Brick', 'albedo')).toBe('Brick_AmbientOcclusion.png');
     expect(exportFileName('substance', 'orm', 'Brick', 'albedo')).toBe('Brick_ORM.png');
     expect(exportFileName('substance', 'labels', 'Brick', 'albedo')).toBe('Brick_Labels.png');
+    expect(exportFileName('substance', 'emissive', 'Brick', 'albedo')).toBe('Brick_Emissive.png'); // R41
+    expect(exportFileName('blender', 'emissive', 'Brick', 'albedo')).toBe('emissive.png');
   });
 
   it('R4 every Substance suffix starts with a capital and has no other capital except BaseColor and ORM', () => {

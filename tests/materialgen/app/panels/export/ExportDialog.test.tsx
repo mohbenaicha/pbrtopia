@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IconButton } from '@shared/ui-kit';
+import type { PixelImage } from '@mat/imageops';
+import { encodePng } from '../../../../../src/materialgen/maps/png/pngCodec';
 import { DEFAULT_PREVIEW_VALUES } from '@mat/storage';
 import { describeTooltipOf } from '../../../../support/tooltipDescription';
 import type { MapRecord, MapsState } from '@mat/maps';
@@ -90,6 +92,102 @@ describe('materialgen/export R21 R22 R24 R27 R28 the options and the file list',
     state.size = 256;
     const dialog = open(state);
     expect(dialog.getByRole('combobox', { name: 'Size' }).hasAttribute('disabled') || dialog.getByRole('combobox', { name: 'Size' }).getAttribute('aria-disabled') === 'true').toBe(true);
+  });
+});
+
+// Export R37, R38, R43, R44: the emissive option inside the dialog. The material is 8 x 8; component 0 is the left four columns, component 1 the right four.
+const smallLabels: PixelImage = { width: 8, height: 8, channels: 1, data: Uint8Array.from({ length: 64 }, (_, index) => (index % 8 < 4 ? 0 : 1)) };
+const smallAlbedo: PixelImage = { width: 8, height: 8, channels: 3, data: new Uint8Array(8 * 8 * 3).fill(90) };
+const emissiveRow = (label: number, name: string) => ({ label, name, description: '', location: '', defaultMaterial: 'Brick', top3: ['Brick'], matchKind: 'keyword', material: 'Brick', rough: 0.8, metal: 0, height: 0 });
+const emissiveMasks = { source: 'model', feather: 0, palette: [{ label: 0, hex: '#FF0000', name: 'red' }, { label: 1, hex: '#00FF00', name: 'green' }], rows: [emissiveRow(0, 'Wall'), emissiveRow(1, 'Trim')] };
+const smallState = (): MapsState => ({ size: 8 as never, maps: { albedo: record('a', { width: 8, height: 8 }), labels: record('labels1', { width: 8, height: 8 }) } });
+const smallBlob = async (key: string): Promise<Blob | null> => new Blob([encodePng(key === 'labels1' ? smallLabels : smallAlbedo) as BlobPart], { type: 'image/png' });
+
+function EmissiveHarness({ masks = emissiveMasks }: { masks?: unknown }): React.JSX.Element {
+  const dialog = useExportDialog({ projectName: 'Mossy bricks', colorMode: 'albedo', state: smallState(), preview: DEFAULT_PREVIEW_VALUES, masksRecord: masks as never, readBlob: smallBlob });
+  return (
+    <>
+      <IconButton label="Export material" icon={null} onClick={dialog.show} />
+      <ExportSection dialog={dialog} />
+    </>
+  );
+}
+const openEmissive = (masks?: unknown) => {
+  render(<EmissiveHarness {...(masks === undefined ? {} : { masks })} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Export material' }));
+};
+const emissiveSwitch = (): HTMLInputElement => screen.getByRole('switch', { name: 'Create emissive map' }) as HTMLInputElement;
+
+describe('materialgen/export R37 R38 R43 R44 Create emissive map', () => {
+  beforeEach(() => {
+    URL.createObjectURL = vi.fn(() => 'blob:picture');
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  it('R37 the switch is in the options after Include material masks, off, and disabled with its reason when the project has no masks', () => {
+    openEmissive(null);
+    expect(emissiveSwitch().checked).toBe(false);
+    expect(emissiveSwitch().disabled).toBe(true);
+    const masks = screen.getByRole('switch', { name: 'Include material masks' });
+    expect(masks.compareDocumentPosition(emissiveSwitch()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('R37 turning it on opens the emissive dialog above the export dialog, and the switch stays off until Confirm', async () => {
+    openEmissive();
+    fireEvent.click(emissiveSwitch());
+    expect(await screen.findByRole('dialog', { name: 'Emissive map' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Export material' })).toBeTruthy();
+    expect(emissiveSwitch().checked).toBe(false);
+  });
+
+  it('R38 R43 Cancel in the emissive dialog closes only it and leaves the switch off', async () => {
+    openEmissive();
+    fireEvent.click(emissiveSwitch());
+    const emissive = within(await screen.findByRole('dialog', { name: 'Emissive map' }));
+    fireEvent.click(emissive.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog', { name: 'Emissive map' })).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Export material' })).toBeTruthy();
+    expect(emissiveSwitch().checked).toBe(false);
+    expect(screen.queryByText('emissive.png')).toBeNull();
+  });
+
+  it('R44 a press inside the emissive dialog, and Escape, never close the export dialog behind it', async () => {
+    openEmissive();
+    fireEvent.click(emissiveSwitch());
+    const emissive = await screen.findByRole('dialog', { name: 'Emissive map' });
+    fireEvent.pointerDown(emissive);
+    expect(screen.getByRole('dialog', { name: 'Export material' })).toBeTruthy();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Emissive map' })).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Export material' })).toBeTruthy();
+  });
+
+  it('R37 R41 Confirm turns the switch on and lists emissive.png; turning it off again removes it (R43)', async () => {
+    openEmissive();
+    fireEvent.click(emissiveSwitch());
+    const emissive = within(await screen.findByRole('dialog', { name: 'Emissive map' }));
+    await waitFor(() => expect(emissive.getByRole('button', { name: 'Wall' })).toBeTruthy());
+    fireEvent.click(emissive.getByRole('button', { name: 'Wall' }));
+    fireEvent.click(emissive.getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Emissive map' })).toBeNull());
+    expect(emissiveSwitch().checked).toBe(true);
+    expect(screen.getByText('emissive.png')).toBeTruthy();
+    fireEvent.click(emissiveSwitch());
+    expect(emissiveSwitch().checked).toBe(false);
+    expect(screen.queryByText('emissive.png')).toBeNull();
+  });
+
+  it('R43 closing the export dialog drops the plane: opened again, the switch is off', async () => {
+    openEmissive();
+    fireEvent.click(emissiveSwitch());
+    const emissive = within(await screen.findByRole('dialog', { name: 'Emissive map' }));
+    await waitFor(() => expect(emissive.getByRole('button', { name: 'Wall' })).toBeTruthy());
+    fireEvent.click(emissive.getByRole('button', { name: 'Wall' }));
+    fireEvent.click(emissive.getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(emissiveSwitch().checked).toBe(true));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Export material' })).getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Export material' }));
+    expect(emissiveSwitch().checked).toBe(false);
   });
 });
 

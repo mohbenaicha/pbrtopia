@@ -13,13 +13,14 @@ interface DialogProps {
   size?: 'default' | 'large'; // large: most of the window, for a picture (viewport-layout R33)
   dismissible?: boolean; // Escape and a click outside close it; false for dialogs that must be answered
   closeOnOutsideClick?: boolean; // false: only Escape closes it, so a stray click cannot end work in progress
+  stacked?: boolean; // opened from inside another dialog: drawn on the higher layer (export R44)
   children?: ReactNode;
 }
 
 const FOCUSABLE = 'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [href], [tabindex]:not([tabindex="-1"])';
 
 // A modal over a dimmed page. Focus moves in on open, cycles inside on Tab, and goes back to where it was on close.
-export function Dialog({ open, title, onClose, actions, headerActions, size = 'default', dismissible = true, closeOnOutsideClick = true, children }: DialogProps): React.JSX.Element | null {
+export function Dialog({ open, title, onClose, actions, headerActions, size = 'default', dismissible = true, closeOnOutsideClick = true, stacked = false, children }: DialogProps): React.JSX.Element | null {
   const titleId = useId();
   const dialog = useRef<HTMLDivElement>(null);
   useDismiss(open && dismissible, dialog, onClose, closeOnOutsideClick);
@@ -53,7 +54,7 @@ export function Dialog({ open, title, onClose, actions, headerActions, size = 'd
   const heading = <Tooltip heading={title} text=""><h2 className="ui-dialog__title" id={titleId}>{title}</h2></Tooltip>;
   // viewport-layout R38: drawn through a portal into the body, so no panel or container above it in the tree can paint over it
   return createPortal(
-    <div className="ui-dialog__backdrop">
+    <div className="ui-dialog__backdrop" data-stacked={stacked ? '' : undefined}>
       <div className="ui-dialog" data-size={size === 'large' ? 'large' : undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={dialog} onKeyDown={keepFocusInside}>
         {headerActions === undefined ? heading : <div className="ui-dialog__header">{heading}<div className="ui-dialog__header-actions">{headerActions}</div></div>}
         <div className="ui-dialog__body">{children}</div>
