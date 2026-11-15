@@ -21,7 +21,7 @@
 .op-dialog__controls {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
   min-width: 0;
   max-height: 60vh;
   overflow-y: auto;
@@ -40,7 +40,7 @@
 .tool-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
   min-width: 0;
 }
 
@@ -53,7 +53,7 @@
 .tool-panel__body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
   min-width: 0;
 }
 
@@ -96,7 +96,7 @@
 .op-controls {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
 }
 
 .op-controls__rows {

@@ -5,6 +5,7 @@
   --bg-input: #17171a;
   --bg-button: #212125;
   --bg-hover: #2b2b30;
+  --bg-disclosure: #26262a; /* the body of a collapsible section (Disclosure) */
   --slider-track-strong: #45454d; /* a slider track that has to stand out from the cards behind it (Slider `marks`) */
 
   --text: #ece8e1;
@@ -51,6 +52,7 @@
   --space-5: 24px;
 
   --control-height: 38px;
+  --control-height-20px: 20px;
   --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --font-size: 13.5px;
   --font-size-small: 12px;

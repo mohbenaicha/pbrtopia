@@ -19,6 +19,15 @@ describe('ViewportSettingsPanel', () => {
     for (const name of ['Light', 'HDRI', 'Metal', 'Roughness', 'Normal', 'Shading', 'Mesh']) expect(screen.getByRole('group', { name })).toBeTruthy();
   });
 
+  it('R14c the controls of a subsection sit in an indented rows column and the subheading does not', () => {
+    panel();
+    const light = screen.getByRole('group', { name: 'Light' });
+    const rows = light.querySelector('.viewport-settings__rows');
+    expect(rows).not.toBeNull();
+    expect(rows?.contains(within(light).getByRole('slider', { name: 'Intensity' }))).toBe(true);
+    expect(rows?.contains(within(light).getByRole('heading', { level: 4 }))).toBe(false);
+  });
+
   it('materialgen preview R31 a list of section ids hides those sections and nothing else', () => {
     render(<ViewportSettingsPanel settings={DEFAULT_VIEWPORT_SETTINGS} onChange={() => undefined} hiddenSections={['view']} />);
     expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual(['Environment', 'Material']);

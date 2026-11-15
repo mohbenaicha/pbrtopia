@@ -1,7 +1,7 @@
 .additional-settings {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
 }
 
 .additional-settings__render {

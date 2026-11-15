@@ -41,6 +41,52 @@ describe('imageops/ui ControlPanel', () => {
     expect(onChange).toHaveBeenCalledWith('exposure', 1.5);
   });
 
+  it('R86 while the pointer is held a slider reports nothing, and the last value is reported once on release, anywhere on the page', () => {
+    const { onChange } = renderPanel();
+    const slider = screen.getByRole('slider', { name: 'Exposure' });
+    fireEvent.pointerDown(slider);
+    fireEvent.change(slider, { target: { value: '1' } });
+    fireEvent.change(slider, { target: { value: '1.5' } });
+    expect(onChange).not.toHaveBeenCalled();
+    expect((screen.getByRole('slider', { name: 'Exposure' }) as HTMLInputElement).value).toBe('1.5'); // the slider still follows the pointer
+    fireEvent.pointerUp(window);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('exposure', 1.5);
+  });
+
+  it('R86 a click on the rail (press, one change, release) reports once, on the release', () => {
+    const { onChange } = renderPanel();
+    const slider = screen.getByRole('slider', { name: 'Exposure' });
+    fireEvent.pointerDown(slider);
+    fireEvent.change(slider, { target: { value: '2' } });
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.pointerUp(window);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('exposure', 2);
+  });
+
+  it('R86 a cancelled pointer also reports, and a release with no change reports nothing', () => {
+    const { onChange } = renderPanel();
+    const slider = screen.getByRole('slider', { name: 'Exposure' });
+    fireEvent.pointerDown(slider);
+    fireEvent.pointerUp(window);
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.pointerDown(slider);
+    fireEvent.change(slider, { target: { value: '0.5' } });
+    fireEvent.pointerCancel(window);
+    expect(onChange).toHaveBeenCalledWith('exposure', 0.5);
+  });
+
+  it('R86 a reset arrow clicked after a press and release is reported at once', () => {
+    const { onChange } = renderPanel({ ...createDefaultEditValues('albedo'), exposure: 2 });
+    const reset = screen.getByRole('button', { name: 'Reset Exposure' });
+    fireEvent.pointerDown(reset);
+    fireEvent.pointerUp(window);
+    fireEvent.click(reset);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('exposure', 0);
+  });
+
   it('R16 a number typed outside the range is clamped to it when it is committed', () => {
     const { onChange } = renderPanel();
     const input = screen.getByRole('spinbutton', { name: 'Exposure value' });

@@ -1,7 +1,7 @@
 .key-settings {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
 }
 
 .key-settings__header {
@@ -77,7 +77,7 @@
 .key-dialog__form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
   min-width: 280px;
 }
 

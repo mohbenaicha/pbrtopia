@@ -24,10 +24,10 @@ describe('imageops edit controls (R14)', () => {
     expect(idsFor('ao')).not.toContain('heightIntensity');
   });
 
-  it('R14 R82 a normal map has denoise and the colour mixin, both in Detail, the mixin 0..2 from 0', () => {
+  it('R14 R82 a normal map has denoise and the colour mixin, both in Detail, the mixin 0..8 from 0', () => {
     expect(idsFor('normal')).toEqual(['denoise', 'albedoMix']);
     const mixin = controlsFor('normal').find((control) => control.id === 'albedoMix')!;
-    expect([mixin.label, mixin.category, mixin.min, mixin.max, mixin.step, mixin.defaultValue]).toEqual(['Colour mixin', 'detail', 0, 2, 0.05, 0]);
+    expect([mixin.label, mixin.category, mixin.min, mixin.max, mixin.step, mixin.defaultValue]).toEqual(['Colour mixin', 'detail', 0, 8, 0.05, 0]);
   });
 
   it('R82 no other map kind has the colour mixin', () => {

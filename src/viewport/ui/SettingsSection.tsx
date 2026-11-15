@@ -13,7 +13,7 @@ export function SettingsSubsection({ title, hint, children }: SettingsHeadingPro
   return (
     <div className="viewport-settings__subsection" role="group" aria-labelledby={id}>
       <Tooltip heading={title} text={hint ?? ''}><h4 className="viewport-settings__subheading" id={id}>{title}</h4></Tooltip>
-      {children}
+      <div className="viewport-settings__rows">{children}</div>
     </div>
   );
 }

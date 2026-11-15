@@ -84,7 +84,7 @@
 .paint-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
   container-type: inline-size; /* the readouts hide below READOUT_HIDE_PX (paintLayout.ts, R47) */
 }
 
@@ -227,7 +227,7 @@
 .material-picker__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-1);
 }
 
 .material-picker__tile {

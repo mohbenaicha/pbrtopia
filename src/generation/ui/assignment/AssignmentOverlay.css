@@ -106,7 +106,7 @@
   position: relative;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-1);
   min-height: 96px;
 }
 
@@ -210,7 +210,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
   min-width: 0;
   padding: var(--space-3);
   border-radius: var(--radius-group);
@@ -277,7 +277,7 @@
 .setup-card__assign {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
   height: 17rem;
 }
 
@@ -401,7 +401,7 @@
 .setup-card__fields {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
 }
 
 .setup-card__include {
