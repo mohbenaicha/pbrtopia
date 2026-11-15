@@ -221,3 +221,50 @@ describe('materialgen/export R29 R30 R33 reading, failure and cancel', () => {
     expect(read.mock.calls.map(([kind]) => kind)).not.toContain('metal');
   });
 });
+
+describe('materialgen/export R46 R47 R50 the tiled export', () => {
+  it('R46 a 2 x 1 tiling writes every picture twice as wide, each repeat equal to the untiled picture', async () => {
+    const plain = unzip((await buildExportZip(inputFor({ size: 4 }))).bytes);
+    const tiled = unzip((await buildExportZip(inputFor({ size: 4, tiling: { x: 2, y: 1 } }))).bytes);
+    for (const name of ['albedo.png', 'normal.png', 'height.png', 'roughness.png', 'metallic.png', 'ao.png']) {
+      const one = png(plain[name]);
+      const two = png(tiled[name]);
+      expect([two.width, two.height, two.channels], name).toEqual([8, 4, one.channels]);
+      for (let y = 0; y < 4; y += 1) {
+        const row = (image: PixelImage, from: number): number[] => Array.from(image.data.slice((y * image.width + from) * image.channels, (y * image.width + from + 4) * image.channels));
+        expect(row(two, 0), `${name} left`).toEqual(row(one, 0));
+        expect(row(two, 4), `${name} right`).toEqual(row(one, 0));
+      }
+    }
+  });
+
+  it('R46 a 2 x 2 tiling makes the packed ORM, the emissive plane and the labels picture four times as big', async () => {
+    const plane: PixelImage = { width: 4, height: 4, channels: 1, data: new Uint8Array(16).fill(255) };
+    const { bytes } = await buildExportZip(inputFor({ size: 4, packing: 'packed', includeEmissive: true, includeMasks: true, tiling: { x: 2, y: 2 } }, { emissive: plane }));
+    const entries = unzip(bytes);
+    for (const name of ['orm.png', 'emissive.png', 'labels.png']) expect([png(entries[name]).width, png(entries[name]).height], name).toEqual([8, 8]);
+  });
+
+  it('R46 a normal map is flipped for DirectX before it is repeated, and masks.json is unchanged', async () => {
+    const plain = unzip((await buildExportZip(inputFor({ size: 4, target: 'maya', includeMasks: true }))).bytes);
+    const tiled = unzip((await buildExportZip(inputFor({ size: 4, target: 'maya', includeMasks: true, tiling: { x: 2, y: 1 } }))).bytes);
+    expect(Array.from(png(tiled['normal.png']).data.slice(0, 3))).toEqual(Array.from(png(plain['normal.png']).data.slice(0, 3)));
+    expect(new TextDecoder().decode(tiled['masks.json'])).toBe(new TextDecoder().decode(plain['masks.json']));
+  });
+
+  it('R47 the sidecar says tiling 1 x 1 and the baked repeats', async () => {
+    const { bytes } = await buildExportZip(inputFor({ size: 4, tiling: { x: 2, y: 3 } }, { preview: { tilingX: 2, tilingY: 3, heightScale: 0.02, heightLevel: 0.5 } }));
+    const json = JSON.parse(new TextDecoder().decode(unzip(bytes)['material.json']));
+    expect([json.tiling, json.bakedTiling, json.size]).toEqual([{ x: 1, y: 1 }, { x: 2, y: 3 }, 4]);
+  });
+
+  it('R50 the emissive plane is not changed by the export, and a cancel before the work returns nothing', async () => {
+    const plane: PixelImage = { width: 4, height: 4, channels: 1, data: Uint8Array.from({ length: 16 }, (_, index) => index * 10) };
+    const before = Array.from(plane.data);
+    await buildExportZip(inputFor({ size: 4, includeEmissive: true, tiling: { x: 2, y: 2 } }, { emissive: plane }));
+    expect(Array.from(plane.data)).toEqual(before);
+    const abort = new AbortController();
+    abort.abort();
+    await expect(buildExportZip(inputFor({ size: 4, tiling: { x: 2, y: 2 } }, { signal: abort.signal }))).rejects.toThrow(/cancel/i);
+  });
+});

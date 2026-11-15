@@ -14,23 +14,28 @@ const picture = (side: number): PixelImage => {
   return { width: side, height: side, channels: 1, data };
 };
 
-function show(readEdgeSource = vi.fn(async (): Promise<PixelImage | null> => picture(100)), onApply = vi.fn(async () => ({ ok: true }) as { ok: boolean; message?: string })) {
+function show(readEdgeSource = vi.fn(async (): Promise<PixelImage | null> => picture(100)), onApply = vi.fn(async () => ({ ok: true }) as { ok: boolean; message?: string }), tiling = { x: 1, y: 1 }) {
   const onChange = vi.fn();
   const onClose = vi.fn();
-  render(<SeamPanel onChange={onChange} readEdgeSource={readEdgeSource} onApply={onApply} onClose={onClose} />);
-  return { onChange, onClose, onApply, readEdgeSource };
+  const onTilingChange = vi.fn();
+  render(<SeamPanel onChange={onChange} readEdgeSource={readEdgeSource} onApply={onApply} onClose={onClose} tiling={tiling} onTilingChange={onTilingChange} />);
+  return { onChange, onClose, onApply, readEdgeSource, onTilingChange };
 }
+const tilingX = (): HTMLInputElement => screen.getByRole('slider', { name: 'X' }) as HTMLInputElement;
+const tilingY = (): HTMLInputElement => screen.getByRole('slider', { name: 'Y' }) as HTMLInputElement;
 const apply = (): HTMLButtonElement => screen.getByRole('button', { name: 'Apply' }) as HTMLButtonElement;
 const canny = (): HTMLInputElement => screen.getByRole('switch', { name: 'Canny edges' }) as HTMLInputElement;
 const fade = (): HTMLInputElement => screen.getByRole('slider', { name: 'Fade start' }) as HTMLInputElement;
 
 describe('materialgen/app SeamPanel', () => {
-  it('R63 it is a panel with a Fade start slider, a Canny edges checkbox and the readout, and the viewport is told the defaults when it opens', () => {
+  it('R63 it is a panel with a Fade start slider, a Canny edges switch and the Tiling preview section but no readout, and the viewport is told the defaults when it opens', () => {
     const { onChange } = show();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(fade().value).toBe('55');
     expect(canny().checked).toBe(false);
-    expect(screen.getByText('Fade 22.5 % of the side')).toBeTruthy();
+    expect(screen.queryByText(/^Fade .* of the side/)).toBeNull();
+    expect(document.querySelector('.tool-panel__readout')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Tiling preview' })).toBeTruthy();
     expect(onChange).toHaveBeenLastCalledWith({ depth: 0.225, profile: null });
   });
 
@@ -52,11 +57,10 @@ describe('materialgen/app SeamPanel', () => {
     expect(css).toMatch(/\.tool-panel[^{}]*input\[type='range'\][^}]*min-width: 0/s);
   });
 
-  it('R65 moving the slider reports the new depth at once and changes the readout', () => {
+  it('R65 moving the slider reports the new depth at once', () => {
     const { onChange } = show();
     fireEvent.change(fade(), { target: { value: '80' } });
     expect(onChange).toHaveBeenLastCalledWith({ depth: 0.1, profile: null });
-    expect(screen.getByText('Fade 10 % of the side')).toBeTruthy();
   });
 
   it('R77 while the pointer is held on the slider the viewport is told nothing; the release reports the last depth once', () => {
@@ -66,7 +70,7 @@ describe('materialgen/app SeamPanel', () => {
     fireEvent.pointerDown(row);
     fireEvent.change(fade(), { target: { value: '80' } });
     fireEvent.change(fade(), { target: { value: '90' } });
-    expect(screen.getByText('Fade 5 % of the side')).toBeTruthy(); // the readout follows the pointer
+    expect(fade().value).toBe('90'); // the slider follows the pointer
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.pointerUp(row);
     expect(onChange).toHaveBeenCalledTimes(1);
@@ -91,7 +95,6 @@ describe('materialgen/app SeamPanel', () => {
     expect(readEdgeSource).toHaveBeenCalledTimes(1);
     const first = onChange.mock.calls.at(-1)![0].profile as Float32Array;
     expect(first).toHaveLength(200);
-    expect(screen.getByText('Fade up to 22.5 % of the side, ending at the first edge')).toBeTruthy();
     fireEvent.change(fade(), { target: { value: '80' } });
     fireEvent.click(canny()); // off
     fireEvent.click(canny()); // on again
@@ -133,5 +136,50 @@ describe('materialgen/app SeamPanel', () => {
     expect(onChange).toHaveBeenLastCalledWith({ depth: 0.225, profile: null });
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('materialgen/imageops R88 the Tiling preview section', () => {
+  it('R88 X and Y are rows like Fade start (label, track, number, reset arrow) showing the project tiling, from 1 to 10 in whole steps', () => {
+    show(undefined, undefined, { x: 3, y: 2 });
+    expect([tilingX().value, tilingY().value]).toEqual(['3', '2']);
+    expect([tilingX().min, tilingX().max, tilingX().step]).toEqual(['1', '10', '1']);
+    expect(tilingX().closest('.ui-slider')?.getAttribute('data-layout')).toBe('row');
+    expect(screen.getByRole('spinbutton', { name: 'X value' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reset X' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reset Y' })).toBeTruthy();
+  });
+
+  it('R88 the sliders sit after Canny edges, under the heading', () => {
+    show();
+    const heading = screen.getByRole('heading', { name: 'Tiling preview' });
+    expect(canny().compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(heading.compareDocumentPosition(tilingX()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(tilingX().compareDocumentPosition(tilingY()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('R88 a change goes to the owner at once, one axis at a time, with no pointer hold', () => {
+    const { onTilingChange } = show();
+    fireEvent.change(tilingX(), { target: { value: '4' } });
+    expect(onTilingChange).toHaveBeenLastCalledWith({ tilingX: 4 });
+    fireEvent.change(tilingY(), { target: { value: '2' } });
+    expect(onTilingChange).toHaveBeenLastCalledWith({ tilingY: 2 });
+  });
+
+  it('R88 the reset arrows put an axis back to 1', () => {
+    const { onTilingChange } = show(undefined, undefined, { x: 5, y: 5 });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset X' }));
+    expect(onTilingChange).toHaveBeenLastCalledWith({ tilingX: 1 });
+  });
+
+  it('R88 the panel Reset leaves the tiling alone, and tiling never reaches Apply or the viewport transform', async () => {
+    const { onTilingChange, onChange, onApply } = show(undefined, undefined, { x: 3, y: 3 });
+    onChange.mockClear();
+    fireEvent.change(fade(), { target: { value: '80' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(onTilingChange).not.toHaveBeenCalled();
+    expect(tilingX().value).toBe('3');
+    fireEvent.click(apply());
+    await waitFor(() => expect(onApply).toHaveBeenCalledWith({ depth: 0.225, profile: null }));
   });
 });

@@ -1,5 +1,6 @@
 import { isStale, type MapKind, type MapsState } from '@mat/workerapi';
 import { exportFileName, sanitiseExportName, type ExportKind, type ExportTarget } from '../names/exportNames';
+import type { BakedTiling } from './exportTiling';
 
 export type ExportPacking = 'separate' | 'packed';
 
@@ -13,6 +14,8 @@ export interface ExportOptions {
   /** R41: an authored emissive plane goes with the export; false or absent when there is none. */
   includeEmissive?: boolean;
   size: number; // the side written (R22)
+  /** R46: the repeats written into every picture (X wide, Y high), already checked against R48; absent when nothing is tiled. */
+  tiling?: BakedTiling | undefined;
 }
 
 export interface ExportInput {
@@ -26,7 +29,9 @@ export interface ExportInput {
 export interface PlannedFile {
   kind: ExportKind;
   fileName: string;
-  sizePx: number | null; // null for a JSON file
+  sizePx: number | null; // the side of one repeat; null for a JSON file
+  widthPx: number | null; // R49: the picture's width (size x X when tiled); null for a JSON file
+  heightPx: number | null; // R49: the picture's height (size x Y when tiled)
 }
 
 export interface ExportPlan {
@@ -72,7 +77,14 @@ export function planExport(input: ExportInput, options: ExportOptions): ExportPl
   const files: PlannedFile[] = [];
   const missing: ExportKind[] = [];
   const stale: ExportKind[] = [];
-  const add = (kind: ExportKind): void => void files.push({ kind, fileName: exportFileName(options.target, kind, name, colorMode), sizePx: kind === 'masks' ? null : options.size });
+  const repeat = options.tiling ?? { x: 1, y: 1 };
+  const add = (kind: ExportKind): void => {
+    const picture = kind !== 'masks';
+    files.push({
+      kind, fileName: exportFileName(options.target, kind, name, colorMode),
+      sizePx: picture ? options.size : null, widthPx: picture ? options.size * repeat.x : null, heightPx: picture ? options.size * repeat.y : null,
+    });
+  };
 
   const present = new Set<ExportKind>();
   for (const { kind } of MAP_ORDER) {

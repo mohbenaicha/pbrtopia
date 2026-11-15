@@ -35,6 +35,8 @@ export interface MaterialJson {
   heightScale: number;
   heightMidlevel: number;
   tiling: { x: number; y: number };
+  /** R47: the repeats already written into every picture (then `tiling` is 1 x 1); absent when nothing is baked. */
+  bakedTiling?: { x: number; y: number };
   colorSpaces: Partial<Record<ExportKind, 'sRGB' | 'Non-Color'>>;
   files: Partial<Record<ExportKind, string>>;
   missing: ExportKind[];
@@ -68,7 +70,8 @@ export function buildMaterialJson({ plan, options, projectName, colorMode, previ
     packing: options.packing,
     heightScale: preview.heightScale,
     heightMidlevel: preview.heightLevel,
-    tiling: { x: preview.tilingX, y: preview.tilingY },
+    tiling: options.tiling === undefined ? { x: preview.tilingX, y: preview.tilingY } : { x: 1, y: 1 }, // R47: baked repeats are not applied twice
+    ...(options.tiling === undefined ? {} : { bakedTiling: { x: options.tiling.x, y: options.tiling.y } }),
     colorSpaces,
     files,
     missing: [...plan.missing],

@@ -3,7 +3,7 @@ import { saveBlobAsFile } from '@shared/ui-kit';
 import type { RawRecord } from '@shared/projects';
 import {
   EXPORT_TARGET_CARDS, exportProgressText, exportScriptFor, exportSizeChoices, exportSuccessMessage, loadLastExportTarget, planExport, readExportBlobs,
-  saveLastExportTarget, startExportInWorker, storedKindOf,
+  saveLastExportTarget, startExportInWorker, storedKindOf, bakedTilingOf, tilingBlockReason,
   type ExportDialogTarget, type ExportJob, type ExportOptions, type ExportPlan, type ExportProgress,
 } from '@mat/export';
 import type { MapsState } from '@mat/maps';
@@ -69,6 +69,7 @@ export function useExportDialog({ projectName, colorMode, state, preview, masksR
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const controller = useRef<AbortController | null>(null);
+  const [tilingChoice, setTilingChoice] = useState(false); // R45: off in every new dialog
   const emissive = useEmissiveDraft(); // R42: the one in-memory plane
   const { plane: emissivePlane, drop: dropEmissive } = emissive;
 
@@ -78,7 +79,16 @@ export function useExportDialog({ projectName, colorMode, state, preview, masksR
   const options: ExportOptions & { target: ExportDialogTarget } = { ...choices, size };
   const hasMasks = masks !== null;
   const planInput = { projectName, colorMode, state, hasMasks };
-  const planOptions: ExportOptions = { ...options, includeEmissive: emissivePlane !== null }; // R37, R41: the plane being there is the choice
+  // R45-R48: the project's tiling as it is now, baked only when the switch is on, it is more than 1 x 1 and it fits; the choice is kept while it does not fit.
+  const tilingX = preview.tilingX;
+  const tilingY = preview.tilingY;
+  const tilingBlock = tilingBlockReason(size, tilingX, tilingY);
+  const baked = bakedTilingOf({ on: tilingChoice, size, x: tilingX, y: tilingY });
+  const tiling = {
+    checked: tilingChoice && tilingBlock === null, x: tilingX, y: tilingY, blockReason: tilingBlock, set: setTilingChoice,
+    hint: tilingBlock ?? `Tiling is ${tilingX} x ${tilingY}. Writes every map repeated that many times, so the files are bigger. Change it in the tiling settings.`,
+  };
+  const planOptions: ExportOptions = { ...options, includeEmissive: emissivePlane !== null, ...(baked === null ? {} : { tiling: baked }) }; // R37, R41: the plane being there is the choice
   const plan: ExportPlan = planExport(planInput, planOptions); // cheap: names and flags only, no pixels
   const cardFiles = Object.fromEntries(
     EXPORT_TARGET_CARDS.map((card) => [card.target, [...planExport(planInput, { ...planOptions, target: card.target }).files.map((file) => file.fileName), ...[exportScriptFor(card.target)?.fileName ?? []].flat()]]),
@@ -95,6 +105,7 @@ export function useExportDialog({ projectName, colorMode, state, preview, masksR
     setError(null);
     setPhase('options');
     dropEmissive(); // R43: a dialog opened again starts without a plane
+    setTilingChoice(false);
     setOpen(true);
   }, [dropEmissive]);
   const close = useCallback(() => {
@@ -148,7 +159,7 @@ export function useExportDialog({ projectName, colorMode, state, preview, masksR
   }, [phase, plan, options, planOptions, emissivePlane, dropEmissive, state, readBlob, colorMode, projectName, preview, masks, dependencies]);
 
   return {
-    open, show, close, options, setOptions, plan, cardFiles, disabled, sizeChoices, canExport: plan.files.length > 0,
+    open, show, close, options, setOptions, plan, cardFiles, disabled, sizeChoices, canExport: plan.files.length > 0, tiling,
     emissive: {
       plane: emissivePlane, asking: emissive.asking, ask, confirm: emissive.confirm, cancelAsk: emissive.cancelAsk, drop: dropEmissive,
       // what the emissive dialog reads: the albedo as the one picture, the labels and the masks record for the swatches, the size the plane is baked at

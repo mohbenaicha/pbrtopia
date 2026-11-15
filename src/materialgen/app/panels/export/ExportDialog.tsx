@@ -35,7 +35,7 @@ function TargetCards({ dialog }: { dialog: ExportDialogState }): React.JSX.Eleme
 }
 
 function OptionRows({ dialog }: { dialog: ExportDialogState }): React.JSX.Element {
-  const { options, setOptions, disabled, sizeChoices, running, emissive } = dialog;
+  const { options, setOptions, disabled, sizeChoices, running, emissive, tiling } = dialog;
   return (
     <div className="export-dialog__options">
       <SegmentedControl
@@ -50,6 +50,7 @@ function OptionRows({ dialog }: { dialog: ExportDialogState }): React.JSX.Elemen
       <Toggle label="Include ambient occlusion" checked={options.includeAo && !disabled.includeAo} disabled={running || disabled.includeAo} hint={disabled.includeAo ? 'There is no ambient occlusion map.' : 'Adds the ambient occlusion map to the export.'} onChange={(includeAo) => setOptions({ includeAo })} />
       <Toggle label="Include material masks" checked={options.includeMasks && !disabled.includeMasks} disabled={running || disabled.includeMasks} hint={disabled.includeMasks ? 'There are no material masks.' : 'Adds the mask image and its component table to the export.'} onChange={(includeMasks) => setOptions({ includeMasks })} />
       <Toggle label="Create emissive map" checked={emissive.plane !== null} disabled={running || disabled.includeEmissive} hint={disabled.includeEmissive ? 'There are no material masks.' : 'Pick the materials that glow and add an emissive map to the export.'} onChange={(on) => (on ? emissive.ask() : emissive.drop())} />
+      <Toggle label="Export tiling (change in tiling settings)" checked={tiling.checked} disabled={running || tiling.blockReason !== null} hint={tiling.hint} onChange={tiling.set} />
       <Select label="Size" title="The side length of every exported map, in pixels." options={sizeChoices.map((side) => ({ value: String(side), label: `${side} px` }))} value={String(options.size)} onChange={(value) => setOptions({ size: Number(value) })} disabled={running || sizeChoices.length < 2} />
     </div>
   );
@@ -64,7 +65,7 @@ function FileList({ dialog }: { dialog: ExportDialogState }): React.JSX.Element 
         {plan.files.map((file) => (
           <li key={file.fileName}>
             <span className="export-dialog__file-name">{file.fileName}</span>
-            <span className="export-dialog__file-size">{file.sizePx === null ? '' : `${file.sizePx} px`}</span>
+            <span className="export-dialog__file-size">{file.sizePx === null ? '' : file.widthPx === file.heightPx ? `${file.sizePx} px` : `${file.widthPx} x ${file.heightPx} px`}</span>
             {plan.stale.includes(file.kind) && <span className="export-dialog__stale">Out of date. Regenerate it first for a matching result</span>}
           </li>
         ))}

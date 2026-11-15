@@ -48,6 +48,8 @@ function show(patch: Partial<ToolsInput> = {}) {
     readBlob,
     onToolOpenChange,
     onToolViewChange,
+    tiling: { x: 1, y: 1 },
+    onTilingChange: vi.fn(),
     ...patch,
   } as ToolsInput;
   const live = createToolLiveFeed({ request: () => 0, cancel: () => undefined }); // the viewport's live feed (R75); no frame ever runs here, the tests read what it holds

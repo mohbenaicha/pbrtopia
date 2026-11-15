@@ -1,4 +1,6 @@
 export { flipNormalGreen, labelsToPaletteRgb, packOrmPixels, resampleLabelsNearest, resampleMapForExport, type OrmPixelSources } from './pixels/exportPixels';
+export { tileExportPicture } from './pixels/tileExportPicture';
+export { MAX_TILED_SIDE, bakedTilingOf, tilingBlockReason, type BakedTiling } from './plan/exportTiling';
 export { buildMaterialJson, normalConventionFor, type MaterialJson, type NormalConvention } from './plan/buildMaterialJson';
 export { exportSizeChoices, planExport, storedKindOf, type ExportInput, type ExportOptions, type ExportPacking, type ExportPlan, type PlannedFile } from './plan/planExport';
 export { buildExportZip, ExportReadError, type BuildExportInput, type ExportProgress } from './build/buildExportZip';

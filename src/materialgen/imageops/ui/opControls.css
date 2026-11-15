@@ -86,6 +86,13 @@
   color: var(--text-dim);
 }
 
+.tool-panel__heading {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--text);
+}
+
 .tool-panel__actions {
   display: flex;
   justify-content: flex-end;

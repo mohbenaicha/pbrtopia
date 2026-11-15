@@ -3,7 +3,7 @@ import { DISCLOSURE_ICON_PIXELS, Icon, IconButton } from '@shared/ui-kit';
 import { editKindOf, type CropRect, type MirrorPlan, type PixelImage, type SeamParams } from '@mat/imageops';
 import { kindLabel, readMapPixels, type MapKind, type MapsController, type MapsState } from '@mat/maps';
 import type { ToolTransform, ToolView } from '@mat/preview';
-import type { ColorMode } from '@mat/storage';
+import type { ColorMode, PreviewValues } from '@mat/storage';
 import { applyGeometryOp, type GeometryOpResult, type GeometryPorts } from '../../imageops/applyGeometryOp';
 import type { GeometryOps } from '../../imageops/useImageopsSessions';
 import { GeometryToolPanel, type GeometryToolName } from './GeometryToolPanel';
@@ -30,6 +30,9 @@ interface GeometryToolsInput {
   onToolOpenChange(open: boolean): void;
   /** Gives the viewport the transform to put on the maps, or null to show the maps as they are (imageops R53, R59). */
   onToolViewChange(view: HeldToolView | null): void;
+  /** The project's tiling and how to change it, for Blend edges' Tiling preview rows (imageops R88). */
+  tiling: { x: number; y: number };
+  onTilingChange(patch: Partial<Pick<PreviewValues, 'tilingX' | 'tilingY'>>): void;
 }
 
 /** App tooltips R5: what each button of the Maps bar does, one sentence under its name; every one changes all the maps at once. */
@@ -47,7 +50,7 @@ const EDGE_SOURCE_KINDS = ['albedo', 'height']; // imageops R66: the map the Can
  * Imageops R20, R29-R36, R52-R70: Crop, Mirror, Swap diagonals and Blend edges, each changing every picture map at once and undone as one step.
  * The buttons go in the Maps heading bar; the open panel is drawn where the caller puts it, in place of the cards.
  */
-export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, opOpen, busy, exclusive, geometry, controller, readBlob, onToolOpenChange, onToolViewChange }: GeometryToolsInput): { buttons: ReactNode; panel: ReactNode } {
+export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, opOpen, busy, exclusive, geometry, controller, readBlob, onToolOpenChange, onToolViewChange, tiling, onTilingChange }: GeometryToolsInput): { buttons: ReactNode; panel: ReactNode } {
   const [tool, setTool] = useState<GeometryToolName | null>(null);
   const opened = useRef<string | null>(null); // the signature of the maps when the panel opened
   const ownApply = useRef(false); // set while this panel's own Apply is changing the maps, which is not a reason to cancel
@@ -158,6 +161,8 @@ export function useGeometryTools({ state, colorMode, canWrite, readOnlyReason, o
           onApplyMirror={(plan: MirrorPlan) => apply('Mirror', (image, kind) => geometry.mirror(image, kind, plan))}
           onApplySeam={(params: SeamParams) => apply('Blend edges', (image, kind) => geometry.seam(image, kind, params))}
           readEdgeSource={readEdgeSource}
+          tiling={tiling}
+          onTilingChange={onTilingChange}
           onClose={close}
         />
       ) : null,

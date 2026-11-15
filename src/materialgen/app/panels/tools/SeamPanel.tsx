@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Toggle } from '@shared/ui-kit';
 import { ControlRow, ToolPanel, measureEdgeDistances, seamDepthOf, shapeSeamProfile, type EdgeDistances, type EditControl, type PixelImage, type SeamParams } from '@mat/imageops';
+import { DEFAULT_PREVIEW_VALUES, type PreviewValues } from '@mat/storage';
 import { useToolApply, type ToolOutcome } from './useToolApply';
 
 interface SeamPanelProps {
+  /** R88: the project's tiling, the same values the viewport settings popover shows. */
+  tiling: { x: number; y: number };
+  onTilingChange(patch: Partial<Pick<PreviewValues, 'tilingX' | 'tilingY'>>): void;
   onChange(params: SeamParams): void; // R67: when the panel opens and on every change
   readEdgeSource(): Promise<PixelImage | null>; // the picture the edges are found in, read when Canny is first switched on (R66)
   onApply(params: SeamParams): Promise<ToolOutcome>;
@@ -11,15 +15,15 @@ interface SeamPanelProps {
 }
 
 const FADE_START: EditControl = { id: 'seamFadeStart', label: 'Fade start', category: 'structure', kind: 'slider', min: 5, max: 95, step: 5, defaultValue: 55 };
+const TILING_X: EditControl = { id: 'tilingX', label: 'X', category: 'structure', kind: 'slider', min: 1, max: 10, step: 1, defaultValue: DEFAULT_PREVIEW_VALUES.tilingX };
+const TILING_Y: EditControl = { id: 'tilingY', label: 'Y', category: 'structure', kind: 'slider', min: 1, max: 10, step: 1, defaultValue: DEFAULT_PREVIEW_VALUES.tilingY };
 const UNREADABLE_MESSAGE = 'The map to find edges in cannot be read.';
-
-const percentOf = (depth: number): string => String(Number((depth * 100).toFixed(1)));
 
 /**
  * Imageops R63, R65, R66: the Blend edges settings. The slider moves a uniform of the viewport (O(1)); with Canny on, the edges are measured once, on the first switch
  * to it, and the slider only re-shapes the 2N-float profile of the viewport from the measured distances. Nothing but those distances is held.
  */
-export function SeamPanel({ onChange, readEdgeSource, onApply, onClose }: SeamPanelProps): React.JSX.Element {
+export function SeamPanel({ tiling, onTilingChange, onChange, readEdgeSource, onApply, onClose }: SeamPanelProps): React.JSX.Element {
   const [fade, setFade] = useState(FADE_START.defaultValue);
   const [canny, setCanny] = useState(false);
   const [distances, setDistances] = useState<EdgeDistances | null>(null);
@@ -42,7 +46,6 @@ export function SeamPanel({ onChange, readEdgeSource, onApply, onClose }: SeamPa
     held.current = true;
     for (const type of ['pointerup', 'pointercancel']) window.addEventListener(type, releaseFade, { once: true }); // the release can be anywhere on the page
   };
-  const shownDepth = seamDepthOf(fade);
   const depth = seamDepthOf(reported);
   const profile = useMemo(() => (canny && distances !== null ? shapeSeamProfile(distances, depth) : null), [canny, distances, depth]);
   const report = useRef(onChange);
@@ -82,7 +85,9 @@ export function SeamPanel({ onChange, readEdgeSource, onApply, onClose }: SeamPa
         <ControlRow control={FADE_START} value={fade} onChange={changeFade} />
       </div>
       <Toggle label="Canny edges" hint="Shows the edges the seam fix detects, so you can see where it will blend." checked={canny} disabled={reading || applying} onChange={() => void toggleCanny()} />
-      <p className="tool-panel__readout">{canny ? `Fade up to ${percentOf(shownDepth)} % of the side, ending at the first edge` : `Fade ${percentOf(shownDepth)} % of the side`}</p>
+      <h4 className="tool-panel__heading">Tiling preview</h4>
+      <ControlRow control={TILING_X} value={tiling.x} onChange={(value) => onTilingChange({ tilingX: value })} />
+      <ControlRow control={TILING_Y} value={tiling.y} onChange={(value) => onTilingChange({ tilingY: value })} />
     </ToolPanel>
   );
 }

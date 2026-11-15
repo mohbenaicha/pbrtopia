@@ -1,6 +1,7 @@
 import { zipSync, type Zippable } from 'fflate';
 import { encodePng, kindLabel, type MapKind, type MapsState, type MasksRecord, type PixelImage } from '@mat/workerapi';
 import { flipNormalGreen, labelsToPaletteRgb, packOrmPixels, resampleLabelsNearest, resampleMapForExport } from '../pixels/exportPixels';
+import { tileExportPicture } from '../pixels/tileExportPicture';
 import { buildMaterialJson, normalConventionFor } from '../plan/buildMaterialJson';
 import { storedKindOf, type ExportOptions, type ExportPlan } from '../plan/planExport';
 import type { ExportKind } from '../names/exportNames';
@@ -66,7 +67,6 @@ function toRgb(image: PixelImage): PixelImage {
   return { width: image.width, height: image.height, channels: 3, data };
 }
 
-const pngBytes = (image: PixelImage): Uint8Array => encodePng(image);
 
 /**
  * Export R6-R12, R22-R23, R29-R31, R33, R41: reads the planned maps one at a time, writes each in its file format (resampled, normal flipped for the
@@ -91,6 +91,10 @@ export async function buildExportZip(input: BuildExportInput): Promise<{ bytes: 
   // Converted first, so a file with an alpha channel resamples (a normal map refuses alpha) and a grey map is resampled as one channel.
   const sized = async (kind: ExportKind, convert: (image: PixelImage) => PixelImage): Promise<PixelImage> => resampleMapForExport(convert(await load(kind)), options.size, kind === 'normal');
   const greyAtSize = (kind: ExportKind): Promise<PixelImage> => sized(kind, toGrey);
+
+  // R46, R50: each picture is repeated just before it is encoded, so a tiled picture exists for one file at a time and is released with it.
+  const repeat = options.tiling ?? { x: 1, y: 1 };
+  const pngBytes = (image: PixelImage): Uint8Array => encodePng(tileExportPicture(image, repeat.x, repeat.y));
 
   const entries: Zippable = {};
   // The zip format stores a local clock time with no zone; fflate reads the local getters, so the UTC fields go in as local ones and the bytes do not depend on the machine's zone (R31).

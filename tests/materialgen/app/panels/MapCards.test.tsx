@@ -43,7 +43,7 @@ function show(extra: { canWrite?: boolean } = {}) {
       seam: vi.fn(async (image: PixelImage) => image),
     },
   };
-  render(<MapCards state={state} colorMode="albedo" canWrite={extra.canWrite ?? true} controller={controller} readBlob={readBlob} sessions={sessions} aoParams={undefined} onAoParamsChange={vi.fn()} onToolViewChange={vi.fn()} />);
+  render(<MapCards state={state} colorMode="albedo" canWrite={extra.canWrite ?? true} controller={controller} readBlob={readBlob} sessions={sessions} aoParams={undefined} onAoParamsChange={vi.fn()} onToolViewChange={vi.fn()} tiling={{ x: 1, y: 1 }} onTilingChange={vi.fn()} />);
   return { controller, sessions, finish: (stored: boolean) => finishCommit(stored) };
 }
 const button = (name: string): HTMLButtonElement => screen.getByRole('button', { name }) as HTMLButtonElement;

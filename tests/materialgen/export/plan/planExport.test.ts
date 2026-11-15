@@ -196,3 +196,44 @@ describe('materialgen/export R41 the emissive file in the plan', () => {
     expect(names(planExport(input(full()), options({ target: 'substance', includeEmissive: true })))).toContain('Mossy bricks_Emissive.png');
   });
 });
+
+describe('materialgen/export R46 R47 R49 the tiled files', () => {
+  it('R49 every picture file carries its width and height, equal to the size when nothing is tiled, and a JSON file has none', () => {
+    const plan = planExport(input(full()), options({ size: 512, includeMasks: true }));
+    expect(plan.files.filter((file) => file.kind !== 'masks').every((file) => file.widthPx === 512 && file.heightPx === 512)).toBe(true);
+    const masks = plan.files.find((file) => file.kind === 'masks');
+    expect([masks?.widthPx, masks?.heightPx]).toEqual([null, null]);
+  });
+
+  it('R46 R49 with a baked tiling each picture is size x X wide and size x Y high, and sizePx stays the repeat side', () => {
+    const plan = planExport(input(full()), options({ size: 512, includeEmissive: true, tiling: { x: 3, y: 2 } }));
+    const pictures = plan.files.filter((file) => file.kind !== 'masks');
+    expect(pictures.map((file) => [file.widthPx, file.heightPx, file.sizePx])).toEqual(pictures.map(() => [1536, 1024, 512]));
+    expect(pictures.map((file) => file.kind)).toContain('emissive');
+  });
+
+  it('R46 a tiling does not change which files are listed or their names', () => {
+    expect(names(planExport(input(full()), options({ tiling: { x: 2, y: 2 }, packing: 'packed' })))).toEqual(names(planExport(input(full()), options({ packing: 'packed' }))));
+  });
+});
+
+describe('materialgen/export R47 material.json with a baked tiling', () => {
+  const preview = { tilingX: 2, tilingY: 3, heightScale: 0.02, heightLevel: 0.5 };
+  const jsonFor = (patch: Partial<ExportOptions>) => {
+    const chosen = options(patch);
+    return buildMaterialJson({ plan: planExport(input(full()), chosen), options: chosen, projectName: 'Mossy bricks', colorMode: 'albedo', preview, app: { name: 'material-lab', version: '0.0.0' }, now: () => '2026-11-15T12:00:00.000Z' });
+  };
+
+  it('R47 baked: tiling is 1 x 1, bakedTiling holds the repeats and size stays the side of one repeat', () => {
+    const json = jsonFor({ tiling: { x: 2, y: 3 }, size: 512 });
+    expect(json.tiling).toEqual({ x: 1, y: 1 });
+    expect(json.bakedTiling).toEqual({ x: 2, y: 3 });
+    expect(json.size).toBe(512);
+  });
+
+  it('R47 not baked: tiling is the project values and bakedTiling is absent', () => {
+    const json = jsonFor({});
+    expect(json.tiling).toEqual({ x: 2, y: 3 });
+    expect('bakedTiling' in json).toBe(false);
+  });
+});

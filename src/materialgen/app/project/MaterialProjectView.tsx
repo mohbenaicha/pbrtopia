@@ -144,6 +144,8 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
             canWrite={canWrite}
             onToolViewChange={setToolView}
             masksRecord={record.masks}
+            tiling={{ x: record.preview.tilingX, y: record.preview.tilingY }}
+            onTilingChange={changePreviewValues}
           >
             <ExportSection dialog={exportDialog} />
           </MaterialMapsPanel>

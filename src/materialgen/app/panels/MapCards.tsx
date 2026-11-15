@@ -3,7 +3,7 @@ import type { RawRecord } from '@shared/projects';
 import { ConfirmDialog, Disclosure, ImageViewer } from '@shared/ui-kit';
 import { aoSourceFor, aoValuesFor, readAoSettings, writeAoSettings, type AoSource, type EditValues } from '@mat/imageops';
 import { MapCard, buildCardModel, kindLabel, readMapPixels, type MapCardActions, type MapKind, type MapRecord, type MapsController, type MapsState } from '@mat/maps';
-import type { ColorMode, MaterialRecord } from '@mat/storage';
+import type { ColorMode, MaterialRecord, PreviewValues } from '@mat/storage';
 import { regenerateAo } from '../imageops/regenerateAo';
 import type { ImageopsSessions } from '../imageops/useImageopsSessions';
 import { AoCardActions } from './AoCardActions';
@@ -31,6 +31,9 @@ interface MapCardsProps {
   onToolViewChange(view: HeldToolView | null): void;
   /** The project's masks record, for the swatches that scope a filter (imageops R78). */
   masksRecord?: RawRecord | undefined;
+  /** The project's tiling and how to change it, for Blend edges' Tiling preview rows (imageops R88). */
+  tiling: { x: number; y: number };
+  onTilingChange(patch: Partial<Pick<PreviewValues, 'tilingX' | 'tilingY'>>): void;
 }
 
 /** Maps R46: the shared zoomable viewer on the map's current picture, and nothing else. */
@@ -41,7 +44,7 @@ function MapViewer({ kind, map, size, colorMode, readBlob, onDownload, onClose }
 }
 
 /** Materialgen maps R34, R44-R49 and imageops R9, R17: the five slot cards with Clear's confirmation, the viewer, the filter dialog and the controller's message. */
-export function MapCards({ state, colorMode, canWrite, controller, readBlob, sessions, aoParams, onAoParamsChange, onToolViewChange, masksRecord }: MapCardsProps): React.JSX.Element {
+export function MapCards({ state, colorMode, canWrite, controller, readBlob, sessions, aoParams, onAoParamsChange, onToolViewChange, masksRecord, tiling, onTilingChange }: MapCardsProps): React.JSX.Element {
   const [mapsOpen, setMapsOpen] = useState(true); // the grid of the five slots, open at first so the drop zones are in reach
   const [clearing, setClearing] = useState<MapKind | null>(null);
   const [viewing, setViewing] = useState<MapKind | null>(null);
@@ -83,7 +86,7 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
   useUndoShortcut({ state, colorMode, canWrite, busy: busy.size > 0 || opOpen, undo: (kinds) => void controller.undo(kinds) });
   const geometryTools = useGeometryTools({
     state, colorMode, canWrite, readOnlyReason: READ_ONLY_REASON, opOpen: dialogOpen || working || paintOpen, busy: busy.size > 0, exclusive,
-    geometry: sessions.geometry, controller, readBlob, onToolViewChange,
+    geometry: sessions.geometry, controller, readBlob, onToolViewChange, tiling, onTilingChange,
     onToolOpenChange: (open) => {
       setGeometryToolOpen(open);
       if (open) setMapsOpen(true); // R52: the panel is in the Maps section, so it must be in view
