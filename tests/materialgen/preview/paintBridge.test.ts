@@ -55,3 +55,24 @@ describe('materialgen/preview paint bridge, showMesh (compositing R55)', () => {
     expect(changer).not.toHaveBeenCalled();
   });
 });
+
+describe('materialgen/preview paint bridge, shortcuts of the open tool (app/shortcuts R6)', () => {
+  const set = { id: 'paint', entries: [{ keys: 'Alt + click', action: 'Set the line marker' }] };
+
+  it('R6 there are none at first; the tool sets them, the preview publishing keeps them, and the listeners are told', () => {
+    const bridge = createPaintBridge();
+    const listener = vi.fn();
+    bridge.subscribe(listener);
+    expect(bridge.state().shortcuts).toBeNull();
+    bridge.setShortcuts(set);
+    expect(bridge.state().shortcuts).toBe(set);
+    expect(listener).toHaveBeenCalledTimes(1);
+    bridge.publish({ host, mesh: 'plane' });
+    expect(bridge.state().shortcuts).toBe(set);
+    expect(listener).toHaveBeenCalledTimes(2);
+    bridge.setShortcuts(set); // the same set: nobody is told
+    expect(listener).toHaveBeenCalledTimes(2);
+    bridge.setShortcuts(null);
+    expect(bridge.state().shortcuts).toBeNull();
+  });
+});

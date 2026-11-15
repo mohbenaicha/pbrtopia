@@ -21,10 +21,18 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('ViewportCanvas', () => {
-  it('R16 the surface carries the control hint', () => {
+  it('R16 R2 the surface carries the Shortcuts panel with the orbit gestures by default', () => {
     render(<ViewportCanvas />);
     expect(screen.getByTestId('viewport')).toBeTruthy();
-    expect(screen.getByText('Right-drag orbit, middle-drag pan, scroll zoom')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Shortcuts' })).toBeTruthy();
+    expect(screen.getByText('Orbit')).toBeTruthy();
+    expect(screen.getByText('Middle-drag')).toBeTruthy();
+  });
+
+  it('R2 a set given by the owner replaces the default', () => {
+    render(<ViewportCanvas shortcuts={{ id: 'own', entries: [{ keys: 'Alt + click', action: 'Set the marker' }] }} />);
+    expect(screen.getByText('Set the marker')).toBeTruthy();
+    expect(screen.queryByText('Orbit')).toBeNull();
   });
 
   it('A6 it creates one viewport in its own container and reports it ready', () => {

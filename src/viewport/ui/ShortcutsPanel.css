@@ -1,0 +1,46 @@
+/* App/shortcuts R1, R4: bottom-left of the free part of the viewport (viewport-layout R37), see-through, and the canvas behind keeps wheel and drag. */
+.shortcuts-panel {
+  position: absolute;
+  left: calc(var(--stage-left, 0px) + var(--space-4));
+  bottom: calc(var(--stage-bottom, 0px) + var(--space-3));
+  max-width: 320px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.shortcuts-panel .ui-disclosure {
+  background: color-mix(in srgb, var(--bg-disclosure) 70%, transparent);
+}
+
+.shortcuts-panel .ui-disclosure__header {
+  pointer-events: auto; /* the heading still opens and closes the panel */
+}
+
+.shortcuts-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size);
+}
+
+.shortcuts-panel__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.shortcuts-panel__keys {
+  flex: none;
+  padding: 0 var(--space-1);
+  border-radius: 4px;
+  background: var(--bg-input);
+  color: var(--text);
+  font: inherit;
+}
+
+.shortcuts-panel__action {
+  color: var(--text-dim);
+}

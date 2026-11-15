@@ -11,6 +11,7 @@ export { createMapAdjustUniforms, setMapAdjust, type MapAdjustUniforms } from '.
 export type { ViewportErrorCode, ViewportResult } from './viewportError';
 export { DEFAULT_VIEWPORT_SETTINGS, clampViewportSettings, type MapAdjust, type ViewportSettings } from './viewportSettings';
 export { ViewportCanvas } from './ui/ViewportCanvas';
+export { ORBIT_SHORTCUTS, type ShortcutEntry, type ShortcutSet } from './shortcutSet';
 export { ViewportCorner } from './ui/ViewportCorner';
 export { ViewportSettingsPanel, type ViewportSectionId } from './ui/ViewportSettingsPanel';
 export { SettingsSection, SettingsSubsection } from './ui/SettingsSection';

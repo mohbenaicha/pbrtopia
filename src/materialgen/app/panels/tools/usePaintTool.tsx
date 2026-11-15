@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ConfirmDialog, DISCLOSURE_ICON_PIXELS, Icon, IconButton } from '@shared/ui-kit';
 import {
-  DEFAULT_BRUSH, EMPTY_PALETTE, createPaintController, loadBrushAtlas, loadPaintMaps, MaterialPicker, paintEntryReason, paintedPicturesOf, paintMaterialOf, PaintToolPanel,
+  DEFAULT_BRUSH, EMPTY_PALETTE, PAINT_SHORTCUTS, createPaintController, loadBrushAtlas, loadPaintMaps, MaterialPicker, paintEntryReason, paintedPicturesOf, paintMaterialOf, PaintToolPanel,
   planCommitPaint, removeMaterial, removeShape, setMaterial, setShape, ShapePicker, shapeSlotsOf, toggleActive, toggleInvert,
   type BrushAtlas, type BrushParams, type LoadedPaintMaps, type PaintController, type PaintState, type Palette, type ShapeSlotNumber,
 } from '@mat/compositing';
@@ -113,6 +113,10 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
     });
     return () => bridge.setMeshGuard(null);
   }, [bridge, askDiscard, closeSession]);
+  useEffect(() => {
+    bridge.setShortcuts(phase === 'open' ? PAINT_SHORTCUTS : null); // app/shortcuts R6: the Shortcuts panel lists the painter's gestures while it is open
+    return () => bridge.setShortcuts(null);
+  }, [bridge, phase]);
   useEffect(() => {
     if (mesh !== 'plane' && session.current !== null) closeSession(); // the Plane is gone: nothing to paint on (R24)
   }, [mesh, closeSession]);

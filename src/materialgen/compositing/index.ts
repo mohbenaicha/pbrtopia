@@ -7,6 +7,7 @@ export { paintEntryReason } from './session/paintEntryReason';
 export { loadPaintMaps, paintedPicturesOf, planCommitPaint, type LoadedPaintMaps } from './session/commitPaint';
 export { createPaintController, type PaintController, type PaintState } from './ui/createPaintController';
 export { PaintToolPanel } from './ui/PaintToolPanel';
+export { PAINT_SHORTCUTS } from './ui/paintShortcuts';
 export { LEFT_PANEL_FLOOR } from './ui/paintLayout';
 export { ShapePicker } from './ui/ShapePicker';
 export { MaterialPicker } from './ui/MaterialPicker';

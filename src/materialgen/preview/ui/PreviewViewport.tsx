@@ -6,7 +6,8 @@ import type { PaletteEntry } from '@mat/workerapi';
 import { DEFAULT_PREVIEW_VALUES, type MaterialProjectStore, type PreviewValues } from '@mat/storage';
 import type { PreviewShading } from '../math/flatViews';
 import { adaptViewportForPreview } from './adaptViewportForPreview';
-import type { PaintBridge } from './paintBridge';
+import { useToolShortcuts, type PaintBridge } from './paintBridge';
+import { PREVIEW_SHORTCUTS } from './previewShortcuts';
 import { MaskDisplayControl } from './MaskDisplayControl';
 import { MeshPicker } from './MeshPicker';
 import { OpenImageButton } from './OpenImageButton';
@@ -58,7 +59,6 @@ export interface PreviewThumbnailSink {
   onSaver(saver: (() => Promise<void>) | null): void;
 }
 
-const HINT = 'Drag to rotate, scroll to zoom'; // preview R21
 const NO_TOOL: PreviewTool = { view: null, onSettled: () => undefined };
 const NO_PENDING: PendingMaps = {};
 const NO_REPORT = (): void => undefined;
@@ -66,6 +66,7 @@ const NO_REPORT = (): void => undefined;
 /** The 3D preview of the open material (preview spec): the shared viewport without a model, one mesh in previewGroup, turned by dragging. */
 export function PreviewViewport({ store, mapsState, readBlob, values, onValuesChange, shading, thumbnail, masks, tool = NO_TOOL, pending = NO_PENDING, paint }: PreviewViewportProps): React.JSX.Element {
   const [viewport, setViewport] = useState<Viewport | null>(null);
+  const toolShortcuts = useToolShortcuts(paint);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsTarget = useMemo(() => (viewport === null ? null : adaptViewportForPreview(viewport)), [viewport]);
   const { settings, change } = useViewportSettings(store, settingsTarget);
@@ -135,5 +136,5 @@ export function PreviewViewport({ store, mapsState, readBlob, values, onValuesCh
       />
     </>
   );
-  return <ViewportCanvas hint={HINT} onReady={setViewport} overlay={overlay} />;
+  return <ViewportCanvas shortcuts={toolShortcuts ?? PREVIEW_SHORTCUTS} onReady={setViewport} overlay={overlay} />; // preview R21, app/shortcuts R6
 }

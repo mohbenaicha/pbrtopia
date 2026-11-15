@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createViewport, type Viewport } from '../createViewport';
-import { HintLine } from './HintLine';
+import { ORBIT_SHORTCUTS, type ShortcutSet } from '../shortcutSet';
+import { ShortcutsPanel } from './ShortcutsPanel';
 import './ViewportCanvas.css';
 
 interface ViewportCanvasProps {
   onReady?: (viewport: Viewport | null) => void; // the viewport once created, null when it is disposed
   overlay?: (viewport: Viewport) => ReactNode; // drawn over the canvas, e.g. the corner controls
-  hint?: string; // the control hint at the bottom-left; the orbit controls' text by default
+  shortcuts?: ShortcutSet; // what the Shortcuts panel at the bottom-left lists (app/shortcuts R2); the orbit gestures by default
 }
 
-// Creates the viewport in its own container, keeps it for as long as it is shown, and puts the overlay and the control hint over it.
-export function ViewportCanvas({ onReady, overlay, hint }: ViewportCanvasProps): React.JSX.Element {
+// Creates the viewport in its own container, keeps it for as long as it is shown, and puts the overlay and the Shortcuts panel over it.
+export function ViewportCanvas({ onReady, overlay, shortcuts = ORBIT_SHORTCUTS }: ViewportCanvasProps): React.JSX.Element {
   const host = useRef<HTMLDivElement>(null);
   const latestOnReady = useRef(onReady);
   const [viewport, setViewport] = useState<Viewport | null>(null);
@@ -34,7 +35,7 @@ export function ViewportCanvas({ onReady, overlay, hint }: ViewportCanvasProps):
     <div className="viewport-surface" data-testid="viewport">
       <div className="viewport-surface__canvas" ref={host} />
       {viewport !== null && overlay?.(viewport)}
-      <HintLine {...(hint === undefined ? {} : { text: hint })} />
+      <ShortcutsPanel set={shortcuts} />
     </div>
   );
 }

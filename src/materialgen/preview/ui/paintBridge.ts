@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import type { ShortcutSet } from '@shared/viewport';
 import type { PreviewMesh } from '@mat/storage';
 import type { PaintHost } from '../scene/paintHost';
 
@@ -6,6 +7,7 @@ import type { PaintHost } from '../scene/paintHost';
 export interface PaintBridgeState {
   host: PaintHost | null;
   mesh: PreviewMesh;
+  shortcuts: ShortcutSet | null; // the open tool's gestures for the Shortcuts panel (app/shortcuts R6); null while no tool is open
 }
 
 /**
@@ -15,7 +17,8 @@ export interface PaintBridgeState {
 export interface PaintBridge {
   state(): PaintBridgeState;
   subscribe(listener: () => void): () => void;
-  publish(state: PaintBridgeState): void; // the preview's side
+  publish(state: Pick<PaintBridgeState, 'host' | 'mesh'>): void; // the preview's side; the tool's shortcuts are kept
+  setShortcuts(shortcuts: ShortcutSet | null): void; // the tool's side: its gestures while a session is open, null when it closes
   setMeshGuard(guard: ((mesh: PreviewMesh) => Promise<boolean>) | null): void; // the tool's side
   allowMeshChange(mesh: PreviewMesh): Promise<boolean>; // the preview asks before it changes the mesh
   setMeshChanger(changer: ((mesh: PreviewMesh) => void) | null): void; // the preview's side: how the tool may ask for a mesh (R55)
@@ -25,7 +28,7 @@ export interface PaintBridge {
 const SHOW_MESH_LIMIT_MS = 4000;
 
 export function createPaintBridge(): PaintBridge {
-  let current: PaintBridgeState = { host: null, mesh: 'ball' };
+  let current: PaintBridgeState = { host: null, mesh: 'ball', shortcuts: null };
   let guard: ((mesh: PreviewMesh) => Promise<boolean>) | null = null;
   let changer: ((mesh: PreviewMesh) => void) | null = null;
   const listeners = new Set<() => void>();
@@ -39,7 +42,12 @@ export function createPaintBridge(): PaintBridge {
     subscribe,
     publish(next) {
       if (next.host === current.host && next.mesh === current.mesh) return;
-      current = next;
+      current = { host: next.host, mesh: next.mesh, shortcuts: current.shortcuts };
+      for (const listener of [...listeners]) listener();
+    },
+    setShortcuts(next) {
+      if (next === current.shortcuts) return;
+      current = { ...current, shortcuts: next };
       for (const listener of [...listeners]) listener();
     },
     setMeshGuard(next) {
@@ -71,4 +79,12 @@ export function createPaintBridge(): PaintBridge {
 /** The bridge's state as a React value; renders again when the preview publishes. */
 export function usePaintBridgeState(bridge: PaintBridge): PaintBridgeState {
   return useSyncExternalStore(bridge.subscribe, bridge.state);
+}
+
+const NO_SHORTCUTS = (): ShortcutSet | null => null;
+const NEVER_NOTIFIES = (): (() => void) => () => undefined;
+
+/** App/shortcuts R6: the gestures of the open tool, or null while there is none (also null with no bridge at all). */
+export function useToolShortcuts(bridge: PaintBridge | undefined): ShortcutSet | null {
+  return useSyncExternalStore(bridge?.subscribe ?? NEVER_NOTIFIES, bridge === undefined ? NO_SHORTCUTS : () => bridge.state().shortcuts);
 }
