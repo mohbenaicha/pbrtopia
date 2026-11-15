@@ -8,6 +8,6 @@ export function paintSettingsOf(params: BrushParams, material: PaintMaterial): P
   return {
     material,
     height: !height.on ? null : height.additive ? { mode: 'add', value: height.level / 2 } : { mode: 'replace', value: 0.5 + height.level / 2 },
-    edgeBurn: edgeBurn.on ? { direction: edgeBurn.direction } : null,
+    edgeBurn: edgeBurn.on ? { direction: edgeBurn.direction, width: edgeBurn.width } : null,
   };
 }

@@ -24,7 +24,7 @@ describe('materialgen/compositing stroke log (R22 R71)', () => {
     log.begin(header(1)); log.end(true);
     expect(log.appliedMaps()).toEqual(['albedo', 'rough', 'metal']);
     log.begin(header(2, { height: { mode: 'replace', value: 0.5 } })); log.end(true);
-    log.begin(header(3, { edgeBurn: { direction: 'raise' } })); log.end(true);
+    log.begin(header(3, { edgeBurn: { direction: 'raise', width: 2 } })); log.end(true);
     expect(log.appliedMaps()).toEqual(['albedo', 'rough', 'metal', 'height', 'normal']);
   });
 
@@ -54,7 +54,7 @@ describe('materialgen/compositing stroke log (R22 R71)', () => {
     log.forgetOldestUndo();
     expect(log.undoDepth()).toBe(1);
     expect(log.appliedMaps()).toContain('height');
-    log.begin(header(3, { edgeBurn: { direction: 'dent' } })); log.end(false); // too large to undo
+    log.begin(header(3, { edgeBurn: { direction: 'dent', width: 2 } })); log.end(false); // too large to undo
     expect(log.undoDepth()).toBe(1);
     expect(log.appliedMaps()).toContain('normal');
     log.dropUndoHistory();

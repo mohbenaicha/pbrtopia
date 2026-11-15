@@ -3,6 +3,7 @@ import type { BrushAtlas } from '../atlas/readBrushAtlas';
 import type { PaintMaterial } from '../gpu/paintMaterial';
 import type { PainterMaps } from '../gpu/createStampPainter';
 import { stepRotation, updateBrushValue, type BrushParams } from '../plan/brushParams';
+import { isResizeGesture, resizeByPointer } from '../plan/resizeByPointer';
 import type { Point, ShapeSlot } from '../plan/planStamps';
 import { createPaintSession, type PaintedBytes, type PaintSession } from '../session/createPaintSession';
 import { createHeightProxy, pickSurface } from '../session/pickSurface';
@@ -54,7 +55,7 @@ const isEditable = (target: EventTarget | null): boolean => target instanceof HT
 
 /**
  * Compositing A5: one painting session on the preview's Plane. Puts the session's textures in the preview, takes the pointer (left button paints, Alt + left sets
- * the line marker, Shift + left commits a line, Ctrl + wheel turns the stamp), draws a frame's share of stamps on every animation frame while work remains, keeps
+ * the line marker, Shift + left commits a line, Alt + wheel turns the stamp, Alt + moving sideways resizes it), draws a frame's share of stamps on every animation frame while work remains, keeps
  * the ghost and the height proxy the surface pick reads, and undoes and redoes with the keyboard. `dispose` puts the preview back as it was.
  */
 export function createPaintController(options: PaintControllerOptions): PaintController {
@@ -79,6 +80,7 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
   let markerPoint: Point | null = null;
   let modifiers = { alt: false, shift: false };
   let wheelRemainder = 0;
+  let resizeAnchorX: number | null = null; // R73: where the pointer was at the last Alt movement
   let frame = 0;
   let disposed = false;
   let snapshot: PaintState = { canUndo: false, canRedo: false, hasStrokes: false, notice: null };
@@ -207,14 +209,32 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
     updateGhost();
   };
 
+  // R73: with Alt held (not Shift, the straight line, nor Ctrl, Undo) and no button down, the sideways movement over the canvas changes Size (the panel shows it through onBrushChange, the ghost follows).
+  const resizeWithAlt = (event: PointerEvent): void => {
+    if (!isResizeGesture(event) || stroking) {
+      resizeAnchorX = null;
+      return;
+    }
+    const from = resizeAnchorX;
+    resizeAnchorX = event.clientX;
+    if (from === null) return;
+    const current = session.brush();
+    const next = resizeByPointer(current, event.clientX - from);
+    if (next === current) return;
+    session.setBrush(next);
+    options.onBrushChange(session.brush());
+  };
+
   const onPointerMove = (event: PointerEvent): void => {
     rememberModifiers(event);
     if (event.target !== element && !stroking) {
       lastPoint = null;
       lastClient = null;
+      resizeAnchorX = null;
       ghost.hide();
       return;
     }
+    resizeWithAlt(event);
     lastClient = { clientX: event.clientX, clientY: event.clientY };
     const point = pointOf(event);
     lastPoint = point;
@@ -235,7 +255,7 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
   };
 
   const onWheel = (event: WheelEvent): void => {
-    if (!event.ctrlKey) return; // the turntable dollies
+    if (!event.altKey) return; // the turntable dollies
     event.preventDefault();
     const units = event.deltaMode === 1 ? event.deltaY * LINE_UNITS : event.deltaY;
     if (units === 0) return;
@@ -323,7 +343,7 @@ export function createPaintController(options: PaintControllerOptions): PaintCon
     options.onInterrupted();
   };
 
-  scene.setOrbitFilter({ ignoresPointer: (event) => event.button === 0 && event.pointerType !== 'touch', ignoresWheel: (event) => event.ctrlKey });
+  scene.setOrbitFilter({ ignoresPointer: (event) => event.button === 0 && event.pointerType !== 'touch', ignoresWheel: (event) => event.altKey });
   const previousCursor = element.style.cursor;
   element.style.cursor = 'crosshair';
   ghost.setTiling(scene.paintSurface().tilingX, scene.paintSurface().tilingY);

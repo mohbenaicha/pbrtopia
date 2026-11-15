@@ -12,7 +12,7 @@ import { shapeFlagOf, stampBounds, tileRect, unionRect, type AtlasGrid, type Tex
 import { withRendererState } from './withRendererState';
 
 /** Compositing R19: the tilt added per unit of stamp-local coverage slope. Tunable by eye (T3 value). */
-export const EDGE_BURN_GAIN = 0.1;
+export const EDGE_BURN_GAIN = 0.75; // compositing R76: the tilt of a crisp edge (the coverage changes by 1 across the baseline)
 const INSTANCES_PER_DRAW = 512;
 const BOUNDS_MARGIN = 2;
 
@@ -27,7 +27,7 @@ type Bytes = Uint8Array<ArrayBuffer>;
 export interface PaintSettings {
   material: PaintMaterial;
   height: { mode: 'replace' | 'add'; value: number } | null;
-  edgeBurn: { direction: 'raise' | 'dent' } | null;
+  edgeBurn: { direction: 'raise' | 'dent'; width: number } | null; // width in target texels (R77)
 }
 
 /** Starting maps in picture order (row 0 is the top): albedo RGBA, orm RGBA, height one byte, normal RGBA. A missing one starts flat (R20). */
@@ -212,7 +212,10 @@ export function createStampPainter(renderer: WebGLRenderer, options: StampPainte
         heightMaterial = settings.height.mode === 'replace' ? stampMaterials.heightMix : settings.height.value >= 0 ? stampMaterials.heightAdd : stampMaterials.heightSubtract;
         heightMaterial.uniforms['uValue']!.value = [settings.height.mode === 'replace' ? settings.height.value : Math.abs(settings.height.value), 0, 0, 0];
       }
-      if (settings.edgeBurn !== null) stampMaterials.slope.uniforms['uGain']!.value = (settings.edgeBurn.direction === 'raise' ? 1 : -1) * EDGE_BURN_GAIN;
+      if (settings.edgeBurn !== null) {
+        stampMaterials.slope.uniforms['uGain']!.value = (settings.edgeBurn.direction === 'raise' ? 1 : -1) * EDGE_BURN_GAIN;
+        stampMaterials.slope.uniforms['uWidth']!.value = settings.edgeBurn.width;
+      }
 
       const drawInstances = (count: number): void => {
         instances.geometry.instanceCount = count;

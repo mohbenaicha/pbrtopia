@@ -1,6 +1,6 @@
 import { memo, useCallback, useRef } from 'react';
 import { Icon, IconButton, RangeSlider, Slider, Toggle } from '@shared/ui-kit';
-import { BRUSH_CONTROLS, DEFAULT_BRUSH, updateBrushValue, type BrushControlKey, type BrushParams, type BrushValue } from '../plan/brushParams';
+import { BRUSH_CONTROLS, BURN_WIDTH, DEFAULT_BRUSH, updateBrushValue, type BrushControlKey, type BrushParams, type BrushValue } from '../plan/brushParams';
 import { PaintTip } from './PaintTip';
 import type { PaintTooltipKey } from './paintTooltips';
 
@@ -11,6 +11,7 @@ interface BrushControlsProps {
 
 const twoDecimals = (value: number): string => value.toFixed(2);
 const degrees = (value: number): string => `${Math.round(value)}°`;
+const texels = (value: number): string => String(Math.round(value));
 const signed = (value: number): string => `${value > 0 ? '+' : ''}${value.toFixed(2)}`;
 
 interface ControlRowSpec {
@@ -23,10 +24,10 @@ interface ControlRowSpec {
 /** The five randomisable controls, in the order they are drawn: the one place their labels, words and number formats are named (compositing R9, R50). */
 const CONTROL_ROWS: readonly ControlRowSpec[] = [
   { key: 'size', label: 'Size', tip: 'size', format: twoDecimals },
+  { key: 'rotation', label: 'Rotation', tip: 'rotation', format: degrees }, // R74: right under Size
   { key: 'strength', label: 'Strength', tip: 'strength', format: twoDecimals },
   { key: 'hardness', label: 'Hardness', tip: 'hardness', format: twoDecimals },
   { key: 'distance', label: 'Distance', tip: 'distance', format: twoDecimals },
-  { key: 'rotation', label: 'Rotation', tip: 'rotation', format: degrees },
 ];
 
 type PatchValue = (key: BrushControlKey, patch: Partial<BrushValue>) => void;
@@ -92,6 +93,7 @@ export function BrushControls({ brush, onChange }: BrushControlsProps): React.JS
       {brush.edgeBurn.on && (
         <div className="brush-controls__nested">
           <PaintTip tip="raiseDent"><Toggle dense label={brush.edgeBurn.direction === 'dent' ? 'Dent' : 'Raise'} checked={brush.edgeBurn.direction === 'dent'} onChange={(dent) => set({ edgeBurn: { ...brush.edgeBurn, direction: dent ? 'dent' : 'raise' } })} /></PaintTip>
+          <PaintTip tip="burnWidth"><Slider label="Burn width" layout="row" value={brush.edgeBurn.width} min={BURN_WIDTH.min} max={BURN_WIDTH.max} step={BURN_WIDTH.step} format={texels} resetTo={BURN_WIDTH.initial} onChange={(width) => set({ edgeBurn: { ...brush.edgeBurn, width } })} /></PaintTip>
         </div>
       )}
     </div>

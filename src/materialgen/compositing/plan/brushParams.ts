@@ -17,7 +17,7 @@ export interface BrushParams {
   distance: BrushValue; // times the footprint
   rotation: BrushValue; // degrees
   height: { on: boolean; level: number; additive: boolean };
-  edgeBurn: { on: boolean; direction: 'raise' | 'dent' };
+  edgeBurn: { on: boolean; direction: 'raise' | 'dent'; width: number }; // width: whole target texels (R77)
 }
 
 /** What a control may hold: its range, its slider step and its default value. The single place these numbers live (R9). */
@@ -36,6 +36,9 @@ export const BRUSH_CONTROLS: Readonly<Record<BrushControlKey, ControlLimits>> = 
   rotation: { min: -180, max: 180, step: 1, initial: 0 },
 };
 
+/** Compositing R77: the Burn width, in whole target texels. */
+export const BURN_WIDTH: ControlLimits = { min: 1, max: 10, step: 1, initial: 2 };
+
 const CONTROL_KEYS = Object.keys(BRUSH_CONTROLS) as readonly BrushControlKey[];
 const HEIGHT_LEVEL = { min: -1, max: 1 } as const;
 
@@ -48,7 +51,7 @@ export const DEFAULT_BRUSH: BrushParams = {
   distance: initialValueOf(BRUSH_CONTROLS.distance),
   rotation: initialValueOf(BRUSH_CONTROLS.rotation),
   height: { on: false, level: 0.3, additive: false },
-  edgeBurn: { on: false, direction: 'raise' },
+  edgeBurn: { on: false, direction: 'raise', width: BURN_WIDTH.initial },
 };
 
 const clampTo = (value: number, min: number, max: number, fallback: number): number => (Number.isFinite(value) ? Math.min(Math.max(value, min), max) : fallback);
@@ -60,7 +63,7 @@ export function wrapDegrees(degrees: number): number {
   return turned > 180 ? turned - 360 : turned;
 }
 
-/** Compositing R12: one wheel notch turns 5 degrees, a fine notch (Ctrl + Shift) 1 degree; a positive notch turns the angle up. */
+/** Compositing R12: one wheel notch turns 5 degrees, a fine notch (Alt + Shift) 1 degree; a positive notch turns the angle up. */
 export function stepRotation(degrees: number, notches: number, fine: boolean): number {
   return wrapDegrees(degrees + notches * (fine ? 1 : 5));
 }
@@ -95,6 +98,10 @@ export function clampBrush(params: BrushParams): BrushParams {
   return {
     ...clamped,
     height: { on: params.height.on, level: clampTo(params.height.level, HEIGHT_LEVEL.min, HEIGHT_LEVEL.max, DEFAULT_BRUSH.height.level), additive: params.height.additive },
-    edgeBurn: { on: params.edgeBurn.on, direction: params.edgeBurn.direction === 'dent' ? 'dent' : 'raise' },
+    edgeBurn: {
+      on: params.edgeBurn.on,
+      direction: params.edgeBurn.direction === 'dent' ? 'dent' : 'raise',
+      width: Math.round(clampTo(params.edgeBurn.width, BURN_WIDTH.min, BURN_WIDTH.max, BURN_WIDTH.initial)),
+    },
   };
 }

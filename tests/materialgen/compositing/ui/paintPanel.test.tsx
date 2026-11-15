@@ -107,17 +107,35 @@ describe('materialgen/compositing paint panel, phase A (R42-R46)', () => {
   });
 
   it('R45 with Edge burn on, one switch reads Raise and flips to Dent (and back) when toggled; there are no two buttons', () => {
-    const on = { ...DEFAULT_BRUSH, edgeBurn: { on: true, direction: 'raise' as const } };
+    const on = { ...DEFAULT_BRUSH, edgeBurn: { ...DEFAULT_BRUSH.edgeBurn, on: true, direction: 'raise' as const } };
     const { onBrushChange } = renderPanel(on);
     fireEvent.click(screen.getByRole('switch', { name: 'Raise' }));
-    expect(onBrushChange).toHaveBeenLastCalledWith({ ...on, edgeBurn: { on: true, direction: 'dent' } });
+    expect(onBrushChange).toHaveBeenLastCalledWith({ ...on, edgeBurn: { ...on.edgeBurn, direction: 'dent' } });
     cleanup();
-    const dent = { ...DEFAULT_BRUSH, edgeBurn: { on: true, direction: 'dent' as const } };
+    const dent = { ...DEFAULT_BRUSH, edgeBurn: { ...DEFAULT_BRUSH.edgeBurn, on: true, direction: 'dent' as const } };
     const second = renderPanel(dent);
     expect(screen.getByRole('switch', { name: 'Dent' })).toBeTruthy();
     expect(screen.queryByRole('radio')).toBeNull();
     fireEvent.click(screen.getByRole('switch', { name: 'Dent' }));
-    expect(second.onBrushChange).toHaveBeenLastCalledWith({ ...dent, edgeBurn: { on: true, direction: 'raise' } });
+    expect(second.onBrushChange).toHaveBeenLastCalledWith({ ...dent, edgeBurn: { ...dent.edgeBurn, direction: 'raise' } });
+  });
+
+  it('R77 the Burn width slider (1 to 10, a reset arrow, no dice) is drawn with Edge burn on, not with it off, and reports whole-texel changes', () => {
+    renderPanel(DEFAULT_BRUSH);
+    expect(screen.queryByRole('slider', { name: 'Burn width' })).toBeNull();
+    cleanup();
+    const on = { ...DEFAULT_BRUSH, edgeBurn: { ...DEFAULT_BRUSH.edgeBurn, on: true } };
+    const { onBrushChange } = renderPanel(on);
+    const slider = screen.getByRole('slider', { name: 'Burn width' }) as HTMLInputElement;
+    expect([slider.min, slider.max, slider.step, slider.value]).toEqual(['1', '10', '1', '2']);
+    expect(screen.queryByRole('button', { name: 'Random Burn width' })).toBeNull();
+    fireEvent.change(slider, { target: { value: '6' } });
+    expect(onBrushChange).toHaveBeenLastCalledWith({ ...on, edgeBurn: { ...on.edgeBurn, width: 6 } });
+    cleanup();
+    const wide = { ...on, edgeBurn: { ...on.edgeBurn, width: 6 } };
+    const second = renderPanel(wide);
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Burn width' }));
+    expect(second.onBrushChange).toHaveBeenLastCalledWith({ ...wide, edgeBurn: { ...wide.edgeBurn, width: 2 } });
   });
 
   it('R45 Undo and Redo come right after the swatches, before the brush controls', () => {
@@ -180,7 +198,7 @@ describe('materialgen/compositing paint panel, phase A (R42-R46)', () => {
   });
 
   it('R49 every control is described by its tooltip and carries no native title (the reset arrows and remove marks keep theirs)', () => {
-    const full = { ...DEFAULT_BRUSH, height: { ...DEFAULT_BRUSH.height, on: true }, edgeBurn: { on: true, direction: 'raise' as const } };
+    const full = { ...DEFAULT_BRUSH, height: { ...DEFAULT_BRUSH.height, on: true }, edgeBurn: { ...DEFAULT_BRUSH.edgeBurn, on: true, direction: 'raise' as const } };
     const palette = setMaterial(setShape(EMPTY_PALETTE, 0, 3), steel);
     const { container } = renderPanel(full, palette);
     const controls = [...container.querySelectorAll<HTMLElement>('button, input')].filter((element) => {
@@ -209,6 +227,13 @@ describe('materialgen/compositing paint panel, phase A (R42-R46)', () => {
   it('R9 the Size slider reaches 1 (the whole picture)', () => {
     renderPanel();
     expect((screen.getByRole('slider', { name: 'Size' }) as HTMLInputElement).max).toBe('1');
+  });
+
+  it('R74 the brush rows run Size, Rotation, Strength, Hardness, Distance', () => {
+    renderPanel();
+    const order = screen.getAllByRole('slider').map((slider) => slider.getAttribute('aria-label') ?? '');
+    const picked = order.filter((name) => ['Size', 'Rotation', 'Strength', 'Hardness', 'Distance'].includes(name));
+    expect(picked).toEqual(['Size', 'Rotation', 'Strength', 'Hardness', 'Distance']);
   });
 
   it('R12 R50 the Random rotation switch is gone: the Rotation dice replaces it', () => {

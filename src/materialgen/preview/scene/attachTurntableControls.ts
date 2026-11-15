@@ -5,7 +5,7 @@ export interface TurntableTarget {
   setDragging?(active: boolean): void; // a drag started or ended (R53: a thumbnail waits for it)
 }
 
-/** Compositing R4: events something else on the element handles (the painter takes the left button and Ctrl + wheel); the controls leave those alone. */
+/** Compositing R4: events something else on the element handles (the painter takes the left button and Alt + wheel); the controls leave those alone. */
 export interface TurntableFilter {
   ignoresPointer?(event: PointerEvent): boolean;
   ignoresWheel?(event: WheelEvent): boolean;

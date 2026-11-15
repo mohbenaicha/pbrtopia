@@ -4,6 +4,18 @@ import { BRUSH_CONTROLS, DEFAULT_BRUSH, clampBrush, drawBrushValue, stepRotation
 const value = (patch: Partial<BrushValue>): BrushValue => ({ value: 0.5, random: false, low: 0, high: 1, ...patch });
 
 describe('materialgen/compositing brush parameters (R9 R12 R50)', () => {
+  it('R77 the Burn width is clamped to 1 to 10 and rounded to a whole texel; a missing or non-finite width reads 2', () => {
+    const widthOf = (width: unknown): number => clampBrush({ ...DEFAULT_BRUSH, edgeBurn: { ...DEFAULT_BRUSH.edgeBurn, width: width as number } }).edgeBurn.width;
+    expect(widthOf(0)).toBe(1);
+    expect(widthOf(99)).toBe(10);
+    expect(widthOf(3.4)).toBe(3);
+    expect(widthOf(3.6)).toBe(4);
+    expect(widthOf(Number.NaN)).toBe(2);
+    expect(widthOf(Number.POSITIVE_INFINITY)).toBe(2);
+    expect(widthOf(undefined)).toBe(2);
+    expect(clampBrush({ ...DEFAULT_BRUSH, edgeBurn: { on: true, direction: 'dent' } as never }).edgeBurn).toEqual({ on: true, direction: 'dent', width: 2 });
+  });
+
   it('R9 R50 the defaults are the ones of the spec: single values, dice off, the range at the two ends of the control', () => {
     expect(DEFAULT_BRUSH.size).toEqual({ value: 0.12, random: false, low: 0.02, high: 1 });
     expect(DEFAULT_BRUSH.strength).toEqual({ value: 1, random: false, low: 0, high: 1 });
@@ -11,7 +23,7 @@ describe('materialgen/compositing brush parameters (R9 R12 R50)', () => {
     expect(DEFAULT_BRUSH.distance).toEqual({ value: 1, random: false, low: 0.05, high: 2 });
     expect(DEFAULT_BRUSH.rotation).toEqual({ value: 0, random: false, low: -180, high: 180 });
     expect(DEFAULT_BRUSH.height).toEqual({ on: false, level: 0.3, additive: false });
-    expect(DEFAULT_BRUSH.edgeBurn).toEqual({ on: false, direction: 'raise' });
+    expect(DEFAULT_BRUSH.edgeBurn).toEqual({ on: false, direction: 'raise', width: 2 });
     expect('randomRotation' in DEFAULT_BRUSH).toBe(false);
   });
 

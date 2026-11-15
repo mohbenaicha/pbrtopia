@@ -15,7 +15,8 @@ describe('materialgen/compositing paint settings (R17 R18 R19)', () => {
     expect(paintSettingsOf({ ...DEFAULT_BRUSH, height: { ...on, level: -0.4, additive: true } }, material).height).toEqual({ mode: 'add', value: -0.2 });
   });
 
-  it('R19 Edge burn carries its direction', () => {
-    expect(paintSettingsOf({ ...DEFAULT_BRUSH, edgeBurn: { on: true, direction: 'dent' } }, material).edgeBurn).toEqual({ direction: 'dent' });
+  it('R19 R77 Edge burn carries its direction and its width, and is null while it is off', () => {
+    expect(paintSettingsOf({ ...DEFAULT_BRUSH, edgeBurn: { on: true, direction: 'dent', width: 7 } }, material).edgeBurn).toEqual({ direction: 'dent', width: 7 });
+    expect(paintSettingsOf({ ...DEFAULT_BRUSH, edgeBurn: { on: false, direction: 'dent', width: 7 } }, material).edgeBurn).toBeNull();
   });
 });

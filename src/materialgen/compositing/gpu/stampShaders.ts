@@ -38,6 +38,7 @@ uniform sampler2D uAtlas;
 uniform vec4 uValue;
 uniform float uTexel;
 uniform float uGain;
+uniform float uWidth;
 varying vec2 vLocal;
 varying vec4 vTile;
 varying vec4 vBrush;
@@ -57,14 +58,20 @@ void main() {
   gl_FragColor = vec4(uValue.rgb, coverage(vLocal));
 }`;
 
-// Edge burn: the slope of the coverage in stamp-local units (so a big and a small stamp look alike), central differences 1.5 target texels apart, turned into the
-// picture's axes. The tilt written is the normal's xy contribution, -gradient x (+-gain), summed over stamps by ONE, ONE blending.
+// Edge burn (compositing R76, R77): a bevel of fixed width on the contour where the coverage is half of the strength, whatever the shape's own fade or the Hardness ramp: the
+// distance to the contour is estimated from the coverage and its gradient over one texel, the tilt is the unit gradient direction fading out over uWidth target texels
+// (the Burn width), turned into the picture's axes. The tilt written is the normal's xy contribution, -direction x strength x (+-gain), summed over stamps by ONE, ONE blending.
 const SLOPE_MAIN = `
 void main() {
-  float d = max(1.5 * uTexel / vSize, 0.0001);
-  vec2 gradient = vec2(
-    coverage(vLocal + vec2(d, 0.0)) - coverage(vLocal - vec2(d, 0.0)),
-    coverage(vLocal + vec2(0.0, d)) - coverage(vLocal - vec2(0.0, d))) / (2.0 * d);
+  float e = uTexel / vSize;
+  float strength = max(vBrush.x, 0.0001);
+  vec2 slope = vec2(
+    coverage(vLocal + vec2(e, 0.0)) - coverage(vLocal - vec2(e, 0.0)),
+    coverage(vLocal + vec2(0.0, e)) - coverage(vLocal - vec2(0.0, e))) / (2.0 * strength); // per target texel, strength taken out
+  float reach = length(slope);
+  if (reach < 0.0001) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+  float distance = abs(coverage(vLocal) / strength - 0.5) / reach; // texels to the half-coverage contour
+  vec2 gradient = slope / reach * (1.0 - smoothstep(0.0, uWidth, distance)) * vBrush.x;
   vec2 world = vec2(vTurn.x * gradient.x - vTurn.y * gradient.y, vTurn.y * gradient.x + vTurn.x * gradient.y);
   gl_FragColor = vec4(-world * uGain, 0.0, 1.0);
 }`;
@@ -77,12 +84,15 @@ const BLENDS: Record<StampBlend, BlendSetup> = {
   slope: { blending: CustomBlending, equation: AddEquation, src: OneFactor, dst: OneFactor },
 };
 
-/** The uniforms every stamp material shares: the atlas, the value to paint (rgb), the target texel size in picture fractions, and the signed Edge burn gain. */
-export interface StampUniforms { [name: string]: IUniform; uAtlas: IUniform<Texture>; uValue: IUniform<[number, number, number, number]>; uTexel: IUniform<number>; uGain: IUniform<number> }
+/** Compositing R75: the longest tilt the summed Edge burn may add to a normal's x/y ratio (1 is a 45 degree lean). */
+export const EDGE_BURN_MAX_TILT = 1;
+
+/** The uniforms every stamp material shares: the atlas, the value to paint (rgb), the target texel size in picture fractions, the signed Edge burn gain and its width in texels. */
+export interface StampUniforms { [name: string]: IUniform; uAtlas: IUniform<Texture>; uValue: IUniform<[number, number, number, number]>; uTexel: IUniform<number>; uGain: IUniform<number>; uWidth: IUniform<number> }
 
 export function createStampMaterial(blend: StampBlend, atlas: Texture, texel: number): ShaderMaterial {
   const setup = BLENDS[blend];
-  const uniforms: StampUniforms = { uAtlas: { value: atlas }, uValue: { value: [0, 0, 0, 0] }, uTexel: { value: texel }, uGain: { value: 0 } };
+  const uniforms: StampUniforms = { uAtlas: { value: atlas }, uValue: { value: [0, 0, 0, 0] }, uTexel: { value: texel }, uGain: { value: 0 }, uWidth: { value: 2 } };
   const material = new ShaderMaterial({
     vertexShader: STAMP_VERTEX,
     fragmentShader: COVERAGE + (blend === 'slope' ? SLOPE_MAIN : COLOUR_MAIN),
@@ -115,6 +125,8 @@ export function createComposeMaterial(base: Texture, slope: Texture, yTiltSign: 
         vec4 stored = texture2D(uBase, vUv);
         vec2 tilt = texture2D(uSlope, vUv).rg;
         if (dot(tilt, tilt) < 1e-12) { gl_FragColor = stored; return; }
+        float reach = length(tilt);
+        tilt *= min(1.0, ${EDGE_BURN_MAX_TILT.toFixed(2)} / reach); // R75: the summed tilt leans the normal at most 45 degrees, in its own direction
         tilt.y *= uYSign;
         vec3 n1 = stored.xyz * 2.0 - 1.0;
         vec3 n = normalize(vec3(n1.xy + tilt * n1.z, n1.z));
