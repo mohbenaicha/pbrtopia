@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AppBackends, ResolvedBackends } from '../../../src/shell/backends/appBackends';
 import { AppBackendsProvider, useAppBackends } from '../../../src/shell/backends/AppBackendsProvider';
 import { KeyVault } from '../../../src/keys/KeyVault';
+import { ProviderKeySource } from '../../../src/keys/ProviderKeySource';
 import { createMemoryVaultStorage } from '../../keys/memoryVaultStorage';
 
 afterEach(() => {
@@ -51,7 +52,8 @@ describe('AppBackendsProvider', () => {
     const value = seen[seen.length - 1];
     expect(value?.createImageGenerator).toBe(backends.createImageGenerator);
     expect(value?.createPromptEnhancer).toBe(backends.createPromptEnhancer);
-    expect(value?.keys).toBeInstanceOf(KeyVault);
+    expect(value?.vault).toBeInstanceOf(KeyVault);
+    expect(value?.keys).toBeInstanceOf(ProviderKeySource);
   });
 
   it('settings R4 settings R6 the injected model discovery reaches the children, the real one is the default, and the password prompt is exposed', () => {
@@ -78,6 +80,7 @@ describe('AppBackendsProvider', () => {
     const { seen, rerender } = renderProbe(makeBackends());
     rerender();
     rerender();
+    expect(new Set(seen.map((value) => value.vault)).size).toBe(1);
     expect(new Set(seen.map((value) => value.keys)).size).toBe(1);
   });
 
@@ -87,7 +90,7 @@ describe('AppBackendsProvider', () => {
     const load = vi.spyOn(storage, 'load');
     const { seen, rerender } = renderProbe(makeBackends(storage));
     rerender();
-    const keys = seen[0]?.keys as KeyVault;
+    const keys = seen[0]?.vault as KeyVault;
     await waitFor(() => expect(keys.hasKey('gemini')).toBe(true));
     expect(keys.status()).toBe('locked');
     expect(keys.hasKey('openai')).toBe(false);
@@ -104,7 +107,7 @@ describe('AppBackendsProvider', () => {
     const storage = createMemoryVaultStorage();
     await seedVaultWithGeminiKey(storage);
     const { seen } = renderProbe(makeBackends(storage));
-    const keys = seen[0]?.keys as KeyVault;
+    const keys = seen[0]?.vault as KeyVault;
     await waitFor(() => expect(keys.status()).toBe('locked'));
     let unlocking: Promise<unknown> = Promise.resolve();
     act(() => {
@@ -124,7 +127,7 @@ describe('AppBackendsProvider', () => {
     const storage = createMemoryVaultStorage();
     await seedVaultWithGeminiKey(storage);
     const { seen } = renderProbe(makeBackends(storage));
-    const keys = seen[0]?.keys as KeyVault;
+    const keys = seen[0]?.vault as KeyVault;
     await waitFor(() => expect(keys.status()).toBe('locked'));
     let unlocking: Promise<{ ok: boolean }> = Promise.resolve({ ok: true });
     act(() => {

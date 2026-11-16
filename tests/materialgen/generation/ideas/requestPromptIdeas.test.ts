@@ -3,6 +3,7 @@ import type { PromptEnhancer } from '@shared/generation';
 import { IDEAS_UNREADABLE } from '@mat/generation/ideas/parseIdeas';
 import { requestPromptIdeas, type IdeasBackends } from '@mat/generation/ideas/requestPromptIdeas';
 import { buildIdeasText } from '@mat/generation/ideas/buildIdeasText';
+import { resolved } from '../../../keys/fakeResolveKey';
 
 const TARGET = { provider: 'gemini' as const, modelId: 'gemini-3.8-flash', level: 'low' };
 
@@ -10,7 +11,7 @@ function backends(answer: Awaited<ReturnType<PromptEnhancer['enhance']>>, option
   const enhance = vi.fn<PromptEnhancer['enhance']>(async () => answer);
   const deps: IdeasBackends = {
     createPromptEnhancer: vi.fn(() => ({ enhance })),
-    keys: { getKey: () => (options.key === undefined ? 'k-123' : options.key), ensureUnlocked: async () => options.unlock ?? { ok: true, value: undefined } },
+    keys: { resolveKey: async () => resolved(options.key === undefined ? 'k-123' : options.key), ensureUnlocked: async () => options.unlock ?? { ok: true, value: undefined } },
   };
   return { deps, enhance };
 }

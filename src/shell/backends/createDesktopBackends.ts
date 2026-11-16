@@ -1,11 +1,12 @@
 import { createImageGenerator, createPromptEnhancer } from '../../generation';
-import type { VaultStorage } from '../../keys';
+import type { EnvKeySource, VaultStorage } from '../../keys';
 import type { StorageLocation } from '../../projects';
 import type { AppBackends, DesktopPickers } from './appBackends';
 
 /** What the desktop side supplies to the backends: where the vault lives, where the library is, and the native dialogs. */
 export interface DesktopBackendParts {
   vaultStorage: VaultStorage;
+  envKeySource: EnvKeySource;
   location: StorageLocation;
   pickers: DesktopPickers;
 }
@@ -16,6 +17,7 @@ export function createDesktopBackends(parts: DesktopBackendParts, appId?: string
     createImageGenerator: (provider) => createImageGenerator(provider),
     createPromptEnhancer: (provider) => createPromptEnhancer(provider),
     vaultStorage: parts.vaultStorage,
+    envKeySource: parts.envKeySource,
     location: parts.location,
     pickers: parts.pickers,
     ...(appId === undefined ? {} : { appId }),

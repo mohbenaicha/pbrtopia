@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { discoverModels } from '../../generation';
-import { PROVIDERS, type KeyVault } from '../../keys';
+import { PROVIDERS, type ProviderKeySource } from '../../keys';
 import type { SharedProjectStore } from '../../projects/SharedProjectStore';
 import type { CatalogCacheRecord } from '../../projects/records/appSettingsRecord';
 import { refreshModelLists } from './refreshModelLists';
@@ -16,7 +16,7 @@ export interface ModelListRefreshState {
 /** Settings R6: Refresh. Held by the Settings view, so a change of section does not stop it; the write happens even if the view was left meanwhile. */
 export function useModelListRefresh(
   store: Pick<SharedProjectStore, 'loadAppSettings' | 'saveAppSettings'>,
-  vault: Pick<KeyVault, 'hasKey' | 'ensureUnlocked' | 'getKey'>,
+  vault: Pick<ProviderKeySource, 'hasKey' | 'ensureUnlocked' | 'resolveKey'>,
   discover: typeof discoverModels,
 ): ModelListRefreshState {
   const [refreshing, setRefreshing] = useState(false);

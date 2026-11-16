@@ -41,6 +41,16 @@ describe('ApiKeysSection', () => {
     expect(screen.getAllByText(/stay in this browser/i)).toHaveLength(1);
   });
 
+  it('api-keys R22 the description gains the environment sentence only when the host offers environment keys', async () => {
+    const offered = { ...backends(), envKeySource: { available: async () => true, read: async () => ({ ok: false as const, reason: 'not-set' as const }), needsRestart: false } };
+    render(
+      <AppBackendsProvider backends={offered}>
+        <ApiKeysSection rejectedKeys={{}} onKeySaved={vi.fn()} />
+      </AppBackendsProvider>,
+    );
+    await waitFor(() => expect(document.querySelector('.settings-page__description')?.textContent).toContain('Or read them from environment variables each time they are used; the app does not store them there, and any program on this computer can read them.'));
+  });
+
   it('settings R3 saving a key goes through the app\'s own password question and then reports the provider once', async () => {
     const { user, onKeySaved } = show();
     await user.click(await within(await screen.findByRole('group', { name: 'Gemini' })).findByRole('button', { name: 'Add key' }));

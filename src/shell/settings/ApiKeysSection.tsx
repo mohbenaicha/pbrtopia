@@ -10,13 +10,15 @@ interface ApiKeysSectionProps {
 
 // Settings R20, api-keys R9: the one sentence about the keys; nothing else on the page repeats it.
 const DESCRIPTION = 'Keys are encrypted with your password and stay in this browser; this protects them at rest only, not against XSS or a malicious extension.';
+// Api-keys R22: added only where the host can read the environment.
+const ENV_SENTENCE = ' Or read them from environment variables each time they are used; the app does not store them there, and any program on this computer can read them.';
 
 // Settings R3: the key section of api-keys, with the vault and the password question the app owns.
 export function ApiKeysSection({ rejectedKeys, onKeySaved }: ApiKeysSectionProps): React.JSX.Element {
   const backends = useAppBackends();
   return (
-    <SettingsPage title="API keys" description={DESCRIPTION}>
-      <KeySettingsSection vault={backends.keys} prompt={backends.passwordPrompt} rejectedKeys={rejectedKeys} onKeySaved={onKeySaved} />
+    <SettingsPage title="API keys" description={backends.keys.envOffered() ? `${DESCRIPTION}${ENV_SENTENCE}` : DESCRIPTION}>
+      <KeySettingsSection vault={backends.vault} prompt={backends.passwordPrompt} env={{ keys: backends.keys, choices: backends.envChoices }} rejectedKeys={rejectedKeys} onKeySaved={onKeySaved} />
     </SettingsPage>
   );
 }

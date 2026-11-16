@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { KeyVault } from '@shared/keys';
+import type { ProviderKeySource } from '@shared/keys';
 import type { MapsState } from '@mat/maps';
 import { NEEDS_ALBEDO_PROBLEM, type PlanReport } from '../plan/inspectPlan';
 import type { GenerationPlan } from '../plan/planTypes';
@@ -54,7 +54,7 @@ interface Inputs {
   references: readonly Blob[];
   mapsState: MapsState;
   ports: RunPorts;
-  keys: Pick<KeyVault, 'ensureUnlocked'>;
+  keys: Pick<ProviderKeySource, 'ensureUnlocked'>;
   masksRun?: MasksRunInputs;
   readAlbedoReference?: () => Promise<Blob | null>; // R6: the existing Albedo as the albedo reference of a plan that holds no Albedo; null when the project has none
   beforeDecomposition?: () => Promise<void>; // masks-package R6: awaited before the first model call of a run that has the decomposition (metal-roughness) job; never rejects

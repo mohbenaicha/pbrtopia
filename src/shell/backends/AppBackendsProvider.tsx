@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { discoverModels } from '../../generation';
-import { KeyPasswordPrompts, KeyVault, usePasswordPrompt } from '../../keys';
+import { EnvKeyChoices, KeyPasswordPrompts, KeyVault, ProviderKeySource, createEnvChoiceChannel, createLocalEnvChoiceStorage, usePasswordPrompt } from '../../keys';
 import type { AppBackends, DesktopPickers, ResolvedBackends } from './appBackends';
 
 const BackendsContext = createContext<ResolvedBackends | null>(null);
@@ -16,7 +16,7 @@ interface AppBackendsProviderProps {
  */
 export function AppBackendsProvider({ backends, children }: AppBackendsProviderProps): React.JSX.Element {
   const prompt = usePasswordPrompt();
-  const [keys] = useState(
+  const [vault] = useState(
     () =>
       new KeyVault({
         storage: backends.vaultStorage,
@@ -25,16 +25,18 @@ export function AppBackendsProvider({ backends, children }: AppBackendsProviderP
         ...(backends.kdfIterations === undefined ? {} : { kdfIterations: backends.kdfIterations }),
       }),
   );
+  const [envChoices] = useState(() => new EnvKeyChoices({ storage: createLocalEnvChoiceStorage(backends.appId), channel: createEnvChoiceChannel(backends.appId) }));
+  const [keys] = useState(() => new ProviderKeySource({ vault, choices: envChoices, env: backends.envKeySource }));
   const [keysLoaded, setKeysLoaded] = useState(false);
   useEffect(() => {
     let live = true;
-    void keys.refresh().then(() => {
+    void Promise.all([vault.refresh(), keys.detectEnvSupport()]).then(() => {
       if (live) setKeysLoaded(true);
     });
     return () => {
       live = false;
     };
-  }, [keys]);
+  }, [vault, keys]);
 
   const discover = backends.discoverModels ?? discoverModels;
   const { answer, refuseRequests } = prompt;
@@ -44,17 +46,19 @@ export function AppBackendsProvider({ backends, children }: AppBackendsProviderP
       createPromptEnhancer: backends.createPromptEnhancer,
       discoverModels: discover,
       keys,
+      vault,
+      envChoices,
       passwordPrompt: { answer, refuseRequests },
       keysLoaded,
       ...(backends.location === undefined ? {} : { location: backends.location }),
       ...(backends.pickers === undefined ? {} : { pickers: backends.pickers }),
     }),
-    [backends.createImageGenerator, backends.createPromptEnhancer, backends.location, backends.pickers, discover, keys, answer, refuseRequests, keysLoaded],
+    [backends.createImageGenerator, backends.createPromptEnhancer, backends.location, backends.pickers, discover, keys, vault, envChoices, answer, refuseRequests, keysLoaded],
   );
   return (
     <BackendsContext.Provider value={value}>
       {children}
-      <KeyPasswordPrompts vault={keys} prompt={prompt} />
+      <KeyPasswordPrompts vault={vault} prompt={prompt} />
     </BackendsContext.Provider>
   );
 }

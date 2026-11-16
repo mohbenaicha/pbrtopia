@@ -1,8 +1,8 @@
 import { discoverModels, type ProviderModelRecord } from '../../generation';
-import { PROVIDERS, type KeyVault, type Provider } from '../../keys';
+import { PROVIDERS, type Provider, type ProviderKeySource } from '../../keys';
 import { buildModelCatalog } from './buildModelCatalog';
 
-export type CatalogWatchVault = Pick<KeyVault, 'status' | 'hasKey' | 'getKey' | 'on'>;
+export type CatalogWatchVault = Pick<ProviderKeySource, 'isReady' | 'hasKey' | 'resolveKey' | 'on'>;
 export type WatchedCatalog = ReturnType<typeof buildModelCatalog>;
 
 interface CatalogWatchInputs {
@@ -31,11 +31,11 @@ export function watchModelCatalog({ keys, discover = discoverModels, onChange }:
     const run = new AbortController();
     inFlight = run;
     for (const provider of keyed) {
-      const key = keys.getKey(provider);
-      if (key === null) continue;
-      void discover(provider, key, run.signal)
+      void keys
+        .resolveKey(provider, run.signal)
+        .then((key) => (key.ok ? discover(provider, key.value, run.signal) : null))
         .then((result) => {
-          if (run.signal.aborted || !result.ok) return; // an answer for an older vault state is dropped
+          if (result === null || run.signal.aborted || !result.ok) return; // an answer for an older vault state is dropped
           discovered[provider] = result.value;
           publish();
         })
@@ -47,7 +47,7 @@ export function watchModelCatalog({ keys, discover = discoverModels, onChange }:
     inFlight?.abort();
     inFlight = null;
     const keyed = publish();
-    if (keys.status() === 'unlocked') discoverAll(keyed);
+    if (keys.isReady()) discoverAll(keyed);
   };
 
   sync();

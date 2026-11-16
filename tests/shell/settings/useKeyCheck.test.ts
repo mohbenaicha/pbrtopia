@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { useKeyCheck } from '../../../src/shell/settings/useKeyCheck';
 import type { ProviderError, ProviderModelRecord, Result } from '../../../src/generation';
 import type { Provider } from '../../../src/keys';
+import { resolved } from '../../keys/fakeResolveKey';
 
 type Answer = Result<ProviderModelRecord[], ProviderError>;
 const refused: Answer = { ok: false, error: { category: 'auth', retryable: false, message: 'Rejected.' } };
@@ -16,9 +17,8 @@ function fakeVault(keyed: Provider[]) {
   const texts: Partial<Record<Provider, string>> = {};
   let status: 'none' | 'locked' | 'unlocked' = 'unlocked';
   return {
-    status: () => status,
     hasKey: (provider: Provider) => have.has(provider),
-    getKey: (provider: Provider) => (have.has(provider) && status === 'unlocked' ? (texts[provider] ?? `${provider}-key`) : null),
+    resolveKey: async (provider: Provider) => resolved(have.has(provider) && status === 'unlocked' ? (texts[provider] ?? `${provider}-key`) : null),
     replaceText(provider: Provider, text: string) {
       texts[provider] = text; // another tab saved a different key: the vault announces it like any change
       listeners.forEach((listener) => listener());
@@ -87,7 +87,9 @@ describe('useKeyCheck', () => {
     const resolvers: ((answer: Answer) => void)[] = [];
     const { result } = setup({ discover: () => new Promise<Answer>((resolve) => void resolvers.push(resolve)) });
     act(() => result.current.keySaved('gemini'));
+    await waitFor(() => expect(resolvers).toHaveLength(1)); // the save fetches its key, then asks the provider
     act(() => result.current.keySaved('gemini'));
+    await waitFor(() => expect(resolvers).toHaveLength(2));
     resolvers[1]?.(good);
     await act(async () => undefined);
     resolvers[0]?.(refused); // the first save's answer arrives last and is dropped
@@ -97,8 +99,9 @@ describe('useKeyCheck', () => {
 
   it('settings R4 an answer for a key removed meanwhile flags nothing', async () => {
     let finish: (answer: Answer) => void = () => undefined;
-    const { result, vault } = setup({ discover: () => new Promise<Answer>((resolve) => void (finish = resolve)) });
+    const { result, vault, discover } = setup({ discover: () => new Promise<Answer>((resolve) => void (finish = resolve)) });
     act(() => result.current.keySaved('gemini'));
+    await waitFor(() => expect(discover).toHaveBeenCalled());
     act(() => vault.change({ remove: 'gemini' }));
     finish(refused);
     await act(async () => undefined);
@@ -125,17 +128,19 @@ describe('useKeyCheck', () => {
     expect(result.current.flags).toEqual({});
   });
 
-  it('settings R4 a key that cannot be read makes no call', () => {
+  it('settings R4 a key that cannot be read makes no call', async () => {
     const { result, discover, vault } = setup();
     act(() => vault.change({ status: 'locked' }));
     act(() => result.current.keySaved('gemini'));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     expect(discover).not.toHaveBeenCalled();
   });
 
   it('settings R4 an answer for a key replaced from another tab meanwhile flags nothing', async () => {
     let finish: (answer: Answer) => void = () => undefined;
-    const { result, vault } = setup({ discover: () => new Promise<Answer>((resolve) => void (finish = resolve)) });
+    const { result, vault, discover } = setup({ discover: () => new Promise<Answer>((resolve) => void (finish = resolve)) });
     act(() => result.current.keySaved('gemini'));
+    await waitFor(() => expect(discover).toHaveBeenCalled());
     act(() => vault.replaceText('gemini', 'gemini-key-from-the-other-tab'));
     finish(refused);
     await act(async () => undefined);
@@ -144,8 +149,9 @@ describe('useKeyCheck', () => {
 
   it('settings R4 a refusal still flags when the vault was locked meanwhile (the key cannot be compared)', async () => {
     let finish: (answer: Answer) => void = () => undefined;
-    const { result, vault } = setup({ discover: () => new Promise<Answer>((resolve) => void (finish = resolve)) });
+    const { result, vault, discover } = setup({ discover: () => new Promise<Answer>((resolve) => void (finish = resolve)) });
     act(() => result.current.keySaved('gemini'));
+    await waitFor(() => expect(discover).toHaveBeenCalled());
     act(() => vault.change({ status: 'locked' }));
     finish(refused);
     await waitFor(() => expect(result.current.flags.gemini).toBeDefined());
@@ -159,7 +165,7 @@ describe('useKeyCheck', () => {
     expect(discover).not.toHaveBeenCalled();
   });
 
-  it('settings R4 leaving aborts the call in flight', () => {
+  it('settings R4 leaving aborts the call in flight', async () => {
     let signal: AbortSignal | undefined;
     const { result, unmount } = setup({
       discover: (_provider, _key, given) => {
@@ -168,6 +174,7 @@ describe('useKeyCheck', () => {
       },
     });
     act(() => result.current.keySaved('gemini'));
+    await waitFor(() => expect(signal).toBeDefined());
     expect(signal?.aborted).toBe(false);
     unmount();
     expect(signal?.aborted).toBe(true);

@@ -1,5 +1,5 @@
 import { scaleImageToMaxSide, type ImageGenerator, type ProviderError } from '@shared/generation';
-import type { KeyVault, Provider } from '@shared/keys';
+import type { Provider, ProviderKeySource } from '@shared/keys';
 import { decodeImageFile, encodePngBlob, type GeneratedMap } from '@mat/maps';
 import type { RunPorts } from '../run/runTypes';
 
@@ -21,7 +21,7 @@ export type MasksStepsFactory = (describe: DescribeTarget | null) => MasksSteps;
 
 export interface RunBackends {
   createImageGenerator(provider: Provider): ImageGenerator;
-  keys: Pick<KeyVault, 'getKey'>;
+  keys: Pick<ProviderKeySource, 'resolveKey'>;
 }
 
 const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
@@ -45,9 +45,9 @@ interface BindInputs {
 export function bindRunPorts({ backends, commitMaps, masks }: BindInputs): RunPorts {
   return {
     generateImage: async (provider, request, signal) => {
-      const apiKey = backends.keys.getKey(provider);
-      if (apiKey === null) return { ok: false, error: missingKey(provider) };
-      return backends.createImageGenerator(provider).generate(request, { apiKey, signal });
+      const resolved = await backends.keys.resolveKey(provider, signal);
+      if (!resolved.ok) return { ok: false, error: resolved.error.code === 'vault-missing' ? missingKey(provider) : { category: 'auth', retryable: false, message: resolved.error.message } };
+      return backends.createImageGenerator(provider).generate(request, { apiKey: resolved.value, signal });
     },
     decodeImage: async (blob) => {
       try {

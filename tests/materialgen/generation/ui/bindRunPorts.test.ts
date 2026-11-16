@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { GenerateRequest, ImageGenerator } from '@shared/generation/providers/ImageGenerator';
 import { encodePng, type PixelImage } from '@mat/maps';
 import { bindRunPorts, MASKS_STEPS_UNAVAILABLE, REFERENCE_MAX_SIDE_PX } from '@mat/generation/ui/bindRunPorts';
+import { resolved } from '../../../keys/fakeResolveKey';
 
 const scaleSpy = vi.hoisted(() => vi.fn());
 vi.mock('@shared/generation/imageScaling/scaleImageToMaxSide', () => ({ scaleImageToMaxSide: scaleSpy }));
@@ -13,7 +14,7 @@ function bind(key: string | null) {
   const generate = vi.fn(async () => ({ ok: true as const, value: { blob: new Blob(['x']), mimeType: 'image/png' } }));
   const adapter: ImageGenerator = { generate };
   const commitMaps = vi.fn(async () => true);
-  const ports = bindRunPorts({ backends: { createImageGenerator: () => adapter, keys: { getKey: () => key } }, commitMaps, masks: MASKS_STEPS_UNAVAILABLE });
+  const ports = bindRunPorts({ backends: { createImageGenerator: () => adapter, keys: { resolveKey: async () => resolved(key) } }, commitMaps, masks: MASKS_STEPS_UNAVAILABLE });
   return { ports, generate, commitMaps };
 }
 
@@ -68,7 +69,7 @@ describe('materialgen/generation run ports', () => {
 
   it('R42 a maps controller that throws is reported as not stored, never thrown into the run', async () => {
     const commitMaps = vi.fn(async () => { throw new Error('quota'); });
-    const ports = bindRunPorts({ backends: { createImageGenerator: () => ({ generate: vi.fn() }), keys: { getKey: () => 'k' } }, commitMaps, masks: MASKS_STEPS_UNAVAILABLE });
+    const ports = bindRunPorts({ backends: { createImageGenerator: () => ({ generate: vi.fn() }), keys: { resolveKey: async () => resolved('k') } }, commitMaps, masks: MASKS_STEPS_UNAVAILABLE });
     expect(await ports.commitMaps([{ kind: 'albedo' as const, image: pixels(2, 2) }])).toBe(false);
   });
 });

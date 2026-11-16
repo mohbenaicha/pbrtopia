@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { refreshModelLists } from '../../../src/shell/settings/refreshModelLists';
 import type { ProviderError, ProviderModelRecord, Result } from '../../../src/generation';
 import type { Provider } from '../../../src/keys';
+import { resolved } from '../../keys/fakeResolveKey';
 
 const model = (provider: Provider, id: string): ProviderModelRecord => ({ provider, id, role: 'vision-text', displayName: id, verified: true, resolutions: [], qualityLevels: [] });
 const NOW = '2026-10-21T12:00:00.000Z';
@@ -15,7 +16,7 @@ function run(options: { keyed?: Provider[]; unlock?: unknown; keys?: Partial<Rec
   const keys = { gemini: 'g-secret-key', openai: 'o-secret-key', ...options.keys };
   const deps = {
     keyed: options.keyed ?? (['gemini', 'openai'] as Provider[]),
-    vault: { ensureUnlocked: vi.fn(async () => (options.unlock ?? unlocked) as never), getKey: (provider: Provider) => keys[provider] ?? null },
+    vault: { ensureUnlocked: vi.fn(async () => (options.unlock ?? unlocked) as never), resolveKey: async (provider: Provider) => resolved(keys[provider] ?? null) },
     discover,
     previous: options.previous ?? null,
     now: () => NOW,

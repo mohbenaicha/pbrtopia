@@ -1,6 +1,7 @@
 //! Every command the page may call (storage-backends R12). Each is declared in build.rs and granted in capabilities/default.json.
 //! Commands are `async` so their disk work runs off the window's main thread.
 
+pub mod env;
 pub mod files;
 pub mod handles;
 pub mod library;

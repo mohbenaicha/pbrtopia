@@ -22,6 +22,7 @@ pub fn run() {
             app.manage(state);            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::env::env_read,
             commands::records::db_get,
             commands::records::db_list,
             commands::records::db_commit,

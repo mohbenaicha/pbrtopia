@@ -1,5 +1,11 @@
 // What the rest of the app imports from keys/.
 export { KeyVault } from './KeyVault';
+export { ProviderKeySource } from './ProviderKeySource';
+export { EnvKeyChoices } from './env/EnvKeyChoices';
+export { createLocalEnvChoiceStorage } from './env/envChoiceStorage';
+export { createEnvChoiceChannel } from './env/envChoiceChannel';
+export { checkEnvKeyName, type EnvNameCheck } from './env/checkEnvKeyName';
+export type { EnvKeySource, EnvReadResult } from './env/envKeyTypes';
 export type { KeyError, KeyResult } from './keyError';
 export { createIndexedDbVaultStorage } from './vaultStorage';
 export { readVaultRecord } from './readVaultRecord';

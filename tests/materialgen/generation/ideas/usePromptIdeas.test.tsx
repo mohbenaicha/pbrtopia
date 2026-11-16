@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PromptEnhancer } from '@shared/generation';
 import { usePromptIdeas } from '@mat/generation/ideas/usePromptIdeas';
 import type { IdeasBackends } from '@mat/generation/ideas/requestPromptIdeas';
+import { resolved } from '../../../keys/fakeResolveKey';
 
 afterEach(cleanup);
 
@@ -12,7 +13,7 @@ const TARGET = { provider: 'gemini' as const, modelId: 'gemini-3.8-flash', level
 
 function setup(options: { answer?: string; target?: typeof TARGET | null; prompt?: string } = {}) {
   const enhance = vi.fn<PromptEnhancer['enhance']>(async () => ({ ok: true, value: options.answer ?? '["one two", "three four", "five six"]' }));
-  const backends: IdeasBackends = { createPromptEnhancer: () => ({ enhance }), keys: { getKey: () => 'k', ensureUnlocked: async () => ({ ok: true, value: undefined }) } };
+  const backends: IdeasBackends = { createPromptEnhancer: () => ({ enhance }), keys: { resolveKey: async () => resolved('k'),ensureUnlocked: async () => ({ ok: true, value: undefined }) } };
   const hook = renderHook(() => {
     const [prompt, setPrompt] = useState(options.prompt ?? 'rusty metal');
     return { prompt, setPrompt, ideas: usePromptIdeas({ prompt, setPrompt, target: options.target === undefined ? TARGET : options.target, backends }) };
@@ -76,7 +77,7 @@ describe('usePromptIdeas', () => {
           context.signal.addEventListener('abort', () => resolve({ ok: true, value: '["a b", "c d", "e f"]' }));
         }),
     );
-    const backends: IdeasBackends = { createPromptEnhancer: () => ({ enhance }), keys: { getKey: () => 'k', ensureUnlocked: async () => ({ ok: true, value: undefined }) } };
+    const backends: IdeasBackends = { createPromptEnhancer: () => ({ enhance }), keys: { resolveKey: async () => resolved('k'),ensureUnlocked: async () => ({ ok: true, value: undefined }) } };
     const hook = renderHook(() => usePromptIdeas({ prompt: 'x', setPrompt: () => undefined, target: TARGET, backends }));
     act(() => hook.result.current.request());
     await waitFor(() => expect(signalSeen).toBeDefined());

@@ -1,11 +1,11 @@
 import type { discoverModels } from '../../generation';
-import { PROVIDERS, type KeyVault, type Provider } from '../../keys';
+import { PROVIDERS, type Provider, type ProviderKeySource } from '../../keys';
 import type { CatalogCacheRecord } from '../../projects/records/appSettingsRecord';
 import { PROVIDER_NAMES } from './providerNames';
 
 interface RefreshDeps {
   keyed: Provider[];
-  vault: Pick<KeyVault, 'ensureUnlocked' | 'getKey'>;
+  vault: Pick<ProviderKeySource, 'ensureUnlocked' | 'resolveKey'>;
   discover: typeof discoverModels;
   previous: CatalogCacheRecord | null;
   now(): string;
@@ -19,9 +19,9 @@ type RefreshOutcome =
 type Answer = { entries: Record<string, unknown>[] } | { problem: string };
 
 async function askProvider(provider: Provider, deps: RefreshDeps, signal: AbortSignal): Promise<Answer> {
-  const key = deps.vault.getKey(provider);
-  if (key === null) return { problem: `${PROVIDER_NAMES[provider]} key could not be read.` };
-  const result = await deps.discover(provider, key, signal);
+  const key = await deps.vault.resolveKey(provider, signal);
+  if (!key.ok) return { problem: key.error.code === 'vault-missing' ? `${PROVIDER_NAMES[provider]} key could not be read.` : `${PROVIDER_NAMES[provider]}: ${key.error.message}` };
+  const result = await deps.discover(provider, key.value, signal);
   if (result.ok) return { entries: result.value as unknown as Record<string, unknown>[] };
   const { category, message } = result.error;
   return { problem: category === 'auth' ? `${PROVIDER_NAMES[provider]} refused the key.` : `${PROVIDER_NAMES[provider]}: ${message}` };

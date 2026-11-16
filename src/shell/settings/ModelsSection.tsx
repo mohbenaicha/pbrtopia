@@ -1,4 +1,4 @@
-import type { KeyVault } from '../../keys';
+import type { ProviderKeySource } from '../../keys';
 import type { SharedProjectStore } from '../../projects/SharedProjectStore';
 import type { ImageMaxPx } from '../../projects/records/appSettingsRecord';
 import { Button, Select, type SelectOption } from '../../ui-kit';
@@ -11,7 +11,7 @@ import { useModelSettings } from './useModelSettings';
 
 export interface ModelsSectionProps {
   store: Pick<SharedProjectStore, 'loadAppSettings' | 'saveAppSettings'>;
-  vault: Pick<KeyVault, 'hasKey' | 'on'>;
+  vault: Pick<ProviderKeySource, 'hasKey' | 'on'>;
   keysLoaded: boolean; // the stored vault has been read, so hasKey can be trusted
   refresh: ModelListRefreshState; // held by the Settings view, so it outlives this section
 }

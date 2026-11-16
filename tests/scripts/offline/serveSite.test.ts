@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -24,8 +24,8 @@ function makeSite(): string {
   return folder;
 }
 
-function launch(site: string, port: number): { child: ChildProcess; output: () => string; exited: Promise<number | null> } {
-  const child = spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-Site', site, '-Port', String(port), '-NoBrowser'], { stdio: ['ignore', 'pipe', 'pipe'] });
+function launch(site: string, port: number, env: Record<string, string> = {}): { child: ChildProcess; output: () => string; exited: Promise<number | null> } {
+  const child = spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-Site', site, '-Port', String(port), '-NoBrowser'], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...env } });
   running.push(child);
   let text = '';
   child.stdout?.on('data', (chunk: Buffer) => (text += chunk.toString()));
@@ -61,6 +61,45 @@ describe('serve-site.ps1 (web-hosting R7, R4)', () => {
     // A path that climbs out of the folder is refused: Windows' HTTP layer closes the connection, or the script answers 404; it is never served.
     const climbing = await fetch(`http://127.0.0.1:${port}/..%2f..%2fWindows%2fwin.ini`).then((reply) => reply.status, () => 'closed');
     expect(['closed', 404]).toContain(climbing);
+  }, 30000);
+
+  it('TestR21_the_env_endpoint_answers_this_page_only_and_never_prints_the_name_or_the_value', async () => {
+    const port = 45126;
+    const secret = 'sk-test-value-123';
+    const { output } = launch(makeSite(), port, { TEXTURIUM_LAUNCHER_TEST_KEY: secret, TEXTURIUM_LAUNCHER_EMPTY_KEY: '  ', TEXTURIUM_LAUNCHER_PLAIN: 'v' });
+    await whenListening(port);
+    const base = `http://127.0.0.1:${port}/__env/`;
+    const headers = { 'X-Env-Read': '1' };
+    const probe = await fetch(base, { headers });
+    expect(await probe.json()).toEqual({ env: true });
+    const found = await fetch(`${base}TEXTURIUM_LAUNCHER_TEST_KEY`, { headers });
+    expect(found.status).toBe(200);
+    expect(found.headers.get('access-control-allow-origin')).toBeNull();
+    expect(await found.json()).toEqual({ value: secret });
+    expect((await fetch(`${base}TEXTURIUM_LAUNCHER_NOT_SET_KEY`, { headers })).status).toBe(404);
+    expect((await fetch(`${base}TEXTURIUM_LAUNCHER_EMPTY_KEY`, { headers })).status).toBe(404);
+    expect((await fetch(`${base}A%3DB`, { headers })).status).toBe(404); // a name with "=" cannot exist
+    expect((await fetch(`${base}TEXTURIUM_LAUNCHER_PLAIN`, { headers })).status).toBe(200); // no rule on names: one not ending in KEY is just looked up
+    expect((await fetch(`${base}TEXTURIUM_LAUNCHER_TEST_KEY`)).status).toBe(403); // no marker header: a plain page load or a form cannot read it
+    expect((await fetch(`${base}TEXTURIUM_LAUNCHER_TEST_KEY`, { headers: { ...headers, Origin: 'https://evil.example' } })).status).toBe(403);
+    expect((await fetch(`${base}TEXTURIUM_LAUNCHER_TEST_KEY`, { method: 'OPTIONS', headers })).status).toBe(403);
+    expect(output()).not.toContain(secret);
+    expect(output()).not.toContain('TEXTURIUM_LAUNCHER');
+  }, 30000);
+
+  it('TestR21_a_request_with_a_foreign_host_name_is_refused', async () => {
+    const port = 45127;
+    launch(makeSite(), port, { TEXTURIUM_LAUNCHER_TEST_KEY: 'sk-test-value-123' });
+    await whenListening(port);
+    const status = await new Promise<number>((resolve, reject) => {
+      const request = httpRequest({ host: '127.0.0.1', port, path: '/__env/TEXTURIUM_LAUNCHER_TEST_KEY', headers: { Host: `rebind.example:${port}`, 'X-Env-Read': '1' } }, (reply) => {
+        reply.resume();
+        resolve(reply.statusCode ?? 0);
+      });
+      request.on('error', reject);
+      request.end();
+    }).catch(() => 400); // Windows' HTTP layer may also close it
+    expect([400, 403]).toContain(status);
   }, 30000);
 
   it('TestR7_a_missing_site_folder_exits_1_with_the_message', async () => {

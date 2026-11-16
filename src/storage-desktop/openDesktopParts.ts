@@ -1,10 +1,11 @@
 import type { BlobStore, StorageLocation, StorageManagerLike } from '../projects';
-import type { VaultStorage } from '../keys';
+import type { EnvKeySource, VaultStorage } from '../keys';
 import { createDesktopBlobStore } from './desktopBlobStore';
 import { createDesktopRecordEngine, type DesktopRecordEngine } from './DesktopRecordEngine';
 import { createDesktopStorageHealth } from './desktopStorageHealth';
 import { createDesktopVaultStorage } from './desktopVaultStorage';
 import { createTauriDialogs, type DesktopPickers } from './tauri/tauriDialogs';
+import { createTauriEnvKeySource } from './tauri/tauriEnvKeySource';
 import { createTauriFileBridge } from './tauri/tauriFileBridge';
 import { createLibraryClient } from './tauri/tauriLibrary';
 import { createTauriRecordBridge } from './tauri/tauriRecordBridge';
@@ -15,6 +16,7 @@ export interface DesktopParts {
   engine: DesktopRecordEngine;
   blobs: BlobStore;
   vaultStorage: VaultStorage;
+  envKeySource: EnvKeySource; // api-keys R21 (a): the `env_read` command
   storage: StorageManagerLike;
   location: StorageLocation;
   pickers: DesktopPickers; // the native Save and folder dialogs, in the shape of the browser's pickers (R13)
@@ -42,6 +44,7 @@ export async function openDesktopParts(options: DesktopOptions = {}): Promise<De
     engine: createDesktopRecordEngine(createTauriRecordBridge(invoke)),
     blobs: createDesktopBlobStore(files),
     vaultStorage: createDesktopVaultStorage(appFiles),
+    envKeySource: createTauriEnvKeySource(invoke),
     storage: createDesktopStorageHealth(files),
     pickers: createTauriDialogs(invoke),
     location: {

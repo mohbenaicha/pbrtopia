@@ -19,6 +19,7 @@ describe('useDesktopPickers (storage-backends R13)', () => {
   it('R13 gives the desktop backends\' pickers to the views under the provider', () => {
     const backends = createDesktopBackends({
       vaultStorage: { load: vi.fn(async () => null), save: vi.fn(async () => ({ ok: true as const })) } as never,
+      envKeySource: { available: async () => false, read: async () => ({ ok: false as const, reason: 'unavailable' as const }), needsRestart: true },
       location: { path: 'D:\Library', showInFolder: vi.fn(), change: vi.fn() } as never,
       pickers: { showSaveFilePicker: vi.fn(), showDirectoryPicker: vi.fn() },
     });

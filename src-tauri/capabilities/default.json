@@ -4,6 +4,7 @@
   "description": "The page may call the app's own storage commands and nothing else: no dialog, file-system or shell plugin permission (storage-backends R12).",
   "windows": ["main"],
   "permissions": [
+    "allow-env-read",
     "allow-db-get",
     "allow-db-list",
     "allow-db-commit",

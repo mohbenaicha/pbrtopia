@@ -1,12 +1,12 @@
 import type { PromptEnhancer } from '@shared/generation';
-import type { KeyVault, Provider } from '@shared/keys';
+import type { Provider, ProviderKeySource } from '@shared/keys';
 import type { DescribeTarget } from '../ui/bindRunPorts';
 import { buildIdeasText } from './buildIdeasText';
 import { IDEAS_UNREADABLE, parseIdeas } from './parseIdeas';
 
 export interface IdeasBackends {
   createPromptEnhancer(provider: Provider): PromptEnhancer;
-  keys: Pick<KeyVault, 'getKey' | 'ensureUnlocked'>;
+  keys: Pick<ProviderKeySource, 'resolveKey' | 'ensureUnlocked'>;
 }
 
 /** `cancelled`: the unlock question was cancelled or the request was aborted; nothing is shown (R72). */
@@ -19,8 +19,9 @@ export async function requestPromptIdeas(target: DescribeTarget, userText: strin
   try {
     const unlocked = await backends.keys.ensureUnlocked();
     if (!unlocked.ok) return unlocked.error.code === 'password-cancelled' ? { kind: 'cancelled' } : { kind: 'error', message: unlocked.error.message };
-    const apiKey = backends.keys.getKey(target.provider);
-    if (apiKey === null) return { kind: 'error', message: `Add your ${PROVIDER_NAME[target.provider]} key in Settings > Keys` };
+    const resolved = await backends.keys.resolveKey(target.provider, signal);
+    if (!resolved.ok) return signal.aborted ? { kind: 'cancelled' } : { kind: 'error', message: resolved.error.code === 'vault-missing' ? `Add your ${PROVIDER_NAME[target.provider]} key in Settings > Keys` : resolved.error.message };
+    const apiKey = resolved.value;
     const answer = await backends.createPromptEnhancer(target.provider).enhance({ model: target.modelId, prompt: buildIdeasText(userText), level: target.level }, { apiKey, signal });
     if (signal.aborted) return { kind: 'cancelled' };
     if (!answer.ok) return { kind: 'error', message: answer.error.message };

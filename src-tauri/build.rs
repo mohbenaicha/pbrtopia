@@ -1,6 +1,7 @@
 // Storage-backends R12: the app declares its own commands in the app manifest, so only what capabilities/default.json grants to the main window can be called.
 // Keep this list equal to the handler list in src/lib.rs and the permissions in capabilities/default.json (tests/storage-desktop/commandManifest.test.ts checks it).
 const COMMANDS: &[&str] = &[
+    "env_read",
     "db_get",
     "db_list",
     "db_commit",

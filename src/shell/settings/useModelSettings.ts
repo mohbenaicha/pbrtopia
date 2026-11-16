@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { PROVIDERS, type KeyVault, type Provider } from '../../keys';
+import { PROVIDERS, type Provider, type ProviderKeySource } from '../../keys';
 import type { SharedProjectStore } from '../../projects/SharedProjectStore';
 import type { AppSettingsRecord, CatalogCacheRecord } from '../../projects/records/appSettingsRecord';
 import type { SelectOption } from '../../ui-kit';
@@ -22,7 +22,7 @@ type Saved = Pick<AppSettingsRecord, 'enhancer' | 'catalog'>;
 /** Settings R5, R6: the enhancer dropdown's options and value from the saved choice, the model lists and the keys now stored. */
 export function useModelSettings(
   store: Pick<SharedProjectStore, 'loadAppSettings' | 'saveAppSettings'>,
-  vault: Pick<KeyVault, 'hasKey' | 'on'>,
+  vault: Pick<ProviderKeySource, 'hasKey' | 'on'>,
   keysLoaded: boolean,
   refreshedCatalog: CatalogCacheRecord | null,
 ): ModelSettingsState {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { discoverModels } from '../../generation';
-import { PROVIDERS, type KeyVault, type Provider } from '../../keys';
+import { PROVIDERS, type Provider, type ProviderKeySource } from '../../keys';
 import { describeRejectedKey } from './describeRejectedKey';
 
 export type RejectedKeyFlags = Partial<Record<Provider, string>>;
@@ -14,7 +14,7 @@ export interface KeyCheckState {
  * Settings R4: after a key is saved, asks that provider for its models once; a refusal flags the key. Flags live in memory while the
  * Settings page is open. A lock keeps them; removing the key clears its flag. Nothing is checked on unlock, reload or mount.
  */
-export function useKeyCheck(vault: Pick<KeyVault, 'status' | 'hasKey' | 'getKey' | 'on'>, discover: typeof discoverModels): KeyCheckState {
+export function useKeyCheck(vault: Pick<ProviderKeySource, 'hasKey' | 'resolveKey' | 'on'>, discover: typeof discoverModels): KeyCheckState {
   const [flags, setFlags] = useState<RejectedKeyFlags>({});
   const runs = useRef<Record<Provider, number>>({ gemini: 0, openai: 0 }); // the latest check of each provider; an older answer is dropped
   const calls = useRef<Partial<Record<Provider, AbortController>>>({});
@@ -36,7 +36,7 @@ export function useKeyCheck(vault: Pick<KeyVault, 'status' | 'hasKey' | 'getKey'
     const calling = calls.current;
     mounted.current = true;
     const stopListening = vault.on('status-changed', () => {
-      for (const provider of PROVIDERS) if (vault.status() === 'none' || !vault.hasKey(provider)) forget(provider);
+      for (const provider of PROVIDERS) if (!vault.hasKey(provider)) forget(provider);
     });
     return () => {
       mounted.current = false;
@@ -49,16 +49,17 @@ export function useKeyCheck(vault: Pick<KeyVault, 'status' | 'hasKey' | 'getKey'
     (provider: Provider): void => {
       if (!mounted.current) return;
       forget(provider);
-      const key = vault.getKey(provider);
-      if (key === null) return;
       const mine = runs.current[provider];
       const call = new AbortController();
       calls.current[provider] = call;
-      void discover(provider, key, call.signal)
-        .then((result) => {
+      void vault
+        .resolveKey(provider, call.signal)
+        .then(async (key) => {
+          if (!key.ok || call.signal.aborted || mine !== runs.current[provider]) return;
+          const result = await discover(provider, key.value, call.signal);
           if (call.signal.aborted || mine !== runs.current[provider] || !vault.hasKey(provider)) return;
-          const now = vault.getKey(provider);
-          if (now !== null && now !== key) return; // another tab replaced the key since: this answer is about the old one
+          const now = await vault.resolveKey(provider, call.signal);
+          if (now.ok && now.value !== key.value) return; // another tab replaced the key since: this answer is about the old one
           const flag = describeRejectedKey(provider, result);
           if (flag !== null) setFlags((current) => ({ ...current, [provider]: flag }));
         })

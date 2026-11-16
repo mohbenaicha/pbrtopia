@@ -7,7 +7,10 @@ type KeyErrorCode =
   | 'vault-changed'
   | 'vault-missing'
   | 'crypto-unavailable'
-  | 'storage-failed';
+  | 'storage-failed'
+  | 'env-not-set'
+  | 'env-unavailable'
+  | 'env-not-named';
 
 export interface KeyError {
   code: KeyErrorCode;
@@ -27,10 +30,18 @@ const MESSAGES: Record<KeyErrorCode, string> = {
   'vault-missing': 'There are no saved keys yet.',
   'crypto-unavailable': 'This browser cannot encrypt keys here. Use a secure page (https or localhost).',
   'storage-failed': 'The keys could not be read or saved by this browser.',
+  'env-not-set': 'The environment variable is not set.',
+  'env-unavailable': 'Could not read the environment.',
+  'env-not-named': 'Add an environment variable name in Settings > Keys.',
 };
 
 export function keyFailure(code: KeyErrorCode): { ok: false; error: KeyError } {
   return { ok: false, error: { code, message: MESSAGES[code] } };
+}
+
+// Api-keys R17: a variable that is not set is named in the message (a name is not a secret, a value never appears).
+export function envNotSetFailure(name: string): { ok: false; error: KeyError } {
+  return { ok: false, error: { code: 'env-not-set', message: `"${name}" is not set.` } };
 }
 
 export const KEY_OK: KeyResult<void> = { ok: true, value: undefined };
