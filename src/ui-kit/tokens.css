@@ -17,6 +17,7 @@
   --accent: #f08a24;
   --accent-hover: #ffa443;
   --accent-text: #1b1005;
+  --gold: #f2c14e; /* the outline of a projection badge whose camera is near the view camera (projection/mode R18) */
   --success: #4ade80;
   --number: #d9a82e;
   --error: #ff7a66;
@@ -42,8 +43,7 @@
   --radius-control: 8px;
   --radius-group: 11px;
   --radius-dialog: 14px;
-  --radius-panel: 0;
-  --radius-tab: 10px; /* the top corners of a tab and the concave curves that join the chosen tab to its panel (R32) */
+  --radius-panel: 0;  --radius-tab: 10px; /* the top corners of a tab and the concave curves that join the chosen tab to its panel (R32) */
 
   --space-1: 4px;
   --space-2: 8px;
