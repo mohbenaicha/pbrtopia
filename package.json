@@ -1,0 +1,44 @@
+{
+  "name": "pbrtopia",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:mat": "vite --config src/materialgen/entry/vite.config.ts",
+    "build:mat": "tsc --noEmit && vite build --config src/materialgen/entry/vite.config.ts",
+    "desktop:dev:mat": "tauri dev --config src-tauri/tauri.mat.conf.json",
+    "desktop:build:mat": "tauri build --no-bundle --config src-tauri/tauri.mat.conf.json",
+    "desktop:build:mat:debug": "tauri build --debug --no-bundle --config src-tauri/tauri.mat.conf.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests",
+    "test": "vitest run",
+    "check:split": "node scripts/split/checkSplit.ts"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "fflate": "0.8.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "three": "0.170.0",
+    "three-mesh-bvh": "0.8.3",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.170.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "eslint": "10.13.0",
+    "fake-indexeddb": "^6.2.6",
+    "jsdom": "30.1.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}
