@@ -29,6 +29,16 @@
 }
 
 /* A picture's dialog: most of the window, and never larger than it (viewport-layout R33). */
+.ui-dialog[data-size='wide'] {
+  width: min(600px, calc(100vw - var(--space-5) * 2));
+  max-height: 92vh;
+}
+
+.ui-dialog[data-size='wide'] .ui-dialog__body {
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .ui-dialog[data-size='large'] {
   width: min(1200px, 96vw);
   max-height: 92vh;

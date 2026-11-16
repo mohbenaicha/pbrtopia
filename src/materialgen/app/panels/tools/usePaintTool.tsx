@@ -1,9 +1,9 @@
 import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ConfirmDialog, DISCLOSURE_ICON_PIXELS, Icon, IconButton } from '@shared/ui-kit';
 import {
-  DEFAULT_BRUSH, EMPTY_PALETTE, PAINT_SHORTCUTS, createPaintController, loadBrushAtlas, loadPaintMaps, MaterialPicker, paintEntryReason, paintedPicturesOf, paintMaterialOf, PaintToolPanel,
+  CLONE_SHORTCUTS, DEFAULT_BRUSH, EMPTY_PALETTE, PAINT_SHORTCUTS, createPaintController, loadBrushAtlas, loadPaintMaps, MaterialPicker, paintEntryReason, paintedPicturesOf, paintMaterialOf, PaintToolPanel,
   planCommitPaint, removeMaterial, removeShape, setMaterial, setShape, ShapePicker, shapeSlotsOf, toggleActive, toggleInvert,
-  type BrushAtlas, type BrushParams, type LoadedPaintMaps, type PaintController, type PaintState, type Palette, type ShapeSlotNumber,
+  type BrushAtlas, type BrushParams, type CloneView, type LoadedPaintMaps, type PaintController, type PaintState, type PaintTool, type Palette, type ShapeSlotNumber,
 } from '@mat/compositing';
 import { readMapPixels, type MapKind, type MapsController, type MapsState } from '@mat/maps';
 import { usePaintBridgeState } from '@mat/preview';
@@ -35,6 +35,7 @@ type Phase = 'idle' | 'loading' | 'open' | 'saving';
 type PickerTarget = { kind: 'shape'; slot: ShapeSlotNumber } | { kind: 'material' } | null;
 
 const IDLE_STATE: PaintState = { canUndo: false, canRedo: false, hasStrokes: false, notice: null };
+const IDLE_CLONE: CloneView = { phase: 'highlight', canClone: false, canConfirm: false, cloneBlocked: 'empty', confirmBlocked: null, scalePercent: null, settings: { shape: 'round', hardness: 0.7, strength: 1 } };
 const SAVE_FAILED = 'Could not save the painting. Nothing changed.'; // R23
 const PLANE_SWITCH_ERROR = 'The preview could not switch to the Plane.'; // R55
 
@@ -58,6 +59,8 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
   const [phase, setPhase] = useState<Phase>('idle');
   const [palette, setPalette] = useState<Palette>(EMPTY_PALETTE);  const [brush, setBrush] = useState<BrushParams>(DEFAULT_BRUSH);
   const [paintState, setPaintState] = useState<PaintState>(IDLE_STATE);
+  const [tool, setTool] = useState<PaintTool>('stamp'); // clone R1: Stamp or Clone
+  const [cloneView, setCloneView] = useState<CloneView>(IDLE_CLONE);
   const [picker, setPicker] = useState<PickerTarget>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +88,8 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
     open?.unsubscribe();
     open?.controller.dispose();
     setPaintState(IDLE_STATE);
+    setTool('stamp');
+    setCloneView(IDLE_CLONE);
     setPicker(null);
     setError(null);
     setPhase('idle');
@@ -114,9 +119,9 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
     return () => bridge.setMeshGuard(null);
   }, [bridge, askDiscard, closeSession]);
   useEffect(() => {
-    bridge.setShortcuts(phase === 'open' ? PAINT_SHORTCUTS : null); // app/shortcuts R6: the Shortcuts panel lists the painter's gestures while it is open
+    bridge.setShortcuts(phase === 'open' ? (tool === 'clone' ? CLONE_SHORTCUTS : PAINT_SHORTCUTS) : null); // app/shortcuts R6: the Shortcuts panel lists the painter's gestures while it is open
     return () => bridge.setShortcuts(null);
-  }, [bridge, phase]);
+  }, [bridge, phase, tool]);
   useEffect(() => {
     if (mesh !== 'plane' && session.current !== null) closeSession(); // the Plane is gone: nothing to paint on (R24)
   }, [mesh, closeSession]);
@@ -158,9 +163,13 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
           latest.current.controller.refuse('Painting was interrupted. Nothing was saved.'); // R30
         },
       });
-      const unsubscribe = controller.subscribe(() => setPaintState(controller.state()));
+      const stopState = controller.subscribe(() => setPaintState(controller.state()));
+      const stopClone = controller.clone.subscribe(() => setCloneView(controller.clone.view()));
+      const unsubscribe = (): void => { stopState(); stopClone(); };
       session.current = { controller, loaded, side, signature, unsubscribe };
       setPaintState(controller.state());
+      setTool('stamp');
+      setCloneView(controller.clone.view());
       setPhase('open');
     } catch (failure) {
       input.onToolOpenChange(false);
@@ -171,7 +180,7 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
 
   const done = async (): Promise<void> => {
     const open = session.current;
-    if (open === null || phase !== 'open') return;
+    if (open === null || phase !== 'open' || cloneView.phase === 'floating') return; // clone R17: a floating copy is confirmed or dropped first
     if (!canWrite) return setError('The project is open elsewhere'); // R39
     if (signature !== open.signature) return setError('The maps changed while painting. Nothing was saved.'); // R40
     setPhase('saving');
@@ -224,6 +233,18 @@ export function usePaintTool(input: PaintToolInput): { button: ReactNode; panel:
           onUndo={() => session.current?.controller.undo()}
           onRedo={() => session.current?.controller.redo()}
           notice={paintState.notice}
+          clone={{
+            tool,
+            view: cloneView,
+            onToolChange: (next) => {
+              session.current?.controller.setTool(next);
+              setTool(next);
+            },
+            onSettings: (patch) => session.current?.controller.clone.setSettings(patch),
+            onScale: (percent) => session.current?.controller.clone.setScalePercent(percent),
+            onClone: () => session.current?.controller.clone.lift(),
+            onConfirm: () => session.current?.controller.clone.confirm(),
+          }}
           error={error}
           busy={busy}
           onDone={() => void done()}

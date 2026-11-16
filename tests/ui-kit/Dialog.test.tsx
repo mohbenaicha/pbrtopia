@@ -21,6 +21,13 @@ describe('Dialog', () => {
     expect(backdrop.parentElement).toBe(document.body);
   });
 
+  it('tutorial R14 a wide dialog is marked wide, a default one carries no size mark', () => {
+    const { rerender } = render(<Dialog open title="Wide" size="wide" onClose={() => undefined}>body</Dialog>);
+    expect(screen.getByRole('dialog').getAttribute('data-size')).toBe('wide');
+    rerender(<Dialog open title="Plain" onClose={() => undefined}>body</Dialog>);
+    expect(screen.getByRole('dialog').getAttribute('data-size')).toBeNull();
+  });
+
   it('R22 a closed dialog renders nothing', () => {
     render(<Dialog open={false} title="Password" onClose={() => undefined}>body</Dialog>);
     expect(screen.queryByRole('dialog')).toBeNull();

@@ -64,6 +64,20 @@ describe('materialgen/app new project button', () => {
     expect(store.requestPersistence).toHaveBeenCalledTimes(1);
   });
 
+  it('tutorial R15 a new request number opens the same New project dialog, and the create route stays the one above', async () => {
+    const store = { createProject: vi.fn(async () => ({ ok: true as const, value: made })), requestPersistence: vi.fn(async () => true) };
+    const { rerender } = render(<NewMaterialProjectButton store={store as never} openRequest={0} />);
+    expect(screen.queryByRole('dialog', { name: 'New project' })).toBeNull(); // the first value is only the starting count
+    rerender(<NewMaterialProjectButton store={store as never} openRequest={1} />);
+    expect(screen.getByRole('dialog', { name: 'New project' })).toBeTruthy();
+    expect(store.createProject).not.toHaveBeenCalled(); // nothing is made until Create
+    const field = screen.getByPlaceholderText('Project name');
+    fireEvent.change(field, { target: { value: 'Bricks' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+    await waitFor(() => expect(window.location.hash).toBe('#/p/p-1'));
+    expect(store.createProject).toHaveBeenCalledWith({ name: 'Bricks', size: null });
+  });
+
   it('R24a a refused create is shown in the dialog and nothing is opened', async () => {
     const store = { createProject: vi.fn(async () => storeFailure('storage-unavailable', 'Storage is not available.')), requestPersistence: vi.fn() };
     render(<NewMaterialProjectButton store={store as never} />);

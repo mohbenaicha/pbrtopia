@@ -56,6 +56,7 @@ export interface PreviewScene {
   setOrbitFilter(filter: TurntableFilter | null): void; // events the painter takes itself, which the turntable leaves alone
   orbitFilter(): TurntableFilter | null;
   planeRay(ndcX: number, ndcY: number): LocalRay | null; // the ray under a canvas point in the Plane's own frame; null unless the mesh is the Plane
+  planePoint(x: number, y: number, z: number): { ndcX: number; ndcY: number } | null; // the canvas point (normalised, y up) of a point in the Plane's own frame; null unless the mesh is the Plane or the point is behind the camera
   paintSurface(): PaintSurface; // the displacement the Plane has now (preview R15) and the tiling
   overlayRoot(): Group; // a child of it is in the Plane's frame (x, y in [-0.5, 0.5], z up)
   dispose(): void;
@@ -303,6 +304,14 @@ export function createPreviewScene(host: PreviewHost, prefs: PreviewPrefs, initi
       origin.applyMatrix4(inverse);
       direction.transformDirection(inverse);
       return { origin: [origin.x, origin.y, origin.z], direction: [direction.x, direction.y, direction.z] };
+    },
+    planePoint(x, y, z) {
+      if (meshKind !== 'plane') return null;
+      const camera = host.rig.perspective;
+      camera.updateMatrixWorld();
+      group.updateMatrixWorld(true);
+      const point = new Vector3(x, y, z).applyMatrix4(group.matrixWorld).project(camera);
+      return point.z > 1 || !Number.isFinite(point.x) || !Number.isFinite(point.y) ? null : { ndcX: point.x, ndcY: point.y };
     },
     paintSurface: () => ({ scale: preview.material.displacementScale, bias: preview.material.displacementBias, tilingX: preview.values.tilingX, tilingY: preview.values.tilingY }),
     overlayRoot: () => group,

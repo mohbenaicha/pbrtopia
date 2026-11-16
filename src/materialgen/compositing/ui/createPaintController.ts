@@ -2,13 +2,20 @@ import type { PaintHost } from '@mat/preview';
 import type { BrushAtlas } from '../atlas/readBrushAtlas';
 import type { PaintMaterial } from '../gpu/paintMaterial';
 import type { PainterMaps } from '../gpu/createStampPainter';
-import { stepRotation, updateBrushValue, type BrushParams } from '../plan/brushParams';
-import { isResizeGesture, resizeByPointer } from '../plan/resizeByPointer';
-import type { Point, ShapeSlot } from '../plan/planStamps';
-import { createPaintSession, type PaintedBytes, type PaintSession } from '../session/createPaintSession';
-import { createHeightProxy, pickSurface } from '../session/pickSurface';
-import { createGhostOverlay, type GhostStamp } from './createGhostOverlay';
-import { followSurface } from './followSurface';
+import type { BrushParams } from '../plan/brushParams';
+import type { ShapeSlot } from '../plan/planStamps';
+import { createPaintSession, type PaintedBytes } from '../session/createPaintSession';
+import { createCloneMode, type CloneMode } from './createCloneMode';
+import { createPaintWorkspace, type PaintState } from './createPaintWorkspace';
+import { createStampMode } from './createStampMode';
+import type { PaintTool } from './paintTool';
+
+export type { PaintState } from './createPaintWorkspace';
+export type { CloneView } from './createCloneMode';
+export type { PaintTool } from './paintTool';
+
+/** What the panel does with the Clone tool (clone R7, R8, R12, R18). */
+export type CloneControl = Pick<CloneMode, 'view' | 'subscribe' | 'lift' | 'confirm' | 'setSettings' | 'setScalePercent'>;
 
 export interface PaintControllerOptions {
   host: PaintHost;
@@ -24,18 +31,13 @@ export interface PaintControllerOptions {
   onInterrupted(): void;
 }
 
-/** What the panel shows of the session; a new object only when one of the fields changes. */
-export interface PaintState {
-  canUndo: boolean;
-  canRedo: boolean;
-  hasStrokes: boolean;
-  notice: 'too-many-stamps' | 'too-large-to-undo' | null;
-}
-
 export interface PaintController {
   setBrush(brush: BrushParams): void;
   setShapes(shapes: readonly ShapeSlot[]): void;
   setMaterial(material: PaintMaterial): void;
+  /** Clone R1: switches between Stamp and Clone; ignored while a copy floats. Switching to Stamp drops the highlight. */
+  setTool(tool: PaintTool): void;
+  readonly clone: CloneControl;
   undo(): void;
   redo(): void;
   /** Done: draws what is queued and reads the painted maps (R22). */
@@ -45,366 +47,40 @@ export interface PaintController {
   dispose(): void;
 }
 
-const PROXY_SIDE = 256; // R26: at most 512
-const PROXY_INTERVAL_MS = 100;
-const WHEEL_NOTCH = 100;
-const LINE_UNITS = 33;
-const GHOST_LIFT = 0.002; // the ghost sits a little above the surface it follows
-
-const isEditable = (target: EventTarget | null): boolean => target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
-
 /**
- * Compositing A5: one painting session on the preview's Plane. Puts the session's textures in the preview, takes the pointer (left button paints, Alt + left sets
- * the line marker, Shift + left commits a line, Alt + wheel turns the stamp, Alt + moving sideways resizes it), draws a frame's share of stamps on every animation frame while work remains, keeps
- * the ghost and the height proxy the surface pick reads, and undoes and redoes with the keyboard. `dispose` puts the preview back as it was.
+ * Compositing A5: one painting session on the preview's Plane. Creates the session, the shared workspace (textures, frame loop, undo, surface pointer) and the
+ * Stamp tool mode, and hands the pointer to the mode. `dispose` puts the preview back as it was.
  */
 export function createPaintController(options: PaintControllerOptions): PaintController {
   const { host, atlas, side } = options;
-  const { scene, element } = host;
-  const session: PaintSession = createPaintSession(host.renderer, {
+  const session = createPaintSession(host.renderer, {
     side, atlas: { data: atlas.data, width: atlas.width, height: atlas.height }, grid: atlas.grid, maps: options.maps, normalDirection: host.normalDirection(),
     material: options.material, shapes: options.shapes,
   });
   session.setBrush(options.brush);
-  const ghost = createGhostOverlay(scene.overlayRoot(), session.atlasTexture(), atlas.grid, host.invalidate);
-  let shapes = options.shapes;
-  let material = options.material;
-  let heightAt: (u: number, v: number) => number = () => 0.5;
-  let heightProxyDirty = true;
-  let lastProxyAt = 0;
-  let shownKey = '';
-  let stroking = false;
-  let orbiting = false;
-  let lastPoint: Point | null = null;
-  let lastClient: { clientX: number; clientY: number } | null = null; // the pointer over the canvas, to pick the ghost's point again when the surface changes (R56)
-  let markerPoint: Point | null = null;
-  let modifiers = { alt: false, shift: false };
-  let wheelRemainder = 0;
-  let resizeAnchorX: number | null = null; // R73: where the pointer was at the last Alt movement
-  let frame = 0;
-  let disposed = false;
-  let snapshot: PaintState = { canUndo: false, canRedo: false, hasStrokes: false, notice: null };
-  const listeners = new Set<() => void>();
-
-  const publish = (): void => {
-    const next: PaintState = { canUndo: session.canUndo(), canRedo: session.canRedo(), hasStrokes: session.hasStrokes(), notice: session.notice() };
-    if (next.canUndo === snapshot.canUndo && next.canRedo === snapshot.canRedo && next.hasStrokes === snapshot.hasStrokes && next.notice === snapshot.notice) return;
-    snapshot = next;
-    for (const listener of [...listeners]) listener();
-  };
-
-  // R25: the session's textures stand in for the stored ones; the height and normal ones appear the first time a stamp needs them.
-  const showTextures = (): void => {
-    const textures = session.textures();
-    const key = `${textures.height === null ? 0 : 1}${textures.normal === null ? 0 : 1}`;
-    if (key === shownKey) return;
-    shownKey = key;
-    scene.setPaintTextures({ albedo: textures.albedo, orm: textures.orm, ...(textures.height === null ? {} : { height: textures.height }), ...(textures.normal === null ? {} : { normal: textures.normal }) });
-  };
-
-  const refreshHeightProxy = (): void => {
-    const bytes = session.readHeightProxy(PROXY_SIDE);
-    heightProxyDirty = false;
-    lastProxyAt = performance.now();
-    if (bytes !== null) heightAt = createHeightProxy(bytes, PROXY_SIDE);
-  };
-
-  const pointOf = (event: { clientX: number; clientY: number }): Point | null => {
-    const rect = element.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return null;
-    const ray = scene.planeRay(((event.clientX - rect.left) / rect.width) * 2 - 1, -(((event.clientY - rect.top) / rect.height) * 2 - 1));
-    if (ray === null) return null;
-    const surface = scene.paintSurface();
-    return pickSurface(ray.origin, ray.direction, { height: heightAt, ...surface });
-  };
-  const heightOf = (point: Point): number => {
-    const surface = scene.paintSurface();
-    return heightAt(point.x, point.y) * surface.scale + surface.bias + GHOST_LIFT;
-  };
-
-  const updateGhost = (): void => {
-    const point = lastPoint;
-    if (point === null || orbiting || shapes.length === 0) {
-      ghost.hide();
-      return;
-    }
-    const tint = material.albedo;
-    if (modifiers.shift && session.hasLineMarker()) {
-      ghost.show(session.ghostLine(point) as GhostStamp[], tint, heightOf(point));
-      return;
-    }
-    const next = session.peekNext();
-    if (next === null) {
-      ghost.hide();
-      return;
-    }
-    ghost.show([{ shape: next.shape, invert: next.invert, x: point.x, y: point.y, size: next.size, angle: next.angle }], tint, heightOf(point));
-  };
-  const updateMarker = (): void => ghost.setMarker(markerPoint, markerPoint === null ? 0 : heightOf(markerPoint));
-
-  const tick = (): void => {
-    frame = 0;
-    if (disposed) return;
-    const result = session.step();
-    if (result.painted) {
-      showTextures();
-      if (session.brush().height.on) heightProxyDirty = true;
-      host.invalidate();
-      publish();
-    }
-    if (heightProxyDirty && (!result.more || performance.now() - lastProxyAt >= PROXY_INTERVAL_MS)) refreshHeightProxy();
-    if (!result.more) publish();
-    if (result.more || stroking) frame = requestAnimationFrame(tick);
-  };
-  const kick = (): void => {
-    if (frame === 0 && !disposed) frame = requestAnimationFrame(tick);
-  };
-
-  const endStroke = (): void => {
-    if (!stroking) return;
-    stroking = false;
-    session.pointerUp();
-    kick();
-    publish();
-  };
-
-  const rememberModifiers = (event: { altKey: boolean; shiftKey: boolean }): void => {
-    modifiers = { alt: event.altKey, shift: event.shiftKey };
-  };
-
-  const onPointerDown = (event: PointerEvent): void => {
-    if (event.button === 2) {
-      orbiting = true; // the turntable takes the drag (R4); the ghost steps aside
-      updateGhost();
-      return;
-    }
-    if (event.button !== 0 || event.pointerType === 'touch') return; // a touch never paints (R4)
-    rememberModifiers(event);
-    const point = pointOf(event);
-    lastPoint = point;
-    if (point === null) return; // off the plane or the picture (R32)
-    event.preventDefault();
-    if (event.altKey) {
-      session.setLineMarker(point); // R13
-      markerPoint = point;
-      updateMarker();
-      updateGhost();
-      return;
-    }
-    if (event.shiftKey && session.hasLineMarker()) {
-      session.commitLine(point);
-      markerPoint = point;
-      updateMarker();
-      kick();
-      publish();
-      updateGhost();
-      return;
-    }
-    if (shapes.length === 0 || stroking) return;
-    stroking = true;
-    element.setPointerCapture?.(event.pointerId);
-    session.pointerDown(point);
-    kick();
-    publish();
-    updateGhost();
-  };
-
-  // R73: with Alt held (not Shift, the straight line, nor Ctrl, Undo) and no button down, the sideways movement over the canvas changes Size (the panel shows it through onBrushChange, the ghost follows).
-  const resizeWithAlt = (event: PointerEvent): void => {
-    if (!isResizeGesture(event) || stroking) {
-      resizeAnchorX = null;
-      return;
-    }
-    const from = resizeAnchorX;
-    resizeAnchorX = event.clientX;
-    if (from === null) return;
-    const current = session.brush();
-    const next = resizeByPointer(current, event.clientX - from);
-    if (next === current) return;
-    session.setBrush(next);
-    options.onBrushChange(session.brush());
-  };
-
-  const onPointerMove = (event: PointerEvent): void => {
-    rememberModifiers(event);
-    if (event.target !== element && !stroking) {
-      lastPoint = null;
-      lastClient = null;
-      resizeAnchorX = null;
-      ghost.hide();
-      return;
-    }
-    resizeWithAlt(event);
-    lastClient = { clientX: event.clientX, clientY: event.clientY };
-    const point = pointOf(event);
-    lastPoint = point;
-    if (stroking && point !== null) {
-      session.pointerMove(point);
-      kick();
-    }
-    updateGhost();
-  };
-
-  const onPointerUp = (event: PointerEvent): void => {
-    if (event.button === 2) {
-      orbiting = false;
-      updateGhost();
-      return;
-    }
-    if (event.button === 0) endStroke();
-  };
-
-  const onWheel = (event: WheelEvent): void => {
-    if (!event.altKey) return; // the turntable dollies
-    event.preventDefault();
-    const units = event.deltaMode === 1 ? event.deltaY * LINE_UNITS : event.deltaY;
-    if (units === 0) return;
-    if (Math.sign(units) !== Math.sign(wheelRemainder)) wheelRemainder = 0;
-    wheelRemainder += units;
-    let notches = 0;
-    while (Math.abs(wheelRemainder) >= WHEEL_NOTCH) {
-      const direction = Math.sign(wheelRemainder);
-      notches -= direction; // wheel up (negative delta) turns the angle up
-      wheelRemainder -= direction * WHEEL_NOTCH;
-    }
-    if (notches === 0) return;
-    const current = session.brush();
-    const shown = session.peekNext();
-    const from = current.rotation.random && shown !== null ? (shown.angle * 180) / Math.PI : current.rotation.value; // R12: continues from the ghost's angle
-    const next: BrushParams = updateBrushValue(current, 'rotation', { random: false, value: stepRotation(from, notches, event.shiftKey) }); // the wheel turns the dice off
-    session.setBrush(next);
-    options.onBrushChange(session.brush());
-    updateGhost();
-  };
-
-  const undo = (): void => {
-    if (!session.undo()) return;
-    showTextures();
-    heightProxyDirty = true;
-    refreshHeightProxy();
-    host.invalidate();
-    publish();
-    kick();
-  };
-  const redo = (): void => {
-    if (!session.redo()) return;
-    showTextures();
-    heightProxyDirty = true;
-    refreshHeightProxy();
-    host.invalidate();
-    publish();
-  };
-
-  const onKeyDown = (event: KeyboardEvent): void => {
-    rememberModifiers(event);
-    if (event.key === 'Escape') {
-      if (stroking) endStroke();
-      else if (session.hasLineMarker()) {
-        session.clearLineMarker();
-        markerPoint = null;
-        updateMarker();
-      }
-    } else if ((event.ctrlKey || event.metaKey) && !isEditable(event.target)) {
-      const key = event.key.toLowerCase();
-      if (key === 'z' && !event.shiftKey) { event.preventDefault(); undo(); }
-      else if ((key === 'z' && event.shiftKey) || key === 'y') { event.preventDefault(); redo(); }
-    }
-    updateGhost();
-  };
-  const onKeyUp = (event: KeyboardEvent): void => {
-    rememberModifiers(event);
-    updateGhost();
-  };
-  const onBlur = (): void => {
-    modifiers = { alt: false, shift: false }; // R38
-    endStroke();
-    updateGhost();
-  };
-  const onLeave = (): void => {
-    if (stroking) return;
-    lastPoint = null;
-    lastClient = null;
-    ghost.hide();
-  };
-  // R56: a change of Tiling (or of the height Scale and Level) moves the ghost's picture-to-plane mapping, so the ghost and the marker follow at once.
-  const onSurfaceChange = (): void => {
-    followSurface({
-      surface: () => scene.paintSurface(),
-      setGhostTiling: (x, y) => ghost.setTiling(x, y),
-      placeMarker: updateMarker,
-      repickGhost: () => {
-        if (!orbiting && lastClient !== null) lastPoint = pointOf(lastClient);
-      },
-      showGhost: updateGhost,
-    });
-  };
-  const onContextLost = (event: Event): void => {
-    event.preventDefault();
-    options.onInterrupted();
-  };
-
-  scene.setOrbitFilter({ ignoresPointer: (event) => event.button === 0 && event.pointerType !== 'touch', ignoresWheel: (event) => event.altKey });
-  const previousCursor = element.style.cursor;
-  element.style.cursor = 'crosshair';
-  ghost.setTiling(scene.paintSurface().tilingX, scene.paintSurface().tilingY);
-  const stopFollowingSurface = scene.onValuesChange(onSurfaceChange);
-  element.addEventListener('pointerdown', onPointerDown);
-  element.addEventListener('pointerleave', onLeave);
-  element.addEventListener('wheel', onWheel, { passive: false });
-  element.addEventListener('webglcontextlost', onContextLost);
-  window.addEventListener('pointermove', onPointerMove);
-  window.addEventListener('pointerup', onPointerUp);
-  window.addEventListener('pointercancel', onPointerUp);
-  window.addEventListener('keydown', onKeyDown);
-  window.addEventListener('keyup', onKeyUp);
-  window.addEventListener('blur', onBlur);
-  showTextures();
-  refreshHeightProxy();
-
+  const workspace = createPaintWorkspace({ host, session, onInterrupted: options.onInterrupted });
+  const stamp = createStampMode({ workspace, atlasGrid: atlas.grid, material: options.material, shapes: options.shapes, onBrushChange: options.onBrushChange });
+  const clone = createCloneMode({ workspace, onBrushChange: options.onBrushChange });
+  let tool: PaintTool = 'stamp';
+  workspace.setMode(stamp);
   return {
     setBrush(brush) {
-      session.setBrush(brush);
-      updateGhost();
+      stamp.setBrush(brush);
+      clone.brushChanged(); // the Size may be shared with a highlight that just became (un)liftable (clone R6)
     },
-    setShapes(next) {
-      shapes = next;
-      session.setShapes(next);
-      updateGhost();
+    setShapes: stamp.setShapes,
+    setMaterial: stamp.setMaterial,
+    setTool(next) {
+      if (next === tool || clone.view().phase === 'floating') return;
+      tool = next;
+      workspace.setMode(next === 'clone' ? clone : stamp);
     },
-    setMaterial(next) {
-      material = next;
-      session.setMaterial(next);
-      updateGhost();
-    },
-    undo,
-    redo,
-    readPainted: () => session.readPainted(),
-    state: () => snapshot,
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => void listeners.delete(listener);
-    },
-    dispose() {
-      if (disposed) return;
-      disposed = true;
-      cancelAnimationFrame(frame);
-      stopFollowingSurface();
-      element.removeEventListener('pointerdown', onPointerDown);
-      element.removeEventListener('pointerleave', onLeave);
-      element.removeEventListener('wheel', onWheel);
-      element.removeEventListener('webglcontextlost', onContextLost);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('pointercancel', onPointerUp);
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
-      window.removeEventListener('blur', onBlur);
-      element.style.cursor = previousCursor;
-      scene.setOrbitFilter(null);
-      scene.setPaintTextures(null);
-      ghost.dispose();
-      session.dispose();
-      listeners.clear();
-    },
+    clone: { view: clone.view, subscribe: clone.subscribe, lift: clone.lift, confirm: clone.confirm, setSettings: clone.setSettings, setScalePercent: clone.setScalePercent },
+    undo: workspace.undo,
+    redo: workspace.redo,
+    readPainted: workspace.readPainted,
+    state: workspace.state,
+    subscribe: workspace.subscribe,
+    dispose: workspace.dispose,
   };
 }

@@ -1,10 +1,11 @@
 import {
-  ClampToEdgeWrapping, DataTexture, HalfFloatType, InstancedBufferAttribute, InstancedBufferGeometry, LinearFilter, LinearMipmapLinearFilter, Mesh, NearestFilter,
+  ClampToEdgeWrapping, DataTexture, HalfFloatType, LinearFilter, LinearMipmapLinearFilter, Mesh, NearestFilter,
   NoColorSpace, OrthographicCamera, PlaneGeometry, RedFormat, RepeatWrapping, RGBAFormat, RGFormat, Scene, ShaderMaterial, SRGBColorSpace, UnsignedByteType,
   WebGLRenderer, WebGLRenderTarget, type Texture,
 } from 'three';
 import { wrapInstances } from '../plan/wrapInstances';
 import type { Stamp } from '../plan/planStamps';
+import { createInstancedQuad, INSTANCES_PER_DRAW, setInstanceCount } from './createInstancedQuad';
 import { DEFAULT_MAP_BYTES, toLinearColour, type PaintMaterial } from './paintMaterial';
 import { flipRows, rebuildMipmapsOf, uploadPictureBytes } from './rawGl';
 import { createComposeMaterial, createRedCopyMaterial, createStampMaterial } from './stampShaders';
@@ -13,12 +14,14 @@ import { withRendererState } from './withRendererState';
 
 /** Compositing R19: the tilt added per unit of stamp-local coverage slope. Tunable by eye (T3 value). */
 export const EDGE_BURN_GAIN = 0.75; // compositing R76: the tilt of a crisp edge (the coverage changes by 1 across the baseline)
-const INSTANCES_PER_DRAW = 512;
 const BOUNDS_MARGIN = 2;
 
 export type MapKind = 'albedo' | 'orm' | 'height' | 'normal';
-/** The targets a stroke changes and the journal saves (A6); the composed normal is recomposed from `slope`, never saved. */
-export type JournalKind = 'albedo' | 'orm' | 'height' | 'slope';
+/**
+ * The targets an edit changes and the journal saves (A6); the composed normal is recomposed from `slope` and `override`, never saved. `override` (clone R15) holds the
+ * normals a placement copied, premultiplied, with the coverage in alpha.
+ */
+export type JournalKind = 'albedo' | 'orm' | 'height' | 'slope' | 'override';
 /** Called once per paint call, before any draw, with the texel rectangle and the targets about to change. */
 export type BeforeDraw = (rect: TexelRect, kinds: readonly JournalKind[]) => void;
 type Bytes = Uint8Array<ArrayBuffer>;
@@ -61,8 +64,16 @@ export interface StampPainter {
   readonly side: number;
   /** The shape atlas on the GPU, so the ghost draws from the same texture (A5). */
   readonly atlas: Texture;
-  /** The live target of a journaled map, or null while it does not exist yet (height and slope are made on first use). */
+  /** The live target of a journaled map, or null while it does not exist yet (height, slope and override are made on first use). */
   journalTarget(kind: JournalKind): WebGLRenderTarget | null;
+  /** Clone R14: whether the map exists, given by the project or made by a stamp or a placement; a map that does not exist is never created by merely looking. */
+  hasMap(kind: MapKind): boolean;
+  /** Makes the journaled targets exist (before the journal records them, so Undo can restore them). `override` needs the composed normal, so it makes `slope` too. */
+  ensureTargets(kinds: readonly JournalKind[]): void;
+  /** The stored normal map, as the compose pass reads it; null until the composed normal exists. */
+  baseNormalTexture(): Texture | null;
+  /** -1 for DirectX normal maps: the y channel as stored is the OpenGL y times this. */
+  readonly normalYSign: 1 | -1;
   /** Recompose the normal over a rectangle from the stored normal and the slope (after the journal restored slope tiles). */
   recomposeNormal(rect: TexelRect): void;
   setBeforeDraw(hook: BeforeDraw | null): void;
@@ -77,25 +88,10 @@ function flatBytes(side: number, pattern: readonly number[]): Bytes {
   return out;
 }
 
-function createInstancedQuad(): { geometry: InstancedBufferGeometry; place: Float32Array; tile: Float32Array; brush: Float32Array; mesh: Mesh } {
-  const base = new PlaneGeometry(1, 1);
-  const geometry = new InstancedBufferGeometry();
-  geometry.index = base.index;
-  geometry.setAttribute('position', base.getAttribute('position'));
-  const place = new Float32Array(INSTANCES_PER_DRAW * 4);
-  const tile = new Float32Array(INSTANCES_PER_DRAW * 4);
-  const brush = new Float32Array(INSTANCES_PER_DRAW * 4);
-  geometry.setAttribute('iPlace', new InstancedBufferAttribute(place, 4));
-  geometry.setAttribute('iTile', new InstancedBufferAttribute(tile, 4));
-  geometry.setAttribute('iBrush', new InstancedBufferAttribute(brush, 4));
-  const mesh = new Mesh(geometry);
-  mesh.frustumCulled = false;
-  return { geometry, place, tile, brush, mesh };
-}
-
 export function createStampPainter(renderer: WebGLRenderer, options: StampPainterOptions): StampPainter {
   const { side, grid, normalDirection } = options;
   const texel = 1 / side;
+  const normalYSign: 1 | -1 = normalDirection === 'directx' ? -1 : 1;
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
   const atlas = new DataTexture(options.atlas.data, options.atlas.width, options.atlas.height, RedFormat, UnsignedByteType);
@@ -124,7 +120,7 @@ export function createStampPainter(renderer: WebGLRenderer, options: StampPainte
   screenQuad.frustumCulled = false;
   screenScene.add(screenQuad);
 
-  const makeTarget = (kind: 'albedo' | 'orm' | 'height' | 'slope' | 'composed'): WebGLRenderTarget => {
+  const makeTarget = (kind: 'albedo' | 'orm' | 'height' | 'slope' | 'composed' | 'override'): WebGLRenderTarget => {
     const mips = kind === 'albedo' || kind === 'composed';
     const target = new WebGLRenderTarget(side, side, {
       depthBuffer: false,
@@ -152,7 +148,10 @@ export function createStampPainter(renderer: WebGLRenderer, options: StampPainte
   let heightTarget: WebGLRenderTarget | null = null;
   let slopeTarget: WebGLRenderTarget | null = null;
   let composedTarget: WebGLRenderTarget | null = null;
+  let overrideTarget: WebGLRenderTarget | null = null;
   let baseNormal: DataTexture | null = null;
+  const noOverride = new DataTexture(new Uint8Array(4), 1, 1, RGBAFormat, UnsignedByteType); // until a placement copies a normal, the compose pass reads this transparent texel
+  noOverride.needsUpdate = true;
   let beforeDraw: BeforeDraw | null = null;
   let composeMaterial: ShaderMaterial | null = null;
 
@@ -181,12 +180,31 @@ export function createStampPainter(renderer: WebGLRenderer, options: StampPainte
     baseNormal.unpackAlignment = 1;
     baseNormal.needsUpdate = true;
     composedTarget = makeTarget('composed');
-    composeMaterial = createComposeMaterial(baseNormal, slopeTarget.texture, normalDirection === 'directx' ? -1 : 1);
+    composeMaterial = createComposeMaterial(baseNormal, slopeTarget.texture, overrideTarget === null ? noOverride : overrideTarget.texture, normalYSign);
     drawScreen(composeMaterial, composedTarget); // the composed normal starts as the stored one (the slope is zero everywhere)
     rebuildMipmapsOf(renderer, composedTarget.texture);
     composedTarget.texture.generateMipmaps = false;
     return { slope: slopeTarget, composed: composedTarget };
   };
+
+  const ensureOverride = (): WebGLRenderTarget => {
+    ensureSlope();
+    if (overrideTarget !== null) return overrideTarget;
+    overrideTarget = makeTarget('override');
+    renderer.setRenderTarget(overrideTarget);
+    renderer.setClearColor(0x000000, 0);
+    renderer.clear();
+    composeMaterial!.uniforms['uOverride']!.value = overrideTarget.texture;
+    return overrideTarget;
+  };
+
+  const ensureTargets = (kinds: readonly JournalKind[]): void => withRendererState(renderer, () => {
+    for (const kind of kinds) {
+      if (kind === 'height') ensureHeight();
+      else if (kind === 'slope') ensureSlope();
+      else if (kind === 'override') ensureOverride();
+    }
+  });
 
   const composeOver = (rect: TexelRect): void => {
     const { composed } = ensureSlope();
@@ -218,13 +236,7 @@ export function createStampPainter(renderer: WebGLRenderer, options: StampPainte
       }
 
       const drawInstances = (count: number): void => {
-        instances.geometry.instanceCount = count;
-        for (const name of ['iPlace', 'iTile', 'iBrush']) {
-          const attribute = instances.geometry.getAttribute(name) as InstancedBufferAttribute;
-          attribute.clearUpdateRanges();
-          attribute.addUpdateRange(0, count * 4);
-          attribute.needsUpdate = true;
-        }
+        setInstanceCount(instances, count);
         const drawWith = (material: ShaderMaterial, target: WebGLRenderTarget): void => { instances.mesh.material = material; draw(stampScene, target); };
         drawWith(stampMaterials.albedo, albedoTarget);
         gl.colorMask(false, true, true, false); // roughness and metal only: the packed texture's AO channel is never written (R17)
@@ -315,7 +327,11 @@ export function createStampPainter(renderer: WebGLRenderer, options: StampPainte
     texture,
     side,
     atlas,
-    journalTarget: (kind) => (kind === 'albedo' ? albedoTarget : kind === 'orm' ? ormTarget : kind === 'height' ? heightTarget : slopeTarget),
+    journalTarget: (kind) => (kind === 'albedo' ? albedoTarget : kind === 'orm' ? ormTarget : kind === 'height' ? heightTarget : kind === 'slope' ? slopeTarget : overrideTarget),
+    hasMap: (kind) => (kind === 'albedo' || kind === 'orm' ? true : kind === 'height' ? options.maps.height !== undefined || heightTarget !== null : options.maps.normal !== undefined || slopeTarget !== null),
+    ensureTargets,
+    baseNormalTexture: () => baseNormal,
+    normalYSign,
     recomposeNormal: (rect) => { if (composedTarget !== null) withRendererState(renderer, () => composeOver(rect)); },
     setBeforeDraw: (hook) => { beforeDraw = hook; },
     rebuildMipmaps: () => withRendererState(renderer, () => {
@@ -323,7 +339,8 @@ export function createStampPainter(renderer: WebGLRenderer, options: StampPainte
       if (composedTarget !== null) rebuildMipmapsOf(renderer, composedTarget.texture);
     }),
     dispose: () => {
-      for (const target of [albedoTarget, ormTarget, heightTarget, slopeTarget, composedTarget, proxyTarget]) target?.dispose();
+      for (const target of [albedoTarget, ormTarget, heightTarget, slopeTarget, composedTarget, overrideTarget, proxyTarget]) target?.dispose();
+      noOverride.dispose();
       for (const material of [...Object.values(stampMaterials), composeMaterial, proxyMaterial, screenQuad.material as ShaderMaterial]) material?.dispose();
       atlas.dispose();
       baseNormal?.dispose();

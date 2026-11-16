@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MapsState } from '../../../../src/materialgen/maps';
 import { decodePng, type PixelImage } from '../../../../src/materialgen/maps/png/pngCodec';
+import { undoMaps, undoTargets } from '../../../../src/materialgen/maps/mapOperations';
 import { loadPaintMaps, paintedPicturesOf, planCommitPaint } from '../../../../src/materialgen/compositing/session/commitPaint';
 
 const grey = (value: number): PixelImage => ({ width: 2, height: 2, channels: 1, data: new Uint8Array(4).fill(value) });
@@ -52,6 +53,15 @@ describe('materialgen/compositing commit (R22 R20)', () => {
     expect(plan.next.maps.albedo).toMatchObject({ undoKey: 'a', undo: { label: 'Paint' } });
     expect(plan.next.maps.rough).toMatchObject({ undoKey: 'r', undo: { label: 'Paint' } });
     expect(plan.next.maps.albedo!.workingKey).not.toBe('a');
+  });
+
+  it('R22 one Undo on any card takes back the whole Done: the maps one commit wrote share an undo group', async () => {
+    const state: MapsState = { size: 256, maps: { albedo: record('a'), rough: record('r'), metal: record('m') } };
+    const plan = await planCommitPaint(state, paintedPicturesOf(bytes, 2, { albedo: 3, normal: 3 }), 'albedo', io());
+    expect(undoTargets(plan.next, ['albedo']).sort()).toEqual(['albedo', 'metal', 'rough']);
+    const undone = undoMaps(plan.next, ['albedo']);
+    expect([undone.maps.albedo!.workingKey, undone.maps.rough!.workingKey, undone.maps.metal!.workingKey]).toEqual(['a', 'r', 'm']);
+    expect(undone.maps.albedo!.undo).toBeUndefined();
   });
 
   it('R20 a map that did not exist is made from the painting and becomes its own original', async () => {

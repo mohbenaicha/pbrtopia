@@ -62,3 +62,36 @@ describe('materialgen/compositing stroke log (R22 R71)', () => {
     expect(log.appliedMaps()).toEqual(['albedo', 'rough', 'metal', 'height', 'normal']);
   });
 });
+
+describe('materialgen/compositing stroke log: placements (clone R12 R16 R17)', () => {
+  it('TestCloneR17_a_placement_lists_the_maps_it_changed_and_Done_writes_exactly_those', () => {
+    const log = createStrokeLog();
+    log.placement(['albedo', 'rough', 'metal', 'normal'], true);
+    expect(log.appliedMaps()).toEqual(['albedo', 'rough', 'metal', 'normal']);
+    expect(log.lastApplied()).toMatchObject({ kind: 'placement', maps: ['albedo', 'rough', 'metal', 'normal'] });
+  });
+
+  it('TestCloneR16_placements_and_strokes_share_one_undo_timeline_in_the_order_made', () => {
+    const log = createStrokeLog();
+    log.begin(header(1)); log.end(true);
+    log.placement(['albedo', 'rough', 'metal', 'height'], true);
+    expect(log.undoDepth()).toBe(2);
+    expect(log.undo()).toMatchObject({ kind: 'placement' });
+    expect(log.appliedMaps()).toEqual(['albedo', 'rough', 'metal']); // the undone placement no longer counts
+    expect(log.undo()).toMatchObject({ kind: 'stroke', id: 1 });
+    expect(log.redo()).toMatchObject({ kind: 'stroke', id: 1 });
+    expect(log.redo()).toMatchObject({ kind: 'placement' });
+    expect(log.appliedMaps()).toContain('height');
+  });
+
+  it('TestCloneR16_a_placement_clears_redo_and_one_too_large_to_undo_still_counts_as_applied', () => {
+    const log = createStrokeLog();
+    log.begin(header(1)); log.end(true);
+    log.undo();
+    log.placement(['albedo', 'rough', 'metal'], true);
+    expect(log.redoDepth()).toBe(0);
+    log.placement(['albedo', 'rough', 'metal', 'normal'], false);
+    expect(log.undoDepth()).toBe(1);
+    expect(log.appliedMaps()).toContain('normal');
+  });
+});

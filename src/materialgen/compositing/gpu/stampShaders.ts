@@ -113,16 +113,22 @@ const SCREEN_VERTEX = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = v
  * Compositing A4.4: the stored normal plus the summed tilt, folded with the partial-derivative blend of imageops R82: (n1.xy x n2.z + n2.xy x n1.z, n1.z x n2.z)
  * with n2 = (tilt, 1). Where nothing tilts the stored bytes pass through unchanged. `uYSign` is -1 for DirectX maps (the tilt is made in OpenGL terms).
  */
-export function createComposeMaterial(base: Texture, slope: Texture, yTiltSign: number): ShaderMaterial {
+export function createComposeMaterial(base: Texture, slope: Texture, override: Texture, yTiltSign: number): ShaderMaterial {
   return new ShaderMaterial({
     vertexShader: SCREEN_VERTEX,
     fragmentShader: `
       uniform sampler2D uBase;
       uniform sampler2D uSlope;
+      uniform sampler2D uOverride;
       uniform float uYSign;
       varying vec2 vUv;
       void main() {
         vec4 stored = texture2D(uBase, vUv);
+        vec4 copied = texture2D(uOverride, vUv); // clone R15: premultiplied normals a placement wrote, over the stored ones; alpha is the coverage
+        if (copied.a > 0.0) {
+          vec3 over = copied.rgb + (1.0 - copied.a) * stored.rgb;
+          stored.rgb = normalize(over * 2.0 - 1.0) * 0.5 + 0.5;
+        }
         vec2 tilt = texture2D(uSlope, vUv).rg;
         if (dot(tilt, tilt) < 1e-12) { gl_FragColor = stored; return; }
         float reach = length(tilt);
@@ -132,7 +138,7 @@ export function createComposeMaterial(base: Texture, slope: Texture, yTiltSign: 
         vec3 n = normalize(vec3(n1.xy + tilt * n1.z, n1.z));
         gl_FragColor = vec4(n * 0.5 + 0.5, stored.a);
       }`,
-    uniforms: { uBase: { value: base }, uSlope: { value: slope }, uYSign: { value: yTiltSign } },
+    uniforms: { uBase: { value: base }, uSlope: { value: slope }, uOverride: { value: override }, uYSign: { value: yTiltSign } },
     depthTest: false, depthWrite: false, blending: NoBlending,
   });
 }

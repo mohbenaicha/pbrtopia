@@ -61,7 +61,7 @@ export function paintedPicturesOf(painted: Pick<PaintedBytes, 'albedo' | 'orm' |
 }
 
 /**
- * Compositing R22, R20: one commit. Each painted map becomes a new working file with its own undo entry (an existing map) or a computed original (a map the
+ * Compositing R22, R20: one commit. Each painted map becomes a new working file with its own undo entry (an existing map), all tied in one group, or a computed original (a map the
  * project lacked). Height painted leaves AO stale through its derivation record (maps R32). Nothing painted: the same state and no files.
  */
 export async function planCommitPaint(state: MapsState, pictures: PaintedPictures, colourKind: ColourKind, io: Pick<PlanIo, 'newKey'>): Promise<MapPlan> {
@@ -71,7 +71,7 @@ export async function planCommitPaint(state: MapsState, pictures: PaintedPicture
   if (pictures.metal) edits.push({ kind: 'metal', image: pictures.metal });
   if (pictures.height) edits.push({ kind: 'height', image: pictures.height });
   if (pictures.normal) edits.push({ kind: 'normal', image: pictures.normal });
-  const result = await planApplyEdits(state, edits, PAINT_LABEL, false, io);
+  const result = await planApplyEdits(state, edits, PAINT_LABEL, true, io); // one group: a single Undo takes back the whole session on every map (R22)
   if (!result.ok) throw new Error(result.message);
   return result.plan;
 }

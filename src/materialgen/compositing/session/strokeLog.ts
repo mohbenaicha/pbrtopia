@@ -15,59 +15,72 @@ export interface StrokeHeader {
   settings: PaintSettings;
 }
 
-export interface LoggedStroke extends StrokeHeader { path: Point[] }
+export interface LoggedStroke extends StrokeHeader { kind: 'stroke'; path: Point[] }
+
+/** Clone R16, R17: a confirmed copy is not replayable from a path; it lists the maps it changed. */
+export interface LoggedPlacement { kind: 'placement'; id: number; maps: readonly PaintedMap[] }
+
+export type LoggedEdit = LoggedStroke | LoggedPlacement;
 
 /**
- * Compositing R22, R71: the strokes of the session. Kept apart from the GPU journal so the maps Done writes do not depend on what the journal still holds:
- * a stroke dropped for budget, or too large to undo, still counts as applied; one undone away does not.
+ * Compositing R22, R71 and clone R16: the strokes and placements of the session, one timeline. Kept apart from the GPU journal so the maps Done writes do not
+ * depend on what the journal still holds: an edit dropped for budget, or too large to undo, still counts as applied; one undone away does not.
  */
 export interface StrokeLog {
   begin(header: StrokeHeader): void;
   extend(point: Point): void;
   /** `undoable` is false for a stroke too large for the journal (R21). */
   end(undoable: boolean): void;
-  undo(): LoggedStroke | null;
-  redo(): LoggedStroke | null;
+  /** Logs a confirmed placement in one step (clone R12); `undoable` as for `end`. */
+  placement(maps: readonly PaintedMap[], undoable: boolean): void;
+  undo(): LoggedEdit | null;
+  redo(): LoggedEdit | null;
   /** The journal evicted its oldest entry. */
   forgetOldestUndo(): void;
-  /** The journal could not keep a stroke and dropped every older entry too. */
+  /** The journal could not keep an edit and dropped every older entry too. */
   dropUndoHistory(): void;
-  lastApplied(): LoggedStroke | null;
+  lastApplied(): LoggedEdit | null;
   undoDepth(): number;
   redoDepth(): number;
   appliedMaps(): PaintedMap[];
 }
 
-const mapsOf = (stroke: LoggedStroke): PaintedMap[] => [
+const mapsOf = (edit: LoggedEdit): readonly PaintedMap[] => edit.kind === 'placement' ? edit.maps : [
   'albedo', 'rough', 'metal',
-  ...(stroke.settings.height === null ? [] : ['height' as const]),
-  ...(stroke.settings.edgeBurn === null ? [] : ['normal' as const]),
+  ...(edit.settings.height === null ? [] : ['height' as const]),
+  ...(edit.settings.edgeBurn === null ? [] : ['normal' as const]),
 ];
 
 export function createStrokeLog(): StrokeLog {
   let open: LoggedStroke | null = null;
-  let undoStack: LoggedStroke[] = [];
-  let redoStack: LoggedStroke[] = [];
-  let fixed: LoggedStroke[] = []; // applied, but no longer undoable
+  let undoStack: LoggedEdit[] = [];
+  let redoStack: LoggedEdit[] = [];
+  let fixed: LoggedEdit[] = []; // applied, but no longer undoable
+  let placements = 0;
   return {
-    begin: (header) => { open = { ...header, path: [] }; redoStack = []; },
+    begin: (header) => { open = { ...header, kind: 'stroke', path: [] }; redoStack = []; },
     extend: (point) => { open?.path.push(point); },
     end: (undoable) => {
       if (open === null) return;
       (undoable ? undoStack : fixed).push(open);
       open = null;
     },
+    placement: (maps, undoable) => {
+      placements += 1;
+      redoStack = [];
+      (undoable ? undoStack : fixed).push({ kind: 'placement', id: placements, maps });
+    },
     undo: () => {
-      const stroke = undoStack.pop();
-      if (stroke === undefined) return null;
-      redoStack.push(stroke);
-      return stroke;
+      const edit = undoStack.pop();
+      if (edit === undefined) return null;
+      redoStack.push(edit);
+      return edit;
     },
     redo: () => {
-      const stroke = redoStack.pop();
-      if (stroke === undefined) return null;
-      undoStack.push(stroke);
-      return stroke;
+      const edit = redoStack.pop();
+      if (edit === undefined) return null;
+      undoStack.push(edit);
+      return edit;
     },
     forgetOldestUndo: () => { const oldest = undoStack.shift(); if (oldest !== undefined) fixed.push(oldest); },
     dropUndoHistory: () => { fixed = [...fixed, ...undoStack]; undoStack = []; },
@@ -76,7 +89,7 @@ export function createStrokeLog(): StrokeLog {
     redoDepth: () => redoStack.length,
     appliedMaps: () => {
       const present = new Set<PaintedMap>();
-      for (const stroke of [...fixed, ...undoStack]) for (const map of mapsOf(stroke)) present.add(map);
+      for (const edit of [...fixed, ...undoStack]) for (const map of mapsOf(edit)) present.add(map);
       return ORDER.filter((map) => present.has(map));
     },
   };

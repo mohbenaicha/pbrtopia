@@ -1,8 +1,8 @@
 import type { WebGLRenderer, Texture } from 'three';
-import { createStampPainter, type PainterMaps, type StampPainter } from '../gpu/createStampPainter';
+import { createStampPainter, type JournalKind, type PainterMaps, type StampPainter } from '../gpu/createStampPainter';
 import { createTileJournal, type TileJournal, type TileJournalOptions } from '../gpu/createTileJournal';
 import type { PaintMaterial } from '../gpu/paintMaterial';
-import type { AtlasGrid } from '../gpu/stampGeometry';
+import type { AtlasGrid, TexelRect } from '../gpu/stampGeometry';
 import { DEFAULT_BRUSH, clampBrush, type BrushParams } from '../plan/brushParams';
 import { peekNextStamp, planSegment, startStroke, type PeekedStamp, type PlanContext, type PlanState, type Point, type ShapeSlot, type Stamp } from '../plan/planStamps';
 import { paintSettingsOf } from './paintSettings';
@@ -37,8 +37,27 @@ export interface PaintedBytes {
   applied: PaintedMap[];
 }
 
+/** Clone C2: what a confirmed copy asks of the session. One rectangle per wrapped copy (never their union, which can span a whole axis) is saved before `draw` runs. */
+export interface PlacementRequest {
+  /** The maps Done must write because of this placement (clone R17). */
+  maps: readonly PaintedMap[];
+  rects: readonly TexelRect[];
+  kinds: readonly JournalKind[];
+  /** Draws the placement; returns the texel rectangle that changed, or null when nothing was drawn. */
+  draw(painter: StampPainter): TexelRect | null;
+}
+
 export interface PaintSession {
   readonly side: number;
+  /** The painter, for the clone layer to capture from and to draw into (clone C2). */
+  readonly painter: StampPainter;
+  /** Draws every stamp still queued and closes the stroke being drawn, so what follows sees finished maps (clone R8). */
+  finishPending(): void;
+  /**
+   * Clone C2: applies a placement as one undo step on the same timeline as strokes. Returns null when nothing was applied (a stroke is open, or `draw` drew
+   * nothing); `undoable` is false when the edit was too large for the journal (which also drops the older history, clone R16).
+   */
+  applyPlacement(request: PlacementRequest): { undoable: boolean } | null;
   setBrush(params: BrushParams): void;
   brush(): BrushParams;
   setShapes(shapes: readonly ShapeSlot[]): void;
@@ -152,8 +171,28 @@ export function createPaintSession(renderer: WebGLRenderer, options: PaintSessio
     enqueue(open.id, planned.stamps);
   };
 
+  const applyPlacement = (request: PlacementRequest): { undoable: boolean } | null => {
+    if (input !== null) return null;
+    drain();
+    painter.ensureTargets(request.kinds); // the targets exist before the journal looks for them, so Undo can restore them
+    journal.beginStroke();
+    for (const rect of request.rects) journal.record(rect, request.kinds);
+    const changed = request.draw(painter);
+    if (changed === null) { journal.abortStroke(); return null; }
+    const { kept } = journal.endStroke();
+    log.placement(request.maps, kept);
+    if (!kept) { log.dropUndoHistory(); notice = 'too-large-to-undo'; }
+    while (log.undoDepth() > journal.stats().undoEntries) log.forgetOldestUndo();
+    painter.recomposeNormal(changed);
+    painter.rebuildMipmaps();
+    return { undoable: kept };
+  };
+
   return {
     side: options.side,
+    painter,
+    finishPending: drain,
+    applyPlacement,
     setBrush: (params) => { brush = clampBrush(params); },
     brush: () => brush,
     setShapes: (next) => { shapes = next; },

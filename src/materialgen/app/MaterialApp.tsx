@@ -28,13 +28,18 @@ interface MaterialAppProps {
 export function MaterialApp({ store, initial }: MaterialAppProps): React.JSX.Element {
   const { route, notice, dismissNotice } = useAddressWatcher(store, initial);
   const [listVersion, setListVersion] = useState(0); // bumped when an import ends, so the list is read again
+  const [newProjectRequest, setNewProjectRequest] = useState(0); // bumped by the welcome's Generate material: the New project dialog opens (tutorial R15)
   const projectImport = useMaterialImport(store, () => setListVersion((version) => version + 1));
   const samples = useSampleProjects(store); // the bundled samples, imported once at the first start (default-projects R11)
   const pickers = useDesktopPickers();
   const exporter = useMemo(() => createMaterialListExporter(store, exportEnvironments(pickers)), [store, pickers]);
 
   return (
-    <MaterialTutorial store={store} ready={samples.checked && samples.remaining === 0 && route.view === 'list'}>
+    <MaterialTutorial
+      store={store}
+      ready={samples.checked && samples.remaining === 0 && route.view === 'list'}
+      onGenerateMaterial={() => setNewProjectRequest((count) => count + 1)}
+    >
     <RouteSwitch
       route={route}
       views={{
@@ -50,7 +55,7 @@ export function MaterialApp({ store, initial }: MaterialAppProps): React.JSX.Ele
             }}
             createActions={(large) => (
               <>
-                <NewMaterialProjectButton store={store} large={large} />
+                <NewMaterialProjectButton store={store} large={large} openRequest={newProjectRequest} />
                 <ImportProjectButton state={projectImport} showStatus={false} />
               </>
             )}

@@ -7,14 +7,22 @@ import { NewMaterialProjectDialog } from './NewMaterialProjectDialog';
 interface NewMaterialProjectButtonProps {
   store: Pick<MaterialProjectStore, 'createProject' | 'requestPersistence'>;
   large?: boolean; // the empty list's one big action
+  openRequest?: number; // a count that goes up each time something else (the tutorial's welcome) asks for this same dialog; the value at first render is only the start
 }
 
 /** Materialgen app R24, R24a: New project asks for the name and size, creates an empty project and opens it. A failure is shown in the dialog and nothing is opened. */
-export function NewMaterialProjectButton({ store, large = false }: NewMaterialProjectButtonProps): React.JSX.Element {
+export function NewMaterialProjectButton({ store, large = false, openRequest = 0 }: NewMaterialProjectButtonProps): React.JSX.Element {
   const mounted = useRef(true);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const seenRequest = useRef(openRequest);
+
+  useEffect(() => {
+    if (openRequest === seenRequest.current) return;
+    seenRequest.current = openRequest;
+    setOpen(true);
+  }, [openRequest]);
 
   useEffect(() => {
     mounted.current = true;

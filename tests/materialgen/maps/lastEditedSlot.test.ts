@@ -12,10 +12,17 @@ describe('materialgen/app R47 findEditedSlot', () => {
     expect(findEditedSlot(before, after)).toBe('metalRoughness');
   });
 
-  it('R47 nothing changed, or a map placed with no undo entry, names no slot', () => {
+  it('R47 nothing changed names no slot', () => {
     const before = two();
     expect(findEditedSlot(before, before)).toBeNull();
-    expect(findEditedSlot(before, placeMap(before, 'height', { originalKey: 'h', workingKey: 'h', width: 256, height: 256 }))).toBeNull();
+  });
+
+  it('R47 a map generated, dropped or regenerated with no undo entry still names its slot, so Ctrl+Z does not fall back to an older card', () => {
+    const before = two();
+    expect(findEditedSlot(before, placeMap(before, 'ao', { originalKey: 'o', workingKey: 'o', width: 256, height: 256 }))).toBe('occlusion');
+    const edited = editMaps(before, [{ kind: 'albedo', workingKey: 'a2' }], 'Paint');
+    const regenerated = placeMap(edited, 'rough', { originalKey: 'r9', workingKey: 'r9', width: 256, height: 256 });
+    expect(findEditedSlot(edited, regenerated)).toBe('metalRoughness');
   });
 
   it('R47 an undo removes the entry and so names no slot (the last edited card stays as it was)', () => {

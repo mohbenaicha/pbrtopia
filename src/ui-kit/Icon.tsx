@@ -5,6 +5,7 @@ import orthographicUrl from './icons/orthographic.png';
 import perspectiveUrl from './icons/perspective.png';
 import projectsListUrl from './icons/projects.png';
 import { LINE_ICON_PATHS, type LineIconName } from './lineIcons';
+import { SOLID_ICON_PATHS, type SolidIconName } from './solidIcons';
 import './Icon.css';
 
 // Icons the user supplied as images (R3). They are drawn as they are, dimmed until the button is hovered or pressed.
@@ -17,9 +18,10 @@ const IMAGE_ICON_URLS = {
 } as const;
 
 type ImageIconName =keyof typeof IMAGE_ICON_URLS;
-export type IconName = ImageIconName | LineIconName;
+export type IconName = ImageIconName | LineIconName | SolidIconName;
 
 const isImageIcon = (name: IconName): name is ImageIconName => name in IMAGE_ICON_URLS;
+const isSolidIcon = (name: IconName): name is SolidIconName => name in SOLID_ICON_PATHS;
 
 // R36: the line icons leave much of their box empty, so they are drawn large (the button around them keeps its size).
 const LINE_ICON_SIZE = 30;
@@ -30,6 +32,15 @@ export function Icon({ name, size }: { name: IconName; size?: number }): React.J
   if (isImageIcon(name)) {
     const style = { '--icon-url': `url(${IMAGE_ICON_URLS[name]})`, '--icon-size': `${size ?? IMAGE_ICON_SIZE}px` } as CSSProperties;
     return <span className="ui-icon ui-icon--image" data-icon={name} aria-hidden="true" style={style} />;
+  }
+  if (isSolidIcon(name)) {
+    return (
+      <span className="ui-icon" data-icon={name} aria-hidden="true" style={{ '--icon-size': `${size ?? LINE_ICON_SIZE}px` } as CSSProperties}>
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d={SOLID_ICON_PATHS[name]} />
+        </svg>
+      </span>
+    );
   }
   return (
     <span className="ui-icon" data-icon={name} aria-hidden="true" style={{ '--icon-size': `${size ?? LINE_ICON_SIZE}px` } as CSSProperties}>

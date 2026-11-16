@@ -149,6 +149,13 @@
   gap: var(--space-2);
 }
 
+/* Clone R18: the Clone and Confirm buttons side by side under the sliders. */
+.clone-controls__buttons {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
 /* Compositing R44: the controls that follow a switch sit indented under it. */
 .brush-controls__nested {
   display: flex;
@@ -264,5 +271,20 @@
 
 .material-picker__values {
   color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
+.mode-switch__rule {
+  width: 100%;
+  height: 0;
+  margin: var(--space-2) 0;
+  border: 0;
+  border-top: 1px solid var(--text-dim);
+  opacity: 0.4;
+}
+
+.paint-panel__warning {
+  margin: 0;
+  color: var(--accent);
   font-size: var(--font-size-small);
 }

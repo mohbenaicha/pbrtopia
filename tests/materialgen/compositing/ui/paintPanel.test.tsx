@@ -47,6 +47,13 @@ function renderPanel(brush: BrushParams = DEFAULT_BRUSH, palette = EMPTY_PALETTE
 
 const before = (first: Element, second: Element): boolean => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
 
+describe('clone R28: the occlusion warning', () => {
+  it('TestCloneR28_the_panel_warns_that_painting_does_not_reach_the_occlusion_map', () => {
+    renderPanel();
+    expect(screen.getByTestId('paint-occlusion-warning').textContent).toBe('Does not apply to the occlusion map (regenerate it from height).');
+  });
+});
+
 describe('materialgen/compositing paint panel, phase A (R42-R46)', () => {
   it('R42 the Material swatch comes first, and empty it is a grey sphere that can be clicked, not a plus', () => {
     renderPanel();

@@ -1,0 +1,15 @@
+.brand-link {
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
+
+.brand-link:hover {
+  opacity: 1;
+}
+
+.brand-link:focus-visible {
+  opacity: 1;
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+  border-radius: 50%;
+}

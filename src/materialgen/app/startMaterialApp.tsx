@@ -8,6 +8,7 @@ import { APP_ID } from './appIdentity';
 import { listMissingCapabilities, type CapabilityEnv } from './capabilities/detectCapabilities';
 import { MissingFeaturesPage } from './capabilities/MissingFeaturesPage';
 import { readBrowserCapabilityEnv } from './capabilities/readBrowserCapabilityEnv';
+import { GITHUB_URL } from '@mat/tutorial';
 import { MaterialApp } from './MaterialApp';
 import { decideStartup } from './routes/startup';
 
@@ -62,7 +63,7 @@ export async function startMaterialApp(root: HTMLElement, deps: StartDeps = {}):
   reactRoot.render(
     <AppBackendsProvider backends={backends}>
       <MaterialApp store={store} initial={decision} />
-      <BrandMark src={pbrtopiaLogoUrl} />
+      <BrandMark src={pbrtopiaLogoUrl} link={{ href: GITHUB_URL, label: 'pbrtopia on GitHub' }} />
     </AppBackendsProvider>,
   );
   return () => reactRoot.unmount();

@@ -4,8 +4,8 @@ import { glFramebufferOf, glTextureOf } from './rawGl';
 import { unionRect, type TexelRect } from './stampGeometry';
 import { withRendererState } from './withRendererState';
 
-const KINDS: readonly JournalKind[] = ['albedo', 'orm', 'height', 'slope'];
-const BYTES_PER_PIXEL: Record<JournalKind, number> = { albedo: 4, orm: 4, height: 1, slope: 4 };
+const KINDS: readonly JournalKind[] = ['albedo', 'orm', 'height', 'slope', 'override'];
+const BYTES_PER_PIXEL: Record<JournalKind, number> = { albedo: 4, orm: 4, height: 1, slope: 4, override: 4 };
 const DEFAULT_BUDGET_BYTES = 64 * 1024 * 1024;
 const DEFAULT_PAGE_SLOTS = { columns: 32, rows: 16 }; // 512 slots: 8 MB of albedo per page
 
@@ -32,6 +32,8 @@ export interface TileJournal {
   record(rect: TexelRect, kinds: readonly JournalKind[]): void;
   /** `kept` is false only when the stroke was larger than the whole budget: it stays applied but cannot be undone (R21, E6). */
   endStroke(): { kept: boolean };
+  /** Closes the open stroke without an entry: the tiles it saved are freed (nothing was drawn). */
+  abortStroke(): void;
   undo(): boolean;
   redo(): boolean;
   canUndo(): boolean;
@@ -45,8 +47,8 @@ interface SavedTile { tile: number; slot: number }
 type Entry = Record<JournalKind, SavedTile[]>;
 interface OpenStroke { saved: Record<JournalKind, Map<number, number>>; overflow: boolean }
 
-const emptyEntry = (): Entry => ({ albedo: [], orm: [], height: [], slope: [] });
-const emptyStroke = (): OpenStroke => ({ saved: { albedo: new Map(), orm: new Map(), height: new Map(), slope: new Map() }, overflow: false });
+const emptyEntry = (): Entry => ({ albedo: [], orm: [], height: [], slope: [], override: [] });
+const emptyStroke = (): OpenStroke => ({ saved: { albedo: new Map(), orm: new Map(), height: new Map(), slope: new Map(), override: new Map() }, overflow: false });
 
 export function createTileJournal(renderer: WebGLRenderer, painter: StampPainter, options: TileJournalOptions): TileJournal {
   const gl = renderer.getContext() as WebGL2RenderingContext;
@@ -55,11 +57,11 @@ export function createTileJournal(renderer: WebGLRenderer, painter: StampPainter
   const slotsPerPage = pageSlots.columns * pageSlots.rows;
   const budgetBytes = options.budgetBytes ?? DEFAULT_BUDGET_BYTES;
   const tilesAcross = Math.ceil(painter.side / tile);
-  const internalFormat: Record<JournalKind, number> = { albedo: gl.SRGB8_ALPHA8, orm: gl.RGBA8, height: gl.R8, slope: gl.RG16F };
+  const internalFormat: Record<JournalKind, number> = { albedo: gl.SRGB8_ALPHA8, orm: gl.RGBA8, height: gl.R8, slope: gl.RG16F, override: gl.RGBA8 };
   const pageBytes = (kind: JournalKind): number => slotsPerPage * tile * tile * BYTES_PER_PIXEL[kind];
 
-  const pages: Record<JournalKind, Page[]> = { albedo: [], orm: [], height: [], slope: [] };
-  const free: Record<JournalKind, number[]> = { albedo: [], orm: [], height: [], slope: [] };
+  const pages: Record<JournalKind, Page[]> = { albedo: [], orm: [], height: [], slope: [], override: [] };
+  const free: Record<JournalKind, number[]> = { albedo: [], orm: [], height: [], slope: [], override: [] };
   const scratch: Partial<Record<JournalKind, Page>> = {};
   let allocatedBytes = 0;
   let undoEntries: Entry[] = [];
@@ -155,12 +157,12 @@ export function createTileJournal(renderer: WebGLRenderer, painter: StampPainter
         }
       }
     });
-    let slopeRect: TexelRect | null = null;
-    for (const saved of entry.slope) {
+    let normalRect: TexelRect | null = null; // the composed normal depends on slope and override tiles
+    for (const saved of [...entry.slope, ...entry.override]) {
       const at = tileOrigin(saved.tile);
-      slopeRect = unionRect(slopeRect, { x0: at.x, y0: at.y, x1: at.x + at.width, y1: at.y + at.height });
+      normalRect = unionRect(normalRect, { x0: at.x, y0: at.y, x1: at.x + at.width, y1: at.y + at.height });
     }
-    if (slopeRect !== null) painter.recomposeNormal(slopeRect);
+    if (normalRect !== null) painter.recomposeNormal(normalRect);
   };
 
   painter.setBeforeDraw(record);
@@ -187,6 +189,11 @@ export function createTileJournal(renderer: WebGLRenderer, painter: StampPainter
       if (KINDS.some((kind) => entry[kind].length > 0)) undoEntries.push(entry);
       return { kept: true };
     },
+    abortStroke: () => {
+      const stroke = open;
+      open = null;
+      if (stroke !== null) freeEntry(openAsEntry(stroke));
+    },
     undo: () => {
       if (open !== null) return false;
       const entry = undoEntries.pop();
@@ -206,7 +213,7 @@ export function createTileJournal(renderer: WebGLRenderer, painter: StampPainter
     canUndo: () => open === null && undoEntries.length > 0,
     canRedo: () => open === null && redoEntries.length > 0,
     stats: () => {
-      const slotsInUse = { albedo: 0, orm: 0, height: 0, slope: 0 };
+      const slotsInUse = { albedo: 0, orm: 0, height: 0, slope: 0, override: 0 };
       for (const entry of [...undoEntries, ...redoEntries, ...(open === null ? [] : [openAsEntry(open)])]) for (const kind of KINDS) slotsInUse[kind] += entry[kind].length;
       return { undoEntries: undoEntries.length, redoEntries: redoEntries.length, slotsInUse, allocatedBytes };
     },

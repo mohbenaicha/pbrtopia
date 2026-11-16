@@ -10,7 +10,7 @@ interface DialogProps {
   onClose: () => void;
   actions?: ReactNode; // the buttons along the bottom
   headerActions?: ReactNode; // icon buttons at the right of the title bar (the image viewer's Download and Close)
-  size?: 'default' | 'large'; // large: most of the window, for a picture (viewport-layout R33)
+  size?: 'default' | 'wide' | 'large'; // wide: room for a paragraph per section (the welcome); large: most of the window, for a picture (viewport-layout R33)
   dismissible?: boolean; // Escape and a click outside close it; false for dialogs that must be answered
   closeOnOutsideClick?: boolean; // false: only Escape closes it, so a stray click cannot end work in progress
   stacked?: boolean; // opened from inside another dialog: drawn on the higher layer (export R44)
@@ -55,7 +55,7 @@ export function Dialog({ open, title, onClose, actions, headerActions, size = 'd
   // viewport-layout R38: drawn through a portal into the body, so no panel or container above it in the tree can paint over it
   return createPortal(
     <div className="ui-dialog__backdrop" data-stacked={stacked ? '' : undefined}>
-      <div className="ui-dialog" data-size={size === 'large' ? 'large' : undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={dialog} onKeyDown={keepFocusInside}>
+      <div className="ui-dialog" data-size={size === 'default' ? undefined : size} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={dialog} onKeyDown={keepFocusInside}>
         {headerActions === undefined ? heading : <div className="ui-dialog__header">{heading}<div className="ui-dialog__header-actions">{headerActions}</div></div>}
         <div className="ui-dialog__body">{children}</div>
         {actions && <div className="ui-dialog__actions">{actions}</div>}

@@ -16,6 +16,14 @@ describe('Icon (viewport-layout R36)', () => {
     expect(sizeOf(container)).toBe('26px');
   });
 
+  it('tutorial R14 the github icon is a filled mark, not a stroked line drawing', () => {
+    const { container } = render(<Icon name="github" size={20} />);
+    const svg = container.querySelector('svg') as SVGElement;
+    expect(svg.getAttribute('fill')).toBe('currentColor');
+    expect(svg.getAttribute('stroke')).toBeNull();
+    expect(sizeOf(container)).toBe('20px');
+  });
+
   it('viewport-layout R36 an explicit size wins', () => {
     const { container } = render(<Icon name="download" size={16} />);
     expect(sizeOf(container)).toBe('16px');
