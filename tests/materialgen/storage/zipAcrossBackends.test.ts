@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { collectingSink, streamOf } from '../../projects/zip/zipFixtures';
+import { collectingSink, streamOf } from '../../support/zipStreams';
 import { createDesktopBlobStore } from '@shared/storage-desktop/desktopBlobStore';
 import { createDesktopRecordEngine } from '@shared/storage-desktop/DesktopRecordEngine';
 import { createMaterialStore } from '@mat/storage/createMaterialStore';

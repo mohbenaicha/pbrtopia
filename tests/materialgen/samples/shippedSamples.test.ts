@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { streamOf } from '../../projects/zip/zipFixtures';
+import { streamOf } from '../../support/zipStreams';
 import { createTestMaterialStore } from '../storage/materialStoreFixtures';
 import { BUNDLED_SAMPLES } from '@mat/samples/bundledSamples';
 import { importMaterialZip } from '@mat/storage/zip/importMaterialZip';

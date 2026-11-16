@@ -1,6 +1,6 @@
 import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { collectingSink, streamOf } from '../../projects/zip/zipFixtures';
+import { collectingSink, streamOf } from '../../support/zipStreams';
 import { MAP_KINDS } from '@mat/maps';
 import { DEFAULT_PREVIEW_VALUES } from '@mat/storage/previewValues';
 import { exportMaterialZip } from '@mat/storage/zip/exportMaterialZip';

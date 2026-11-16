@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { streamOf } from '../../projects/zip/zipFixtures';
+import { streamOf } from '../../support/zipStreams';
 import { createTestMaterialStore } from '../storage/materialStoreFixtures';
 import { decodePng, encodePng, type PixelImage } from '@mat/maps/png/pngCodec';
 import { parseMasksRecord } from '@mat/masks/record/masksRecord';

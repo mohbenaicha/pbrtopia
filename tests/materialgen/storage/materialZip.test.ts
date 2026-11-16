@@ -1,6 +1,6 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { collectingSink, streamOf } from '../../projects/zip/zipFixtures';
+import { collectingSink, streamOf } from '../../support/zipStreams';
 import { exportMaterialZip } from '@mat/storage/zip/exportMaterialZip';
 import { importMaterialZip } from '@mat/storage/zip/importMaterialZip';
 import type { MaterialRecord } from '@mat/storage/materialRecord';
