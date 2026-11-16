@@ -12,7 +12,7 @@ const KIND_NAMES: Record<ExportKind, string> = { albedo: 'Albedo', normal: 'Norm
 function TargetCards({ dialog }: { dialog: ExportDialogState }): React.JSX.Element {
   const { options, setOptions, cardFiles, running } = dialog;
   return (
-    <div className="export-dialog__cards" role="radiogroup" aria-label="Export for">
+    <div className="export-dialog__cards" role="radiogroup" aria-label="Export for" data-tutorial="export-types">
       {EXPORT_TARGET_CARDS.map((card) => {
         const selected = options.target === card.target;
         return (
@@ -38,20 +38,26 @@ function OptionRows({ dialog }: { dialog: ExportDialogState }): React.JSX.Elemen
   const { options, setOptions, disabled, sizeChoices, running, emissive, tiling } = dialog;
   return (
     <div className="export-dialog__options">
-      <SegmentedControl
-        label="Packing"
-        hint="Separate writes one file per map; Packed ORM puts occlusion, roughness and metalness in one file."
-        options={[{ value: 'separate', label: 'Separate' }, { value: 'packed', label: 'Packed ORM' }]}
-        value={options.packing}
-        onChange={(packing) => setOptions({ packing })}
-        disabled={running}
-      />
+      <div className="export-dialog__group" data-tutorial="export-options">
+        <SegmentedControl
+          label="Packing"
+          hint="Separate writes one file per map; Packed ORM puts occlusion, roughness and metalness in one file."
+          options={[{ value: 'separate', label: 'Separate' }, { value: 'packed', label: 'Packed ORM' }]}
+          value={options.packing}
+          onChange={(packing) => setOptions({ packing })}
+          disabled={running}
+        />
+      </div>
+      <div className="export-dialog__group" data-tutorial="export-parts">
       <Toggle label="Include height" checked={options.includeHeight && !disabled.includeHeight} disabled={running || disabled.includeHeight} hint={disabled.includeHeight ? 'There is no height map.' : 'Adds the height map to the export.'} onChange={(includeHeight) => setOptions({ includeHeight })} />
       <Toggle label="Include ambient occlusion" checked={options.includeAo && !disabled.includeAo} disabled={running || disabled.includeAo} hint={disabled.includeAo ? 'There is no ambient occlusion map.' : 'Adds the ambient occlusion map to the export.'} onChange={(includeAo) => setOptions({ includeAo })} />
       <Toggle label="Include material masks" checked={options.includeMasks && !disabled.includeMasks} disabled={running || disabled.includeMasks} hint={disabled.includeMasks ? 'There are no material masks.' : 'Adds the mask image and its component table to the export.'} onChange={(includeMasks) => setOptions({ includeMasks })} />
       <Toggle label="Create emissive map" checked={emissive.plane !== null} disabled={running || disabled.includeEmissive} hint={disabled.includeEmissive ? 'There are no material masks.' : 'Pick the materials that glow and add an emissive map to the export.'} onChange={(on) => (on ? emissive.ask() : emissive.drop())} />
       <Toggle label="Export tiling (change in tiling settings)" checked={tiling.checked} disabled={running || tiling.blockReason !== null} hint={tiling.hint} onChange={tiling.set} />
-      <Select label="Size" title="The side length of every exported map, in pixels." options={sizeChoices.map((side) => ({ value: String(side), label: `${side} px` }))} value={String(options.size)} onChange={(value) => setOptions({ size: Number(value) })} disabled={running || sizeChoices.length < 2} />
+      </div>
+      <div className="export-dialog__group" data-tutorial="export-size">
+        <Select label="Size" title="The side length of every exported map, in pixels." options={sizeChoices.map((side) => ({ value: String(side), label: `${side} px` }))} value={String(options.size)} onChange={(value) => setOptions({ size: Number(value) })} disabled={running || sizeChoices.length < 2} />
+      </div>
     </div>
   );
 }

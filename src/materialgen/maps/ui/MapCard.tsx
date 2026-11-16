@@ -8,10 +8,12 @@ interface MapCardProps extends Omit<HalfContext, 'busy'> {
   isBusy(kind: CardModel['halves'][number]['kind']): boolean;
   /** Buttons the host adds to the overlay of a map's picture (the AO tool on the AO map), also shown while the map is empty. */
   extras?: Partial<Record<CardModel['halves'][number]['kind'], React.ReactNode>>;
+  /** The guided tour's anchor for this card, when a step points at it. */
+  tutorial?: string | undefined;
 }
 
 /** Maps R42, R44, R47: a slot card, one cell of the maps grid (two columns, as the projection app's picture grids). A card with two maps (Metal-Roughness) shows both halves and one Undo for the pair. */
-export function MapCard({ model, isBusy, extras, ...context }: MapCardProps): React.JSX.Element {
+export function MapCard({ model, isBusy, extras, tutorial, ...context }: MapCardProps): React.JSX.Element {
   const split = model.halves.length > 1;
   const names = model.halves.map((half) => half.label);
 
@@ -28,6 +30,7 @@ export function MapCard({ model, isBusy, extras, ...context }: MapCardProps): Re
       className="map-card"
       aria-label={model.title}
       data-testid="slot-card"
+      data-tutorial={tutorial}
       data-split={split ? '' : undefined}
       onDragOver={(event) => isFileDrag(event) && event.preventDefault()}
       onDrop={cardDrop}

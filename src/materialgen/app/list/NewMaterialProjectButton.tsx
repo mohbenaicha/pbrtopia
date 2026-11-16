@@ -25,7 +25,7 @@ export function NewMaterialProjectButton({ store, large = false }: NewMaterialPr
 
   return (
     <>
-      <Button variant="primary" size={large ? 'large' : 'default'} icon={<Icon name="plus" size={26} />} title="New project" onClick={() => setOpen(true)}>
+      <Button variant="primary" size={large ? 'large' : 'default'} tutorial="projects-new" icon={<Icon name="plus" size={26} />} title="New project" onClick={() => setOpen(true)}>
         New project
       </Button>
       {open && (

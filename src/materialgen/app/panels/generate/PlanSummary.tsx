@@ -14,7 +14,7 @@ export function PlanSummary({ hint }: { hint: CostHint }): React.JSX.Element {
   const tooltip = [hint.summary, ...hint.notices].join('\n');
   return (
     <>
-      <IconButton label="Plan summary" hint={tooltip} icon={<Icon name="summary" />} expanded={open} onClick={() => setOpen(true)} />
+      <IconButton label="Plan summary" hint={tooltip} icon={<Icon name="summary" />} expanded={open} tutorial="generate-summary" onClick={() => setOpen(true)} />
       <Dialog open={open} title="Plan summary" onClose={() => setOpen(false)} actions={<Button onClick={() => setOpen(false)}>Close</Button>}>
         <p className="plan-summary__total">{hint.summary}</p>
         <ul className="plan-summary__rows">

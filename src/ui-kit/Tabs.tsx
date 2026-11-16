@@ -16,10 +16,11 @@ interface TabsProps<T extends string> {
   tabs: TabOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  tutorial?: string; // the guided tour's anchor
 }
 
 // A row of browser-style tabs (R32) that switch a panel the owner draws. Arrow keys move to the next enabled tab; only the chosen tab is in the tab order.
-export function Tabs<T extends string>({ label, tabs, value, onChange }: TabsProps<T>): React.JSX.Element {
+export function Tabs<T extends string>({ label, tabs, value, onChange, tutorial }: TabsProps<T>): React.JSX.Element {
   const buttons = useRef(new Map<T, HTMLButtonElement>());
   const choosable = tabs.filter((tab) => !tab.disabled);
 
@@ -44,7 +45,7 @@ export function Tabs<T extends string>({ label, tabs, value, onChange }: TabsPro
   };
 
   return (
-    <div className="ui-tabs" role="tablist" aria-label={label} onKeyDown={onKeyDown}>
+    <div className="ui-tabs" role="tablist" aria-label={label} data-tutorial={tutorial} onKeyDown={onKeyDown}>
       {tabs.map((tab) => {
         const selected = tab.value === value;
         const tabButton = (

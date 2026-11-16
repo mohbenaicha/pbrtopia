@@ -17,7 +17,7 @@ const OPTIONS: SegmentOption<PreviewShading>[] = [
 /** Preview R51: the shading-mode selector of the projection app, extended with Height and AO; the app puts it at the top of the left panel, as the projection app does. */
 export function PreviewShadingControl({ value, onChange }: { value: PreviewShading; onChange: (shading: PreviewShading) => void }): React.JSX.Element {
   return (
-    <div className="preview-shading" data-testid="preview-shading">
+    <div className="preview-shading" data-testid="preview-shading" data-tutorial="preview-shading">
       <SegmentedControl label="Shading mode" options={OPTIONS} value={value} onChange={onChange} />
     </div>
   );

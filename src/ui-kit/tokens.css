@@ -75,5 +75,6 @@
   --layer-setup: 50;
   --layer-dialog: 100;
   --layer-dialog-stacked: 110; /* a dialog opened from inside another (export R44) */
+  --layer-tutorial: 150; /* the guided tour's veil and card: above a dialog, below a tooltip (tutorial R5) */
   --layer-tooltip: 200; /* above a dialog: a tooltip explains a control inside one (compositing R48) */
 }

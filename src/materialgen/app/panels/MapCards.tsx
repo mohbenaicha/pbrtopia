@@ -141,12 +141,13 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
           <button type="button" className="map-message__dismiss" onClick={controller.dismissMessage}>Dismiss</button>
         </p>
       )}
-      <Disclosure title="Maps" open={mapsOpen} onOpenChange={setMapsOpen} keepMounted actions={<>{geometryTools.buttons}{paintTool.button}</>}>
+      <Disclosure title="Maps" open={mapsOpen} onOpenChange={setMapsOpen} keepMounted tutorial="maps-tools" actions={<>{geometryTools.buttons}{paintTool.button}</>}>
         {geometryTools.panel ?? paintTool.panel ?? (
-          <div className="map-grid">
+          <div className="map-grid" data-tutorial="maps-grid">
             {CARD_SLOTS.map((slot) => (
               <MapCard
                 key={slot}
+                tutorial={slot === 'occlusion' ? 'maps-occlusion' : slot === CARD_SLOTS[0] ? 'maps-card-actions' : undefined}
                 model={buildCardModel(state, slot, colorMode)}
                 canWrite={canWrite}
                 opOpen={opOpen}

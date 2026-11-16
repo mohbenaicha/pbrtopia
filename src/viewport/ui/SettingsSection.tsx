@@ -18,9 +18,9 @@ export function SettingsSubsection({ title, hint, children }: SettingsHeadingPro
   );
 }
 
-export function SettingsSection({ title, hint, children }: SettingsHeadingProps): React.JSX.Element {
+export function SettingsSection({ title, hint, tutorial, children }: SettingsHeadingProps & { tutorial?: string }): React.JSX.Element {
   return (
-    <section className="viewport-settings__section">
+    <section className="viewport-settings__section" data-tutorial={tutorial}>
       <Tooltip heading={title} text={hint ?? ''}><h3 className="viewport-settings__heading">{title}</h3></Tooltip>
       {children}
     </section>

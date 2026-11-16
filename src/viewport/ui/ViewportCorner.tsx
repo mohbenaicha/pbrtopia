@@ -40,7 +40,7 @@ export function ViewportCorner({
 }: ViewportCornerProps): React.JSX.Element {
   const { quaternion, projection } = useCameraPose(viewport);
   const gear = (
-    <IconButton testId="viewport-gear" label="Viewport settings" icon={<Icon name="gear" />} pressed={settingsOpen} onClick={() => onSettingsOpenChange(!settingsOpen)} />
+    <IconButton testId="viewport-gear" tutorial="viewport-gear" label="Viewport settings" icon={<Icon name="gear" />} pressed={settingsOpen} onClick={() => onSettingsOpenChange(!settingsOpen)} />
   );
   return (
     <div className="viewport-corner">

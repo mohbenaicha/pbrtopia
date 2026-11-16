@@ -25,7 +25,7 @@ export function TopBar({ projectName, fallbackTitle, onOpenProjects, onOpenSetti
           {name}
         </div>
       </Tooltip>
-      <div className="top-bar__actions" data-region="actions">
+      <div className="top-bar__actions" data-region="actions" data-tutorial="topbar-actions">
         <IconButton label="Projects" icon={<Icon name="projects-list" />} onClick={onOpenProjects} />
         <IconButton label={exportLabel} icon={<Icon name="download" />} loading={exporting} disabled={exportDisabledReason !== null} {...(exportDisabledReason === null ? {} : { disabledReason: exportDisabledReason })} onClick={onExportProject} />
         {extraActions}

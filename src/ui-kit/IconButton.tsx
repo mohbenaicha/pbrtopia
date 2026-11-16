@@ -16,9 +16,10 @@ interface IconButtonProps {
   untitled?: boolean; // no tooltip of its own: an outer Tooltip around the button says it instead (the accessible name stays the label)
   onClick: () => void;
   testId?: string; // a stable hook for the end-to-end tests
+  tutorial?: string; // the guided tour's anchor
 }
 
-export function IconButton({ label, hint, icon, pressed, expanded, disabled = false, disabledReason, loading = false, compact = false, untitled = false, onClick, testId }: IconButtonProps): React.JSX.Element {
+export function IconButton({ label, hint, icon, pressed, expanded, disabled = false, disabledReason, loading = false, compact = false, untitled = false, onClick, testId, tutorial }: IconButtonProps): React.JSX.Element {
   const reason = disabled ? disabledReason : undefined;
   const words = reason ?? hint ?? ''; // a disabled button says why; otherwise the hint; with neither, the tooltip is its label alone (app tooltips R3, R7)
   const button = (
@@ -33,6 +34,7 @@ export function IconButton({ label, hint, icon, pressed, expanded, disabled = fa
       data-pressed={pressed || expanded ? '' : undefined}
       data-compact={compact ? '' : undefined}
       data-testid={testId}
+      data-tutorial={tutorial}
       disabled={disabled}
       onClick={() => {
         if (!loading) onClick();

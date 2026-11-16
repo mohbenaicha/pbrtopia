@@ -48,7 +48,7 @@ export function ProjectCard({ summary, selected, renaming, loadThumbnail, open, 
         <>
           <Tooltip heading={summary.name} text="The project's name; click the card to open it."><h2 className="project-card__name">{summary.name}</h2></Tooltip>
           <p className="project-card__meta">{meta}</p>
-          <div className="project-card__actions">
+          <div className="project-card__actions" data-tutorial="projects-card-actions">
             <IconButton label="Open" icon={<Icon name="open-project" />} {...unreadable} onClick={open} />
             <IconButton label="Rename" icon={<Icon name="pencil" />} {...unreadable} onClick={startRename} />
             {exportProject !== undefined && (

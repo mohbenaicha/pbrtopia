@@ -4,7 +4,7 @@ import { LINE_ICON_PATHS } from '../../src/ui-kit/lineIcons';
 describe('LINE_ICON_PATHS', () => {
   it('viewport-layout R3 offers the icons the app draws with one line set', () => {
     const drawn = ['apply', 'arrow-right', 'brush', 'invert', 'seam', 'bug', 'check', 'chevron-down', 'chevron-right', 'close', 'dice', 'download', 'edit-mesh', 'eye', 'eye-off', 'gear', 'grid', 'merge', 'mesh-ball', 'mesh-material-ball', 'mesh-plane', 'model-download', 'move', 'pencil', 'plus', 'projects', 'redo', 'reset', 'rotate', 'save', 'scale', 'select-box', 'select-lasso', 'trash', 'undo', 'upload'];
-    const mapTools = ['crop', 'mirror', 'occlusion', 'swap', 'summary', 'sparkle']; // imageops R20, R29-R36, R43: the map tools' icons in the Maps heading and on the AO picture
+    const mapTools = ['crop', 'mirror', 'occlusion', 'swap', 'summary', 'sparkle', 'help']; // imageops R20, R29-R36, R43: the map tools' icons in the Maps heading and on the AO picture; help is the Tutorial button's (materialgen tutorial R1)
     expect(Object.keys(LINE_ICON_PATHS).sort()).toEqual([...drawn, ...mapTools].sort());
   });
 

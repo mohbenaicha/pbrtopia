@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { SOURCE_ALIASES } from '../../vite.config';
 import { findIsolationViolations } from './materialgenIsolation';
 
-const ALLOWED = ['ui-kit', 'keys', 'generation', 'projects', 'viewport', 'shell', 'appId', 'storage-desktop'];
+const ALLOWED = ['ui-kit', 'keys', 'generation', 'projects', 'viewport', 'shell', 'appId', 'storage-desktop', 'tutorial'];
 let root = '';
 const aliases = () => ({ '@shared': path.join(root, 'src'), '@mat': path.join(root, 'src', 'materialgen') });
 

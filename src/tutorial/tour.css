@@ -1,0 +1,162 @@
+/* Tutorial R5, R6: the veil, the spotlight and the card. Gold is the app's accent, as in the tooltip's template (compositing R48). */
+.tour-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-tutorial);
+  pointer-events: none; /* the window listeners (useTourKeys) take every press; nothing here needs the pointer except the card */
+}
+
+/* The veil over the whole window while a step is on its way or has no target; stronger than the loading veil. */
+.tour-veil {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg-page) 72%, transparent);
+}
+
+/* The hole: the veil is its outsized shadow, so the target's own pixels stay undimmed, under a very light accent fill. */
+.tour-spotlight {
+  position: fixed;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--bg-page) 72%, transparent);
+  color: var(--accent);
+}
+
+.tour-spotlight__ring {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.tour-spotlight__ring rect {
+  animation: tour-march 700ms linear infinite;
+}
+
+@keyframes tour-march {
+  to {
+    stroke-dashoffset: -14; /* one dash and one gap */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-spotlight__ring rect {
+    animation: none;
+  }
+}
+
+.tour-card {
+  position: fixed;
+  z-index: 1;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text);
+  background: var(--bg-panel);
+  border-radius: var(--radius-control);
+  box-shadow: 0 0 0 1px var(--accent), var(--shadow-overlay); /* the gold ring, as the tooltip's (ui-kit draws no borders) */
+  font-size: var(--font-size-small);
+  line-height: 1.45;
+  pointer-events: auto;
+  outline: none;
+  animation: tour-card-in 120ms ease-out;
+}
+
+.tour-card__meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.tour-card__heading {
+  margin: 0;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: var(--font-size-base, 14px);
+}
+
+.tour-card__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto; /* a long text scrolls; the card keeps its size */
+  overscroll-behavior: contain;
+}
+
+.tour-card__body p {
+  margin: 0 0 var(--space-2);
+}
+
+.tour-card__body strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tour-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tour-card__spacer {
+  flex: 1;
+}
+
+/* The arrow on the edge facing the target: a gold triangle with a slightly smaller panel-coloured one over it (as the tooltip's). */
+.tour-card::before,
+.tour-card::after {
+  position: absolute;
+  content: '';
+}
+
+.tour-card[data-side='center']::before,
+.tour-card[data-side='center']::after {
+  display: none;
+}
+
+.tour-card[data-side='below']::before,
+.tour-card[data-side='below']::after,
+.tour-card[data-side='above']::before,
+.tour-card[data-side='above']::after {
+  left: var(--tour-arrow);
+  transform: translateX(-50%);
+}
+
+.tour-card[data-side='right']::before,
+.tour-card[data-side='right']::after,
+.tour-card[data-side='left']::before,
+.tour-card[data-side='left']::after {
+  top: var(--tour-arrow);
+  transform: translateY(-50%);
+}
+
+.tour-card::before {
+  background: var(--accent);
+}
+
+.tour-card::after {
+  background: var(--bg-panel);
+}
+
+.tour-card[data-side='below']::before { top: -7px; width: 12px; height: 6px; clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+.tour-card[data-side='below']::after { top: -6px; width: 10px; height: 6px; clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+.tour-card[data-side='above']::before { bottom: -7px; width: 12px; height: 6px; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.tour-card[data-side='above']::after { bottom: -6px; width: 10px; height: 6px; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.tour-card[data-side='right']::before { left: -7px; width: 6px; height: 12px; clip-path: polygon(0 50%, 100% 0, 100% 100%); }
+.tour-card[data-side='right']::after { left: -6px; width: 6px; height: 10px; clip-path: polygon(0 50%, 100% 0, 100% 100%); }
+.tour-card[data-side='left']::before { right: -7px; width: 6px; height: 12px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.tour-card[data-side='left']::after { right: -6px; width: 6px; height: 10px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+
+@keyframes tour-card-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-card {
+    animation: none;
+  }
+}

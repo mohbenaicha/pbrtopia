@@ -3,6 +3,7 @@ import { ImportProjectButton, ImportProjectStatus, ProjectListView } from '@shar
 import { RouteSwitch, exportEnvironments, useDesktopPickers } from '@shared/shell';
 import { Button, Icon } from '@shared/ui-kit';
 import type { MaterialProjectStore } from '@mat/storage';
+import { MaterialTutorial, TutorialListButton } from '@mat/tutorial';
 import { useSampleProjects } from './samples/useSampleProjects';
 import { createMaterialListExporter } from './list/materialListExporter';
 import { NewMaterialProjectButton } from './list/NewMaterialProjectButton';
@@ -33,6 +34,7 @@ export function MaterialApp({ store, initial }: MaterialAppProps): React.JSX.Ele
   const exporter = useMemo(() => createMaterialListExporter(store, exportEnvironments(pickers)), [store, pickers]);
 
   return (
+    <MaterialTutorial store={store} ready={samples.checked && samples.remaining === 0 && route.view === 'list'}>
     <RouteSwitch
       route={route}
       views={{
@@ -62,15 +64,19 @@ export function MaterialApp({ store, initial }: MaterialAppProps): React.JSX.Ele
               </>
             }
             headerActions={
-              <Button
-                icon={<Icon name="gear" size={26} />}
-                title="Settings"
-                onClick={() => {
-                  window.location.hash = settingsHash('keys');
-                }}
-              >
-                Settings
-              </Button>
+              <>
+                <TutorialListButton />
+                <Button
+                  icon={<Icon name="gear" size={26} />}
+                  title="Settings"
+                  tutorial="projects-settings"
+                  onClick={() => {
+                    window.location.hash = settingsHash('keys');
+                  }}
+                >
+                  Settings
+                </Button>
+              </>
             }
             notice={notice === null ? null : NOTICE_TEXT[notice]}
             onDismissNotice={dismissNotice}
@@ -80,5 +86,6 @@ export function MaterialApp({ store, initial }: MaterialAppProps): React.JSX.Ele
         settings: (section) => <MaterialSettingsView store={store} section={section} projectImport={projectImport} />,
       }}
     />
+    </MaterialTutorial>
   );
 }

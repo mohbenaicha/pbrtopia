@@ -17,7 +17,7 @@ const because = (reason: string | null): { disabled: boolean; disabledReason?: s
 export function PromptIdeasStrip({ ideas, readOnlyReason }: PromptIdeasStripProps): React.JSX.Element {
   const hasSet = ideas.ideas.length > 0;
   return (
-    <div className="prompt-ideas" role="group" aria-label="Prompt ideas">
+    <div className="prompt-ideas" data-tutorial="generate-ideas" role="group" aria-label="Prompt ideas">
       {hasSet && (
         <>
           <IconButton label="Reset" hint="Puts back what you wrote before the ideas." icon={<Icon name="reset" />} {...because(readOnlyReason ?? (ideas.canReset ? null : NOTHING_TO_GO_BACK_TO))} onClick={ideas.reset} />

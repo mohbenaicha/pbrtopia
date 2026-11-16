@@ -5,7 +5,7 @@ import type { GenerationPanel } from '@mat/generation';
 export function ReferenceImagesSection({ generation, canWrite }: { generation: GenerationPanel; canWrite: boolean }): React.JSX.Element {
   const { references } = generation;
   return (
-    <fieldset className="reference-images" disabled={!canWrite}>
+    <fieldset className="reference-images" data-tutorial="generate-references" disabled={!canWrite}>
       <ReferenceStrip references={references.references} notice={references.notice} onFiles={references.addFiles} onRemove={references.remove} />
     </fieldset>
   );

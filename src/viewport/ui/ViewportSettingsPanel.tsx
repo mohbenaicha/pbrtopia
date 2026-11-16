@@ -16,9 +16,9 @@ type PanelProps = ViewportControlsProps & {
 export function ViewportSettingsPanel({ hiddenSections = [], normalExtras, materialExtras, ...controls }: PanelProps): React.JSX.Element {
   const shown = (id: ViewportSectionId): boolean => !hiddenSections.includes(id);
   return (
-    <div className="viewport-settings">
+    <div className="viewport-settings" data-tutorial="viewport-settings">
       {shown('environment') && (
-        <SettingsSection title="Environment" hint={VIEWPORT_TIPS.environment}>
+        <SettingsSection title="Environment" hint={VIEWPORT_TIPS.environment} tutorial="viewport-environment">
           <SettingsSubsection title="Light" hint={VIEWPORT_TIPS.light}>
             <LightControls {...controls} />
           </SettingsSubsection>
@@ -28,7 +28,7 @@ export function ViewportSettingsPanel({ hiddenSections = [], normalExtras, mater
         </SettingsSection>
       )}
       {shown('material') && (
-        <SettingsSection title="Material" hint={VIEWPORT_TIPS.material}>
+        <SettingsSection title="Material" hint={VIEWPORT_TIPS.material} tutorial="viewport-material">
           <SettingsSubsection title="Metal" hint={VIEWPORT_TIPS.metal}>
             <MetalControls {...controls} />
           </SettingsSubsection>

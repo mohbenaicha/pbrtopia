@@ -24,7 +24,7 @@ export function GenerateSection({ generation, prompt, canWrite, onCustomSetup }:
 
   return (
     <>
-      <div className="material-panel__generate">
+      <div className="material-panel__generate" data-tutorial="generate-button">
         {run.running ? (
           <Button onClick={run.cancel}>Cancel</Button>
         ) : (

@@ -15,10 +15,11 @@ interface ButtonProps {
   type?: 'button' | 'submit';
   pressed?: boolean; // for a choice among buttons: reported as aria-pressed and drawn selected
   onClick?: () => void;
+  tutorial?: string; // the guided tour's anchor
   children: ReactNode;
 }
 
-export function Button({ variant = 'secondary', size = 'default', loading = false, disabled = false, icon, title, type = 'button', pressed, onClick, children }: ButtonProps): React.JSX.Element {
+export function Button({ variant = 'secondary', size = 'default', loading = false, disabled = false, icon, title, type = 'button', pressed, onClick, tutorial, children }: ButtonProps): React.JSX.Element {
   const heading = typeof children === 'string' ? children : (title ?? '');
   const words = title === undefined || title === heading ? '' : title; // a title that only repeats the label adds nothing under it (app tooltips R7)
   const button = (
@@ -27,6 +28,7 @@ export function Button({ variant = 'secondary', size = 'default', loading = fals
       aria-description={disabled && words !== '' ? words : undefined} // a disabled button's tooltip is its reason: it is read out too
       aria-pressed={pressed}
       className="ui-button"
+      data-tutorial={tutorial}
       data-variant={variant}
       data-size={size === 'large' ? 'large' : undefined}
       data-loading={loading ? '' : undefined}

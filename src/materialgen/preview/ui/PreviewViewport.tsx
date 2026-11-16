@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useViewportSettings } from '@shared/shell';
+import { useRevealOnTour } from '@shared/tutorial';
 import { DEFAULT_VIEWPORT_SETTINGS, ViewportCanvas, ViewportCorner, type Viewport } from '@shared/viewport';
 import { withPendingMaps, type MapsState, type PendingMaps } from '@mat/maps';
 import type { PaletteEntry } from '@mat/workerapi';
@@ -7,6 +8,7 @@ import { DEFAULT_PREVIEW_VALUES, type MaterialProjectStore, type PreviewValues }
 import type { PreviewShading } from '../math/flatViews';
 import { adaptViewportForPreview } from './adaptViewportForPreview';
 import { useToolShortcuts, type PaintBridge } from './paintBridge';
+import { REVEAL_VIEWPORT_SETTINGS } from '@mat/tutorial';
 import { PREVIEW_SHORTCUTS } from './previewShortcuts';
 import { MaskDisplayControl } from './MaskDisplayControl';
 import { MeshPicker } from './MeshPicker';
@@ -68,6 +70,7 @@ export function PreviewViewport({ store, mapsState, readBlob, values, onValuesCh
   const [viewport, setViewport] = useState<Viewport | null>(null);
   const toolShortcuts = useToolShortcuts(paint);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  useRevealOnTour(REVEAL_VIEWPORT_SETTINGS, { open: () => setSettingsOpen(true), close: () => setSettingsOpen(false) }); // the guided tour opens the gear's popover
   const settingsTarget = useMemo(() => (viewport === null ? null : adaptViewportForPreview(viewport)), [viewport]);
   const { settings, change } = useViewportSettings(store, settingsTarget);
   const { prefs, loaded: prefsLoaded, change: changePrefs, reset: resetPrefs } = usePreviewPrefs(store);

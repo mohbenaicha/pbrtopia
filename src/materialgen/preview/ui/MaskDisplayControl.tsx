@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from 'react';
+import { useRevealOnTour } from '@shared/tutorial';
 import { Icon, IconButton, Popover, Slider, Toggle } from '@shared/ui-kit';
+import { REVEAL_MASK_DISPLAY } from '@mat/tutorial';
 import './maskDisplayControl.css';
 
 interface MaskDisplayControlProps {
@@ -21,10 +23,11 @@ const NO_MASKS = 'There are no masks yet. Generate the material first.';
  */
 export function MaskDisplayControl({ hasLabels, overlay, onOverlayChange, opacity, onOpacityChange, controls }: MaskDisplayControlProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
-  const trigger = <IconButton testId="preview-masks" label="Material Masks" icon={<Icon name="masks" />} expanded={open} onClick={() => setOpen(!open)} />;
+  useRevealOnTour(REVEAL_MASK_DISPLAY, { open: () => setOpen(true), close: () => setOpen(false) }); // the guided tour opens this popover to show its swatches
+  const trigger = <IconButton testId="preview-masks" tutorial="masks-button" label="Material Masks" icon={<Icon name="masks" />} expanded={open} onClick={() => setOpen(!open)} />;
   return (
     <Popover open={open} onClose={() => setOpen(false)} closeOnOutsideClick={false} label="Mask display" trigger={trigger}>
-      <div className="mask-display">
+      <div className="mask-display" data-tutorial="masks-swatches">
         <Toggle label="Mask overlay" checked={overlay && hasLabels} onChange={onOverlayChange} disabled={!hasLabels} hint={hasLabels ? 'Colours each material component on the model so you can see the masks.' : NO_MASKS} />
         <Slider label="Overlay opacity" hint="How strongly the mask colours cover the material." layout="row" value={opacity} min={0} max={1} step={0.01} format={(value) => value.toFixed(2)} onChange={onOpacityChange} />
         {hasLabels ? controls : null}

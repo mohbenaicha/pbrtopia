@@ -53,7 +53,7 @@ export function KeySettingsSection({ vault, prompt, env, rejectedKeys, onKeySave
         <Tooltip heading="API keys" text="The keys that let the app use the image model providers."><h3 className="key-settings__title" id="key-settings-title">API keys</h3></Tooltip>
         <div className="key-settings__header-actions">
           {env !== undefined && (envOffered || envOn) && (
-            <Toggle label="Read keys from environment" checked={envOn} onChange={(on) => env.choices.setEnabled(on)} hint="Reads each key from a Windows environment variable every time it is used, so the app never stores it." />
+            <Toggle label="Read keys from environment" tutorial="settings-env" checked={envOn} onChange={(on) => env.choices.setEnabled(on)} hint="Reads each key from a Windows environment variable every time it is used, so the app never stores it." />
           )}
           {status === 'unlocked' && <Button variant="secondary" onClick={() => vault.lock()}>Lock</Button>}
         </div>

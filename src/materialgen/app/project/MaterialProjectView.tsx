@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { acquireProjectLock } from '@shared/projects';
 import { AddonsButton } from '../addons/AddonsButton';
+import { useRevealOnTour } from '@shared/tutorial';
 import { AppShell, TopBar, rememberOpenProject, usePanelWidths, useProjectLock, useStorageWarning } from '@shared/shell';
 import { LoadingOverlay } from '@shared/ui-kit';
 import { LEFT_PANEL_FLOOR } from '@mat/compositing';
@@ -23,6 +24,7 @@ import { loadBaseMaterials } from '../panels/masks/loadBaseMaterials';
 import { describeMasksModel } from '../panels/masks/masksModelControls';
 import { MasksControls } from '../panels/masks/MasksControls';
 import { MaterialSetupOverlay } from '../panels/setup/MaterialSetupOverlay';
+import { REVEAL_EXPORT, TutorialButton } from '@mat/tutorial';
 import { useMaterialGeneration } from './useMaterialGeneration';
 import { useLeaveMaterialProject } from './useLeaveMaterialProject';
 import { useMaterialExport } from './materialZipTransfer';
@@ -59,6 +61,7 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
   );
   const projectExport = useMaterialExport(store, record === null ? null : { id: projectId, name: record.name }, project.flush); // the zip backup (app R37), offered by the storage warning
   const exportDialog = useExportDialog({ projectName: record?.name ?? '', colorMode: record?.colorMode ?? 'albedo', state: mapsState, preview: record?.preview ?? DEFAULT_PREVIEW_VALUES, masksRecord: record?.masks, readBlob }); // opened from the top bar (app R11)
+  useRevealOnTour(REVEAL_EXPORT, { open: exportDialog.show, close: exportDialog.close }); // the guided tour opens the dialog to show its choices
 
   const [shading, setShading] = useState<PreviewShading>('lit'); // the selector is at the top of the left panel, the preview draws it (preview R51)
   const [toolView, setToolView] = useState<ToolView | null>(null); // the transform an open Crop or Mirror puts on the maps in the viewport (imageops R53, preview R58)
@@ -123,7 +126,7 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
           onExportProject={exportDialog.show}
           exporting={false}
           exportDisabledReason={record === null ? 'The project is still opening.' : exportUnavailableReason(exportDialog)}
-          extraActions={<AddonsButton />}
+          extraActions={<><AddonsButton /><TutorialButton /></>}
         />
       }
       left={

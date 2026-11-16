@@ -55,6 +55,8 @@ export const LINE_ICON_PATHS = {
   summary: ['M7 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2z', 'M8.5 8.5h7', 'M8.5 12h7', 'M8.5 15.5h4'],
   // The AI mark (materialgen generation R71): a four-point star with curved sides, the sign everyone reads as "AI writes this".
   sparkle: ['M12 3c.7 5.4 3.6 8.3 9 9-5.4.7-8.3 3.6-9 9-.7-5.4-3.6-8.3-9-9 5.4-.7 8.3-3.6 9-9z'],
+  // The guided tour button (materialgen tutorial R1): a question mark in a circle.
+  help: ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9', 'M12 16.8v.1'],
 } as const;
 
 export type LineIconName = keyof typeof LINE_ICON_PATHS;

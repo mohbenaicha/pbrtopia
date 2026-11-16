@@ -58,6 +58,7 @@ export function MaterialGeneratePanel({ record, canWrite, readOnly, generation, 
     <textarea
       id={promptId}
       className="material-panel__prompt"
+      data-tutorial="generate-prompt"
       rows={8}
       value={record.prompt}
       disabled={!canWrite}
@@ -81,7 +82,7 @@ export function MaterialGeneratePanel({ record, canWrite, readOnly, generation, 
             )}
           </div>
         )}
-        <Tabs label="Generate panel" tabs={TABS} value={tab} onChange={setTab} />
+        <Tabs label="Generate panel" tabs={TABS} value={tab} onChange={setTab} tutorial="generate-log" />
         <div className="material-panel material-panel--padded" role="tabpanel" aria-label="Generate fields" hidden={tab !== 'generate'}>
           <div className="material-panel__field">
             <Tooltip heading="Prompt" text="Describes the surface the image model should make.">
@@ -107,9 +108,13 @@ export function MaterialGeneratePanel({ record, canWrite, readOnly, generation, 
             {generation.ideas.error !== null && <p role="alert">{generation.ideas.error}</p>}
           </div>
           <ReferenceImagesSection generation={generation} canWrite={editable} />
-          <SegmentedControl label="Color mode" hint="Whether the generated colour map carries lighting or not." options={COLOR_MODE_OPTIONS} value={record.colorMode} disabled={!editable} onChange={(colorMode) => onEdit((current) => ({ ...current, colorMode }))} />
-          <SizeField record={record} canWrite={editable} resizing={resizing} onSizeChange={(size) => onEdit((current) => ({ ...current, size }))} onResizeMaps={onResizeMaps} />
-          <Disclosure title="Model settings" open={modelsOpen} onOpenChange={setModelsOpen}>
+          <div data-tutorial="generate-color">
+            <SegmentedControl label="Color mode" hint="Whether the generated colour map carries lighting or not." options={COLOR_MODE_OPTIONS} value={record.colorMode} disabled={!editable} onChange={(colorMode) => onEdit((current) => ({ ...current, colorMode }))} />
+          </div>
+          <div data-tutorial="generate-size">
+            <SizeField record={record} canWrite={editable} resizing={resizing} onSizeChange={(size) => onEdit((current) => ({ ...current, size }))} onResizeMaps={onResizeMaps} />
+          </div>
+          <Disclosure title="Model settings" open={modelsOpen} onOpenChange={setModelsOpen} tutorial="generate-model">
             <ModelSettingsSection generation={generation} colorMode={record.colorMode} disabled={!editable} />
           </Disclosure>
           <GenerateSection generation={generation} prompt={record.prompt} canWrite={canWrite} {...(onCustomSetup === undefined ? {} : { onCustomSetup })} />
