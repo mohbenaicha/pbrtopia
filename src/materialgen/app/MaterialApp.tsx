@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ImportProjectButton, ImportProjectStatus, ProjectListView } from '@shared/projects';
-import { RouteSwitch, exportEnvironments, useDesktopPickers } from '@shared/shell';
+import { RouteSwitch, exportEnvironments, useDesktopPickers, useEnvKeysOffered } from '@shared/shell';
 import { Button, Icon } from '@shared/ui-kit';
 import type { MaterialProjectStore } from '@mat/storage';
 import { MaterialTutorial, TutorialListButton } from '@mat/tutorial';
@@ -32,12 +32,15 @@ export function MaterialApp({ store, initial }: MaterialAppProps): React.JSX.Ele
   const projectImport = useMaterialImport(store, () => setListVersion((version) => version + 1));
   const samples = useSampleProjects(store); // the bundled samples, imported once at the first start (default-projects R11)
   const pickers = useDesktopPickers();
+  const envKeysOffered = useEnvKeysOffered();
   const exporter = useMemo(() => createMaterialListExporter(store, exportEnvironments(pickers)), [store, pickers]);
 
   return (
     <MaterialTutorial
       store={store}
-      ready={samples.checked && samples.remaining === 0 && route.view === 'list'}
+      ready={route.view === 'list'}
+      samplesPending={!samples.checked || samples.remaining > 0}
+      envKeysOffered={envKeysOffered}
       onGenerateMaterial={() => setNewProjectRequest((count) => count + 1)}
     >
     <RouteSwitch

@@ -1,7 +1,7 @@
 import type { TourSection, TourStep } from '@shared/tutorial';
-import { REVEAL_EXPORT, REVEAL_MASK_DISPLAY, REVEAL_VIEWPORT_SETTINGS } from './revealIds';
+import { NEED_ENV_KEYS, REVEAL_EXPORT, REVEAL_MAP_ACTIONS, REVEAL_MASK_DISPLAY, REVEAL_MASK_SELECT, REVEAL_VIEWPORT_SETTINGS } from './revealIds';
 
-const step = (id: string, anchor: string, extra: Partial<Pick<TourStep, 'stage' | 'reveal'>> = {}): TourStep => ({ id, anchor, ...extra });
+const step = (id: string, anchor: string, extra: Partial<Pick<TourStep, 'stage' | 'reveal' | 'needs'>> = {}): TourStep => ({ id, anchor, ...extra });
 
 /** A step without a `stage` runs where the step before it did, so Previous across a view change goes back to the right view. */
 function inheritStages(sections: TourSection[]): TourSection[] {
@@ -35,7 +35,12 @@ export const TUTORIAL_SECTIONS: TourSection[] = inheritStages([
   {
     id: 'maps',
     title: 'Maps',
-    steps: [step('maps.tools', 'maps-tools'), step('maps.cards', 'maps-grid'), step('maps.card-actions', 'maps-card-actions'), step('maps.occlusion', 'maps-occlusion')],
+    steps: [
+      step('maps.tools', 'maps-tools'),
+      step('maps.cards', 'maps-grid'),
+      step('maps.card-actions', 'maps-card-actions', { reveal: [REVEAL_MAP_ACTIONS] }),
+      step('maps.occlusion', 'maps-occlusion', { reveal: [REVEAL_MAP_ACTIONS] }),
+    ],
   },
   {
     id: 'viewport',
@@ -50,7 +55,11 @@ export const TUTORIAL_SECTIONS: TourSection[] = inheritStages([
   {
     id: 'masks',
     title: 'Material masks',
-    steps: [step('masks.open', 'masks-button', { reveal: [] }), step('masks.swatches', 'masks-swatches', { reveal: [REVEAL_MASK_DISPLAY] })],
+    steps: [
+      step('masks.open', 'masks-button', { reveal: [] }),
+      step('masks.swatches', 'masks-swatches', { reveal: [REVEAL_MASK_DISPLAY] }),
+      step('masks.properties', 'masks-properties', { reveal: [REVEAL_MASK_DISPLAY, REVEAL_MASK_SELECT] }),
+    ],
   },
   { id: 'shading', title: 'Preview shading', steps: [step('shading.control', 'preview-shading', { reveal: [] })] },
   { id: 'topbar', title: 'Top bar', steps: [step('topbar.actions', 'topbar-actions')] },
@@ -77,6 +86,6 @@ export const TUTORIAL_SECTIONS: TourSection[] = inheritStages([
   {
     id: 'settings',
     title: 'Settings',
-    steps: [step('settings.keys', 'settings-keys', { stage: 'settings:keys' }), step('settings.env', 'settings-env'), step('settings.models', 'settings-models', { stage: 'settings:models' }), step('settings.storage', 'settings-storage', { stage: 'settings:storage' })],
+    steps: [step('settings.keys', 'settings-keys', { stage: 'settings:keys' }), step('settings.env', 'settings-env', { needs: NEED_ENV_KEYS }), step('settings.models', 'settings-models', { stage: 'settings:models' }), step('settings.storage', 'settings-storage', { stage: 'settings:storage' })],
   },
 ]);

@@ -17,7 +17,7 @@ const ENV_SENTENCE = ' Or read them from environment variables each time they ar
 export function ApiKeysSection({ rejectedKeys, onKeySaved }: ApiKeysSectionProps): React.JSX.Element {
   const backends = useAppBackends();
   return (
-    <SettingsPage title="API keys" description={backends.keys.envOffered() ? `${DESCRIPTION}${ENV_SENTENCE}` : DESCRIPTION}>
+    <SettingsPage title="API keys" tutorial="settings-keys" description={backends.keys.envOffered() ? `${DESCRIPTION}${ENV_SENTENCE}` : DESCRIPTION}>
       <KeySettingsSection vault={backends.vault} prompt={backends.passwordPrompt} env={{ keys: backends.keys, choices: backends.envChoices }} rejectedKeys={rejectedKeys} onKeySaved={onKeySaved} />
     </SettingsPage>
   );

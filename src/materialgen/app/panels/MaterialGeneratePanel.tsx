@@ -24,7 +24,7 @@ const carriesFiles = (event: React.DragEvent): boolean => Array.from(event.dataT
 type GenerateTab = 'generate' | 'log';
 const TABS: TabOption<GenerateTab>[] = [
   { value: 'generate', label: 'Generate' },
-  { value: 'log', label: 'Run log', icon: 'bug', iconOnly: true }, // the projection app's Debug tab
+  { value: 'log', label: 'Run log', icon: 'bug', iconOnly: true, tutorial: 'generate-log' }, // the projection app's Debug tab
 ];
 
 interface MaterialGeneratePanelProps {
@@ -82,7 +82,7 @@ export function MaterialGeneratePanel({ record, canWrite, readOnly, generation, 
             )}
           </div>
         )}
-        <Tabs label="Generate panel" tabs={TABS} value={tab} onChange={setTab} tutorial="generate-log" />
+        <Tabs label="Generate panel" tabs={TABS} value={tab} onChange={setTab} />
         <div className="material-panel material-panel--padded" role="tabpanel" aria-label="Generate fields" hidden={tab !== 'generate'}>
           <div className="material-panel__field">
             <Tooltip heading="Prompt" text="Describes the surface the image model should make.">

@@ -165,3 +165,30 @@ describe('TourController (tutorial R3, R4, R8, R11)', () => {
     expect(told).toBe(before);
   });
 });
+
+describe('TourController needs (tutorial R23)', () => {
+  const NEEDY: TourSection[] = [{ id: 'n', title: 'Needy', steps: [{ id: 'n.one', anchor: 'one', needs: 'env' }] }];
+  const words = { 'n.one': { heading: 'Env', paragraphs: ['only some builds'] } };
+
+  it('TestR23_a_step_whose_need_is_missing_shows_at_once_without_looking_for_its_target', async () => {
+    let looked = 0;
+    const stage: TourStage = { enter: async () => undefined, leave: async () => undefined, has: () => false };
+    const tour = new TourController({ sections: NEEDY, stage, texts: words, findAnchor: async () => (looked += 1, found()) });
+    tour.start();
+    await settle();
+    expect(tour.snapshot().phase).toBe('showing');
+    expect(tour.snapshot().target).toBeNull();
+    expect(looked).toBe(0);
+  });
+
+  it('TestR23_a_met_need_or_a_stage_that_does_not_say_looks_for_the_target_as_usual', async () => {
+    for (const has of [() => true, undefined]) {
+      const stage: TourStage = { enter: async () => undefined, leave: async () => undefined, ...(has === undefined ? {} : { has }) };
+      const element = found();
+      const tour = new TourController({ sections: NEEDY, stage, texts: words, findAnchor: async () => element });
+      tour.start();
+      await settle();
+      expect(tour.snapshot().target).toBe(element);
+    }
+  });
+});

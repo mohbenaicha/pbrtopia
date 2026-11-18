@@ -28,7 +28,7 @@ export { RouteSwitch } from './routing/RouteSwitch';
 export { createRouter, listHash, projectHash, type AddressKind, type Route, type Router } from './routing/router';
 export { decideStartup, type StartupDecision, type StartupStore } from './routing/startup';
 export { useAddressWatcher } from './routing/useAddressWatcher';
-export { AppBackendsProvider, useAppBackends, useDesktopPickers, useIsDesktopApp } from './backends/AppBackendsProvider';
+export { AppBackendsProvider, useAppBackends, useDesktopPickers, useEnvKeysOffered, useIsDesktopApp } from './backends/AppBackendsProvider';
 export type { AppBackends, DesktopPickers, ResolvedBackends } from './backends/appBackends';
 export { exportEnvironments, type ExportEnvironments } from './exportEnvironments';
 export { createBrowserBackends } from './backends/createBrowserBackends';

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useRevealOnTour } from '@shared/tutorial';
 import { Button, CommitSlider } from '@shared/ui-kit';
+import { REVEAL_MASK_SELECT } from '@mat/tutorial';
 import { isRowAtDefaults, type RowMix } from '../record/maskRows';
 import type { MasksRecord } from '../record/masksRecord';
 import type { BaseMaterialTable } from '../table/baseMaterials';
@@ -73,6 +75,8 @@ export function MasksPanel(props: MasksPanelProps): React.JSX.Element {
   const [selected, setSelected] = useState<readonly number[]>([]); // the clicked labels in click order (masks R89); the last one is the one the block shows
   const { onHighlight } = props;
   useEffect(() => () => onHighlight?.(null), [onHighlight]); // R80: a panel that goes (popover closed, masks gone) leaves no highlight behind
+  const firstLabel = record?.rows[0]?.label;
+  useRevealOnTour(REVEAL_MASK_SELECT, { open: () => setSelected(firstLabel === undefined ? [] : [firstLabel]), close: () => setSelected([]) }); // the guided tour selects the first swatch to show its block (tutorial R22)
   const locked = !canWrite;
   const changeReason = locked ? READ_ONLY_REASON : undefined;
 

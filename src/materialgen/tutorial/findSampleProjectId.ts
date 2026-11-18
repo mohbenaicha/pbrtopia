@@ -17,3 +17,14 @@ export async function findSampleProjectId(store: ProjectLister, sampleNames: rea
   }
   return null;
 }
+
+const SAMPLE_POLL_MS = 100;
+
+/** The sample's id, waiting for the background import while it still runs (tutorial R21); null once nothing is pending and no sample is there. */
+export async function findSampleProjectWhenImported(store: ProjectLister, isPending: () => boolean, sampleNames: readonly string[], pollMs: number = SAMPLE_POLL_MS): Promise<string | null> {
+  for (;;) {
+    const id = await findSampleProjectId(store, sampleNames);
+    if (id !== null || !isPending()) return id;
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+}

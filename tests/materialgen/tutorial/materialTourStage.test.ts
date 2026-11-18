@@ -19,6 +19,7 @@ function setup(options: { sampleId?: string | null; start?: string; registered?:
       return true;
     },
     closeReveal: (id) => void closed.push(id),
+    hasNeed: (need) => need === 'present',
     pollMs: 1,
     revealTimeoutMs: 40,
   });
@@ -108,5 +109,13 @@ describe('materialTourStage (tutorial R4)', () => {
     await stage.leave();
     expect(goTo).not.toHaveBeenCalled();
     expect(forgetOpenProject).not.toHaveBeenCalled();
+  });
+
+  it('TestR23_the_stage_says_what_the_host_has_and_a_host_that_does_not_say_has_everything', () => {
+    const { stage } = setup();
+    expect(stage.has?.('present')).toBe(true);
+    expect(stage.has?.('absent')).toBe(false);
+    const bare = createMaterialTourStage({ findSampleId: async () => null, currentHash: () => '', goTo: () => undefined, forgetOpenProject: async () => undefined, openReveal: () => true, closeReveal: () => undefined });
+    expect(bare.has?.('anything')).toBe(true);
   });
 });

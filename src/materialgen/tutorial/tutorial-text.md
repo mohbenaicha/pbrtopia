@@ -55,11 +55,17 @@ Control lighting intensity and hdri image to preview the material in different l
 ## viewport.material | Material preview
 Adjust the preview of the material itself, like how strong the bumps look. Use it to judge the maps under different lighting.
 
+## viewport.preview-only | Preview only
+These settings change the preview only. They never change your texture maps or an exported material.
+
 ## masks.open | Material masks
 This button pulls up material masks editing after a *metal-roughness* image has been generated.
 
 ## masks.swatches | Swatches
-Each swatch (color card) is one kind of material in the picture, like rust or paint or gravel. Click swatches to highlight them on the model. One or more can be active at once to edit multiple materials at once.
+Each swatch (color card) is one kind of material in the picture, like rust or paint or gravel. Hover a swatch to highlight that material on the model, and click it to activate it. One or more can be active at once to edit multiple materials at once.
+
+## masks.properties | Material properties
+Once a swatch is active, its settings expand here. **Roughness**, **Metalness** and **Height** adjust that material, and the arrow beside each slider resets it to the base material. **Colour mixin** shapes roughness and metalness by the albedo inside the material. **Reset all** puts every material back to its defaults and **Re-run decomposition** makes the masks again.
 
 ## shading.control | Preview shading
 Switch between viewing a single map, like **Albedo** or **Normal**, and the full lit **PBR** preview.
@@ -95,7 +101,7 @@ Opens, renames, exports , or deletes a project. **NOTE:** Delete cannot be undon
 Add the API keys for the image and text models. Keys are encrypted with your password, stay on this device, and are sent only to the provider you generate with.
 
 ## settings.env | Read from environment
-Instead of pasting a key, turn on **Read keys from environment** and type the name of a Windows environment variable. The key is read each time it is used and never stored by the app.
+**Only available in the exe and local web builds, not on pbrtopia.com.** Instead of pasting a key, turn on **Read keys from environment** and type the name of a Windows environment variable. The key is read each time it is used and never stored by the app.
 
 ## settings.models | Models
 Choose the **prompt enhancer** model that augments your prompt with albedo/diffuse descriptions and describes the material for the material mask to be generated. The prompt enhancer uses the generated albedo/diffuse maps , describes it and feed the prompt to generate material masks. For that purpose you can define the resolution at which to send the albedo/diffuse texture to save on tokens. The same can be done when initially generating a albedo/diffuse map based ona reference.

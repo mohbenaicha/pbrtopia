@@ -73,7 +73,8 @@ export class TourController {
     try {
       await this.options.stage.enter(entry.step, move.signal);
       if (move.signal.aborted) return;
-      target = await (this.options.findAnchor ?? ((anchor, signal) => waitForAnchor(anchor, ANCHOR_TIMEOUT_MS, signal)))(entry.step.anchor, move.signal);
+      if (entry.step.needs !== undefined && this.options.stage.has?.(entry.step.needs) === false) target = null; // tutorial R23: no target will ever come, so no wait
+      else target = await (this.options.findAnchor ?? ((anchor, signal) => waitForAnchor(anchor, ANCHOR_TIMEOUT_MS, signal)))(entry.step.anchor, move.signal);
     } catch {
       target = null; // tutorial R8: a failing stage shows the step without a spotlight
     }

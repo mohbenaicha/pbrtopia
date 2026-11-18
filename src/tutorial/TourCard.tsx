@@ -5,8 +5,8 @@ import type { CardPlacement } from './placeCard';
 import type { TourSnapshot } from './tourTypes';
 
 /** One size for every step, so the card never resizes as the tour moves; a long text scrolls inside (tutorial R6). */
-export const CARD_WIDTH_PX = 340;
-export const CARD_HEIGHT_PX = 250;
+export const CARD_WIDTH_PX = 380;
+export const CARD_HEIGHT_PX = 290;
 
 interface TourCardProps {
   snapshot: TourSnapshot;

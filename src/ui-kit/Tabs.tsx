@@ -9,6 +9,7 @@ export interface TabOption<T extends string> {
   disabled?: boolean;
   icon?: IconName;
   iconOnly?: boolean; // R32: only the icon is drawn and the tab is compact
+  tutorial?: string; // the guided tour's anchor on this one tab (tutorial R22)
 }
 
 interface TabsProps<T extends string> {
@@ -63,6 +64,7 @@ export function Tabs<T extends string>({ label, tabs, value, onChange, tutorial 
             className="ui-tabs__tab"
             data-selected={selected ? '' : undefined}
             data-compact={tab.iconOnly === true ? '' : undefined}
+            data-tutorial={tab.tutorial}
             {...(tab.iconOnly === true ? { 'aria-label': tab.label } : {})}
             onClick={() => choose(tab.value)}
           >

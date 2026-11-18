@@ -61,7 +61,7 @@ export function SettingsView<Section extends string>({ store, sections, section,
         </ul>
       </nav>
       <div className="settings-view__scroll">
-        <div className="settings-view__content" data-tutorial={`settings-${section}`}>{current === undefined ? <h2 className="settings-page__title">{section}</h2> : current.render({ store, projectImport, keyCheck, refresh, backends })}</div>
+        <div className="settings-view__content">{current === undefined ? <h2 className="settings-page__title">{section}</h2> : current.render({ store, projectImport, keyCheck, refresh, backends })}</div>
       </div>
     </main>
   );

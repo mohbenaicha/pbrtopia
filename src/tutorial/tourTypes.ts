@@ -4,6 +4,7 @@ export interface TourStep {
   anchor: string; // the `data-tutorial` id of the element to circle
   stage?: string; // the view the step needs: 'project', 'list', 'settings:keys'...
   reveal?: string[]; // what must be open while the step shows: 'viewport-settings', 'export'...
+  needs?: string; // a capability of the host the step shows (tutorial R23); when the stage says it is missing the step shows centred at once, with no wait for its target
 }
 
 export interface TourSection {
@@ -16,6 +17,8 @@ export interface TourSection {
 export interface TourStage {
   /** Goes to the step's view and opens its reveals, closing the ones it no longer needs. Resolves when the app is ready for the step. */
   enter(step: TourStep, signal: AbortSignal): Promise<void>;
+  /** Whether the host has a capability a step needs (tutorial R23). A stage that does not implement it has every capability. */
+  has?(need: string): boolean;
   /** Closes everything the tour opened and returns to the view the tour started from. */
   leave(): Promise<void>;
 }

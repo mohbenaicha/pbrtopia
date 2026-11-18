@@ -10,7 +10,7 @@
 .tour-veil {
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, var(--bg-page) 72%, transparent);
+  background: color-mix(in srgb, var(--bg-page) 45%, transparent);
 }
 
 /* The hole: the veil is its outsized shadow, so the target's own pixels stay undimmed, under a very light accent fill. */
@@ -19,7 +19,7 @@
   box-sizing: border-box;
   border-radius: 8px;
   background: color-mix(in srgb, var(--accent) 8%, transparent);
-  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--bg-page) 72%, transparent);
+  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--bg-page) 45%, transparent);
   color: var(--accent);
 }
 
@@ -57,7 +57,7 @@
   background: var(--bg-panel);
   border-radius: var(--radius-control);
   box-shadow: 0 0 0 1px var(--accent), var(--shadow-overlay); /* the gold ring, as the tooltip's (ui-kit draws no borders) */
-  font-size: var(--font-size-small);
+  font-size: 14px;
   line-height: 1.45;
   pointer-events: auto;
   outline: none;
@@ -68,14 +68,14 @@
   display: flex;
   justify-content: space-between;
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .tour-card__heading {
   margin: 0;
   color: var(--accent);
   font-weight: 600;
-  font-size: var(--font-size-base, 14px);
+  font-size: 16px;
 }
 
 .tour-card__body {

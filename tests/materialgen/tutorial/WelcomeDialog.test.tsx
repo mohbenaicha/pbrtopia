@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildAgentSetupPrompt } from '../../../src/materialgen/tutorial/agentSetupPrompt';
 import { WelcomeDialog } from '../../../src/materialgen/tutorial/WelcomeDialog';
-import { GITHUB_URL, WEB_APP_URL } from '../../../src/materialgen/tutorial/welcomeLinks';
+import { GITHUB_URL, RELEASES_URL, WEB_APP_URL } from '../../../src/materialgen/tutorial/welcomeLinks';
 
 afterEach(() => {
   cleanup();
@@ -36,7 +36,7 @@ describe('materialgen/tutorial WelcomeDialog (R14, R15, R16)', () => {
   it('TestR14_the_web_and_github_links_open_in_a_new_tab_without_giving_the_page_away_and_github_carries_its_icon', () => {
     setup();
     const web = screen.getByRole('link', { name: /www\.pbrtopia\.com/ });
-    const github = screen.getByRole('link', { name: /GitHub/ });
+    const github = screen.getByRole('link', { name: 'GitHub' });
     expect(web.getAttribute('href')).toBe(WEB_APP_URL);
     expect(github.getAttribute('href')).toBe(GITHUB_URL);
     for (const link of [web, github]) {
@@ -44,6 +44,15 @@ describe('materialgen/tutorial WelcomeDialog (R14, R15, R16)', () => {
       expect(link.getAttribute('rel')).toBe('noopener noreferrer');
     }
     expect(github.querySelector('[data-icon="github"]')).not.toBeNull();
+  });
+
+  it('TestR20_the_exe_release_is_a_link_to_the_mirrors_releases_page_and_building_from_github_links_the_repository', () => {
+    setup();
+    const releases = screen.getByRole('link', { name: 'exe release' });
+    expect(releases.getAttribute('href')).toBe(RELEASES_URL);
+    expect(RELEASES_URL).toBe('https://github.com/mohbenaicha/pbrtopia/releases');
+    expect(releases.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(screen.getByRole('link', { name: 'build it from GitHub' }).getAttribute('href')).toBe(GITHUB_URL);
   });
 
   it('TestR14_escape_closes_it_and_a_click_outside_does_not', () => {

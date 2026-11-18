@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { renderInlineMarkup, parseTutorialText } from '@shared/tutorial';
 import { Button, Dialog, Icon } from '@shared/ui-kit';
 import { buildAgentSetupPrompt } from './agentSetupPrompt';
-import { GITHUB_URL, WEB_APP_URL } from './welcomeLinks';
+import { GITHUB_URL, WEB_APP_URL, WELCOME_LINKS } from './welcomeLinks';
 import welcomeSource from './welcome-text.md?raw';
 import './welcome.css';
 
@@ -25,7 +25,7 @@ function Part({ id }: { id: string }): React.JSX.Element | null {
     <section className="welcome__part">
       <h3 className="welcome__heading">{text.heading}</h3>
       {text.paragraphs.map((paragraph) => (
-        <p key={paragraph} className="welcome__words">{renderInlineMarkup(paragraph)}</p>
+        <p key={paragraph} className="welcome__words">{renderInlineMarkup(paragraph, WELCOME_LINKS)}</p>
       ))}
     </section>
   );

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useRevealOnTour } from '@shared/tutorial';
+import { REVEAL_MAP_ACTIONS } from '@mat/tutorial';
 import type { RawRecord } from '@shared/projects';
 import { ConfirmDialog, Disclosure, ImageViewer } from '@shared/ui-kit';
 import { aoSourceFor, aoValuesFor, readAoSettings, writeAoSettings, type AoSource, type EditValues } from '@mat/imageops';
@@ -51,7 +53,9 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
   const [filtering, setFiltering] = useState<{ kind: MapKind; map: MapRecord } | null>(null);
   const [aoToolOpen, setAoToolOpen] = useState(false);
   const [geometryToolOpen, setGeometryToolOpen] = useState(false);
+  const [tourActions, setTourActions] = useState(false); // the guided tour shows the cards' buttons without a pointer over them (tutorial R22)
   const [paintOpen, setPaintOpen] = useState(false); // the splat painter's session (compositing R2): exclusive with every other op
+  useRevealOnTour(REVEAL_MAP_ACTIONS, { open: () => setTourActions(true), close: () => setTourActions(false) });
   const [working, setWorking] = useState(false); // Swap diagonals or Regenerate is running: they have no dialog but are ops too
   const dialogOpen = filtering !== null || aoToolOpen;
   const opOpen = dialogOpen || geometryToolOpen || paintOpen || working; // imageops R9: one op at a time
@@ -143,7 +147,7 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
       )}
       <Disclosure title="Maps" open={mapsOpen} onOpenChange={setMapsOpen} keepMounted tutorial="maps-tools" actions={<>{geometryTools.buttons}{paintTool.button}</>}>
         {geometryTools.panel ?? paintTool.panel ?? (
-          <div className="map-grid" data-tutorial="maps-grid">
+          <div className="map-grid" data-tutorial="maps-grid" data-tour-actions={tourActions ? '' : undefined}>
             {CARD_SLOTS.map((slot) => (
               <MapCard
                 key={slot}

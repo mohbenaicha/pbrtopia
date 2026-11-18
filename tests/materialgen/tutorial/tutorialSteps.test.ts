@@ -13,7 +13,7 @@ describe('the tutorial steps (tutorial R3, R9, R13)', () => {
       'generate.prompt', 'generate.ideas', 'generate.references', 'generate.color', 'generate.size', 'generate.model', 'generate.button', 'generate.summary', 'generate.log',
       'maps.tools', 'maps.cards', 'maps.card-actions', 'maps.occlusion',
       'viewport.open', 'viewport.environment', 'viewport.material', 'viewport.preview-only',
-      'masks.open', 'masks.swatches', 'shading.control', 'topbar.actions',
+      'masks.open', 'masks.swatches', 'masks.properties', 'shading.control', 'topbar.actions',
       'export.types', 'export.packing', 'export.parts', 'export.size',
       'projects.new', 'projects.import', 'projects.settings', 'projects.card',
       'settings.keys', 'settings.env', 'settings.models', 'settings.storage',
@@ -47,5 +47,22 @@ describe('the tutorial steps (tutorial R3, R9, R13)', () => {
     expect(words('maps.occlusion')).toMatch(/generate/);
     expect(words('settings.env')).toContain('never stored');
     expect(words('settings.keys')).toContain('encrypted');
+  });
+
+  it('TestR22_the_map_card_steps_show_the_card_buttons_and_the_mask_properties_step_selects_a_swatch', () => {
+    const byId = Object.fromEntries(STEPS.map((entry) => [entry.id, entry]));
+    expect(byId['maps.card-actions']?.reveal).toContain('map-actions');
+    expect(byId['maps.occlusion']?.reveal).toContain('map-actions');
+    expect(byId['masks.properties']?.reveal).toEqual(['mask-display', 'mask-select']);
+  });
+
+  it('TestR23_only_the_environment_step_needs_the_host_and_its_words_say_where_it_is_available', () => {
+    expect(STEPS.filter((entry) => entry.needs !== undefined).map((entry) => entry.id)).toEqual(['settings.env']);
+    expect(TEXT['settings.env']?.paragraphs.join(' ')).toMatch(/exe and local web builds/);
+  });
+
+  it('TestR13_the_swatches_step_says_activate_not_highlight_and_the_properties_step_names_the_sliders', () => {
+    expect(TEXT['masks.swatches']?.paragraphs.join(' ')).toMatch(/click it to activate/);
+    expect(TEXT['masks.properties']?.paragraphs.join(' ')).toMatch(/Roughness.*Metalness.*Height.*Colour mixin.*Reset all.*Re-run decomposition/);
   });
 });

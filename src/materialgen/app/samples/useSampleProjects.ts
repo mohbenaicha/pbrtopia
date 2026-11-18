@@ -7,6 +7,20 @@ import { estimateFreeBytes } from '../project/estimateFreeBytes';
 
 type SampleStore = MaterialImportTarget & Pick<MaterialProjectStore, 'loadAppSettings' | 'saveAppSettings'>;
 
+const PAINT_FALLBACK_MS = 300; // a hidden tab never paints; the import must not wait for it
+
+/** Resolves after the next paint, so what the user sees first (the welcome, tutorial R21) is on screen before the import starts. */
+function afterNextPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    const fallback = setTimeout(resolve, PAINT_FALLBACK_MS);
+    const done = (): void => {
+      clearTimeout(fallback);
+      resolve();
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => setTimeout(done, 0));
+  });
+}
+
 export interface SampleProjectsState {
   checked: boolean; // the flag has been read; until then the list is not shown, so the empty state never flashes
   remaining: number; // samples still to come, shown as placeholder cards
@@ -26,6 +40,7 @@ export function useSampleProjects(store: SampleStore, samples: readonly SampleSo
       const seeded = (await store.loadAppSettings()).samplesLoaded;
       setState({ checked: true, remaining: seeded ? 0 : samples.length, refresh: 0, failures: [] });
       if (seeded) return;
+      await afterNextPaint();
       const outcome = await seedSampleProjects(
         {
           isSeeded: async () => (await store.loadAppSettings()).samplesLoaded,

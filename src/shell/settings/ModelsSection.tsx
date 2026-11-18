@@ -30,7 +30,7 @@ export function ModelsSection({ store, vault, keysLoaded, refresh }: ModelsSecti
   const noKey = models.keyed.length === 0;
 
   return (
-    <SettingsPage title="Models">
+    <SettingsPage title="Models" tutorial="settings-models">
       {!models.loaded || !sizes.loaded ? (
         <p role="status">Loading…</p>
       ) : (

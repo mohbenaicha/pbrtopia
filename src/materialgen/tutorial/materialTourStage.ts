@@ -6,6 +6,7 @@ export interface MaterialTourStageDeps {
   currentHash: () => string;
   goTo: (hash: string) => void;
   forgetOpenProject: () => Promise<unknown>; // the tour must not leave its sample as the project to reopen at the next start
+  hasNeed?: (need: string) => boolean; // whether the host has what a step needs (tutorial R23)
   openReveal: (id: string) => boolean;
   closeReveal: (id: string) => void;
   pollMs?: number;
@@ -71,6 +72,8 @@ export function createMaterialTourStage(deps: MaterialTourStageDeps): TourStage 
         if (await retryUntil(() => deps.openReveal(id), { pollMs, timeoutMs: revealTimeoutMs }, signal)) opened.add(id);
       }
     },
+
+    has: (need: string): boolean => deps.hasNeed?.(need) ?? true,
 
     async leave(): Promise<void> {
       closeAll();

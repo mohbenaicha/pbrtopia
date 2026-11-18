@@ -8,7 +8,7 @@ interface MapCardProps extends Omit<HalfContext, 'busy'> {
   isBusy(kind: CardModel['halves'][number]['kind']): boolean;
   /** Buttons the host adds to the overlay of a map's picture (the AO tool on the AO map), also shown while the map is empty. */
   extras?: Partial<Record<CardModel['halves'][number]['kind'], React.ReactNode>>;
-  /** The guided tour's anchor for this card, when a step points at it. */
+  /** The guided tour's anchor for this card's buttons, when a step points at them (tutorial R22). */
   tutorial?: string | undefined;
 }
 
@@ -30,14 +30,13 @@ export function MapCard({ model, isBusy, extras, tutorial, ...context }: MapCard
       className="map-card"
       aria-label={model.title}
       data-testid="slot-card"
-      data-tutorial={tutorial}
       data-split={split ? '' : undefined}
       onDragOver={(event) => isFileDrag(event) && event.preventDefault()}
       onDrop={cardDrop}
     >
       <div className="map-card__halves">
         {model.halves.map((half) => (
-          <MapHalf key={half.kind} half={half} {...context} busy={isBusy(half.kind)} extras={extras?.[half.kind]} undo={model.undo} />
+          <MapHalf key={half.kind} half={half} {...context} busy={isBusy(half.kind)} extras={extras?.[half.kind]} undo={model.undo} {...(tutorial !== undefined && half === model.halves[0] ? { buttonsTutorial: tutorial } : {})} />
         ))}
       </div>
 

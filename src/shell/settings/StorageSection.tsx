@@ -42,6 +42,7 @@ export function StorageSection({ store, projectImport, deleteAllText, location }
   return (
     <SettingsPage
       title="Storage"
+      tutorial="settings-storage"
       description={location === undefined ? 'Manage browser storage' : 'Where your projects are kept, and how much room is left on the disk.'}
     >
       {location !== undefined && <LibraryFolderGroup location={location} />}

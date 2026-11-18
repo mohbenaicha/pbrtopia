@@ -78,3 +78,9 @@ export function useAppBackends(): ResolvedBackends {
   if (value === null) throw new Error('useAppBackends needs an AppBackendsProvider above it.');
   return value;
 }
+
+/** Reads whether the host can read the environment (false in the hosted web app and wherever no provider is mounted); the guided tour uses it to skip a step the host cannot show (tutorial R23). */
+export function useEnvKeysOffered(): () => boolean {
+  const value = useContext(BackendsContext);
+  return () => value?.keys.envOffered() ?? false;
+}

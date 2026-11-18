@@ -18,3 +18,15 @@ describe('inline markup (tutorial R9)', () => {
     expect(html('2 * 3 and **open')).toBe('<p>2 * 3 and **open</p>');
   });
 });
+
+describe('inline markup links (tutorial R20)', () => {
+  const linked = (text: string): string => render(<p>{renderInlineMarkup(text, { releases: 'https://example.test/releases' })}</p>).container.innerHTML;
+
+  it('TestR20_a_known_key_becomes_a_new_tab_link_that_does_not_give_the_page_away', () => {
+    expect(linked('Get the [exe release](releases).')).toBe('<p>Get the <a href="https://example.test/releases" target="_blank" rel="noopener noreferrer">exe release</a>.</p>');
+  });
+
+  it('TestR20_an_unknown_key_or_an_address_of_its_own_shows_only_the_text', () => {
+    expect(linked('See [here](nowhere) or [there](https://evil.test).')).toBe('<p>See here or [there](https://evil.test).</p>');
+  });
+});

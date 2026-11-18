@@ -169,3 +169,8 @@
   height: 26px;
   background: var(--surface-over-picture);
 }
+
+/* The guided tour shows every card's buttons as if the pointer were over the card (tutorial R22). */
+[data-tour-actions] .map-half__buttons {
+  opacity: 1;
+}

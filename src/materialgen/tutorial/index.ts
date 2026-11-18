@@ -2,4 +2,4 @@
 export { MaterialTutorial, useTutorialLauncher, TUTORIAL_SEEN_KEY, type TutorialLauncher } from './MaterialTutorial';
 export { TutorialButton, TutorialListButton } from './TutorialButtons';
 export { GITHUB_URL, WEB_APP_URL } from './welcomeLinks';
-export { REVEAL_EXPORT, REVEAL_MASK_DISPLAY, REVEAL_VIEWPORT_SETTINGS } from './revealIds';
+export { REVEAL_EXPORT, REVEAL_MAP_ACTIONS, REVEAL_MASK_DISPLAY, REVEAL_MASK_SELECT, REVEAL_VIEWPORT_SETTINGS } from './revealIds';

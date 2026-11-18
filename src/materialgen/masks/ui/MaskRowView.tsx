@@ -55,7 +55,7 @@ export function MaskRowView({ row, others = 0, table, disabled, onMaterial, onRo
     </div>
   );
   return (
-    <div className="mask-row" role="group" aria-label={row.name}>
+    <div className="mask-row" role="group" aria-label={row.name} data-tutorial="masks-properties">
       <Tooltip heading={row.name} text={row.description}>
         <span className="mask-row__name">{others > 0 ? `${row.name} +${others}` : row.name}</span>
       </Tooltip>

@@ -36,10 +36,12 @@ interface MapHalfProps extends HalfContext {
   undo?: CardModel['undo'];
   /** Buttons the host adds to the overlay (the AO tool on the AO map). */
   extras?: React.ReactNode;
+  /** The guided tour's anchor on this map's buttons (tutorial R22). */
+  buttonsTutorial?: string;
 }
 
 /** One map of a card: its drop zone with the thumbnail, what it is, and its buttons (maps R34, R44, R45). */
-export function MapHalf({ half, undo, extras, canWrite, readOnlyReason, busy, opOpen = false, readBlob, draw, actions }: MapHalfProps): React.JSX.Element {
+export function MapHalf({ half, undo, extras, buttonsTutorial, canWrite, readOnlyReason, busy, opOpen = false, readBlob, draw, actions }: MapHalfProps): React.JSX.Element {
   const input = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const { dragging, zoneProps } = useDropZone((files) => actions.dropFiles(half.kind, files));
@@ -104,7 +106,7 @@ export function MapHalf({ half, undo, extras, canWrite, readOnlyReason, busy, op
           </p>
         </Tooltip>
         {(half.filled || extras) && (
-          <div className="map-half__buttons">
+          <div className="map-half__buttons" data-tutorial={buttonsTutorial}>
             {half.filled && (
               <>
             <IconButton label={label('Filter')} hint={MAP_TIPS.filter} icon={<Icon name="pencil" size={16} />} disabled={filterReason !== undefined} {...(filterReason ? { disabledReason: filterReason } : {})} onClick={() => actions.filter(half.kind)} />
