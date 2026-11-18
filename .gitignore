@@ -1,0 +1,15 @@
+node_modules/
+builds/
+test-results/
+coverage/
+*.log
+.env
+.env.*
+.vite/
+
+# Rust build output of the desktop shell
+/src-tauri/target/
+/src-tauri/gen/
+
+# Downloaded after approval, never committed
+/src/materialgen/data/minilm/onnx/
