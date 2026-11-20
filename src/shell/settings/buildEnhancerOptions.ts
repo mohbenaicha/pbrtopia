@@ -24,7 +24,7 @@ export function buildEnhancerOptions(input: { keyed: readonly Provider[]; catalo
     (provider, displayName) => `${PROVIDER_NAMES[provider]} · ${displayName}`,
   );
   if (input.stored === null) {
-    const hasKey: Record<Provider, boolean> = { gemini: input.keyed.includes('gemini'), openai: input.keyed.includes('openai') };
+    const hasKey: Record<Provider, boolean> = Object.fromEntries(PROVIDERS.map((provider) => [provider, input.keyed.includes(provider)])) as Record<Provider, boolean>;
     const fallback = pickEnhancerModel({ enhancer: null, provider: null, catalog: input.catalog, hasKey });
     const shown = fallback === null ? null : enhancerValue(fallback);
     return { options, value: shown !== null && options.some((option) => option.value === shown) ? shown : (options.find((option) => option.disabled !== true)?.value ?? '') };

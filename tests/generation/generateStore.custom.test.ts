@@ -12,7 +12,7 @@ function readyStore() {
   const store = createGenerateStore();
   const s = store.getState();
   s.setMaxTextureSize(8192);
-  s.setCatalog({ gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai') });
+  s.setCatalog({ gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai'), openrouter: [] });
   s.setSceneState({ hasModel: true, hasUvs: true });
   s.setHasKey('openai', true);
   s.setHasKey('gemini', true);
@@ -62,7 +62,7 @@ describe('generate store: custom settings (custom R1, R6, R28)', () => {
     const store = readyStore();
     const plan = planOf([[0], [1]], GONE);
     store.getState().confirmCustomPlan(plan);
-    store.getState().setCatalog({ gemini: [], openai: KNOWN_MODELS.filter((model) => model.provider === 'openai') });
+    store.getState().setCatalog({ gemini: [], openai: KNOWN_MODELS.filter((model) => model.provider === 'openai'), openrouter: [] });
     expect(store.getState().customPlan).toEqual(plan);
   });
 });

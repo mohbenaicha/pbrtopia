@@ -27,6 +27,7 @@ function setup(prepare: (store: ReturnType<typeof createGenerateStore>) => void 
   s.setCatalog({
     gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3-pro-image'), known('gemini', 'gemini-3.8-flash')],
     openai: [known('openai', 'gpt-image-2.5-sunburst'), unverified, known('openai', 'gpt-6-luna')],
+    openrouter: [],
   });
   s.setHasKey('gemini', true);
   s.setSceneState({ hasModel: true, hasUvs: true });

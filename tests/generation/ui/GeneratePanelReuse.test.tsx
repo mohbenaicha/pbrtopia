@@ -20,7 +20,7 @@ function setup() {
   const s = store.getState();
   s.setMaxTextureSize(8192);
   const model = (id: string) => findKnownModel('gemini', id) ?? (() => { throw new Error(id); })();
-  s.setCatalog({ gemini: [model('gemini-nano-banana-2.1'), model('gemini-3-pro-image'), model('gemini-3.8-flash')], openai: [] });
+  s.setCatalog({ gemini: [model('gemini-nano-banana-2.1'), model('gemini-3-pro-image'), model('gemini-3.8-flash')], openai: [], openrouter: [] });
   s.setHasKey('gemini', true);
   s.setSceneState({ hasModel: true, hasUvs: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');

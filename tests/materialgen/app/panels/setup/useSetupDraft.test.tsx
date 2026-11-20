@@ -8,7 +8,7 @@ import { withKnownModels } from '@mat/generation/plan/displayCatalog';
 
 const MAX_TEXTURE = 4096;
 const catalog = buildModelCatalog(['gemini', 'openai']);
-const environment = { catalog, hasKey: { gemini: true, openai: true }, describeProvider: 'gemini' as const, referenceCount: 0, hasExistingAlbedo: false };
+const environment = { catalog, hasKey: { gemini: true, openai: true, openrouter: false }, describeProvider: 'gemini' as const, referenceCount: 0, hasExistingAlbedo: false };
 const start: GenerationPlan = buildPresetPlan('preset-1', catalog, MAX_TEXTURE)!;
 const openaiModel = catalog.openai[0]!;
 const picked = buildCardSettings(openaiModel, MAX_TEXTURE, 1);
@@ -100,7 +100,7 @@ describe('materialgen/generation setup draft', () => {
 
   it('R18 the report judges the draft: a card that moves out of reach of its key shows its problem and Confirm would be off', () => {
     const { result } = renderHook(() =>
-      useSetupDraft({ start, environment: { ...environment, hasKey: { gemini: true, openai: false } }, displayCatalog: withKnownModels(catalog), maxTextureSize: MAX_TEXTURE }),
+      useSetupDraft({ start, environment: { ...environment, hasKey: { gemini: true, openai: false, openrouter: false } }, displayCatalog: withKnownModels(catalog), maxTextureSize: MAX_TEXTURE }),
     );
     expect(result.current.report.problem).toBeNull();
     act(() => result.current.changeCard(1, picked));

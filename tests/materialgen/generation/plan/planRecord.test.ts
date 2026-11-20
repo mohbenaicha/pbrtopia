@@ -3,7 +3,7 @@ import { KNOWN_MODELS } from '@shared/generation/catalog/knownModels';
 import { isSamePlan, buildPresetPlan, type ModelCatalog } from '@mat/generation/plan/presetPlans';
 import { parseSavedSetups, parseStoredPlan, writePlan, writeSavedSetups } from '@mat/generation/plan/planRecord';
 
-const full: ModelCatalog = { gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai') };
+const full: ModelCatalog = { gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai'), openrouter: [] };
 const plan = buildPresetPlan('preset-3', full, 16384)!;
 
 describe('materialgen/generation R70 persistence of the plan', () => {

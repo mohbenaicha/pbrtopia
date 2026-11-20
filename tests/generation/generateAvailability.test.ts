@@ -19,6 +19,7 @@ function readyStore() {
   s.setCatalog({
     gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')],
     openai: [known('openai', 'gpt-image-2.5-sunburst'), known('openai', 'gpt-6-luna'), unverified],
+    openrouter: [],
   });
   s.setSceneState({ hasModel: true, hasUvs: true });
   s.setHasKey('gemini', true);
@@ -51,11 +52,11 @@ describe('describeGenerateAvailability (R6, R15)', () => {
 
   it('R20 a chosen model that is missing from the model list says so, and Generate stays disabled until it is back', () => {
     const store = readyStore();
-    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-3.8-flash')], openai: [] });
+    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-3.8-flash')], openai: [], openrouter: [] });
     const result = describeNow(store);
     expect(result.enabled).toBe(false);
     expect(result.reason).toMatch(/no longer available/i);
-    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')], openai: [] });
+    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')], openai: [], openrouter: [] });
     expect(describeNow(store)).toEqual({ action: 'generate', enabled: true, reason: null });
   });
 
@@ -79,7 +80,7 @@ describe('describeGenerateAvailability (R6, R15)', () => {
   it('R6 no enhancer model: none chosen and the image provider has no verified text model', () => {
     const store = readyStore();
     store.getState().setEnhancer(null);
-    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1')], openai: [] });
+    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1')], openai: [], openrouter: [] });
     store.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
     const result = describeNow(store);
     expect(result.enabled).toBe(false);
@@ -96,9 +97,9 @@ describe('describeGenerateAvailability (R6, R15)', () => {
   it('R8 with no enhancer chosen the default is GPT-6 Luna with an OpenAI key, else Gemini 3.8 Flash, else none', () => {
     const store = readyStore();
     const { catalog } = store.getState();
-    expect(pickEnhancerModel({ enhancer: null, provider: null, catalog, hasKey: { gemini: true, openai: true } })).toEqual({ provider: 'openai', modelId: 'gpt-6-luna' });
-    expect(pickEnhancerModel({ enhancer: null, provider: null, catalog, hasKey: { gemini: true, openai: false } })).toEqual({ provider: 'gemini', modelId: 'gemini-3.8-flash' });
-    expect(pickEnhancerModel({ enhancer: null, provider: null, catalog, hasKey: { gemini: false, openai: false } })).toBeNull();
+    expect(pickEnhancerModel({ enhancer: null, provider: null, catalog, hasKey: { gemini: true, openai: true, openrouter: false } })).toEqual({ provider: 'openai', modelId: 'gpt-6-luna' });
+    expect(pickEnhancerModel({ enhancer: null, provider: null, catalog, hasKey: { gemini: true, openai: false, openrouter: false } })).toEqual({ provider: 'gemini', modelId: 'gemini-3.8-flash' });
+    expect(pickEnhancerModel({ enhancer: null, provider: null, catalog, hasKey: { gemini: false, openai: false, openrouter: false } })).toBeNull();
   });
 
   it('R6 a chosen enhancer wins over the fallback, and an image model is never the fallback', () => {
@@ -106,7 +107,7 @@ describe('describeGenerateAvailability (R6, R15)', () => {
     store.getState().setEnhancer({ provider: 'openai', modelId: 'gpt-6-luna' });
     expect(pickEnhancerModel(store.getState())).toEqual({ provider: 'openai', modelId: 'gpt-6-luna' });
     store.getState().setEnhancer(null);
-    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1')], openai: [] });
+    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1')], openai: [], openrouter: [] });
     expect(pickEnhancerModel(store.getState())).toBeNull();
   });
 
@@ -149,7 +150,7 @@ describe('describeGenerateAvailability (R6, R15)', () => {
     reasons.add(describeNow(unverifiedModel).reason);
     const noEnhancer = readyStore();
     noEnhancer.getState().setEnhancer(null);
-    noEnhancer.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1')], openai: [] });
+    noEnhancer.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1')], openai: [], openrouter: [] });
     noEnhancer.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
     reasons.add(describeNow(noEnhancer).reason);
     expect(reasons.size).toBe(7);
@@ -237,7 +238,7 @@ describe('describeGenerateAvailability: custom plan models (custom R7, R13)', ()
     const base = known('gemini', 'gemini-nano-banana-2.1');
     const withLimit = limit === undefined ? base : { ...base, maxReferenceImages: limit };
     const nano = catalogEdit === undefined ? withLimit : catalogEdit(withLimit);
-    store.getState().setCatalog({ gemini: [nano, known('gemini', 'gemini-3.8-flash')], openai: [] });
+    store.getState().setCatalog({ gemini: [nano, known('gemini', 'gemini-3.8-flash')], openai: [], openrouter: [] });
     store.getState().setMode('custom');
     store.getState().confirmCustomPlan({ sheets: [sheet([0, 1]), sheet([2, 3])], aux: null });
     return store;
@@ -255,24 +256,24 @@ describe('describeGenerateAvailability: custom plan models (custom R7, R13)', ()
   it('custom R13 references that fit the lead model are fine; one more than fits disables Generate with the limit', () => {
     const store = customStore(undefined);
     store.getState().addReferences([picture('a'), picture('b')]);
-    store.getState().setCatalog({ gemini: [{ ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 3 }, known('gemini', 'gemini-3.8-flash')], openai: [] });
+    store.getState().setCatalog({ gemini: [{ ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 3 }, known('gemini', 'gemini-3.8-flash')], openai: [], openrouter: [] });
     expect(describeNow(store)).toMatchObject({ enabled: true });
     const crowded = customStore(undefined);
     crowded.getState().addReferences([picture('a'), picture('b'), picture('c')]);
-    crowded.getState().setCatalog({ gemini: [{ ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 3 }, known('gemini', 'gemini-3.8-flash')], openai: [] });
+    crowded.getState().setCatalog({ gemini: [{ ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 3 }, known('gemini', 'gemini-3.8-flash')], openai: [], openrouter: [] });
     expect(describeNow(crowded)).toMatchObject({ enabled: false, reason: "Too many reference images for image 1's model (2 at most)." });
   });
 
   it('custom R13 a follower whose model takes fewer than two images is refused with its image number', () => {
     const store = customStore(undefined);
     const nano = { ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 1 };
-    store.getState().setCatalog({ gemini: [nano, known('gemini', 'gemini-3.8-flash')], openai: [] });
+    store.getState().setCatalog({ gemini: [nano, known('gemini', 'gemini-3.8-flash')], openai: [], openrouter: [] });
     expect(describeNow(store).reason).toBe('Image 2: This image model takes too few reference images to follow the first image.');
   });
 
   it('custom R13 Add images in Custom is limited by the lead sheet model, not the Standard one', () => {
     const store = customStore(3);
-    store.getState().setCatalog({ gemini: [{ ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 3 }, known('gemini', 'gemini-3-pro-image'), known('gemini', 'gemini-3.8-flash')], openai: [] });
+    store.getState().setCatalog({ gemini: [{ ...known('gemini', 'gemini-nano-banana-2.1'), maxReferenceImages: 3 }, known('gemini', 'gemini-3-pro-image'), known('gemini', 'gemini-3.8-flash')], openai: [], openrouter: [] });
     store.getState().selectModel('gemini', 'gemini-3-pro-image');
     const outcome = store.getState().addReferences([picture('a'), picture('b'), picture('c')]);
     expect(outcome).toEqual({ added: 2, refused: 1 });

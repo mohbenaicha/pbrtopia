@@ -19,7 +19,7 @@ const image = (id: string): ReferenceImage => ({ id, name: `${id}.png`, width: 6
 function setup() {
   const store = createGenerateStore();
   store.getState().setMaxTextureSize(8192);
-  store.getState().setCatalog({ gemini: [NANO, FLASH, LITE], openai: [SUNBURST, unverified] });
+  store.getState().setCatalog({ gemini: [NANO, FLASH, LITE], openai: [SUNBURST, unverified], openrouter: [] });
   return store;
 }
 
@@ -43,16 +43,16 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
   it('R4 a list without Sunburst chooses nothing, and Sunburst is chosen when the list gets it', () => {
     const store = createGenerateStore();
     store.getState().setMaxTextureSize(8192);
-    store.getState().setCatalog({ gemini: [NANO], openai: [] });
+    store.getState().setCatalog({ gemini: [NANO], openai: [], openrouter: [] });
     expect(store.getState()).toMatchObject({ provider: null, modelId: null });
-    store.getState().setCatalog({ gemini: [NANO], openai: [SUNBURST] });
+    store.getState().setCatalog({ gemini: [NANO], openai: [SUNBURST], openrouter: [] });
     expect(store.getState().modelId).toBe('gpt-image-2.5-sunburst');
   });
 
   it('R4 a model chosen by the user or a saved project is never replaced by the default', () => {
     const store = setup();
     store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
-    store.getState().setCatalog({ gemini: [NANO, FLASH, LITE], openai: [SUNBURST] });
+    store.getState().setCatalog({ gemini: [NANO, FLASH, LITE], openai: [SUNBURST], openrouter: [] });
     expect(store.getState().modelId).toBe('gemini-3.1-flash-image');
     store.getState().restoreSettings({ prompt: '', references: [], provider: 'gemini', modelId: 'gemini-nano-banana-2.1', resolutionKey: null, atlasKey: '1K', atlasRender: 'grey', tileBorder: true, quality: null });
     expect(store.getState()).toMatchObject({ modelId: 'gemini-nano-banana-2.1', resolutionKey: '1K', quality: 'minimal' });
@@ -124,7 +124,7 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
     store.getState().setPrompt('a mossy stone');
     store.getState().selectModel('gemini', 'gemini-nano-banana-2.1');
     const before = store.getState();
-    store.getState().setCatalog({ gemini: [FLASH], openai: [] });
+    store.getState().setCatalog({ gemini: [FLASH], openai: [], openrouter: [] });
     expect(store.getState()).toMatchObject({ provider: 'gemini', modelId: 'gemini-nano-banana-2.1', resolutionKey: before.resolutionKey, quality: before.quality, prompt: 'a mossy stone' });
     expect(store.getState().catalog.gemini).toEqual([FLASH]);
   });
@@ -133,10 +133,10 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
     const store = setup();
     store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
     store.getState().setResolution('4K');
-    store.getState().setCatalog({ gemini: [], openai: [] });
+    store.getState().setCatalog({ gemini: [], openai: [], openrouter: [] });
     store.getState().setMaxTextureSize(4096);
     expect(store.getState()).toMatchObject({ modelId: 'gemini-3.1-flash-image', resolutionKey: '4K' });
-    store.getState().setCatalog({ gemini: [{ ...FLASH, resolutions: [{ key: '1K', sizePx: 1024 }] }], openai: [] });
+    store.getState().setCatalog({ gemini: [{ ...FLASH, resolutions: [{ key: '1K', sizePx: 1024 }] }], openai: [], openrouter: [] });
     expect(store.getState()).toMatchObject({ modelId: 'gemini-3.1-flash-image', resolutionKey: '1K' });
   });
 
@@ -144,7 +144,7 @@ describe('generateStore: model, resolution and quality (R4, R5)', () => {
     const store = setup();
     store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
     store.getState().setResolution('4K');
-    store.getState().setCatalog({ gemini: [{ ...FLASH, resolutions: [{ key: '1K', sizePx: 1024 }] }], openai: [] });
+    store.getState().setCatalog({ gemini: [{ ...FLASH, resolutions: [{ key: '1K', sizePx: 1024 }] }], openai: [], openrouter: [] });
     expect(store.getState()).toMatchObject({ modelId: 'gemini-3.1-flash-image', resolutionKey: '1K' });
   });
 });
@@ -164,7 +164,7 @@ describe('generateStore: restoring a project\'s saved settings (R22) and the not
     store.getState().setMaxTextureSize(8192);
     store.getState().restoreSettings(saved);
     expect(store.getState()).toMatchObject({ prompt: 'saved prompt', provider: 'gemini', modelId: 'gemini-3.1-flash-image', resolutionKey: '4K', quality: 'high', atlasKey: '4K' });
-    store.getState().setCatalog({ gemini: [FLASH], openai: [] });
+    store.getState().setCatalog({ gemini: [FLASH], openai: [], openrouter: [] });
     expect(store.getState().modelId).toBe('gemini-3.1-flash-image');
   });
 
@@ -372,7 +372,7 @@ describe('generateStore: atlas render (R37)', () => {
   it('R37 neither the model, the resolution nor the atlas size changes the render', () => {
     const store = createGenerateStore();
     store.getState().setMaxTextureSize(8192);
-    store.getState().setCatalog({ gemini: [NANO, FLASH], openai: [] });
+    store.getState().setCatalog({ gemini: [NANO, FLASH], openai: [], openrouter: [] });
     store.getState().setAtlasRender('viewport');
     store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
     store.getState().setResolution('2K');
@@ -404,7 +404,7 @@ describe('generateStore: tile borders (R40)', () => {
   it('R40 neither the model, the sizes nor the render change the setting', () => {
     const store = createGenerateStore();
     store.getState().setMaxTextureSize(8192);
-    store.getState().setCatalog({ gemini: [NANO, FLASH], openai: [] });
+    store.getState().setCatalog({ gemini: [NANO, FLASH], openai: [], openrouter: [] });
     store.getState().setTileBorder(false);
     store.getState().selectModel('gemini', 'gemini-3.1-flash-image');
     store.getState().setResolution('2K');

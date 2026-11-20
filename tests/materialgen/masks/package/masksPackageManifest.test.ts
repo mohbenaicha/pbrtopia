@@ -38,6 +38,7 @@ describe('the masks package manifest (masks-package R1, R2, R3, R13)', () => {
     const csp = (JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8')) as { app: { security: { csp: string } } }).app.security.csp;
     const connect = csp.split(';').map((part) => part.trim()).find((part) => part.startsWith('connect-src')) ?? '';
     const hosts = connect.split(/\s+/).filter((token) => token.startsWith('https://')).sort();
-    expect(hosts).toEqual(['https://*.hf.co', 'https://api.openai.com', 'https://cdn.jsdelivr.net', 'https://generativelanguage.googleapis.com', 'https://huggingface.co']);
+    // the model apis are Gemini, OpenAI and (generate R49) OpenRouter
+    expect(hosts).toEqual(['https://*.hf.co', 'https://api.openai.com', 'https://cdn.jsdelivr.net', 'https://generativelanguage.googleapis.com', 'https://huggingface.co', 'https://openrouter.ai']);
   });
 });

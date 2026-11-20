@@ -24,7 +24,7 @@ export interface RunBackends {
   keys: Pick<ProviderKeySource, 'resolveKey'>;
 }
 
-const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
+const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI', openrouter: 'OpenRouter' };
 
 const missingKey = (provider: Provider): ProviderError => ({ category: 'auth', retryable: false, message: `Add your ${PROVIDER_NAME[provider]} key in Settings > Keys` });
 

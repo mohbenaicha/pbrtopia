@@ -54,21 +54,21 @@ describe('buildPresetPlan', () => {
 
 describe('pickPresetModel', () => {
   const asImage = (provider: Provider, id: string, verified = true) => ({ ...sunburst, provider, id, role: 'image', verified }) as ProviderModelRecord;
-  const keys = (gemini: boolean, openai: boolean): Record<Provider, boolean> => ({ gemini, openai });
+  const keys = (gemini: boolean, openai: boolean): Record<Provider, boolean> => ({ gemini, openai, openrouter: false });
 
   it('custom R4 sunburst is chosen when listed and verified, whatever keys exist', () => {
-    const catalog = { gemini: [asImage('gemini', 'g1')], openai: [sunburst] };
+    const catalog = { gemini: [asImage('gemini', 'g1')], openai: [sunburst], openrouter: [] };
     expect(pickPresetModel(catalog, keys(true, false))).toBe(sunburst);
   });
 
   it('custom R4 without sunburst the first verified image model of a keyed provider is used, Gemini first', () => {
-    const catalog = { gemini: [asImage('gemini', 'g-unverified', false), asImage('gemini', 'g1')], openai: [asImage('openai', 'o1')] };
+    const catalog = { gemini: [asImage('gemini', 'g-unverified', false), asImage('gemini', 'g1')], openai: [asImage('openai', 'o1')], openrouter: [] };
     expect(pickPresetModel(catalog, keys(true, true))?.id).toBe('g1');
     expect(pickPresetModel(catalog, keys(false, true))?.id).toBe('o1');
   });
 
   it('custom R4 no sunburst and no usable keyed model gives null', () => {
-    const catalog = { gemini: [asImage('gemini', 'g1')], openai: [asImage('openai', 'o1', false)] };
+    const catalog = { gemini: [asImage('gemini', 'g1')], openai: [asImage('openai', 'o1', false)], openrouter: [] };
     expect(pickPresetModel(catalog, keys(false, true))).toBeNull();
     expect(pickPresetModel(catalog, keys(false, false))).toBeNull();
   });

@@ -1,6 +1,6 @@
 import type { ProviderModelRecord } from '../../generation';
-import { PROVIDERS, type Provider } from '../../keys';
-import type { CatalogCacheRecord } from '../../projects/records/appSettingsRecord';
+import type { Provider } from '../../keys';
+import { CACHED_PROVIDERS, type CatalogCacheRecord } from '../../projects/records/appSettingsRecord';
 
 const isText = (value: unknown): value is string => typeof value === 'string' && value !== '';
 
@@ -23,7 +23,7 @@ function readCachedModel(provider: Provider, entry: Record<string, unknown>): Pr
 export function readCachedModelLists(cache: CatalogCacheRecord | null): Partial<Record<Provider, ProviderModelRecord[]>> {
   const lists: Partial<Record<Provider, ProviderModelRecord[]>> = {};
   if (cache === null) return lists;
-  for (const provider of PROVIDERS) {
+  for (const provider of CACHED_PROVIDERS) {
     const models = cache[provider].map((entry) => readCachedModel(provider, entry)).filter((model): model is ProviderModelRecord => model !== null);
     if (models.length > 0) lists[provider] = models;
   }

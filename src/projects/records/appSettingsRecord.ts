@@ -1,10 +1,15 @@
 import { isRawRecord, type RawRecord } from './fieldReaders';
 import { CURRENT_SCHEMA_VERSION } from './projectRecords';
+import { STORED_PROVIDERS, type StoredProvider } from './storedProviders';
 
 interface EnhancerChoiceRecord {
-  provider: 'gemini' | 'openai';
+  provider: StoredProvider;
   modelId: string;
 }
+
+// The providers whose model list is fetched and cached. A provider whose models are shipped with the app (OpenRouter, generate R44) is not here:
+// its list is always the shipped table, so removing a model never leaves it in a cache.
+export const CACHED_PROVIDERS = ['gemini', 'openai'] as const;
 
 // The model list last fetched from the providers. Entries are generation's ProviderModelRecord; `projects/` keeps them as stored.
 export interface CatalogCacheRecord {
@@ -51,7 +56,7 @@ function readEnhancer(value: unknown): EnhancerChoiceRecord | null {
   if (!isRawRecord(value)) return null;
   const modelId = nonEmptyText(value['modelId']);
   const provider = value['provider'];
-  return modelId !== null && (provider === 'gemini' || provider === 'openai') ? { provider, modelId } : null;
+  return modelId !== null && STORED_PROVIDERS.some((name) => name === provider) ? { provider: provider as StoredProvider, modelId } : null;
 }
 
 const readImageMaxPx = (value: unknown): ImageMaxPx | null => (value === 512 || value === 1024 || value === 2048 ? value : null);

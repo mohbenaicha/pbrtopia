@@ -27,7 +27,7 @@ function panel() {
   const store = createGenerateStore();
   const state = store.getState();
   state.setMaxTextureSize(8192);
-  state.setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')], openai: [known('openai', 'gpt-6-luna')] });
+  state.setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')], openai: [known('openai', 'gpt-6-luna')], openrouter: [] });
   state.setHasKey('gemini', true); // no OpenAI key, so the default enhancer is Gemini 3.8 Flash
   state.selectModel('gemini', 'gemini-nano-banana-2.1');
   state.setAtlasKey('2K');
@@ -90,7 +90,7 @@ describe('enhancerSnapshot: the key of the panel (R41)', () => {
   it('R41 changing the image model or its resolution does not change the key of the panel', () => {
     const store = panel();
     const before = buildPanelEnhancerKey(store.getState())!;
-    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3-pro-image'), known('gemini', 'gemini-3.8-flash')], openai: [] });
+    store.getState().setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3-pro-image'), known('gemini', 'gemini-3.8-flash')], openai: [], openrouter: [] });
     store.getState().selectModel('gemini', 'gemini-3-pro-image');
     store.getState().setResolution('2K');
     expect(isSameEnhancerKey(before, buildPanelEnhancerKey(store.getState())!)).toBe(true);

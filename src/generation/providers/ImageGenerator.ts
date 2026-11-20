@@ -17,6 +17,7 @@ export interface GenerateRequest {
 export interface GeneratedImage {
   blob: Blob;
   mimeType: string;
+  costUsd?: number; // generate R46: the cost in USD when the provider reports one (OpenRouter `usage.cost`); not shown in the app
 }
 
 // R7: one image request. Never throws for provider or network failures.

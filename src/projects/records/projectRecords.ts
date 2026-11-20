@@ -1,6 +1,7 @@
 import type { MeshRecord } from './meshRecord';
 import type { CustomPlanStoredRecord, NamedPlanStoredRecord } from './customPlanRecords';
 import type { PictureRecord, SlotRecord } from './pictureRecords';
+import type { StoredProvider } from './storedProviders';
 
 // The version of the set and settings records. The project record has its own, below: it moved to 2 with pictures and slots (specs/app/textures).
 export const CURRENT_SCHEMA_VERSION = 1;
@@ -20,7 +21,7 @@ export interface GenerateSettingsRecord {
   prompt: string;
   referenceImages: ReferenceImageRecord[];
   channel: 'albedo';
-  provider: 'gemini' | 'openai';
+  provider: StoredProvider;
   modelId: string;
   resolutionKey: '1K' | '2K' | '2.8K' | '4K'; // the output size asked of the image model
   atlasKey: '1K' | '2K' | '4K'; // the size of the atlas sent in (generate R16)

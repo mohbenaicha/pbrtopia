@@ -2,6 +2,7 @@ import type { MeshRecord, UnwrapReport } from './meshRecord';
 import { FieldProblem, readBlobKey, readChoice, readCount, readDuration, readFlag, readList, readNonEmptyText, readObject, readOptional, readText, readTimestamp, type RawRecord } from './fieldReaders';
 import { readCustomPlan, readCustomSetups } from './customPlanRecords';
 import { readPictures, readSlots } from './pictureRecords';
+import { STORED_PROVIDERS } from './storedProviders';
 import { PROJECT_SCHEMA_VERSION, normalizeProjectName, type GenerateSettingsRecord, type ProjectRecord, type ReferenceImageRecord } from './projectRecords';
 
 function readUnwrap(value: unknown, path: string): UnwrapReport {
@@ -48,7 +49,7 @@ function readGenerateSettings(value: unknown, path: string): GenerateSettingsRec
     prompt: readText(raw['prompt'], `${path}.prompt`),
     referenceImages: readList(raw['referenceImages'], `${path}.referenceImages`, readReferenceImage),
     channel: readChoice(raw['channel'], `${path}.channel`, ['albedo'] as const),
-    provider: readChoice(raw['provider'], `${path}.provider`, ['gemini', 'openai'] as const),
+    provider: readChoice(raw['provider'], `${path}.provider`, STORED_PROVIDERS),
     modelId: readText(raw['modelId'], `${path}.modelId`),
     resolutionKey: readChoice(raw['resolutionKey'], `${path}.resolutionKey`, ['1K', '2K', '2.8K', '4K'] as const),
     atlasKey: raw['atlasKey'] === undefined ? '2K' : readChoice(raw['atlasKey'], `${path}.atlasKey`, ['1K', '2K', '4K'] as const), // absent in projects saved before generate R16

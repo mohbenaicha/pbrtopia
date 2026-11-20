@@ -12,7 +12,7 @@ export interface IdeasBackends {
 /** `cancelled`: the unlock question was cancelled or the request was aborted; nothing is shown (R72). */
 export type IdeasOutcome = { kind: 'ideas'; ideas: string[] } | { kind: 'error'; message: string } | { kind: 'cancelled' };
 
-const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
+const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI', openrouter: 'OpenRouter' };
 
 /** Generation R72: one text-only call to the enhancer model: unlock, the key (read now, never kept), the shared adapter, the parse. */
 export async function requestPromptIdeas(target: DescribeTarget, userText: string, backends: IdeasBackends, signal: AbortSignal): Promise<IdeasOutcome> {

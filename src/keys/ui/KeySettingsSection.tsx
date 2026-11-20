@@ -20,8 +20,8 @@ interface KeySettingsSectionProps {
   onKeySaved?: ((provider: Provider) => void) | undefined; // after a key was saved or replaced (settings R3); the app checks it (R11)
 }
 
-const LABELS: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
-const EXAMPLE_NAMES: Record<Provider, string> = { gemini: 'GEMINI_API_KEY', openai: 'OPENAI_API_KEY' };
+const LABELS: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI', openrouter: 'OpenRouter' };
+const EXAMPLE_NAMES: Record<Provider, string> = { gemini: 'GEMINI_API_KEY', openai: 'OPENAI_API_KEY', openrouter: 'OR_API_KEY' };
 
 // R1, R3, R6, R7, R9, R12, R13, R24: the "API keys" part of Settings. It reads the stored vault when it opens and follows its status (and the environment switch) after that.
 export function KeySettingsSection({ vault, prompt, env, rejectedKeys, onKeySaved }: KeySettingsSectionProps): React.JSX.Element {

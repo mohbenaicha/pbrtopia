@@ -9,7 +9,7 @@ export interface ModelCatalogFeed {
   ready: boolean; // the stored vault has been read, so `hasKey` is true to the stored keys
 }
 
-const EMPTY: ModelCatalogFeed = { catalog: { gemini: [], openai: [] }, hasKey: { gemini: false, openai: false }, ready: false };
+const EMPTY: ModelCatalogFeed = { catalog: { gemini: [], openai: [], openrouter: [] }, hasKey: { gemini: false, openai: false, openrouter: false }, ready: false };
 
 /** Generation R65, R67: the models and key flags of the providers that have a key, kept in step with the vault (Settings > Keys). */
 export function useModelCatalogFeed(): ModelCatalogFeed {
@@ -21,7 +21,8 @@ export function useModelCatalogFeed(): ModelCatalogFeed {
     return watchModelCatalog({
       keys,
       discover: discoverModels,
-      onChange: (keyed, catalog) => setFeed({ catalog, hasKey: Object.fromEntries(PROVIDERS.map((provider) => [provider, keyed.includes(provider)])) as Record<Provider, boolean>, ready: true }),
+      // The material generator's saved plans do not hold OpenRouter models yet, so it is offered none (generate R43).
+      onChange: (keyed, catalog) => setFeed({ catalog: { ...catalog, openrouter: [] }, hasKey: Object.fromEntries(PROVIDERS.map((provider) => [provider, keyed.includes(provider)])) as Record<Provider, boolean>, ready: true }),
     });
   }, [keys, keysLoaded, discoverModels]);
 

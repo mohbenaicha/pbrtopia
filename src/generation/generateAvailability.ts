@@ -16,7 +16,7 @@ export interface GenerateAvailability {
   imageCount?: number; // custom R1: how many images an enabled Generate (custom) requests, for the button's tooltip
 }
 
-const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
+const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI', openrouter: 'OpenRouter' };
 
 /** The models Automatic stands for, in order: GPT-6 Luna when an OpenAI key exists, else Gemini 3.8 Flash when a Gemini key exists. */
 const AUTOMATIC_ENHANCERS: readonly EnhancerChoice[] = [

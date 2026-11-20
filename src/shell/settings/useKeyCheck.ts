@@ -16,7 +16,7 @@ export interface KeyCheckState {
  */
 export function useKeyCheck(vault: Pick<ProviderKeySource, 'hasKey' | 'resolveKey' | 'on'>, discover: typeof discoverModels): KeyCheckState {
   const [flags, setFlags] = useState<RejectedKeyFlags>({});
-  const runs = useRef<Record<Provider, number>>({ gemini: 0, openai: 0 }); // the latest check of each provider; an older answer is dropped
+  const runs = useRef<Record<Provider, number>>({ gemini: 0, openai: 0, openrouter: 0 }); // the latest check of each provider; an older answer is dropped
   const calls = useRef<Partial<Record<Provider, AbortController>>>({});
   const mounted = useRef(true); // the key section may finish a save after the Settings view was left
 

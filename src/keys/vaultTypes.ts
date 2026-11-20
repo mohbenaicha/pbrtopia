@@ -1,6 +1,6 @@
 import type { SealedBytes } from './crypto/sealedBytes';
 
-export const PROVIDERS = ['gemini', 'openai'] as const;
+export const PROVIDERS = ['gemini', 'openai', 'openrouter'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 export const VAULT_VERSION = 1;

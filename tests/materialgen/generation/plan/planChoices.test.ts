@@ -5,7 +5,7 @@ import { writePlan } from '@mat/generation/plan/planRecord';
 import { assignMap } from '@mat/generation/plan/editPlan';
 import type { SavedSetup } from '@mat/generation/plan/planTypes';
 
-const catalog = { gemini: [], openai: [] };
+const catalog = { gemini: [], openai: [], openrouter: [] };
 const MAX_TEXTURE = 4096;
 const preset = (id: string) => buildPresetPlan(id, catalog, MAX_TEXTURE)!;
 

@@ -13,9 +13,17 @@ describe('buildModelCatalog', () => {
     expect(catalog.gemini.some((model) => model.role === 'vision-text')).toBe(true);
   });
 
+  it('R43 (generate) an OpenRouter key offers the plug-in models, all image models, from the shipped table', () => {
+    const catalog = buildModelCatalog(['openrouter']);
+    expect(catalog.openrouter.length).toBeGreaterThan(0);
+    expect(catalog.openrouter.every((model) => model.provider === 'openrouter' && model.role === 'image' && model.verified)).toBe(true);
+    expect(catalog.openrouter).toEqual(KNOWN_MODELS.filter((model) => model.provider === 'openrouter'));
+    expect(buildModelCatalog(['gemini']).openrouter).toEqual([]);
+  });
+
   it('R20 holds nothing for a provider without a key', () => {
     expect(buildModelCatalog(['gemini']).openai).toEqual([]);
-    expect(buildModelCatalog([])).toEqual({ gemini: [], openai: [] });
+    expect(buildModelCatalog([])).toEqual({ gemini: [], openai: [], openrouter: [] });
   });
 
   it('R20 a discovered list replaces the shipped list of its provider only', () => {

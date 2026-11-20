@@ -15,8 +15,8 @@ interface ModelSelectProps {
   label?: string; // the field's name; a setup card names its image ("Image 2 model")
 }
 
-const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
-const PROVIDERS_IN_ORDER: Provider[] = ['gemini', 'openai'];
+const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI', openrouter: 'OpenRouter' };
+const PROVIDERS_IN_ORDER: Provider[] = ['gemini', 'openai', 'openrouter'];
 
 // R4: the image models of the providers that have a key, written "Provider: name"; a model the table does not know is marked unverified.
 export function ModelSelect({ catalog, hasKey, provider, modelId, today, onSelect, label = 'Model' }: ModelSelectProps): React.JSX.Element {

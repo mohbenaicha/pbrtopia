@@ -6,7 +6,7 @@ export interface ModelProblemInput {
   hasKey: Record<Provider, boolean>;
 }
 
-const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
+const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI', openrouter: 'OpenRouter' };
 
 // Generate R19: why an image model cannot be used right now (not listed, not verified, no key), or null. Pure, so the projection panel and the material app share it.
 export function describeImageModelProblem(input: ModelProblemInput, provider: Provider, modelId: string): string | null {

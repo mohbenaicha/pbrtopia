@@ -9,8 +9,8 @@ export interface ModelChoice {
   deprecated?: boolean;
 }
 
-const GROUP_ORDER: Provider[] = ['gemini', 'openai'];
-const GROUP_HEADING: Record<Provider, string> = { gemini: 'Google', openai: 'OpenAI' };
+const GROUP_ORDER: Provider[] = ['gemini', 'openai', 'openrouter'];
+const GROUP_HEADING: Record<Provider, string> = { gemini: 'Google', openai: 'OpenAI', openrouter: 'OpenRouter' };
 
 const byLabel = (a: SelectOption, b: SelectOption): number => a.label.localeCompare(b.label);
 

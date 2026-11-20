@@ -9,7 +9,7 @@ interface DescribeBackends {
   createPromptEnhancer(provider: Provider): PromptEnhancer;
 }
 
-const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI' };
+const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI', openrouter: 'OpenRouter' };
 
 /** Masks R1, R64, R67: one call of the describe model with the text and the albedo reference; the key is read per call and never kept. */
 export function askDescribeModel({ target, keys, createPromptEnhancer }: DescribeBackends): (text: string, image: Blob, signal: AbortSignal) => Promise<StepOutcome<string>> {

@@ -388,7 +388,7 @@ describe('SetupOverlay: Confirm and Cancel (custom R7)', () => {
   });
 
   it('custom R19 a sheet whose provider has no key blocks Confirm', () => {
-    setupOverlay({ hasKey: { gemini: true, openai: false } });
+    setupOverlay({ hasKey: { gemini: true, openai: false, openrouter: false } });
     expect(describeTooltipOf(screen.getByRole('button', { name: 'Confirm' }))).toBe('Confirm. Image 1: Add a OpenAI key in Settings.');
   });
 

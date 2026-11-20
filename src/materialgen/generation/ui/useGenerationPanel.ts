@@ -67,7 +67,7 @@ export function useGenerationPanel({ store, projectId, record, canWrite, project
   const displayCatalog = useMemo(() => withKnownModels(models.catalog), [models.catalog]);
   // R62: the hint reads the plan as if every key existed, so it shows its images and prices before any key is added; it never gates Generate.
   const hint = useMemo(() => {
-    const preview = inspectPlan(choice.plan, { catalog: displayCatalog, hasKey: { gemini: true, openai: true }, describeProvider: describeModel?.provider ?? null, referenceCount: 0, hasExistingAlbedo: true });
+    const preview = inspectPlan(choice.plan, { catalog: displayCatalog, hasKey: { gemini: true, openai: true, openrouter: false }, describeProvider: describeModel?.provider ?? null, referenceCount: 0, hasExistingAlbedo: true });
     return buildCostHint(preview, record.colorMode, record.size, describeModel?.modelId ?? null);
   }, [choice.plan, displayCatalog, describeModel, record.colorMode, record.size]);
   const referenceBlobs = useMemo(() => references.references.map((reference) => reference.blob), [references.references]);

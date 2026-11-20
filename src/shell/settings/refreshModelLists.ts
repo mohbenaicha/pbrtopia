@@ -1,7 +1,9 @@
 import type { discoverModels } from '../../generation';
 import { PROVIDERS, type Provider, type ProviderKeySource } from '../../keys';
-import type { CatalogCacheRecord } from '../../projects/records/appSettingsRecord';
+import { CACHED_PROVIDERS, type CatalogCacheRecord } from '../../projects/records/appSettingsRecord';
 import { PROVIDER_NAMES } from './providerNames';
+
+type CachedProvider = (typeof CACHED_PROVIDERS)[number];
 
 interface RefreshDeps {
   keyed: Provider[];
@@ -42,11 +44,12 @@ export async function refreshModelLists(deps: RefreshDeps): Promise<RefreshOutco
   let answered = false;
   for (const provider of PROVIDERS) {
     const answer = answers.find(([name]) => name === provider)?.[1];
+    const cached = (CACHED_PROVIDERS as readonly Provider[]).includes(provider);
     if (answer !== undefined && 'entries' in answer) {
-      patch[provider] = answer.entries;
-      answered = true;
+      if (cached) patch[provider as CachedProvider] = answer.entries;
+      answered = answered || cached;
     } else {
-      patch[provider] = deps.previous?.[provider] ?? [];
+      if (cached) patch[provider as CachedProvider] = deps.previous?.[provider as CachedProvider] ?? [];
       if (answer !== undefined) problems.push(answer.problem);
     }
   }

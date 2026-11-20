@@ -16,7 +16,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const row = (name: 'Gemini' | 'OpenAI') => within(screen.getByRole('group', { name }));
+const row = (name: 'Gemini' | 'OpenAI' | 'OpenRouter') => within(screen.getByRole('group', { name }));
 const switchRow = () => screen.queryByRole('switch', { name: 'Read keys from environment' });
 
 async function renderEnv(variables: Record<string, string> = {}, options: Parameters<typeof createFakeEnvKeySource>[1] = {}, enabled = false) {
@@ -66,6 +66,18 @@ describe('keys ui environment keys', () => {
     await user.click(row('Gemini').getByRole('button', { name: 'Cancel' }));
     await user.click(row('OpenAI').getByRole('button', { name: 'Add name' }));
     expect((row('OpenAI').getByLabelText('OpenAI environment variable name') as HTMLInputElement).placeholder).toBe('OPENAI_API_KEY');
+  });
+
+  it('R1 (generate R43) the OpenRouter row suggests OR_API_KEY and reads that variable', async () => {
+    const { user, choices } = await renderEnv({ OR_API_KEY: 'or-abc' });
+    await waitFor(() => expect(switchRow()).not.toBeNull());
+    await user.click(switchRow()!);
+    await user.click(row('OpenRouter').getByRole('button', { name: 'Add name' }));
+    const field = row('OpenRouter').getByLabelText('OpenRouter environment variable name') as HTMLInputElement;
+    expect(field.placeholder).toBe('OR_API_KEY');
+    await user.type(field, 'OR_API_KEY');
+    await user.click(row('OpenRouter').getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(choices.nameOf('openrouter')).toBe('OR_API_KEY'));
   });
 
   it('R15 no rule on names: any typed name enables Save and no format message shows; only an empty field disables it', async () => {

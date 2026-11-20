@@ -1,9 +1,10 @@
 import { FieldProblem, readChoice, readCount, readList, readNonEmptyText, readObject, readText, type RawRecord } from './fieldReaders';
+import { STORED_PROVIDERS, type StoredProvider } from './storedProviders';
 
 // Custom generation R28 (data model): the plan a project keeps with its Generate settings. Same shapes as `generation/custom/planTypes`;
 // repeated here because the project store does not import generation (A3, A5).
 export interface SheetSettingsRecord {
-  provider: 'gemini' | 'openai';
+  provider: StoredProvider;
   modelId: string; // a model the catalog may no longer list: kept, the panel marks it unavailable (R28)
   resolutionKey: '1K' | '2K' | '2.8K' | '4K';
   quality: string | null;
@@ -32,7 +33,7 @@ function readSheetSettings(value: unknown, path: string): SheetSettingsRecord {
   const quality = raw['quality'];
   if (quality !== null && typeof quality !== 'string') throw new FieldProblem(`${path}.quality`);
   return {
-    provider: readChoice(raw['provider'], `${path}.provider`, ['gemini', 'openai'] as const),
+    provider: readChoice(raw['provider'], `${path}.provider`, STORED_PROVIDERS),
     modelId: readText(raw['modelId'], `${path}.modelId`),
     resolutionKey: readChoice(raw['resolutionKey'], `${path}.resolutionKey`, ['1K', '2K', '2.8K', '4K'] as const),
     quality,

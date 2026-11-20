@@ -1,4 +1,5 @@
 import type { Provider } from '../../keys';
+import { OPENROUTER_MODELS } from '../providers/openrouter/registry';
 import { buildRatioListRule, type CanvasRule } from './canvasRules';
 import type { KnownModelEntry, ResolutionOption } from './modelTypes';
 
@@ -41,6 +42,8 @@ export const KNOWN_MODELS: readonly KnownModelEntry[] = [
   { provider: 'openai', id: 'gpt-image-2', role: 'image', displayName: 'GPT Image 2', verified: true, deprecated: true, resolutions: OPENAI_SIZES, canvases: OPENAI_CANVASES, qualityLevels: ['low', 'medium', 'high'], defaultQuality: 'low', experimentalResolutions: ['2K', '2.8K'], verifiedAt: VERIFIED_AT, source: OPENAI_DOCS },
   { provider: 'openai', id: 'gpt-6-luna', role: 'vision-text', displayName: 'GPT-6 Luna', verified: true, resolutions: [], qualityLevels: [], enhancerLevel: 'none', verifiedAt: '2026-10-23', source: ['OpenAI models list (live, 2026-10-23)', 'research/api/live-check.md enhancer probes'] },
   { provider: 'openai', id: 'gpt-5.6-luna', role: 'vision-text', displayName: 'GPT-5.6 Luna', verified: true, resolutions: [], qualityLevels: [], enhancerLevel: 'none', verifiedAt: VERIFIED_AT, source: ['developers.openai.com pricing'] },
+  // generate R44: the OpenRouter rows come from the plug-ins (providers/openrouter/registry.ts), one per model.
+  ...OPENROUTER_MODELS.map((plugin) => plugin.row),
 ];
 
 const STALE_AFTER_DAYS = 90;

@@ -7,11 +7,12 @@ const model = (provider: 'gemini' | 'openai', id: string, role: ProviderModelRec
 const catalog: ModelCatalog = {
   gemini: [model('gemini', 'g-img', 'image'), model('gemini', 'g-text'), model('gemini', 'g-new', 'vision-text', false)],
   openai: [model('openai', 'o-text')],
+  openrouter: [],
 };
 
 describe('buildEnhancerOptions', () => {
   it('settings R5 there is no Automatic row; with nothing stored the default is shown: GPT-6 Luna with an OpenAI key, else Gemini 3.8 Flash', () => {
-    const full: ModelCatalog = { gemini: [model('gemini', 'gemini-3.8-flash'), model('gemini', 'g-text')], openai: [model('openai', 'gpt-6-luna'), model('openai', 'o-text')] };
+    const full: ModelCatalog = { gemini: [model('gemini', 'gemini-3.8-flash'), model('gemini', 'g-text')], openai: [model('openai', 'gpt-6-luna'), model('openai', 'o-text')], openrouter: [] };
     expect(buildEnhancerOptions({ keyed: ['gemini', 'openai'], catalog: full, stored: null }).value).toBe('openai:gpt-6-luna');
     const built = buildEnhancerOptions({ keyed: ['gemini'], catalog: full, stored: null });
     expect(built.value).toBe('gemini:gemini-3.8-flash');
@@ -32,7 +33,7 @@ describe('buildEnhancerOptions', () => {
   });
 
   it('settings R5 a deprecated model is listed as "(deprecated)" and disabled, and is never the model shown by default', () => {
-    const deprecated: ModelCatalog = { gemini: [], openai: [{ ...model('openai', 'o-old'), deprecated: true }, model('openai', 'o-text')] };
+    const deprecated: ModelCatalog = { gemini: [], openai: [{ ...model('openai', 'o-old'), deprecated: true }, model('openai', 'o-text')], openrouter: [] };
     const built = buildEnhancerOptions({ keyed: ['openai'], catalog: deprecated, stored: null });
     expect(built.options.find((option) => option.value === 'openai:o-old')).toMatchObject({ label: 'OpenAI · Name o-old (deprecated)', disabled: true });
     expect(built.value).toBe('openai:o-text');

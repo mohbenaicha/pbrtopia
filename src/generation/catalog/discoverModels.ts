@@ -1,13 +1,17 @@
 import type { Provider } from '../../keys';
 import type { ProviderError, Result } from '../providers/providerTypes';
+import type { OpenRouterModelPlugin } from '../providers/openrouter/openrouterModelPlugin';
+import { OPENROUTER_KEY_URL } from '../providers/openrouter/openrouterRequests';
+import { OPENROUTER_MODELS } from '../providers/openrouter/registry';
 import { sendProviderRequest } from '../providers/sendProviderRequest';
 import { filterModelIds, type CandidateModel, type ListedModel } from './filterModelIds';
 import { findKnownModel } from './knownModels';
-import type { ProviderModelRecord } from './modelTypes';
+import type { KnownModelEntry, ProviderModelRecord } from './modelTypes';
 
 interface DiscoverDeps {
   fetchImpl?: typeof fetch;
   today?: string; // YYYY-MM-DD; today by default
+  openRouterPlugins?: readonly OpenRouterModelPlugin[]; // generate R44: the registered OpenRouter models by default
 }
 
 const GEMINI_LIST_URL = 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000';
@@ -30,14 +34,14 @@ const parseGeminiList = (body: unknown): ListedModel[] =>
     return [{ id: entry.name.replace(/^models\//, ''), methods }];
   });
 
+const withoutBookkeeping = (known: KnownModelEntry): ProviderModelRecord =>
+  Object.fromEntries(Object.entries(known).filter(([key]) => key !== 'verifiedAt' && key !== 'source')) as unknown as ProviderModelRecord;
+
 // A candidate as the app shows it: the table row for a known id (without its bookkeeping), a bare unverified entry for any other.
 function joinWithKnownTable(provider: Provider, candidate: CandidateModel): ProviderModelRecord {
   const known = findKnownModel(provider, candidate.id);
   const retiring = candidate.shutdownDate === undefined ? {} : { retiring: { shutdownDate: candidate.shutdownDate } };
-  if (known !== null) {
-    const info = Object.fromEntries(Object.entries(known).filter(([key]) => key !== 'verifiedAt' && key !== 'source')) as unknown as ProviderModelRecord;
-    return { ...info, ...retiring };
-  }
+  if (known !== null) return { ...withoutBookkeeping(known), ...retiring };
   return { provider, id: candidate.id, role: candidate.role, displayName: candidate.id, verified: false, resolutions: [], qualityLevels: [], ...retiring };
 }
 
@@ -58,6 +62,13 @@ async function listGemini(apiKey: string, signal: AbortSignal, fetchImpl: typeof
   return { ok: true, value: listed };
 }
 
+// Generate R48: OpenRouter's models are the registered plug-ins. The call only checks the key; whatever OpenRouter lists beyond the plug-ins is not offered.
+async function discoverOpenRouterModels(apiKey: string, signal: AbortSignal, fetchImpl: typeof fetch, plugins: readonly OpenRouterModelPlugin[]): Promise<Result<ProviderModelRecord[], ProviderError>> {
+  const answer = await sendProviderRequest({ provider: 'openrouter', url: OPENROUTER_KEY_URL, method: 'GET', headers: { Authorization: `Bearer ${apiKey}` } }, { apiKey, signal }, fetchImpl);
+  if (!answer.ok) return answer;
+  return { ok: true, value: plugins.map((plugin) => withoutBookkeeping(plugin.row)) };
+}
+
 /**
  * Generate R4: the models the stored key can use, for the model picker. Lists the provider's models, filters them (filterModelIds) and joins
  * them with the shipped table; ids not in the table come back unverified with no sizes or levels. Sorted image models first, verified before
@@ -66,6 +77,7 @@ async function listGemini(apiKey: string, signal: AbortSignal, fetchImpl: typeof
 export async function discoverModels(provider: Provider, apiKey: string, signal: AbortSignal, deps: DiscoverDeps = {}): Promise<Result<ProviderModelRecord[], ProviderError>> {
   const fetchImpl = deps.fetchImpl ?? fetch;
   const today = deps.today ?? new Date().toISOString().slice(0, 10);
+  if (provider === 'openrouter') return discoverOpenRouterModels(apiKey, signal, fetchImpl, deps.openRouterPlugins ?? OPENROUTER_MODELS);
   let listed: Result<ListedModel[], ProviderError>;
   if (provider === 'gemini') listed = await listGemini(apiKey, signal, fetchImpl);
   else {

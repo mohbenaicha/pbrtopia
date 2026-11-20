@@ -40,7 +40,7 @@ interface FakeOptions {
 /** An idle generation panel over the shipped model table, with spies for every action. */
 export function makeGenerationPanel({ keyed = ['gemini'], presetId = 'preset-1', plan: givenPlan, referenceCount = 0, run = {}, describeProvider = keyed[0] ?? null, ideas = {} }: FakeOptions = {}): GenerationPanel {
   const catalog = buildModelCatalog(keyed);
-  const hasKey = { gemini: keyed.includes('gemini'), openai: keyed.includes('openai') };
+  const hasKey = { gemini: keyed.includes('gemini'), openai: keyed.includes('openai'), openrouter: false };
   const plan = givenPlan ?? buildPresetPlan(presetId, catalog, MAX_TEXTURE)!;
   const environment = { catalog, hasKey, describeProvider, referenceCount, hasExistingAlbedo: false };
   const report = inspectPlan(plan, environment);
@@ -51,7 +51,7 @@ export function makeGenerationPanel({ keyed = ['gemini'], presetId = 'preset-1',
     maxTextureSize: MAX_TEXTURE,
     environment,
     report,
-    hint: buildCostHint(inspectPlan(plan, { catalog: withKnownModels(catalog), hasKey: { gemini: true, openai: true }, describeProvider: 'gemini', referenceCount: 0, hasExistingAlbedo: true }), 'albedo', 1024, null),
+    hint: buildCostHint(inspectPlan(plan, { catalog: withKnownModels(catalog), hasKey: { gemini: true, openai: true, openrouter: false }, describeProvider: 'gemini', referenceCount: 0, hasExistingAlbedo: true }), 'albedo', 1024, null),
     references: { references: [], notice: null, addFiles: vi.fn(), remove: vi.fn() },
     run: idleRun(run),
     masksProblem: null,

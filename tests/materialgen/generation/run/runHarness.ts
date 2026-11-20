@@ -10,8 +10,8 @@ import type { GenerationPlan } from '@mat/generation/plan/planTypes';
 import { buildJobs } from '@mat/generation/run/buildJobs';
 import type { DescribeAnswer, ImageJob, RunPorts, StepResult } from '@mat/generation/run/runTypes';
 
-export const CATALOG: ModelCatalog = { gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai') };
-export const ENVIRONMENT: PlanEnvironment = { catalog: CATALOG, hasKey: { gemini: true, openai: true }, describeProvider: 'openai', referenceCount: 0, hasExistingAlbedo: false };
+export const CATALOG: ModelCatalog = { gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai'), openrouter: [] };
+export const ENVIRONMENT: PlanEnvironment = { catalog: CATALOG, hasKey: { gemini: true, openai: true, openrouter: false }, describeProvider: 'openai', referenceCount: 0, hasExistingAlbedo: false };
 export const preset = (id: string): GenerationPlan => buildPresetPlan(id, CATALOG, 16384)!;
 export const jobsOf = (plan: GenerationPlan, colorMode: 'albedo' | 'diffuse' = 'albedo', env: PlanEnvironment = ENVIRONMENT): ImageJob[] => buildJobs(inspectPlan(plan, env), colorMode);
 

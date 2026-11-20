@@ -6,8 +6,8 @@ import type { GenerationPlan } from '@mat/generation/plan/planTypes';
 import { buildPresetPlan, type ModelCatalog } from '@mat/generation/plan/presetPlans';
 
 const MAX_TEXTURE = 16384;
-const full: ModelCatalog = { gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai') };
-const env = (patch: Partial<PlanEnvironment> = {}): PlanEnvironment => ({ catalog: full, hasKey: { gemini: true, openai: true }, describeProvider: 'openai', referenceCount: 0, hasExistingAlbedo: false, ...patch });
+const full: ModelCatalog = { gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai'), openrouter: [] };
+const env = (patch: Partial<PlanEnvironment> = {}): PlanEnvironment => ({ catalog: full, hasKey: { gemini: true, openai: true, openrouter: false }, describeProvider: 'openai', referenceCount: 0, hasExistingAlbedo: false, ...patch });
 const preset = (id: string) => buildPresetPlan(id, full, MAX_TEXTURE)!;
 
 describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
@@ -19,18 +19,18 @@ describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
   });
 
   it('R65 a GPT plan with only a Gemini key says to add the OpenAI key, and preset 1 is fine', () => {
-    const geminiOnly = env({ catalog: { gemini: full.gemini, openai: [] }, hasKey: { gemini: true, openai: false } });
+    const geminiOnly = env({ catalog: { gemini: full.gemini, openai: [], openrouter: [] }, hasKey: { gemini: true, openai: false, openrouter: false } });
     expect(inspectPlan(preset('preset-2'), geminiOnly).problem).toBe('Add your OpenAI key in Settings > Keys');
     expect(inspectPlan(preset('preset-1'), { ...geminiOnly, describeProvider: 'gemini' }).problem).toBeNull();
   });
 
   it('R65 with no key at all, Generate says to add an image model key', () => {
-    const none = env({ catalog: { gemini: [], openai: [] }, hasKey: { gemini: false, openai: false } });
+    const none = env({ catalog: { gemini: [], openai: [], openrouter: [] }, hasKey: { gemini: false, openai: false, openrouter: false } });
     expect(inspectPlan(preset('preset-1'), none).problem).toBe('Add an image model key in Settings');
   });
 
   it('R66 the describe step needs its own provider key when the decomposition card is included, and not otherwise', () => {
-    const noOpenai = env({ catalog: { gemini: full.gemini, openai: [] }, hasKey: { gemini: true, openai: false }, describeProvider: 'openai' });
+    const noOpenai = env({ catalog: { gemini: full.gemini, openai: [], openrouter: [] }, hasKey: { gemini: true, openai: false, openrouter: false }, describeProvider: 'openai' });
     expect(inspectPlan(preset('preset-1'), noOpenai).problem).toBe('Add your OpenAI key in Settings > Keys for the describe step');
     expect(inspectPlan({ ...preset('preset-1'), decomposition: null }, noOpenai).problem).toBeNull();
     expect(inspectPlan(preset('preset-1'), env({ describeProvider: null })).problem).toBe('Choose a prompt enhancer model in Settings.');
@@ -81,7 +81,7 @@ describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
   it('R39 a follower whose model takes no reference image cannot follow the albedo, with or without a lead in the plan', () => {
     const noReference = { ...KNOWN_MODELS.find((model) => model.id === 'gpt-image-2.5-sunburst')!, id: 'no-reference', maxReferenceImages: 0 };
     const plan = setImageSettings(unassignMap(preset('preset-2'), 'albedo'), 1, { provider: 'openai', modelId: 'no-reference', resolutionKey: '1K', quality: 'medium' });
-    const report = inspectPlan(plan, env({ hasExistingAlbedo: true, catalog: { gemini: full.gemini, openai: [noReference] } }));
+    const report = inspectPlan(plan, env({ hasExistingAlbedo: true, catalog: { gemini: full.gemini, openai: [noReference], openrouter: [] } }));
     expect(report.cards[1]!.problem).toBe('This image model takes no reference image, so it cannot follow the albedo.');
   });
 
@@ -99,7 +99,7 @@ describe('materialgen/generation R25 R39 layouts and references', () => {
     const packed = assignMap(assignMap(preset('preset-2'), 'normal', 0), 'height', 0);
     expect(inspectPlan(packed, env()).cards[0]!.layout?.ok).toBe(true); // GPT at 1K packs three maps in tiles well over 256
     const narrow = { ...KNOWN_MODELS.find((model) => model.id === 'gpt-image-2.5-sunburst')!, id: 'narrow', canvases: { kind: 'list' as const, byResolution: { '1K': [{ width: 600, height: 300 }] } } };
-    const small = inspectPlan(setImageSettings(packed, 0, { provider: 'openai', modelId: 'narrow', resolutionKey: '1K', quality: 'medium' }), env({ catalog: { gemini: full.gemini, openai: [narrow] } }));
+    const small = inspectPlan(setImageSettings(packed, 0, { provider: 'openai', modelId: 'narrow', resolutionKey: '1K', quality: 'medium' }), env({ catalog: { gemini: full.gemini, openai: [narrow], openrouter: [] } }));
     expect(small.cards[0]!.problem).toBe('Too many maps for this size: tiles would be 200 px. Choose a larger size or move a map to another image.');
     expect(small.problem).toBe(small.cards[0]!.problem);
   });
@@ -123,11 +123,11 @@ describe('materialgen/masks R64 the model masks run is inspected on its own', ()
 
   it('R64 no describe model, or no key for it, says why Create masks is off', () => {
     expect(inspectMasksRun(decomposition, env({ describeProvider: null })).problem).toBe('Choose a prompt enhancer model in Settings.');
-    expect(inspectMasksRun(decomposition, env({ hasKey: { gemini: true, openai: false }, describeProvider: 'openai' })).problem).toMatch(/OpenAI key/);
+    expect(inspectMasksRun(decomposition, env({ hasKey: { gemini: true, openai: false, openrouter: false }, describeProvider: 'openai' })).problem).toMatch(/OpenAI key/);
   });
 
   it('R64 a missing key for the decomposition model comes first', () => {
-    const noKey = env({ hasKey: { gemini: false, openai: false } });
+    const noKey = env({ hasKey: { gemini: false, openai: false, openrouter: false } });
     expect(inspectMasksRun(decomposition, noKey).problem).toMatch(/key/);
   });
 

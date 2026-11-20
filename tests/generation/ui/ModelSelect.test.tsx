@@ -18,11 +18,12 @@ function model(provider: ProviderModelRecord['provider'], id: string, displayNam
 const CATALOG: ModelCatalog = {
   gemini: [model('gemini', 'g-image', 'Nano Image'), model('gemini', 'g-text', 'Gemini Text', { role: 'vision-text' })],
   openai: [model('openai', 'o-new', 'Zed Image', { verified: false }), model('openai', 'o-image', 'GPT Image')],
+  openrouter: [],
 };
 
 function setup(props: Partial<React.ComponentProps<typeof ModelSelect>> = {}) {
   const onSelect = vi.fn();
-  const view = render(<ModelSelect catalog={CATALOG} hasKey={{ gemini: true, openai: true }} provider={null} modelId={null} today="2000-01-01" onSelect={onSelect} {...props} />);
+  const view = render(<ModelSelect catalog={CATALOG} hasKey={{ gemini: true, openai: true, openrouter: false }} provider={null} modelId={null} today="2000-01-01" onSelect={onSelect} {...props} />);
   return { onSelect, user: userEvent.setup(), ...view };
 }
 
@@ -44,7 +45,7 @@ describe('ModelSelect (R4)', () => {
   });
 
   it('R4 a deprecated model is listed but cannot be chosen', async () => {
-    const catalog: ModelCatalog = { gemini: [], openai: [model('openai', 'o-old', 'Old Image', { deprecated: true }), model('openai', 'o-image', 'GPT Image')] };
+    const catalog: ModelCatalog = { gemini: [], openai: [model('openai', 'o-old', 'Old Image', { deprecated: true }), model('openai', 'o-image', 'GPT Image')], openrouter: [] };
     const { user, onSelect } = setup({ catalog });
     await user.click(screen.getByRole('combobox', { name: 'Model' }));
     const old = screen.getByRole('option', { name: 'OpenAI: Old Image (deprecated)' });
@@ -54,20 +55,20 @@ describe('ModelSelect (R4)', () => {
   });
 
   it('R4 a provider without a key lists no models', async () => {
-    const { user } = setup({ hasKey: { gemini: false, openai: true } });
+    const { user } = setup({ hasKey: { gemini: false, openai: true, openrouter: false } });
     await user.click(screen.getByRole('combobox', { name: 'Model' }));
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['OpenAI: GPT Image', 'OpenAI: Zed Image (unverified)']);
   });
 
   it('R4 with no key at all the box is disabled and tells the user to add one in Settings', () => {
-    setup({ hasKey: { gemini: false, openai: false } });
+    setup({ hasKey: { gemini: false, openai: false, openrouter: false } });
     const box = screen.getByRole('combobox', { name: 'Model' }) as HTMLButtonElement;
     expect(box.disabled).toBe(true);
     expect(box.textContent).toContain('Add a key in Settings to list models');
   });
 
   it('R4 choosing a model reports its provider and id, even when the id contains a colon', async () => {
-    const catalog: ModelCatalog = { gemini: [model('gemini', 'models/g:image', 'Colon Image')], openai: [] };
+    const catalog: ModelCatalog = { gemini: [model('gemini', 'models/g:image', 'Colon Image')], openai: [], openrouter: [] };
     const { user, onSelect } = setup({ catalog });
     await user.click(screen.getByRole('combobox', { name: 'Model' }));
     await user.click(screen.getByRole('option', { name: 'Gemini: Colon Image' }));
@@ -83,7 +84,7 @@ describe('ModelSelect (R4)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { rerender, onSelect } = setup({ today: '2099-01-01' });
     expect(warn).toHaveBeenCalledTimes(1);
-    rerender(<ModelSelect catalog={CATALOG} hasKey={{ gemini: true, openai: true }} provider="gemini" modelId="g-image" today="2099-01-01" onSelect={onSelect} />);
+    rerender(<ModelSelect catalog={CATALOG} hasKey={{ gemini: true, openai: true, openrouter: false }} provider="gemini" modelId="g-image" today="2099-01-01" onSelect={onSelect} />);
     expect(warn).toHaveBeenCalledTimes(1);
   });
 

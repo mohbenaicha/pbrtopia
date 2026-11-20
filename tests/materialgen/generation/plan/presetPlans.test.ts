@@ -5,7 +5,7 @@ import { buildPresetPlan, describePreset, describePresetHint, detectPlanEntry, i
 import type { GenerationPlan, SheetSettings } from '@mat/generation/plan/planTypes';
 
 const MAX_TEXTURE = 16384;
-const full: ModelCatalog = { gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai') };
+const full: ModelCatalog = { gemini: KNOWN_MODELS.filter((model) => model.provider === 'gemini'), openai: KNOWN_MODELS.filter((model) => model.provider === 'openai'), openrouter: [] };
 const model = (id: string) => KNOWN_MODELS.find((candidate) => candidate.id === id)!;
 
 describe('materialgen/generation R2 R3 presets', () => {
@@ -49,7 +49,7 @@ describe('materialgen/generation R2 R3 presets', () => {
   });
 
   it('R3 a provider the catalog does not list is still applied, from the shipped table, so the cards show the problem', () => {
-    const noOpenai: ModelCatalog = { gemini: full.gemini, openai: [] };
+    const noOpenai: ModelCatalog = { gemini: full.gemini, openai: [], openrouter: [] };
     const plan = buildPresetPlan('preset-2', noOpenai, MAX_TEXTURE)!;
     expect(plan.images[0]!.settings).toMatchObject({ provider: 'openai', modelId: 'gpt-image-2.5-sunburst', resolutionKey: '1K', quality: 'medium' });
   });

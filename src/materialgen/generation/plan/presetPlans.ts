@@ -5,8 +5,11 @@ import { CUSTOM_PRESET_ID, type GenerationPlan, type MapImagePlan, type SavedSet
 
 export type ModelCatalog = Record<Provider, ProviderModelRecord[]>;
 
+// The providers the material generator's plans may use: its saved plans do not hold OpenRouter models (generate R43), so it never lists them.
+export const MATERIAL_PROVIDERS = ['gemini', 'openai'] as const;
+
 /** Generation R3: "Gemini" and "GPT Image" are the provider's default model for materials; the only model ids the app names (R26). */
-const PRESET_MODEL_IDS: Record<Provider, string> = { gemini: 'gemini-nano-banana-2.1', openai: 'gpt-image-2.5-sunburst' };
+const PRESET_MODEL_IDS: Partial<Record<Provider, string>> = { gemini: 'gemini-nano-banana-2.1', openai: 'gpt-image-2.5-sunburst' };
 
 type PresetRow = readonly [albedo: Provider, normal: Provider, height: Provider, decomposition: Provider];
 
@@ -38,7 +41,7 @@ function resolvePresetModel(provider: Provider, catalog: ModelCatalog): Provider
 function presetSettings(provider: Provider, catalog: ModelCatalog, maxTextureSize: number): SheetSettings {
   const model = resolvePresetModel(provider, catalog);
   // R3: a model the catalog does not list is still applied, so its card shows the problem (R19).
-  return model === null ? { provider, modelId: PRESET_MODEL_IDS[provider], resolutionKey: '1K', quality: null } : buildCardSettings(model, maxTextureSize, 1);
+  return model === null ? { provider, modelId: PRESET_MODEL_IDS[provider] ?? '', resolutionKey: '1K', quality: null } : buildCardSettings(model, maxTextureSize, 1);
 }
 
 /** R2, R3: the plan of a preset, or null for an id that is not a preset. */
