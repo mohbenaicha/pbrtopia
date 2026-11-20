@@ -21,8 +21,7 @@ export function useModelCatalogFeed(): ModelCatalogFeed {
     return watchModelCatalog({
       keys,
       discover: discoverModels,
-      // The material generator's saved plans do not hold OpenRouter models yet, so it is offered none (generate R43).
-      onChange: (keyed, catalog) => setFeed({ catalog: { ...catalog, openrouter: [] }, hasKey: Object.fromEntries(PROVIDERS.map((provider) => [provider, keyed.includes(provider)])) as Record<Provider, boolean>, ready: true }),
+      onChange: (keyed, catalog) => setFeed({ catalog, hasKey: Object.fromEntries(PROVIDERS.map((provider) => [provider, keyed.includes(provider)])) as Record<Provider, boolean>, ready: true }),
     });
   }, [keys, keysLoaded, discoverModels]);
 

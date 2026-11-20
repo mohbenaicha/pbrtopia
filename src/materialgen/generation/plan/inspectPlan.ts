@@ -74,7 +74,7 @@ export function inspectPlan(plan: GenerationPlan, env: PlanEnvironment): PlanRep
   let problem: string | null = null;
   const holdsAlbedo = plan.images.some((image) => image.maps.includes('albedo'));
   const holdsNothing = plan.decomposition === null && !plan.images.some((image) => image.maps.length > 0);
-  if (!(env.hasKey.gemini || env.hasKey.openai)) problem = 'Add an image model key in Settings';
+  if (!Object.values(env.hasKey).some(Boolean)) problem = 'Add an image model key in Settings';
   else if (holdsNothing) problem = 'Nothing to generate.';
   else if (!holdsAlbedo && !env.hasExistingAlbedo) problem = NEEDS_ALBEDO_PROBLEM;
   else problem = cards.find((card) => card.problem !== null)?.problem ?? null;

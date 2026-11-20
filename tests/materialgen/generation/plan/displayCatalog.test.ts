@@ -8,16 +8,20 @@ import { buildPresetPlan } from '@mat/generation/plan/presetPlans';
 const EMPTY = { gemini: [], openai: [], openrouter: [] };
 const gemini = KNOWN_MODELS.filter((model) => model.provider === 'gemini');
 const openai = KNOWN_MODELS.filter((model) => model.provider === 'openai');
+const openrouter = KNOWN_MODELS.filter((model) => model.provider === 'openrouter');
 
 describe('materialgen/generation display catalog', () => {
   it('R62 a provider without models lists the shipped table, and one with models keeps its own list', () => {
-    expect(withKnownModels(EMPTY)).toEqual({ gemini, openai, openrouter: [] });
+    expect(withKnownModels(EMPTY)).toEqual({ gemini, openai, openrouter });
     const discovered = [gemini[0]!];
-    expect(withKnownModels({ gemini: discovered, openai: [], openrouter: [] })).toEqual({ gemini: discovered, openai, openrouter: [] });
+    expect(withKnownModels({ gemini: discovered, openai: [], openrouter: [] })).toEqual({ gemini: discovered, openai, openrouter });
   });
 
-  it('R43 (generate) the material generator is never shown OpenRouter models, even with no key', () => {
-    expect(withKnownModels(EMPTY).openrouter).toEqual([]);
+  it('R76 the OpenRouter plug-in models are listed like the other providers\', from the shipped table when no list was found', () => {
+    expect(withKnownModels(EMPTY).openrouter.length).toBeGreaterThan(0);
+    expect(withKnownModels(EMPTY).openrouter.every((model) => model.provider === 'openrouter')).toBe(true);
+    const chosen = [openrouter[0]!];
+    expect(withKnownModels({ ...EMPTY, openrouter: chosen }).openrouter).toEqual(chosen);
   });
 
   it('R62 R65 with no key the hint still shows the plan\'s images while the real inspection keeps the key problem', () => {

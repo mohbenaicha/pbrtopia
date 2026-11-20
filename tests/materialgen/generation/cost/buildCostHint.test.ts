@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { KNOWN_MODELS } from '@shared/generation';
 import { assignMap, setImageSettings, unassignMap } from '@mat/generation/plan/editPlan';
 import { inspectPlan } from '@mat/generation/plan/inspectPlan';
 import { buildCostHint } from '@mat/generation/cost/buildCostHint';
@@ -17,6 +18,15 @@ describe('materialgen/generation R62 R63 cost hint', () => {
     expect(rows.map((row) => row.label)).toEqual(['Image 1 (Albedo)', 'Image 2 (Normal)', 'Image 3 (Height)', 'Metal-Roughness image', 'Describe step']);
     expect(rows[0]).toMatchObject({ model: 'gemini-nano-banana-2.1', canvas: '1024 x 1024', layout: '1x1', tilePx: 1024, costText: 'about $0.03' });
     expect(rows[4]).toMatchObject({ costText: 'under $0.01', model: 'gpt-6-luna' });
+  });
+
+  it('R76 an OpenRouter image has no tabled price, so its row and the total say price unknown', () => {
+    const model = KNOWN_MODELS.find((candidate) => candidate.provider === 'openrouter')!;
+    expect(estimateImageCost({ modelId: model.id, resolutionKey: '1K', quality: null, canvas: { width: 1024, height: 1024 } })).toBeNull();
+    const plan = setImageSettings(preset('preset-1'), 0, { provider: 'openrouter', modelId: model.id, resolutionKey: '1K', quality: null });
+    const keyed = { ...ENVIRONMENT, catalog: { ...ENVIRONMENT.catalog, openrouter: KNOWN_MODELS.filter((candidate) => candidate.provider === 'openrouter') }, hasKey: { ...ENVIRONMENT.hasKey, openrouter: true } };
+    const row = buildCostHint(inspectPlan(plan, keyed), 'albedo', 1024, null).rows[0]!;
+    expect(row).toMatchObject({ model: model.id, costText: 'price unknown' });
   });
 
   it('R62 the hint follows the plan: packing three maps in one image is one image', () => {

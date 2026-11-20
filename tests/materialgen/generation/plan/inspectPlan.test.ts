@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { KNOWN_MODELS } from '@shared/generation/catalog/knownModels';
 import { assignMap, setImageSettings, unassignMap } from '@mat/generation/plan/editPlan';
+import { buildCardSettings } from '@mat/generation/plan/modelMinimums';
 import { inspectMasksRun, inspectPlan, type PlanEnvironment } from '@mat/generation/plan/inspectPlan';
 import type { GenerationPlan } from '@mat/generation/plan/planTypes';
 import { buildPresetPlan, type ModelCatalog } from '@mat/generation/plan/presetPlans';
@@ -27,6 +28,30 @@ describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
   it('R65 with no key at all, Generate says to add an image model key', () => {
     const none = env({ catalog: { gemini: [], openai: [], openrouter: [] }, hasKey: { gemini: false, openai: false, openrouter: false } });
     expect(inspectPlan(preset('preset-1'), none).problem).toBe('Add an image model key in Settings');
+  });
+
+  it('R76 an OpenRouter-only key runs an OpenRouter Albedo card; its model gets a layout, no quality, and the reference limit of its row', () => {
+    const model = KNOWN_MODELS.find((candidate) => candidate.provider === 'openrouter')!;
+    const catalog: ModelCatalog = { gemini: [], openai: [], openrouter: KNOWN_MODELS.filter((candidate) => candidate.provider === 'openrouter') };
+    const only = env({ catalog, hasKey: { gemini: false, openai: false, openrouter: true }, describeProvider: null });
+    const plan: GenerationPlan = { images: [{ maps: ['albedo'], settings: buildCardSettings(model, MAX_TEXTURE, 1) }], decomposition: null };
+    const report = inspectPlan(plan, only);
+    expect(report.problem).toBeNull();
+    expect(report.cards[0]!.settings).toMatchObject({ provider: 'openrouter', modelId: model.id, quality: null });
+    expect(report.cards[0]!.layout?.ok).toBe(true);
+    const tooMany = inspectPlan(plan, { ...only, referenceCount: (model.maxReferenceImages ?? 0) + 1 });
+    expect(tooMany.problem).toMatch(/^Too many reference images/);
+  });
+
+  it('R76 R65 a plan on an OpenRouter model without an OpenRouter key names OpenRouter, and an OpenRouter-only plan with the decomposition card needs an enhancer', () => {
+    const model = KNOWN_MODELS.find((candidate) => candidate.provider === 'openrouter')!;
+    const catalog: ModelCatalog = { ...full, openrouter: KNOWN_MODELS.filter((candidate) => candidate.provider === 'openrouter') };
+    const settings = buildCardSettings(model, MAX_TEXTURE, 1);
+    const plan: GenerationPlan = { images: [{ maps: ['albedo'], settings }], decomposition: null };
+    expect(inspectPlan(plan, env({ catalog })).problem).toBe('Add your OpenRouter key in Settings > Keys');
+    const withDecomposition: GenerationPlan = { ...plan, decomposition: settings };
+    const only = env({ catalog, hasKey: { gemini: false, openai: false, openrouter: true }, describeProvider: null });
+    expect(inspectPlan(withDecomposition, only).problem).toBe('Choose a prompt enhancer model in Settings.');
   });
 
   it('R66 the describe step needs its own provider key when the decomposition card is included, and not otherwise', () => {

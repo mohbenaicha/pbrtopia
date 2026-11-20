@@ -1,5 +1,6 @@
 import { KNOWN_MODELS } from '@shared/generation';
-import { MATERIAL_PROVIDERS, type ModelCatalog } from './presetPlans';
+import { PROVIDERS } from '@shared/keys';
+import type { ModelCatalog } from './presetPlans';
 
 /**
  * Generation R62, R63: the catalog the hint and the settings fields read. A provider with no key has no models in the real catalog; here it lists the shipped table's, so a plan
@@ -7,7 +8,7 @@ import { MATERIAL_PROVIDERS, type ModelCatalog } from './presetPlans';
  */
 export function withKnownModels(catalog: ModelCatalog): ModelCatalog {
   const filled = { ...catalog };
-  for (const provider of MATERIAL_PROVIDERS) {
+  for (const provider of PROVIDERS) {
     if (filled[provider].length === 0) filled[provider] = KNOWN_MODELS.filter((model) => model.provider === provider);
   }
   return filled;

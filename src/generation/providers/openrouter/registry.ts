@@ -1,7 +1,6 @@
 import { flux3ImagePlugin } from './models/flux3Image';
 import { kreaK3EditPlugin } from './models/kreaK3Edit';
 import { maiImage27Plugin } from './models/maiImage27';
-import { qwenImage21ProPlugin } from './models/qwenImage21Pro';
 import { seedream55Plugin } from './models/seedream55';
 import type { OpenRouterModelPlugin } from './openrouterModelPlugin';
 
@@ -10,7 +9,6 @@ export const OPENROUTER_MODELS: readonly OpenRouterModelPlugin[] = [
   seedream55Plugin,
   maiImage27Plugin,
   flux3ImagePlugin,
-  qwenImage21ProPlugin,
   kreaK3EditPlugin,
 ];
 

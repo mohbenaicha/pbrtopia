@@ -5,9 +5,6 @@ import { CUSTOM_PRESET_ID, type GenerationPlan, type MapImagePlan, type SavedSet
 
 export type ModelCatalog = Record<Provider, ProviderModelRecord[]>;
 
-// The providers the material generator's plans may use: its saved plans do not hold OpenRouter models (generate R43), so it never lists them.
-export const MATERIAL_PROVIDERS = ['gemini', 'openai'] as const;
-
 /** Generation R3: "Gemini" and "GPT Image" are the provider's default model for materials; the only model ids the app names (R26). */
 const PRESET_MODEL_IDS: Partial<Record<Provider, string>> = { gemini: 'gemini-nano-banana-2.1', openai: 'gpt-image-2.5-sunburst' };
 

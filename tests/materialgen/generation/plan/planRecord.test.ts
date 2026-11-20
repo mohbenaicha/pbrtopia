@@ -13,6 +13,18 @@ describe('materialgen/generation R70 persistence of the plan', () => {
     expect(isSamePlan(back!, plan)).toBe(true);
   });
 
+  it('R76 a card on an OpenRouter model, no quality, reads back from the project record and from a saved setup', () => {
+    const model = KNOWN_MODELS.find((candidate) => candidate.provider === 'openrouter')!;
+    const settings = { provider: 'openrouter' as const, modelId: model.id, resolutionKey: '1K' as const, quality: null };
+    const onOpenRouter = { images: [{ maps: ['albedo' as const], settings }], decomposition: null };
+    const back = parseStoredPlan(JSON.parse(JSON.stringify(writePlan(onOpenRouter))) as Record<string, unknown>);
+    expect(back?.images[0]?.settings).toEqual(settings);
+    const saved = parseSavedSetups(JSON.parse(JSON.stringify(writeSavedSetups([{ name: 'Seedream', plan: onOpenRouter }]))) as Array<Record<string, unknown>>);
+    expect(saved).toHaveLength(1);
+    expect(saved[0]!.plan.images[0]!.settings.provider).toBe('openrouter');
+    expect(parseStoredPlan({ ...writePlan(onOpenRouter), images: [{ maps: ['albedo'], settings: { ...settings, provider: 'nobody' } }] })).toBeNull();
+  });
+
   it('R70 a project with no saved plan, or one that does not read, gives null so the panel starts on preset 1', () => {
     expect(parseStoredPlan(undefined)).toBeNull();
     expect(parseStoredPlan({ images: [], decomposition: null })).toBeNull();

@@ -1,3 +1,4 @@
+import { PROVIDERS } from '@shared/keys';
 import { FieldProblem, readChoice, readList, readObject, readText, type RawRecord } from '@shared/projects';
 import { MAX_MAP_IMAGES, PLAN_MAPS, type GenerationPlan, type SavedSetup, type SheetSettings } from './planTypes';
 
@@ -9,7 +10,7 @@ function readSettings(value: unknown, path: string): SheetSettings {
   const quality = raw['quality'];
   if (quality !== null && typeof quality !== 'string') throw new FieldProblem(`${path}.quality`);
   return {
-    provider: readChoice(raw['provider'], `${path}.provider`, ['gemini', 'openai'] as const),
+    provider: readChoice(raw['provider'], `${path}.provider`, PROVIDERS),
     modelId: readText(raw['modelId'], `${path}.modelId`),
     resolutionKey: readChoice(raw['resolutionKey'], `${path}.resolutionKey`, ['1K', '2K', '2.8K', '4K'] as const),
     quality,
