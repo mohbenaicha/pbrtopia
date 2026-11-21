@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { WebGLRenderer } from 'three';
 import {
-  blendEdgesMap, createAoSession, createFilterSession, createGpuContext, mirrorMap, scaleRectToSquare, swapDiagonals,
+  blendEdgesMap, createAoSession, createFilterSession, createGpuContext, createNormalSession, mirrorMap, scaleRectToSquare, swapDiagonals,
   type AoSource, type CropRect, type EditMapKind, type EditValues, type FilterSession, type GpuContext, type MirrorPlan, type OpSession, type PixelImage, type SeamParams,
 } from '@mat/imageops';
 
@@ -17,6 +17,7 @@ export interface GeometryOps {
 export interface ImageopsSessions {
   openFilter(image: PixelImage, kind: EditMapKind, albedo?: PixelImage): Promise<FilterSession>; // the albedo is a normal map's colour mixin source (imageops R84)
   openAo(image: PixelImage, source: AoSource): Promise<OpSession<EditValues>>;
+  openNormal(image: PixelImage): Promise<OpSession<EditValues>>; // the height map's working copy; no graphics context (normal-from-height R10)
   geometry: GeometryOps;
 }
 
@@ -45,6 +46,7 @@ export function useImageopsSessions(): ImageopsSessions {
     return {
       openFilter: async (image, kind, albedo) => createFilterSession(context(), { image, kind, ...(albedo ? { albedo } : {}) }),
       openAo: async (image, source) => createAoSession(context(), { image, source }),
+      openNormal: async (image) => createNormalSession({ image }),
       geometry: {
         crop: async (image, kind, rect, size) => scaleRectToSquare(context(), { image, kind }, rect, size),
         mirror: async (image, kind, plan) => mirrorMap(context(), { image, kind }, plan),

@@ -13,7 +13,7 @@ export interface ImageJob {
   settings: SheetSettings;
   layout: PackedLayout;
   sizePx: number; // the square side the resolution key stands for
-  label: string; // "Image 2 (Normal)", "Metal-Roughness image"
+  label: string; // "Image 2 (Height)", "Metal-Roughness image"
 }
 
 export type StepResult<T> = { ok: true; value: T } | { ok: false; message: string };

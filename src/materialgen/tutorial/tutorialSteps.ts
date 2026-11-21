@@ -39,7 +39,8 @@ export const TUTORIAL_SECTIONS: TourSection[] = inheritStages([
       step('maps.tools', 'maps-tools'),
       step('maps.cards', 'maps-grid'),
       step('maps.card-actions', 'maps-card-actions', { reveal: [REVEAL_MAP_ACTIONS] }),
-      step('maps.occlusion', 'maps-occlusion', { reveal: [REVEAL_MAP_ACTIONS] }),
+      step('maps.normal', 'maps-normal', { reveal: [REVEAL_MAP_ACTIONS] }),
+      step('maps.occlusion','maps-occlusion', { reveal: [REVEAL_MAP_ACTIONS] }),
     ],
   },
   {

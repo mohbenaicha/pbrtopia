@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { PixelImage } from '@mat/imageops';
 import type { MapsState, MasksCommit } from '@mat/maps';
 import { encodePng } from '@mat/maps/png/pngCodec';
-import { parseBaseMaterials, parseMasksRecord, type MasksRecord } from '@mat/masks';
+import { parseBaseMaterials, parseMasksRecord, type MasksRecord } from '@shared/materialMasks';
 import { useMasksPanel, type MasksPanelPorts } from '../../../../../src/materialgen/app/panels/masks/useMasksPanel';
 
 // Masks R81-R88 in the panel hook: the height offsets go to Height alone, from the base the working Height carries a tag for.

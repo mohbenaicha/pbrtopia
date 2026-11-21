@@ -1,4 +1,4 @@
-import { serveWorkerJobs, type WorkerJobScope } from '@mat/workerjob';
+import { serveWorkerJobs, type WorkerJobScope } from '@shared/workerJob';
 import { runPngJob, type PngJobKind } from './pngJobs';
 
 // Maps R60: the worker side. It runs the one PNG job it is sent and answers with the result or the failure.

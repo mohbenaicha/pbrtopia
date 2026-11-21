@@ -56,6 +56,7 @@ async function fillProject(store: MaterialProjectStore): Promise<MaterialRecord>
       height: { originalKey: AWKWARD.height, workingKey: AWKWARD.heightWork, undoKey: null, offsetBase: AWKWARD.heightBase, width: SIZE, height: SIZE },
     },
     aoParams: { radius: 12, strength: 0.8 },
+    normalParams: { blur: 2, strength: 60 },
     preview: { ...DEFAULT_PREVIEW_VALUES, tilingX: 2, tilingY: 3, heightScale: 0.07 },
   };
   for (const key of Object.values(AWKWARD)) await store.writeBlob(made.value.id, key, png(byteOf(key)));

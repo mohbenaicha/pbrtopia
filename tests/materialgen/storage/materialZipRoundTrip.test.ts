@@ -51,6 +51,7 @@ async function fullProject(test: TestMaterialStore): Promise<MaterialRecord> {
       ],
     },
     aoParams: { radius: 12, strength: 0.8 },
+    normalParams: { blur: 2, strength: 60 },
     preview: { ...DEFAULT_PREVIEW_VALUES, tilingX: 2, tilingY: 3, heightScale: 0.07 },
   };
   const keys = new Set<string>(['references/ref.png']);
@@ -102,7 +103,7 @@ describe('materialgen/app R37 R37a R39 the zip of a project with every optional 
     await fullProject(source);
     const files = unzipSync((await exportOf(source)).bytes);
     const record = JSON.parse(strFromU8(files['project.json']!)) as MaterialRecord;
-    expect(record).toMatchObject({ prompt: 'mossy brick wall', presetId: 'preset-2', colorMode: 'diffuse', aoParams: { radius: 12, strength: 0.8 } });
+    expect(record).toMatchObject({ prompt: 'mossy brick wall', presetId: 'preset-2', colorMode: 'diffuse', aoParams: { radius: 12, strength: 0.8 }, normalParams: { blur: 2, strength: 60 } });
     expect(record.customPlan).toEqual({ albedo: { model: 'gpt-image-2', resolution: '1k' } });
     expect((record.masks as { rows: { height: number }[] }).rows.map((row) => row.height)).toEqual([0.35, -0.5]);
     expect(record.preview).toMatchObject({ tilingX: 2, tilingY: 3, heightScale: 0.07 });

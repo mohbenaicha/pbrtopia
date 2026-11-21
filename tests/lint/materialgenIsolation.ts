@@ -25,6 +25,8 @@ export function findIsolationViolations(
   srcRoot: string,
   allowedSharedFolders: readonly string[],
   aliases: AliasMap,
+  /** Declared sub-barrels (`folder/sub`) that may be imported besides the folder's own index, e.g. the drawing half of a worker-safe folder (material-masks-core R9). */
+  allowedSubBarrels: readonly string[] = [],
 ): IsolationViolation[] {
   const matRoot = path.join(srcRoot, 'materialgen');
   const violations: IsolationViolation[] = [];
@@ -48,7 +50,7 @@ export function findIsolationViolations(
       if (specifier.startsWith('@shared/')) {
         const [folder, ...rest] = specifier.slice('@shared/'.length).split('/');
         if (!folder || !allowedSharedFolders.includes(folder)) add('shared-folder-not-allowed');
-        else if (rest.length > 0 && !(rest.length === 1 && rest[0] === 'index')) add('shared-folder-not-barrel');
+        else if (rest.length > 0 && !(rest.length === 1 && rest[0] === 'index') && !allowedSubBarrels.includes(`${folder}/${rest.join('/')}`)) add('shared-folder-not-barrel');
       }
     }
   }

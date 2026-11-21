@@ -6,8 +6,9 @@ import { countUserReferenceSlots } from './catalog/referenceSlots';
 import { countImages, describePlanProblem } from './custom/planEditing';
 import type { SheetSettings } from './custom/planTypes';
 import { findCatalogModel, type EnhancerChoice, type GenerateState } from './generateStore';
+import { describeMaskRunProblem } from './masks/describeMaskRunProblem';
 
-type AvailabilityInput =Pick<GenerateState, 'hasModel' | 'hasUvs' | 'readOnly' | 'setOpen' | 'setBusy' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status' | 'unwrap' | 'mode' | 'customPlan' | 'references'>;
+type AvailabilityInput =Pick<GenerateState, 'hasModel' | 'hasUvs' | 'readOnly' | 'setOpen' | 'setBusy' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status' | 'unwrap' | 'mode' | 'customPlan' | 'references'> & Partial<Pick<GenerateState, 'channel'>>;
 
 export interface GenerateAvailability {
   action: 'generate' | 'generate-uv';
@@ -51,6 +52,8 @@ export function describeGenerateAvailability(input: AvailabilityInput): Generate
   if (input.setBusy) return blocked(action, 'Wait for the current task to finish.');
   // The unwrap sets hasUvs before the viewport shows the new model, so the button stays blocked until the whole unwrap is over.
   if (input.unwrap.status === 'running') return blocked(action, 'UVs are being generated.');
+  if (input.channel === 'metal-rough') return describeMaskAvailability(input, busy);
+  if (input.channel === 'normal') return describeNormalAvailability(input, busy);
   if (!input.hasUvs) {
     return busy ? blocked('generate-uv', 'A request is already running.') : { action: 'generate-uv', enabled: true, reason: null };
   }
@@ -66,6 +69,29 @@ export function describeGenerateAvailability(input: AvailabilityInput): Generate
 }
 
 export { describeImageModelProblem };
+
+// normal-map R4: the Normal run needs a listed model with its key; no prompt enhancer, atlas or UVs of its own (the source albedo is the picture).
+function describeNormalAvailability(input: AvailabilityInput, busy: boolean): GenerateAvailability {
+  const { provider, modelId } = input;
+  if (provider === null || modelId === null) return blocked('generate', 'Choose an image model.');
+  const modelProblem = describeImageModelProblem(input, provider, modelId);
+  if (modelProblem !== null) return blocked('generate', modelProblem);
+  if (busy) return blocked('generate', 'A request is already running.');
+  return { action: 'generate', enabled: true, reason: null };
+}
+
+// mask-generation R1: a mask run needs a listed image model with its key and a describe model (Settings' enhancer model, else the automatic one) with its key.
+function describeMaskAvailability(input: AvailabilityInput, busy: boolean): GenerateAvailability {
+  const { provider, modelId } = input;
+  if (provider === null || modelId === null) return blocked('generate', 'Choose an image model.');
+  const modelProblem = describeImageModelProblem(input, provider, modelId);
+  if (modelProblem !== null) return blocked('generate', modelProblem);
+  const describeModel = pickEnhancerModel(input);
+  const problem = describeMaskRunProblem({ channelAvailability: { enabled: true }, describeModel, keyPresent: describeModel !== null && input.hasKey[describeModel.provider] });
+  if (problem !== null) return blocked('generate', problem);
+  if (busy) return blocked('generate', 'A request is already running.');
+  return { action: 'generate', enabled: true, reason: null };
+}
 
 // R8, R20: why the prompt enhancer cannot be used right now, or null.
 function describeEnhancerProblem(input: Pick<AvailabilityInput, 'enhancer' | 'provider' | 'catalog' | 'hasKey'>): string | null {

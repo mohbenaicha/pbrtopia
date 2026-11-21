@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { SOURCE_ALIASES } from '../../vite.config';
 import { findIsolationViolations } from './materialgenIsolation';
 
-const ALLOWED = ['ui-kit', 'keys', 'generation', 'projects', 'viewport', 'shell', 'appId', 'storage-desktop', 'tutorial'];
+const ALLOWED = ['ui-kit', 'keys', 'generation', 'projects', 'viewport', 'shell', 'appId', 'storage-desktop', 'tutorial', 'materialMasks', 'workerJob'];
+/** The drawing half of the worker-safe materialMasks barrel (material-masks-core R9) and the shipped data loaders. */
+const SUB_BARRELS = ['materialMasks/ui', 'materialMasks/table'];
 let root = '';
 const aliases = () => ({ '@shared': path.join(root, 'src'), '@mat': path.join(root, 'src', 'materialgen') });
 
@@ -15,7 +17,7 @@ function write(relativePath: string, text: string): void {
   writeFileSync(full, text);
 }
 const violationsOf = (): string[] =>
-  findIsolationViolations(path.join(root, 'src'), ALLOWED, aliases()).map((item) => `${item.file}: ${item.rule}`);
+  findIsolationViolations(path.join(root, 'src'), ALLOWED, aliases(), SUB_BARRELS).map((item) => `${item.file}: ${item.rule}`);
 
 beforeEach(() => {
   root = mkdtempSync(path.join(tmpdir(), 'isolation-'));
@@ -61,11 +63,21 @@ describe('shared/materialgen-prep R7 isolation', () => {
     write('src/materialgen/a.ts', "import '@shared/ui-kit/Button';");
     expect(violationsOf()).toEqual(['src/materialgen/a.ts: shared-folder-not-barrel']);
   });
+
+  it('material-masks-core R9 materialMasks and workerJob are allowed barrels, with the declared ui sub-barrel and no other deep path', () => {
+    write('src/materialMasks/index.ts', 'export const k = 1;');
+    write('src/materialMasks/ui/index.ts', 'export const u = 1;');
+    write('src/workerJob/index.ts', 'export const w = 1;');
+    write('src/materialgen/a.ts', "import '@shared/materialMasks'; import '@shared/materialMasks/ui'; import '@shared/workerJob';");
+    expect(violationsOf()).toEqual([]);
+    write('src/materialgen/b.ts', "import '@shared/materialMasks/worker/startMaskJob';");
+    expect(violationsOf()).toEqual(['src/materialgen/b.ts: shared-folder-not-barrel']);
+  });
 });
 
 describe('shared/materialgen-prep R7 this repository', () => {
   it('R7 the real source tree keeps the material app isolated', () => {
     const src = path.resolve(SOURCE_ALIASES['@shared']);
-    expect(findIsolationViolations(src, ALLOWED, SOURCE_ALIASES)).toEqual([]);
+    expect(findIsolationViolations(src, ALLOWED, SOURCE_ALIASES, SUB_BARRELS)).toEqual([]);
   });
 });

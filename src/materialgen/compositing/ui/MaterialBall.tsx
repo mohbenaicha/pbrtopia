@@ -1,4 +1,4 @@
-import type { BaseMaterial } from '@mat/masks';
+import type { BaseMaterial } from '@shared/materialMasks';
 import { ballCellOf, ballCutOf } from '../atlas/loadMaterialBalls';
 
 const SPHERE_HIGHLIGHT = 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.75), rgba(255,255,255,0) 42%)';

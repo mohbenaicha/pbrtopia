@@ -1,7 +1,7 @@
 import { flipNormalGreen } from '@mat/export/pixels/exportPixels';
 import { MATERIAL_SIZES, type MaterialSize } from '@mat/maps';
 import { decodePng, encodePng, isIndexedImage, type DecodedPng, type PixelImage } from '@mat/maps/png/pngCodec';
-import { MAX_COMPONENTS } from '@mat/masks/describe/parseComponents';
+import { MAX_COMPONENTS } from '@shared/materialMasks';
 import type { MapKind } from '@mat/maps';
 
 // Reads a Blender export (the files export/ writes) and checks it, for the sample conversion (materialgen/default-projects R3-R7, R10).

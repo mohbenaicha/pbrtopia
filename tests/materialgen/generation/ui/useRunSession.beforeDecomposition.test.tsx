@@ -11,7 +11,7 @@ import { createHarness, ENVIRONMENT, flush, preset } from '../run/runHarness';
 afterEach(cleanup);
 
 const noMaps: MapsState = { size: 1024, maps: {} };
-const albedoOnly = (): GenerationPlan => ({ ...unassignMap(unassignMap(preset('preset-1'), 'normal'), 'height'), decomposition: null });
+const albedoOnly = (): GenerationPlan => ({ ...unassignMap(preset('preset-1'), 'height'), decomposition: null });
 const settle = async (): Promise<void> => {
   await act(async () => {
     await flush();

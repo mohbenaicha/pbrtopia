@@ -191,6 +191,31 @@ describe('materialgen/maps R21 R70 changeSize and groups', () => {
     expect(isStale(next, 'ao')).toBe(false);
   });
 
+  it('normal-from-height R9 a normal map made from the height goes stale when the height changes, and a dropped or painted one never does', () => {
+    let state = placeMap(placeMap(empty, 'height', image('h1')), 'normal', { ...image('n1'), derivedFrom: { kind: 'height', key: 'h1' } });
+    expect(isStale(state, 'normal')).toBe(false);
+    state = editMaps(state, [{ kind: 'height', workingKey: 'h2' }], 'Blur');
+    expect(isStale(state, 'normal')).toBe(true);
+    const dropped = editMaps(state, [{ kind: 'normal', workingKey: 'n2', derivedFrom: null }], 'Drop');
+    expect(isStale(dropped, 'normal')).toBe(false);
+    const painted = placeMap(placeMap(empty, 'height', image('h1')), 'normal', image('n9'));
+    expect(isStale(editMaps(painted, [{ kind: 'height', workingKey: 'h2' }], 'Blur'), 'normal')).toBe(false);
+  });
+
+  it('normal-from-height R9 a derived normal follows the height through an S change while fresh, and undo returns its derivedFrom', () => {
+    let state = placeMap(placeMap(empty, 'height', image('h1')), 'normal', { ...image('n1'), derivedFrom: { kind: 'height', key: 'h1' } });
+    state = changeSize(state, 512, { height: 'h4', normal: 'n4' }, 'g1');
+    expect(state.maps.normal?.derivedFrom).toEqual({ kind: 'height', key: 'h4' });
+    expect(isStale(state, 'normal')).toBe(false);
+    state = editMaps(state, [{ kind: 'normal', workingKey: 'n5', derivedFrom: { kind: 'height', key: 'h4' } }], 'Regenerate normal map');
+    expect(undoMaps(state, ['normal']).maps.normal?.derivedFrom).toEqual({ kind: 'height', key: 'h4' });
+  });
+
+  it('normal-from-height R9 a normal map is stale once its height is cleared', () => {
+    const state = clearMap(placeMap(placeMap(empty, 'height', image('h1')), 'normal', { ...image('n1'), derivedFrom: { kind: 'height', key: 'h1' } }), 'height');
+    expect(isStale(state, 'normal')).toBe(true);
+  });
+
   it('R21 a stale derived map stays stale', () => {
     let state = editMaps(start(), [{ kind: 'normal', workingKey: 'n2' }], 'Denoise');
     expect(isStale(state, 'ao')).toBe(true);

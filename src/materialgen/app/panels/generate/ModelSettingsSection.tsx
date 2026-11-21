@@ -18,15 +18,16 @@ const DECOMPOSITION_NAME = 'Metal-Roughness';
 const DECOMPOSITION_VALUE = 'decomposition';
 const SINGLE_MAP_CHOICES: readonly SingleMapChoice[] = [...PLAN_MAPS, 'metal-roughness'];
 
-const cardValue = (card: CardReport): string => (card.card === 'decomposition' ? DECOMPOSITION_VALUE : `image-${card.card}`);
-/** A map image is named by its maps ("Albedo", "Normal + Height"), as the setup overlay's chips are; an image with none is "Image N". */
+const HEIGHT_HINT = 'Also used to generate the normal map and the occlusion map automatically.';
+const cardValue =(card: CardReport): string => (card.card === 'decomposition' ? DECOMPOSITION_VALUE : `image-${card.card}`);
+/** A map image is named by its maps ("Albedo", "Albedo + Height"), as the setup overlay's chips are; an image with none is "Image N". */
 const cardName = (card: CardReport, colorMode: ColorMode): string =>
   card.card === 'decomposition' ? DECOMPOSITION_NAME : card.maps.length === 0 ? `Image ${card.card + 1}` : card.maps.map((map) => mapDisplayName(map, colorMode)).join(' + ');
 
 /**
  * Generation R1, R13, R15, R16, R19, R67: the Preset, a toggle row with one button per card of the plan (named by its maps, then Metal-Roughness), and one settings group
  * (Model, Resolution, Quality) for the chosen card with its own problem. Metal-Roughness has an on/off switch. An edit replaces the plan, so the Preset then shows what the
- * plan matches, or Custom (R4). In Single map (R2) the row is Albedo, Normal, Height and Metal-Roughness and a tab picks the map the plan generates, with no switch.
+ * plan matches, or Custom (R4). In Single map (R2) the row is Albedo, Height and Metal-Roughness and a tab picks the map the plan generates, with no switch.
  */
 export function ModelSettingsSection({ generation, colorMode, disabled }: ModelSettingsSectionProps): React.JSX.Element {
   const { choice, models, report, maxTextureSize } = generation;
@@ -39,9 +40,9 @@ export function ModelSettingsSection({ generation, colorMode, disabled }: ModelS
   const single = choice.entry === SINGLE_MAP_ID ? readSingleMap(choice.plan) : null;
   const options: SegmentOption<string>[] =
     single !== null
-      ? SINGLE_MAP_CHOICES.map((value) => ({ value, label: value === 'metal-roughness' ? DECOMPOSITION_NAME : mapDisplayName(value, colorMode) }))
+      ? SINGLE_MAP_CHOICES.map((value) => ({ value, label: value === 'metal-roughness' ? DECOMPOSITION_NAME : mapDisplayName(value, colorMode), ...(value === 'height' ? { hint: HEIGHT_HINT } : {}) }))
       : [
-          ...report.cards.filter((card) => card.card !== 'decomposition').map((card) => ({ value: cardValue(card), label: cardName(card, colorMode) })),
+          ...report.cards.filter((card) => card.card !== 'decomposition').map((card) => ({ value: cardValue(card), label: cardName(card, colorMode), ...(card.maps.includes('height') ? { hint: HEIGHT_HINT } : {}) })),
           { value: DECOMPOSITION_VALUE, label: DECOMPOSITION_NAME },
         ];
   const selectedValue = single ?? (options.some((option) => option.value === chosen) ? chosen : (options[0]?.value ?? DECOMPOSITION_VALUE));

@@ -32,7 +32,7 @@ function start(plan: GenerationPlan, patch: Partial<RunInput> = {}, harness: Har
 }
 
 describe('materialgen/generation R6 R7 R8 order and dependencies', () => {
-  it('R7 given preset 3 and a finished lead, Normal, Height and the describe call are all in flight before the decomposition starts, and it starts without waiting for them', async () => {
+  it('R7 given preset 3 and a finished lead, Height and the describe call are both in flight before the decomposition starts, and it starts without waiting for Height', async () => {
     const run = start(preset('preset-3'));
     await flush();
     expect(run.harness.calls).toHaveLength(1); // Image 1 alone: nothing starts before what it needs is validated (R6)
@@ -40,29 +40,29 @@ describe('materialgen/generation R6 R7 R8 order and dependencies', () => {
 
     run.harness.answerCanvas(run.harness.calls[0]!);
     await flush();
-    expect(run.harness.calls.map((call) => call.provider)).toEqual(['gemini', 'openai', 'openai']); // Normal and Height
-    expect(run.harness.describeCalls).toHaveLength(1); // the describe step runs in parallel with them
-    expect(run.harness.calls).toHaveLength(3); // no decomposition yet
+    expect(run.harness.calls.map((call) => call.provider)).toEqual(['gemini', 'openai']); // Height
+    expect(run.harness.describeCalls).toHaveLength(1); // the describe step runs in parallel with it
+    expect(run.harness.calls).toHaveLength(2); // no decomposition yet
 
     run.harness.settleDescribe({ ok: true, value: ANSWER });
     await flush();
-    expect(run.harness.calls).toHaveLength(4); // the decomposition image started while Normal and Height are still out
-    expect(run.harness.calls[3]!.request.prompt).toContain('MASKS PROMPT');
+    expect(run.harness.calls).toHaveLength(3); // the decomposition image started while Height is still out
+    expect(run.harness.calls[2]!.request.prompt).toContain('MASKS PROMPT');
 
     for (const call of run.harness.calls.slice(1)) run.harness.answerCanvas(call);
     const report = await run.done;
     expect(report.status).toBe('done');
   });
 
-  it('R7 R8 given the lead holds Albedo and Normal packed, no Normal call is made later; only Height, the describe step and the decomposition run', async () => {
-    const plan = assignMap(preset('preset-1'), 'normal', 0);
+  it('R7 R8 given the lead holds Albedo and Height packed, no Height call is made later; only the describe step and the decomposition run', async () => {
+    const plan = assignMap(preset('preset-1'), 'height', 0);
     const run = start(plan);
     await flush();
     run.harness.answerCanvas(run.harness.calls[0]!);
     await flush();
-    expect(run.harness.calls).toHaveLength(2); // the lead and Height
-    expect(run.harness.calls[1]!.request.prompt).toContain('height map');
-    expect(run.harness.commits[0]!.map((map) => map.kind)).toEqual(['albedo', 'normal']);
+    expect(run.harness.calls).toHaveLength(1); // the lead alone
+    expect(run.harness.describeCalls).toHaveLength(1);
+    expect(run.harness.commits[0]!.map((map) => map.kind)).toEqual(['albedo', 'height']);
     run.controller.abort();
     await run.done;
   });
@@ -74,11 +74,11 @@ describe('materialgen/generation R6 R7 R8 order and dependencies', () => {
     await flush();
     for (const call of run.harness.calls.slice(1)) run.harness.answerCanvas(call);
     await flush();
-    expect(run.harness.calls).toHaveLength(3);
+    expect(run.harness.calls).toHaveLength(2);
     run.harness.settleDescribe({ ok: true, value: ANSWER });
     await flush();
-    expect(run.harness.calls).toHaveLength(4);
-    run.harness.answerCanvas(run.harness.calls[3]!);
+    expect(run.harness.calls).toHaveLength(3);
+    run.harness.answerCanvas(run.harness.calls[2]!);
     expect((await run.done).status).toBe('done');
   });
 
@@ -89,31 +89,31 @@ describe('materialgen/generation R6 R7 R8 order and dependencies', () => {
     await flush();
     expect(run.harness.describeCalls).toHaveLength(0);
     for (const call of run.harness.calls.slice(1)) run.harness.answerCanvas(call);
-    expect((await run.done).message).toBe('Generated: Albedo, Normal, Height');
+    expect((await run.done).message).toBe('Generated: Albedo, Height');
   });
 });
 
 describe('materialgen/generation R6 R7 R57 the existing Albedo and the lead on any image', () => {
   const existingAlbedo = new Blob(['existing-albedo'], { type: 'image/png' });
   const seeded = (plan: GenerationPlan, references: Blob[] = []): RunInput['resume'] => ({ plan, userText: '', colorMode: 'albedo', references, finished: [], albedoReference: existingAlbedo, describe: null });
-  const noAlbedo = (): GenerationPlan => ({ ...preset('preset-2'), images: preset('preset-2').images.slice(1) }); // Image 1 = Normal, Image 2 = Height, Metal-Roughness card
+  const noAlbedo = (): GenerationPlan => ({ ...preset('preset-2'), images: preset('preset-2').images.slice(1) }); // Image 1 = Height, Metal-Roughness card
 
-  it('R7 given Normal and Height on separate images and the Metal-Roughness card, with an existing Albedo, the Normal call, the Height call and the describe call start together with the existing Albedo attached, and the decomposition starts when the describe call has answered', async () => {
+  it('R7 given Height on its own image and the Metal-Roughness card, with an existing Albedo, the Height call and the describe call start together with the existing Albedo attached, and the decomposition starts when the describe call has answered', async () => {
     const plan = noAlbedo();
     const run = start(plan, { resume: seeded(plan) });
     await flush();
-    expect(run.harness.calls).toHaveLength(2); // both map images at once, no lead to wait for
+    expect(run.harness.calls).toHaveLength(1); // the map image at once, no lead to wait for
     expect(run.harness.describeCalls).toHaveLength(1);
     expect(run.harness.describeCalls[0]!.reference).toBe(existingAlbedo);
     for (const call of run.harness.calls) expect(call.request.images).toEqual([existingAlbedo]);
     run.harness.settleDescribe({ ok: true, value: ANSWER });
     await flush();
-    expect(run.harness.calls).toHaveLength(3);
-    expect(run.harness.calls[2]!.request.prompt).toContain('MASKS PROMPT');
+    expect(run.harness.calls).toHaveLength(2);
+    expect(run.harness.calls[1]!.request.prompt).toContain('MASKS PROMPT');
     for (const call of run.harness.calls) run.harness.answerCanvas(call);
     const report = await run.done;
     expect(report.status).toBe('done');
-    expect(report.committed).toEqual(['Normal', 'Height', 'Metal-Roughness']);
+    expect(report.committed).toEqual(['Height', 'Metal-Roughness']);
     expect(run.harness.commits.flat().map((map) => map.kind)).not.toContain('albedo'); // Albedo is not touched
   });
 
@@ -131,7 +131,7 @@ describe('materialgen/generation R6 R7 R57 the existing Albedo and the lead on a
   });
 
   it('R7 R39 given the lead holds Albedo on Image 2, Image 2 runs first, takes the references, and Image 1 starts after it with the albedo reference', async () => {
-    const swapped = assignMap(assignMap(preset('preset-1'), 'normal', 0), 'albedo', 1); // Image 1 = Normal, Image 2 = Albedo, Image 3 = Height
+    const swapped = assignMap(assignMap(preset('preset-1'), 'height', 0), 'albedo', 1); // Image 1 = Height, Image 2 = Albedo
     const references = [new Blob(['photo'])];
     const run = start({ ...swapped, decomposition: null }, { references });
     await flush();
@@ -140,13 +140,13 @@ describe('materialgen/generation R6 R7 R57 the existing Albedo and the lead on a
     expect(run.harness.calls[0]!.request.images).toEqual(references);
     run.harness.answerCanvas(run.harness.calls[0]!);
     await flush();
-    expect(run.harness.calls).toHaveLength(3); // Image 1 (Normal) and Image 3 (Height)
+    expect(run.harness.calls).toHaveLength(2); // Image 1 (Height) after Image 2
     for (const call of run.harness.calls.slice(1)) {
       expect(call.request.images).toHaveLength(1);
       expect(call.request.images).not.toEqual(references);
     }
     for (const call of run.harness.calls.slice(1)) run.harness.answerCanvas(call);
-    expect((await run.done).committed).toEqual(['Albedo', 'Normal', 'Height']);
+    expect((await run.done).committed).toEqual(['Albedo', 'Height']);
   });
 
   it('R39 with no Albedo in the plan the user\'s references are not sent to any call', async () => {
@@ -164,13 +164,12 @@ describe('materialgen/generation R6 R7 R57 the existing Albedo and the lead on a
     const run = start(plan, { resume: seeded(plan) });
     await flush();
     run.harness.calls[0]!.settle({ ok: false, error: providerError('quota') });
-    run.harness.answerCanvas(run.harness.calls[1]!);
     run.harness.settleDescribe({ ok: true, value: ANSWER });
     await flush();
-    run.harness.answerCanvas(run.harness.calls[2]!);
+    run.harness.answerCanvas(run.harness.calls[1]!);
     const report = await run.done;
     expect(report.failures.map((failure) => failure.jobId)).toEqual(['image-1']);
-    expect(report.committed).toEqual(['Height', 'Metal-Roughness']);
+    expect(report.committed).toEqual(['Metal-Roughness']);
     expect(report.checkpoint.albedoReference).toBe(existingAlbedo);
   });
 });
@@ -247,7 +246,7 @@ describe('materialgen/generation R40 R41 R42 committing as it goes', () => {
     expect(run.harness.commits[0]!.map((map) => map.kind)).toEqual(['albedo']);
     run.harness.answerCanvas(run.harness.calls[1]!);
     await flush();
-    expect(run.harness.commits.map((commit) => commit.map((map) => map.kind))).toEqual([['albedo'], ['normal']]);
+    expect(run.harness.commits.map((commit) => commit.map((map) => map.kind))).toEqual([['albedo'], ['height']]);
     run.controller.abort();
     const report = await run.done;
     expect(report.checkpoint.albedoReference).not.toBeNull();
@@ -271,8 +270,8 @@ describe('materialgen/generation R40 R41 R42 committing as it goes', () => {
     await flush();
     run.controller.abort();
     await run.done;
-    expect(run.progress[0]).toEqual({ finished: 0, total: 4 });
-    expect(run.progress.at(-1)).toEqual({ finished: 1, total: 4 });
+    expect(run.progress[0]).toEqual({ finished: 0, total: 3 });
+    expect(run.progress.at(-1)).toEqual({ finished: 1, total: 3 });
   });
 
   it('R40 a tile smaller than S is noted as scaled up', async () => {
@@ -285,7 +284,7 @@ describe('materialgen/generation R40 R41 R42 committing as it goes', () => {
   });
 
   it('R50 a run that cut a packed image says so', async () => {
-    const run = start(assignMap(preset('preset-1'), 'normal', 0));
+    const run = start(assignMap(preset('preset-1'), 'height', 0));
     await flush();
     run.harness.answerCanvas(run.harness.calls[0]!);
     await flush();
@@ -342,14 +341,14 @@ describe('materialgen/generation R43 R44 cancel', () => {
 
 describe('materialgen/generation R47 R52 R53 R54 validation failures', () => {
   it('R52 R53 given GPT returns 1024x1024 for a 2:1 canvas, the image fails with a retryable validation error naming it and none of its maps is committed', async () => {
-    const plan = assignMap(preset('preset-2'), 'normal', 0);
+    const plan = assignMap(preset('preset-2'), 'height', 0);
     const run = start(plan);
     await flush();
     const lead = run.harness.calls[0]!;
     expect(lead.request.canvas!.width).toBeGreaterThan(lead.request.canvas!.height); // a wide canvas for two maps
     lead.settle({ ok: true, value: fakeImage(1024, 1024) });
     const report = await run.done;
-    expect(report.failures).toEqual([{ jobId: 'image-1', message: expect.stringContaining('Image 1 (Albedo, Normal): the returned image is not') as string, retryable: true, category: 'validation' }]);
+    expect(report.failures).toEqual([{ jobId: 'image-1', message: expect.stringContaining('Image 1 (Albedo, Height): the returned image is not') as string, retryable: true, category: 'validation' }]);
     expect(run.harness.commits).toHaveLength(0);
   });
 
@@ -369,8 +368,8 @@ describe('materialgen/generation R47 R52 R53 R54 validation failures', () => {
     await flush();
     run.harness.settleDescribe({ ok: true, value: ANSWER });
     await flush();
-    run.harness.calls[3]!.settle({ ok: true, value: fakeImage(1024, 1024) });
-    for (const call of run.harness.calls.slice(1, 3)) run.harness.answerCanvas(call);
+    run.harness.calls[2]!.settle({ ok: true, value: fakeImage(1024, 1024) });
+    for (const call of run.harness.calls.slice(1, 2)) run.harness.answerCanvas(call);
     await run.done;
     expect(run.harness.decompositions).toHaveLength(1);
     expect(run.harness.decompositions[0]!.pixels.width).toBe(1024);
@@ -387,7 +386,7 @@ describe('materialgen/generation R47 R52 R53 R54 validation failures', () => {
     for (const call of harness.calls.slice(1)) harness.answerCanvas(call);
     const report = await run.done;
     expect(report.status).toBe('partial');
-    expect(report.committed).toEqual(['Albedo', 'Normal', 'Height']);
+    expect(report.committed).toEqual(['Albedo', 'Height']);
     expect(report.failures[0]!.message).toBe('Metal-Roughness image: covers only 20% of the albedo');
   });
 });
@@ -411,15 +410,14 @@ describe('materialgen/generation R54 R55 R57 R60 errors and partial success', ()
     run.harness.answerCanvas(run.harness.calls[0]!);
     await flush();
     run.harness.calls[1]!.settle({ ok: false, error: providerError('moderation', false) });
-    run.harness.answerCanvas(run.harness.calls[2]!);
     run.harness.settleDescribe({ ok: true, value: ANSWER });
     await flush();
-    run.harness.answerCanvas(run.harness.calls[3]!);
+    run.harness.answerCanvas(run.harness.calls[2]!);
     const report = await run.done;
     expect(report.status).toBe('partial');
-    expect(report.message).toBe('Generated 3 of 4 images');
-    expect(report.committed).toEqual(['Albedo', 'Height', 'Metal-Roughness']);
-    expect(report.failures.map((failure) => failure.message)).toEqual(['Image 2 (Normal): Something went wrong.']);
+    expect(report.message).toBe('Generated 2 of 3 images');
+    expect(report.committed).toEqual(['Albedo', 'Metal-Roughness']);
+    expect(report.failures.map((failure) => failure.message)).toEqual(['Image 2 (Height): Something went wrong.']);
   });
 
   it('R57 R54 a failed describe step lets the map images finish, skips the decomposition image only, and names the step', async () => {
@@ -430,10 +428,10 @@ describe('materialgen/generation R54 R55 R57 R60 errors and partial success', ()
     run.harness.settleDescribe({ ok: false, message: 'the answer held no components' });
     for (const call of run.harness.calls.slice(1)) run.harness.answerCanvas(call);
     const report = await run.done;
-    expect(run.harness.calls).toHaveLength(3);
+    expect(run.harness.calls).toHaveLength(2);
     expect(report.failures).toEqual([{ jobId: 'describe', message: 'Describe step: the answer held no components', retryable: true, category: 'validation' }]);
     expect(report.describeAttempt?.status).toBe('failed');
-    expect(report.committed).toEqual(['Albedo', 'Normal', 'Height']);
+    expect(report.committed).toEqual(['Albedo', 'Height']);
   });
 
   it('R55 a commit the maps module refused fails that image and is reported', async () => {
@@ -453,7 +451,7 @@ describe('materialgen/generation R54 R55 R57 R60 errors and partial success', ()
     await flush();
     for (const call of run.harness.calls.slice(1)) run.harness.answerCanvas(call);
     const report = await run.done;
-    expect(report.message).toBe('Generated: Albedo, Normal, Height, Metal-Roughness');
+    expect(report.message).toBe('Generated: Albedo, Height, Metal-Roughness');
     expect(report.status).toBe('done');
   });
 });
@@ -465,10 +463,9 @@ describe('materialgen/generation R56 R59 retry', () => {
     run.harness.answerCanvas(run.harness.calls[0]!);
     await flush();
     run.harness.calls[1]!.settle({ ok: false, error: providerError('timeout') });
-    run.harness.answerCanvas(run.harness.calls[2]!);
     run.harness.settleDescribe({ ok: true, value: ANSWER });
     await flush();
-    run.harness.answerCanvas(run.harness.calls[3]!);
+    run.harness.answerCanvas(run.harness.calls[2]!);
     return { report: await run.done, harness: run.harness };
   }
 
@@ -484,8 +481,8 @@ describe('materialgen/generation R56 R59 retry', () => {
     retry.harness.answerCanvas(retry.harness.calls[0]!);
     const done = await retry.done;
     expect(done.status).toBe('done');
-    expect(done.message).toBe('Generated: Albedo, Normal, Height, Metal-Roughness');
-    expect(retry.harness.commits.map((commit) => commit.map((map) => map.kind))).toEqual([['normal']]);
+    expect(done.message).toBe('Generated: Albedo, Height, Metal-Roughness');
+    expect(retry.harness.commits.map((commit) => commit.map((map) => map.kind))).toEqual([['height']]);
   });
 
   it('R59 given the lead failed, Retry reruns the lead with the same prompt and references', async () => {

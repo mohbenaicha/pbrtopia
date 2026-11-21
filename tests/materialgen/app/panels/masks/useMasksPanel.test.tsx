@@ -4,12 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PixelImage } from '@mat/imageops';
 import type { MapsState, MasksCommit } from '@mat/maps';
 import { encodePng } from '@mat/maps/png/pngCodec';
-import { parseBaseMaterials, parseMasksRecord, type MasksRecord } from '@mat/masks';
+import { parseBaseMaterials, parseMasksRecord, type MasksRecord } from '@shared/materialMasks';
 import { useMasksPanel, type MasksPanelPorts } from '../../../../../src/materialgen/app/panels/masks/useMasksPanel';
 
 const jobs = vi.hoisted(() => ({ failing: false }));
-vi.mock('@mat/masks/worker/startMaskJob', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@mat/masks/worker/startMaskJob')>();
+vi.mock('@shared/materialMasks/worker/startMaskJob', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@shared/materialMasks/worker/startMaskJob')>();
   return { ...original, startMaskJob: ((...args: Parameters<typeof original.startMaskJob>) => (jobs.failing ? Promise.reject(new Error('worker stopped')) : original.startMaskJob(...args))) as typeof original.startMaskJob };
 });
 

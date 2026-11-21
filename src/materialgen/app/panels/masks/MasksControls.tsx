@@ -1,4 +1,4 @@
-import { MasksPanel } from '@mat/masks';
+import { ModelMasksPanel } from '@mat/masks';
 import { useMasksPanel, type MasksPanelPorts } from './useMasksPanel';
 
 /**
@@ -11,5 +11,5 @@ export function MasksControls(ports: MasksPanelPorts): React.JSX.Element | null 
 
 /** The panel with its hook; kept apart so the hook runs only when there is a record to show. */
 function MasksBody(ports: MasksPanelPorts): React.JSX.Element {
-  return <MasksPanel {...useMasksPanel(ports)} />;
+  return <ModelMasksPanel {...useMasksPanel(ports)} />;
 }

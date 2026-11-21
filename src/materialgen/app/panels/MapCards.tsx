@@ -3,14 +3,17 @@ import { useRevealOnTour } from '@shared/tutorial';
 import { REVEAL_MAP_ACTIONS } from '@mat/tutorial';
 import type { RawRecord } from '@shared/projects';
 import { ConfirmDialog, Disclosure, ImageViewer } from '@shared/ui-kit';
-import { aoSourceFor, aoValuesFor, readAoSettings, writeAoSettings, type AoSource, type EditValues } from '@mat/imageops';
+import { aoSourceFor, aoValuesFor, normalValuesFor, readAoSettings, readNormalSettings, writeAoSettings, writeNormalSettings, type AoSource, type EditValues } from '@mat/imageops';
 import { MapCard, buildCardModel, kindLabel, readMapPixels, type MapCardActions, type MapKind, type MapRecord, type MapsController, type MapsState } from '@mat/maps';
 import type { ColorMode, MaterialRecord, PreviewValues } from '@mat/storage';
 import { regenerateAo } from '../imageops/regenerateAo';
+import { regenerateNormal } from '../imageops/regenerateNormal';
 import type { ImageopsSessions } from '../imageops/useImageopsSessions';
 import { AoCardActions } from './AoCardActions';
 import { AoDialog } from './AoDialog';
 import { FilterDialog } from './FilterDialog';
+import { NormalCardActions } from './NormalCardActions';
+import { NormalDialog } from './NormalDialog';
 import { READ_ONLY_REASON } from './generateReason';
 import { CARD_SLOTS } from './slotCards';
 import { useGeometryTools, type HeldToolView } from './tools/useGeometryTools';
@@ -29,6 +32,9 @@ interface MapCardsProps {
   /** The AO parameters last used, kept in the record (imageops R43), and how a use of the tool changes them. */
   aoParams: MaterialRecord['aoParams'];
   onAoParamsChange(next: NonNullable<MaterialRecord['aoParams']>): void;
+  /** The normal parameters last used, kept in the record (normal-from-height R6), and how a use of the tool changes them. */
+  normalParams: MaterialRecord['normalParams'];
+  onNormalParamsChange(next: NonNullable<MaterialRecord['normalParams']>): void;
   /** Gives the viewport the picture an open Crop or Mirror is drawing, or null to show the maps again (imageops R53, R59). */
   onToolViewChange(view: HeldToolView | null): void;
   /** The project's masks record, for the swatches that scope a filter (imageops R78). */
@@ -46,18 +52,19 @@ function MapViewer({ kind, map, size, colorMode, readBlob, onDownload, onClose }
 }
 
 /** Materialgen maps R34, R44-R49 and imageops R9, R17: the five slot cards with Clear's confirmation, the viewer, the filter dialog and the controller's message. */
-export function MapCards({ state, colorMode, canWrite, controller, readBlob, sessions, aoParams, onAoParamsChange, onToolViewChange, masksRecord, tiling, onTilingChange }: MapCardsProps): React.JSX.Element {
+export function MapCards({ state, colorMode, canWrite, controller, readBlob, sessions, aoParams, onAoParamsChange, normalParams, onNormalParamsChange, onToolViewChange, masksRecord, tiling, onTilingChange }: MapCardsProps): React.JSX.Element {
   const [mapsOpen, setMapsOpen] = useState(true); // the grid of the five slots, open at first so the drop zones are in reach
   const [clearing, setClearing] = useState<MapKind | null>(null);
   const [viewing, setViewing] = useState<MapKind | null>(null);
   const [filtering, setFiltering] = useState<{ kind: MapKind; map: MapRecord } | null>(null);
   const [aoToolOpen, setAoToolOpen] = useState(false);
+  const [normalToolOpen, setNormalToolOpen] = useState(false);
   const [geometryToolOpen, setGeometryToolOpen] = useState(false);
   const [tourActions, setTourActions] = useState(false); // the guided tour shows the cards' buttons without a pointer over them (tutorial R22)
   const [paintOpen, setPaintOpen] = useState(false); // the splat painter's session (compositing R2): exclusive with every other op
   useRevealOnTour(REVEAL_MAP_ACTIONS, { open: () => setTourActions(true), close: () => setTourActions(false) });
   const [working, setWorking] = useState(false); // Swap diagonals or Regenerate is running: they have no dialog but are ops too
-  const dialogOpen = filtering !== null || aoToolOpen;
+  const dialogOpen = filtering !== null || aoToolOpen || normalToolOpen;
   const opOpen = dialogOpen || geometryToolOpen || paintOpen || working; // imageops R9: one op at a time
   const exclusive = async (work: () => Promise<void>): Promise<void> => {
     setWorking(true);
@@ -86,6 +93,23 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
     }
   };
   const rememberAo = (source: AoSource, values: EditValues): void => onAoParamsChange(writeAoSettings(aoParams, source, values));
+  const normalValues = useMemo(() => normalValuesFor(readNormalSettings(normalParams)), [normalParams]);
+  const regenerateNormalMap = async (): Promise<void> => {
+    const heightMap = state.maps.height;
+    if (heightMap === undefined) return;
+    try {
+      const result = await regenerateNormal({
+        heightKey: heightMap.workingKey,
+        heightLabel: kindLabel('height', colorMode),
+        values: normalValues,
+        ports: { readPixels: async (key) => readMapPixels(await readBlob(key)), openNormal: sessions.openNormal, applyEdits: controller.applyEdits },
+      });
+      if (!result.ok && result.message !== undefined) controller.refuse(result.message);
+    } catch {
+      controller.refuse('Could not regenerate the normal map. Nothing changed.'); // the file could not be read or saved
+    }
+  };
+  const rememberNormal = (values: EditValues): void => onNormalParamsChange(writeNormalSettings(values));
   const { busy, message } = controller;
   useUndoShortcut({ state, colorMode, canWrite, busy: busy.size > 0 || opOpen, undo: (kinds) => void controller.undo(kinds) });
   const geometryTools = useGeometryTools({
@@ -112,6 +136,17 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
       busy={busy.has('ao') || busy.has('size')}
       onOpenTool={() => setAoToolOpen(true)}
       onRegenerate={() => exclusive(regenerate)}
+    />
+  );
+  const normalButtons = (
+    <NormalCardActions
+      hasHeight={state.maps.height !== undefined}
+      canWrite={canWrite}
+      readOnlyReason={READ_ONLY_REASON}
+      opOpen={opOpen}
+      busy={busy.has('normal') || busy.has('size')}
+      onOpenTool={() => setNormalToolOpen(true)}
+      onRegenerate={() => exclusive(regenerateNormalMap)}
     />
   );
   const viewedMap = viewing === null ? undefined : state.maps[viewing];
@@ -151,7 +186,7 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
             {CARD_SLOTS.map((slot) => (
               <MapCard
                 key={slot}
-                tutorial={slot === 'occlusion' ? 'maps-occlusion' : slot === CARD_SLOTS[0] ? 'maps-card-actions' : undefined}
+                tutorial={slot === 'occlusion' ? 'maps-occlusion' : slot === 'normal' ? 'maps-normal' : slot === CARD_SLOTS[0] ? 'maps-card-actions' : undefined}
                 model={buildCardModel(state, slot, colorMode)}
                 canWrite={canWrite}
                 opOpen={opOpen}
@@ -159,7 +194,7 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
                 isBusy={(kind) => busy.has(kind) || busy.has('size')}
                 readBlob={readBlob}
                 actions={actions}
-                extras={slot === 'occlusion' ? { ao: aoButtons } : {}}
+                extras={slot === 'occlusion' ? { ao: aoButtons } : slot === 'normal' ? { normal: normalButtons } : {}}
               />
             ))}
           </div>
@@ -182,6 +217,17 @@ export function MapCards({ state, colorMode, canWrite, controller, readBlob, ses
       {viewing !== null && viewedMap !== undefined && <MapViewer kind={viewing} map={viewedMap} size={state.size} colorMode={colorMode} readBlob={readBlob} onDownload={() => void controller.download(viewing)} onClose={() => setViewing(null)} />}
       {filtering !== null && (
         <FilterDialog kind={filtering.kind} map={filtering.map} colorMode={colorMode} controller={controller} readBlob={readBlob} openSession={sessions.openFilter} onClose={() => setFiltering(null)} masksRecord={masksRecord} labelsKey={state.maps.labels?.workingKey ?? null} albedoKey={(state.maps.albedo ?? state.maps.diffuse)?.workingKey ?? null} />
+      )}
+      {normalToolOpen && state.maps.height !== undefined && (
+        <NormalDialog
+          maps={{ height: state.maps.height, ...(state.maps.normal ? { normal: state.maps.normal } : {}) }}
+          initial={normalValues}
+          controller={controller}
+          readBlob={readBlob}
+          openSession={sessions.openNormal}
+          onSettingsUsed={rememberNormal}
+          onClose={() => setNormalToolOpen(false)}
+        />
       )}
       {aoToolOpen && (
         <AoDialog

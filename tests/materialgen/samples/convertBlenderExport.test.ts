@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { streamOf } from '../../support/zipStreams';
 import { createTestMaterialStore } from '../storage/materialStoreFixtures';
 import { decodePng, encodePng, type PixelImage } from '@mat/maps/png/pngCodec';
-import { parseMasksRecord } from '@mat/masks/record/masksRecord';
+import { parseMasksRecord } from '@shared/materialMasks';
 import { importMaterialZip } from '@mat/storage/zip/importMaterialZip';
 import { convertBlenderExport } from '@mat/samples/convertBlenderExport';
 import type { MaterialRecord } from '@mat/storage/materialRecord';

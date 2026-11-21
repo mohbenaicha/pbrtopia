@@ -18,6 +18,8 @@ interface MaterialMapsPanelProps {
   sessions: ImageopsSessions;
   aoParams: MaterialRecord['aoParams'];
   onAoParamsChange(next: NonNullable<MaterialRecord['aoParams']>): void;
+  normalParams: MaterialRecord['normalParams'];
+  onNormalParamsChange(next: NonNullable<MaterialRecord['normalParams']>): void;
   colorMode: ColorMode;
   canWrite: boolean;
   onToolViewChange(view: HeldToolView | null): void; // the transform an open Crop or Mirror puts on the viewport's maps (imageops R53)
@@ -32,13 +34,13 @@ interface MaterialMapsPanelProps {
  * cards (collapsible panels, picture with its buttons over it), top to bottom, then the export message. The Material Masks controls are not here (masks R48).
  */
 export function MaterialMapsPanel({
-  shading, onShadingChange, mapsState, maps, readBlob, sessions, aoParams, onAoParamsChange, colorMode, canWrite, onToolViewChange, masksRecord, tiling, onTilingChange, children,
+  shading, onShadingChange, mapsState, maps, readBlob, sessions, aoParams, onAoParamsChange, normalParams, onNormalParamsChange, colorMode, canWrite, onToolViewChange, masksRecord, tiling, onTilingChange, children,
 }: MaterialMapsPanelProps): React.JSX.Element {
   return (
     <PlainLeftPanel>
       <div className="material-slots">
         <PreviewShadingControl value={shading} onChange={onShadingChange} />
-        <MapCards state={mapsState} colorMode={colorMode} canWrite={canWrite} controller={maps} readBlob={readBlob} sessions={sessions} aoParams={aoParams} onAoParamsChange={onAoParamsChange} onToolViewChange={onToolViewChange} masksRecord={masksRecord} tiling={tiling} onTilingChange={onTilingChange} />
+        <MapCards state={mapsState} colorMode={colorMode} canWrite={canWrite} controller={maps} readBlob={readBlob} sessions={sessions} aoParams={aoParams} onAoParamsChange={onAoParamsChange} normalParams={normalParams} onNormalParamsChange={onNormalParamsChange} onToolViewChange={onToolViewChange} masksRecord={masksRecord} tiling={tiling} onTilingChange={onTilingChange} />
         {children}
       </div>
     </PlainLeftPanel>

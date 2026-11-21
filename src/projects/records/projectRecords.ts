@@ -1,11 +1,12 @@
 import type { MeshRecord } from './meshRecord';
 import type { CustomPlanStoredRecord, NamedPlanStoredRecord } from './customPlanRecords';
 import type { PictureRecord, SlotRecord } from './pictureRecords';
+import type { ProjectMasksRecord } from './projectMasksRecord';
 import type { StoredProvider } from './storedProviders';
 
 // The version of the set and settings records. The project record has its own, below: it moved to 2 with pictures and slots (specs/app/textures).
 export const CURRENT_SCHEMA_VERSION = 1;
-export const PROJECT_SCHEMA_VERSION = 2;
+export const PROJECT_SCHEMA_VERSION = 4; // 3: channel union and normalDetail (generation/normal-map R14); 4: the masks record and the masks picture origin (projection/mask-mode R22)
 export const MAX_PROJECT_NAME_LENGTH = 120;
 
 export interface ReferenceImageRecord {
@@ -16,11 +17,14 @@ export interface ReferenceImageRecord {
   height: number;
 }
 
+export type GenerateChannelValue = 'albedo' | 'normal' | 'metal-rough';
+
 // The generate panel's saved choices for one project; `generation/` owns what the values mean.
 export interface GenerateSettingsRecord {
   prompt: string;
   referenceImages: ReferenceImageRecord[];
-  channel: 'albedo';
+  channel: GenerateChannelValue;
+  normalDetail: 1 | 2 | 3 | 4; // how much fine relief a normal map asks for (normal-map R5)
   provider: StoredProvider;
   modelId: string;
   resolutionKey: '1K' | '2K' | '2.8K' | '4K'; // the output size asked of the image model
@@ -45,6 +49,7 @@ export interface ProjectRecord {
   pictures: PictureRecord[]; // generated pictures, oldest first
   slots: SlotRecord[]; // overrides only
   generate: GenerateSettingsRecord;
+  masks?: ProjectMasksRecord; // the project's one set of material masks; absent until a mask set is baked
   setIds: string[]; // newest last
   activeSetId?: string; // the set last open in projection mode
   thumbnailKey?: string;

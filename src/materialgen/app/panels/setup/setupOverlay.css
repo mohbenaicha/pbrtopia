@@ -13,10 +13,6 @@
   background: linear-gradient(135deg, var(--map-albedo-1) 0%, var(--map-albedo-2) 55%, var(--map-albedo-3) 100%);
 }
 
-.map-chip-thumb--normal {
-  background: radial-gradient(circle at 35% 35%, var(--map-normal-1) 0%, var(--map-normal-2) 45%, var(--map-normal-3) 100%);
-}
-
 .map-chip-thumb--height {
   background: linear-gradient(135deg, var(--map-height-1) 0%, var(--map-height-2) 60%, var(--map-height-3) 100%);
 }

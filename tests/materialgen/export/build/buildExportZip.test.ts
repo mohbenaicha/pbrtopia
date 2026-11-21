@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildExportZip, planExport, type BuildExportInput, type ExportOptions } from '@mat/export';
 import type { MapKind, MapRecord, MapsState, PixelImage } from '@mat/maps';
 import { decodePng } from '@mat/maps/png/pngCodec';
-import type { MasksRecord } from '@mat/masks';
+import type { MasksRecord } from '@shared/materialMasks';
 
 const record = (key: string): MapRecord => ({ originalKey: key, workingKey: key, undoKey: null, width: 4, height: 4 });
 const state = (): MapsState => ({ size: 4 as unknown as MapsState['size'], maps: { albedo: record('a'), normal: record('n'), height: record('h'), rough: record('r'), metal: record('m'), ao: record('o'), labels: record('l') } });

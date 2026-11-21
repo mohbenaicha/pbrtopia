@@ -1,7 +1,7 @@
 import type { PromptEnhancer } from '@shared/generation';
 import type { Provider, ProviderKeySource } from '@shared/keys';
 import type { DescribeTarget } from '@mat/generation';
-import type { StepOutcome } from '@mat/masks';
+import type { StepOutcome } from '@shared/materialMasks';
 
 interface DescribeBackends {
   target: DescribeTarget | null;

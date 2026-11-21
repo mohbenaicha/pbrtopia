@@ -1,4 +1,4 @@
-import { hasHeightOffset, type MasksRecord } from '@mat/masks';
+import { hasHeightOffset, type MasksRecord } from '@shared/materialMasks';
 
 /** Which of the baked maps one masks commit has to write. */
 export interface MasksWrites {

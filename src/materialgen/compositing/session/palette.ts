@@ -1,4 +1,4 @@
-import type { BaseMaterial } from '@mat/masks';
+import type { BaseMaterial } from '@shared/materialMasks';
 import type { PaintMaterial } from '../gpu/paintMaterial';
 import { SQUARE_SHAPE, type ShapeSlot } from '../plan/planStamps';
 

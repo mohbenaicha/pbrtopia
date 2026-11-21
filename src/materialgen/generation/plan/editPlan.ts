@@ -25,7 +25,7 @@ export function unassignMap(plan: GenerationPlan, map: PlanMap): GenerationPlan 
   return withImages(plan, plan.images.map((image) => ({ ...image, maps: image.maps.filter((held) => held !== map) })));
 }
 
-/** R13: appends an empty card with the given settings, up to three map images. */
+/** R13: appends an empty card with the given settings, up to two map images. */
 export function addImage(plan: GenerationPlan, settings: SheetSettings): GenerationPlan {
   if (plan.images.length >= MAX_MAP_IMAGES) return plan;
   return withImages(plan, [...plan.images, { maps: [], settings: { ...settings } }]);

@@ -18,7 +18,7 @@ const failedReport = (patch: Partial<RunReport> = {}): RunReport => ({
   status: 'partial',
   message: 'Generated 1 of 2 images',
   committed: ['Albedo'],
-  failures: [{ jobId: 'image-2', message: 'Image 2 (Normal): the model returned a bad size', retryable: true, category: 'bad-request' }],
+  failures: [{ jobId: 'image-2', message: 'Image 2 (Height): the model returned a bad size', retryable: true, category: 'bad-request' }],
   attempts: [],
   describeAttempt: null,
   checkpoint: {} as RunReport['checkpoint'],
@@ -78,20 +78,20 @@ describe('materialgen/generation Generate section', () => {
     fireEvent.click(summary);
     const dialog = within(screen.getByRole('dialog'));
     expect(dialog.getAllByRole('listitem').length).toBeGreaterThanOrEqual(4);
-    expect(dialog.getByText('Image 2 (Normal)')).toBeTruthy();
+    expect(dialog.getByText('Image 2 (Height)')).toBeTruthy();
     expect(dialog.getByText(/images - maps 1024 px/)).toBeTruthy();
   });
 
   it('R60 a run that made everything shows its one line', () => {
-    renderSection(makeGenerationPanel({ run: { result: failedReport({ status: 'done', message: 'Generated: Albedo, Normal, Height', failures: [] }) } }));
-    expect(screen.getByRole('status').textContent).toContain('Generated: Albedo, Normal, Height');
+    renderSection(makeGenerationPanel({ run: { result: failedReport({ status: 'done', message: 'Generated: Albedo, Height', failures: [] }) } }));
+    expect(screen.getByRole('status').textContent).toContain('Generated: Albedo, Height');
   });
 
   it('R55 R56 a failed image is named in the error panel and Retry runs it again', () => {
     const generation = renderSection(makeGenerationPanel({ run: { result: failedReport(), canRetry: true } }));
     const panel = screen.getByRole('alert');
     expect(within(panel).getByText('Generated 1 of 2 images')).toBeTruthy();
-    expect(within(panel).getByText(/Image 2 \(Normal\)/)).toBeTruthy();
+    expect(within(panel).getByText(/Image 2 \(Height\)/)).toBeTruthy();
     fireEvent.click(within(panel).getByRole('button', { name: 'Retry' }));
     expect(generation.run.retry).toHaveBeenCalledTimes(1);
   });

@@ -132,11 +132,13 @@ export function readMaterialRecord(raw: RawRecord): MaterialRecord {
   const customPlan = readOptional(raw['customPlan'], (present) => readJsonObject(present, 'customPlan'));
   const masks = readOptional(raw['masks'], (present) => readJsonObject(present, 'masks'));
   const aoParams = readOptional(raw['aoParams'], (present) => readJsonObject(present, 'aoParams'));
+  const normalParams = readOptional(raw['normalParams'], (present) => readJsonObject(present, 'normalParams'));
   if (thumbnailKey !== undefined) record.thumbnailKey = thumbnailKey;
   if (raw['partlyDeleted'] === true) record.partlyDeleted = true;
   if (customPlan) record.customPlan = customPlan;
   if (masks) record.masks = masks;
   if (aoParams) record.aoParams = aoParams;
+  if (normalParams) record.normalParams = normalParams;
   return record;
 }
 

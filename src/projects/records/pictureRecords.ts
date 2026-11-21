@@ -11,8 +11,14 @@ export interface PictureRecord {
   width: number;
   height: number;
   createdAt: string; // ISO time
-  origin: { kind: 'bake'; setId: string }; // informational: the set may be deleted later
+  origin: PictureOrigin;
 }
+
+// Informational: a bake's set may be deleted later; a generated picture names the picture it was made from (normal-map R10).
+export type PictureOrigin =
+  | { kind: 'bake'; setId: string }
+  | { kind: 'generate'; channel: 'normal'; sourcePictureId: string; detail: 1 | 2 | 3 | 4; modelId: string }
+  | { kind: 'masks'; setId: string }; // the rough and metal pictures a masks bake owns (mask-mode R14)
 
 // One map of one material showing a generated picture instead of the model file's own map. No record means the slot shows the file's picture.
 export interface SlotRecord {
@@ -34,8 +40,21 @@ function readPicture(value: unknown, path: string): PictureRecord {
     width: readCount(raw['width'], `${path}.width`, 1),
     height: readCount(raw['height'], `${path}.height`, 1),
     createdAt: readTimestamp(raw['createdAt'], `${path}.createdAt`),
-    origin: { kind: readChoice(origin['kind'], `${path}.origin.kind`, ['bake'] as const), setId: readNonEmptyText(origin['setId'], `${path}.origin.setId`) },
+    origin: readOrigin(origin, `${path}.origin`),
   };
+}
+
+function readOrigin(origin: Record<string, unknown>, path: string): PictureOrigin {
+  if (origin['kind'] === 'generate') {
+    return {
+      kind: 'generate',
+      channel: readChoice(origin['channel'], `${path}.channel`, ['normal'] as const),
+      sourcePictureId: readNonEmptyText(origin['sourcePictureId'], `${path}.sourcePictureId`),
+      detail: readChoice(origin['detail'], `${path}.detail`, [1, 2, 3, 4] as const),
+      modelId: readNonEmptyText(origin['modelId'], `${path}.modelId`),
+    };
+  }
+  return { kind: readChoice(origin['kind'], `${path}.kind`, ['bake', 'masks'] as const), setId: readNonEmptyText(origin['setId'], `${path}.setId`) };
 }
 
 /** Strict: a bad field, a missing list or two pictures with one id is a FieldProblem (the project is corrupt). */

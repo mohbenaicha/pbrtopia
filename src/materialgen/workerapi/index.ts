@@ -9,4 +9,4 @@ export { readMapPixels } from '../maps/readMapPixels';
 export { ORM_DEFAULTS } from '../imageops/pack/ormPack';
 export type { MapKind } from '../maps/mapKinds';
 export type { MapsState } from '../maps/mapRecord';
-export type { MasksRecord, PaletteEntry } from '../masks/record/masksRecord';
+export type { MasksRecord, PaletteEntry } from '@shared/materialMasks';

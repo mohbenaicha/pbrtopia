@@ -3,7 +3,7 @@ import type { RawRecord } from '@shared/projects';
 import { CATEGORY_LABELS, ControlPanel, MAX_PREVIEW_SIZE, OpDialog, blendByCoverage, controlsFor, createDefaultEditValues, downsampleBox, editKindOf, hasAnyChanges, useOpSession, type PixelImage } from '@mat/imageops';
 import { pixelsToPictureUrl } from '@mat/imageops/ui/pixelPictureUrl';
 import { kindLabel, readMapPixels, type MapKind, type MapRecord, type MapsController } from '@mat/maps';
-import { MaskSwatchGrid } from '@mat/masks';
+import { MaskSwatchGrid } from '@shared/materialMasks/ui';
 import type { ColorMode } from '@mat/storage';
 import type { ImageopsSessions } from '../imageops/useImageopsSessions';
 import { useFilterMaskScope } from './useFilterMaskScope';

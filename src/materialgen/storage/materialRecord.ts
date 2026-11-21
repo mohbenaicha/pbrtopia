@@ -30,6 +30,7 @@ export interface MaterialRecord {
   maps: Partial<Record<MapKind, MapRecord>>;
   masks?: RawRecord; // typed by the masks wave
   aoParams?: RawRecord; // typed by the imageops wave
+  normalParams?: RawRecord; // the Blur and Strength last used by the Normal tool (normal-from-height R6)
   preview: PreviewValues;
 }
 

@@ -8,19 +8,19 @@ export type ModelCatalog = Record<Provider, ProviderModelRecord[]>;
 /** Generation R3: "Gemini" and "GPT Image" are the provider's default model for materials; the only model ids the app names (R26). */
 const PRESET_MODEL_IDS: Partial<Record<Provider, string>> = { gemini: 'gemini-nano-banana-2.1', openai: 'gpt-image-2.5-sunburst' };
 
-type PresetRow = readonly [albedo: Provider, normal: Provider, height: Provider, decomposition: Provider];
+type PresetRow = readonly [albedo: Provider, height: Provider, decomposition: Provider];
 
-/** R2: the three Full material presets, one map per image, decomposition card included. */
+/** R2: the three Full material presets, one map per image (Albedo, Height), decomposition card included. */
 const PRESET_ROWS: Readonly<Record<string, { label: string; hint: string; row: PresetRow }>> = {
-  'preset-1': { label: 'Full material: Gemini', hint: 'Gemini makes every map: Albedo, Normal, Height and Metal-Roughness.', row: ['gemini', 'gemini', 'gemini', 'gemini'] },
-  'preset-2': { label: 'Full material: GPT Image', hint: 'GPT Image makes every map: Albedo, Normal, Height and Metal-Roughness.', row: ['openai', 'openai', 'openai', 'openai'] },
-  'preset-3': { label: 'Full material: Gemini + GPT Image', hint: 'Gemini makes Albedo; GPT Image makes Normal, Height and Metal-Roughness.', row: ['gemini', 'openai', 'openai', 'openai'] },
+  'preset-1': { label: 'Full material: Gemini', hint: 'Gemini makes every map: Albedo, Height and Metal-Roughness.', row: ['gemini', 'gemini', 'gemini'] },
+  'preset-2': { label: 'Full material: GPT Image', hint: 'GPT Image makes every map: Albedo, Height and Metal-Roughness.', row: ['openai', 'openai', 'openai'] },
+  'preset-3': { label: 'Full material: Gemini + GPT Image', hint: 'Gemini makes Albedo; GPT Image makes Height and Metal-Roughness.', row: ['gemini', 'openai', 'openai'] },
 };
 
 /** R2: the select value of the Single map entry. */
 export const SINGLE_MAP_ID = 'single-map';
 const SINGLE_MAP_LABEL = 'Single map';
-const SINGLE_MAP_HINT = 'Makes one map (pick it with the tabs below). Normal, Height and Metal-Roughness use the current Albedo.';
+const SINGLE_MAP_HINT = 'Makes one map (pick it with the tabs below). Height and Metal-Roughness use the current Albedo.';
 
 export const PRESET_IDS: readonly string[] = [...Object.keys(PRESET_ROWS), SINGLE_MAP_ID];
 
@@ -46,8 +46,8 @@ export function buildPresetPlan(presetId: string, catalog: ModelCatalog, maxText
   if (presetId === SINGLE_MAP_ID) return { images: [{ maps: ['albedo'], settings: presetSettings('openai', catalog, maxTextureSize) }], decomposition: null };
   const entry = PRESET_ROWS[presetId];
   if (entry === undefined) return null;
-  const [albedo, normal, height, decomposition] = entry.row;
-  const maps: Array<[MapImagePlan['maps'][number], Provider]> = [['albedo', albedo], ['normal', normal], ['height', height]];
+  const [albedo, height, decomposition] = entry.row;
+  const maps: Array<[MapImagePlan['maps'][number], Provider]> = [['albedo', albedo], ['height', height]];
   return {
     images: maps.map(([map, provider]) => ({ maps: [map], settings: presetSettings(provider, catalog, maxTextureSize) })),
     decomposition: presetSettings(decomposition, catalog, maxTextureSize),

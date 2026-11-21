@@ -126,6 +126,19 @@ describe('materialgen/maps R16 planApplyEdits', () => {
     expect(outcome.plan.next.maps.ao).toMatchObject({ originalKey: 'oo', workingKey: 'n1', undoKey: 'oo', derivedFrom: { kind: 'height', key: 'h2' } });
   });
 
+  it('normal-from-height R7 a normal map for an empty slot is placed as a computed original made from the height', async () => {
+    const outcome = await planApplyEdits(base(), [{ kind: 'normal', image: solid(256, 256, 3, 128), derivedFrom: { kind: 'height', key: 'h1' } }], 'Generate normal map', false, io({}));
+    if (!outcome.ok) throw new Error(outcome.message);
+    expect(outcome.plan.next.maps.normal).toMatchObject({ originalKey: 'n1', workingKey: 'n1', undoKey: null, derivedFrom: { kind: 'height', key: 'h1' }, source: { kind: 'computed' } });
+  });
+
+  it('normal-from-height R8 regenerating over an existing normal map keeps the original and records the current height key', async () => {
+    const state = placeMap(base(), 'normal', { originalKey: 'on', workingKey: 'on', width: 256, height: 256 });
+    const outcome = await planApplyEdits(state, [{ kind: 'normal', image: solid(256, 256, 3, 120), derivedFrom: { kind: 'height', key: 'h2' } }], 'Regenerate normal map', false, io({}));
+    if (!outcome.ok) throw new Error(outcome.message);
+    expect(outcome.plan.next.maps.normal).toMatchObject({ originalKey: 'on', workingKey: 'n1', undoKey: 'on', undo: { label: 'Regenerate normal map' }, derivedFrom: { kind: 'height', key: 'h2' } });
+  });
+
   it('R16 nothing to edit changes nothing', async () => {
     const state = base();
     const outcome = await planApplyEdits(state, [], 'Filter', false, io({}));

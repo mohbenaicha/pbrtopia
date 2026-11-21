@@ -32,6 +32,30 @@ describe('ProgressSteps: a run of several images (custom R16)', () => {
   });
 });
 
+describe('ProgressSteps of a normal-map run (normal-map R11)', () => {
+  const normalSetup = (step: RunStep, failed = false) => {
+    render(<ProgressSteps step={step} fraction={0.5} failed={failed} normal onCancel={vi.fn()} />);
+    const items = within(screen.getByRole('list', { name: 'Progress' })).getAllByRole('listitem');
+    return { labels: items.map((item) => item.textContent), states: items.map((item) => item.getAttribute('data-state')) };
+  };
+
+  it('normal-map R11 lists Preparing the islands, Generating the height map and Building the normal map in that order', () => {
+    expect(normalSetup('prepare').labels).toEqual(['Preparing the islands', 'Generating the height map', 'Building the normal map']);
+  });
+
+  it('normal-map R11 marks finished steps done, the current one active and the rest pending', () => {
+    expect(normalSetup('prepare').states).toEqual(['active', 'pending', 'pending']);
+    cleanup();
+    expect(normalSetup('generate').states).toEqual(['done', 'active', 'pending']);
+    cleanup();
+    expect(normalSetup('derive').states).toEqual(['done', 'done', 'active']);
+  });
+
+  it('normal-map R11 a failed step is marked failed', () => {
+    expect(normalSetup('derive', true).states).toEqual(['done', 'done', 'failed']);
+  });
+});
+
 describe('ProgressSteps (R10)', () => {
   it('R10 lists Capturing views, Enhancing prompt, Generating image and Validating in that order', () => {
     const { items } = setup('capture');

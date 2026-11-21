@@ -1,4 +1,4 @@
-import type { PixelImage } from '@mat/workerapi';
+import type { PixelImage } from '@shared/materialMasks';
 
 const STRENGTH = 0.75; // masks R80: the highlight's strength
 const GREY: [number, number, number] = [128, 128, 128];

@@ -1,5 +1,4 @@
-import type { PixelImage } from '@mat/workerapi';
-import { MAX_FEATHER, blurWrapped } from './bakeMasks';
+import { MAX_FEATHER, blurBox, type PixelImage } from '@shared/materialMasks';
 
 export interface HeightBakeInput {
   labels: PixelImage; // R8
@@ -23,7 +22,7 @@ export function bakeHeight({ labels, offsets, feather, base }: HeightBakeInput):
   const table = offsets.map((offset) => Math.round(Math.min(Math.max(offset, -1), 1) * MAX_DELTA) + MAX_DELTA); // shifted to 0..2 x MAX_DELTA so it is a byte
   const mapped = new Uint8Array(labels.data.length);
   for (let index = 0; index < mapped.length; index += 1) mapped[index] = table[labels.data[index]!] ?? table[0] ?? MAX_DELTA;
-  const smooth = radius === 0 ? mapped : blurWrapped(mapped, width, height, radius);
+  const smooth = radius === 0 ? mapped : blurBox(mapped, width, height, radius);
   const data = new Uint8Array(mapped.length);
   for (let index = 0; index < data.length; index += 1) data[index] = Math.min(Math.max((base.data[index] ?? 0) + smooth[index]! - MAX_DELTA, 0), 255);
   return { width, height, channels: 1, data };

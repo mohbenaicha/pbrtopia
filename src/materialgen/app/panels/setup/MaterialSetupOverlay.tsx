@@ -21,11 +21,12 @@ interface MaterialSetupOverlayProps {
 }
 
 const METAL_ROUGHNESS_NOTE = 'Metal-Roughness has its own image. Choose it with the Include box of the Metal-Roughness card.';
-const PRESETS = PRESET_IDS.map((id) => ({ id, label: describePreset(id) }));
+const HEIGHT_NOTE = 'Also used to generate the normal map and the occlusion map automatically.';
+const PRESETS =PRESET_IDS.map((id) => ({ id, label: describePreset(id) }));
 
 /**
  * Generation R10-R20: the setup overlay of the material app, an adapter over the shared AssignmentOverlay. It edits a copy of the plan; Confirm makes it the active plan,
- * Cancel and Escape drop it. The items are Albedo, Normal and Height; the cards are the map images; the fixed card is Metal-Roughness.
+ * Cancel and Escape drop it. The items are Albedo and Height; the cards are the map images; the fixed card is Metal-Roughness.
  */
 export function MaterialSetupOverlay({ generation, colorMode, onClose }: MaterialSetupOverlayProps): React.JSX.Element {
   const { choice, displayCatalog, maxTextureSize, environment, models } = generation;
@@ -33,7 +34,7 @@ export function MaterialSetupOverlay({ generation, colorMode, onClose }: Materia
   const { plan, report } = draft;
 
   const items = useMemo<AssignmentItem[]>(
-    () => PLAN_MAPS.map((map, id) => ({ id, name: mapDisplayName(map, colorMode), thumb: <MapChipThumb map={map} /> })),
+    () => PLAN_MAPS.map((map, id) => ({ id, name: mapDisplayName(map, colorMode), thumb: <MapChipThumb map={map} />, ...(map === 'height' ? { note: HEIGHT_NOTE } : {}) })),
     [colorMode],
   );
   const mapAt = (id: number): PlanMap | undefined => PLAN_MAPS[id];

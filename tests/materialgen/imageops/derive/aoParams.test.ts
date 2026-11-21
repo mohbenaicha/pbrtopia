@@ -32,3 +32,11 @@ describe('imageops AO parameters (R41-R43)', () => {
     expect(aoSourceFor({ hasHeight: false, hasNormal: false }, undefined)).toBeNull();
   });
 });
+
+describe('imageops aoParams after the normal map became computed', () => {
+  it('normal-from-height R12 AO still reads the height map first, and the normal map only when there is no height or the person chose it', () => {
+    expect(aoSourceFor({ hasHeight: true, hasNormal: true }, undefined)).toBe('height');
+    expect(aoSourceFor({ hasHeight: true, hasNormal: true }, 'normal')).toBe('normal');
+    expect(aoSourceFor({ hasHeight: false, hasNormal: true }, undefined)).toBe('normal');
+  });
+});

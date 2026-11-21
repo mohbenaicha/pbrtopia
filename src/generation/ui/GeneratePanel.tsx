@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore, type StoreApi } from 'zustand';
 import { Icon, IconButton, Tabs, Tooltip } from '../../ui-kit';
 import { listAtlasSizes } from '../catalog/atlasSizes';
+import { channelPanelFields, describeChannelAvailability } from '../channels/describeChannelAvailability';
 import { optionsForModel } from '../catalog/optionsForModel';
 import { countImages } from '../custom/planEditing';
 import { buildPanelEnhancerKey, isSameEnhancerKey } from '../enhancerSnapshot';
@@ -12,6 +13,7 @@ import { AdditionalSettings } from './AdditionalSettings';
 import { AtlasPreviewViewer } from './AtlasPreviewViewer';
 import { ChannelToggle } from './ChannelToggle';
 import { DebugTab } from './DebugTab';
+import { DetailSlider } from './DetailSlider';
 import { EnhancedPromptNotice } from './EnhancedPromptNotice';
 import { GenerateButton } from './GenerateButton';
 import { ModelSelect } from './ModelSelect';
@@ -75,6 +77,14 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
   const options = model === null ? { resolutions: [], qualityLevels: [] } : optionsForModel(model, state.maxTextureSize);
   const panelKey = state.enhancerSnapshot === null || state.status === 'running' ? null : buildPanelEnhancerKey(state);
   const reusesEnhancedPrompt = state.enhancerSnapshot !== null && panelKey !== null && isSameEnhancerKey(state.enhancerSnapshot.key, panelKey); // R41
+  const fields = channelPanelFields(state.channel); // normal-map R4: what the chosen channel shows
+  const channelAvailability = describeChannelAvailability({
+    hasModel: state.hasModel,
+    busy: state.status === 'running' || state.setBusy || state.unwrap.status === 'running',
+    setOpen: state.setOpen,
+    albedoPictureIds: state.albedoPictureIds ?? [],
+    sourceIsSquare: state.sourceIsSquare,
+  });
 
   useEffect(() => {
     mounted.current = true;
@@ -140,8 +150,10 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
       </div>
       <div className="generate-panel__page" role="tabpanel" aria-label="Generate fields" hidden={tab !== 'generate'}>
         <div className="generate-panel__locked" inert={setupLocked}>
-          <label className="generate-panel__field">
-            <Tooltip heading="Prompt" text="Describes the texture the image model should paint."><span className="generate-panel__label">Prompt</span></Tooltip>
+          {fields.prompt && <label className="generate-panel__field">
+            {fields.masks
+              ? <Tooltip heading="Describe the materials" text="Added to the request that asks a model to list the materials of the object, for example which parts are metal or wood."><span className="generate-panel__label">Describe the materials (optional)</span></Tooltip>
+              : <Tooltip heading="Prompt" text="Describes the texture the image model should paint."><span className="generate-panel__label">Prompt</span></Tooltip>}
             <textarea
               className="generate-panel__prompt"
               rows={10}
@@ -161,24 +173,27 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
                 void addFiles(files);
               }}
             />
-          </label>
-          {reusesEnhancedPrompt && <EnhancedPromptNotice onEnhanceAgain={() => state.setEnhancerSnapshot(null)} />}
-          <ReferenceStrip
-            references={state.references}
-            notice={notice}
-            onFiles={(files) => void addFiles(files)}
-            onRemove={state.removeReference}
-          />
-          <ChannelToggle />
-          {state.mode === 'standard' && (
+          </label>}
+          {reusesEnhancedPrompt && fields.prompt && <EnhancedPromptNotice onEnhanceAgain={() => state.setEnhancerSnapshot(null)} />}
+          {fields.references && (
+            <ReferenceStrip
+              references={state.references}
+              notice={notice}
+              onFiles={(files) => void addFiles(files)}
+              onRemove={state.removeReference}
+            />
+          )}
+          <ChannelToggle value={state.channel} availability={channelAvailability} onChange={state.setChannel} disabled={state.status === 'running'} />
+          {(state.mode === 'standard' || state.channel === 'normal') && (
             <>
               <ModelSelect catalog={state.catalog} hasKey={state.hasKey} provider={state.provider} modelId={state.modelId} today={today} onSelect={state.selectModel} />
               <ResolutionSelect options={options.resolutions} experimental={model?.experimentalResolutions ?? []} value={state.resolutionKey} onChange={state.setResolution} />
               <QualitySelect levels={options.qualityLevels} value={state.quality} onChange={state.setQuality} />
             </>
           )}
+          {fields.detail && <DetailSlider value={state.normalDetail} onChange={state.setNormalDetail} />}
         </div>
-        <AdditionalSettings
+        {fields.atlas && <AdditionalSettings
           atlasSizes={listAtlasSizes(state.maxTextureSize)}
           atlasKey={state.atlasKey}
           onAtlasKeyChange={state.setAtlasKey}
@@ -190,15 +205,16 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
           previewBlockedReason={describePreviewBlock(state)}
           onPreview={() => void previewAtlas()}
           custom={state.mode === 'custom'}
-        />
+          masks={fields.masks}
+        />}
         <div className="generate-panel__locked" inert={setupLocked}>
-          {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} imageCount={state.mode === 'custom' && state.customPlan !== null ? countImages(state.customPlan) : 1} onCancel={onCancel} {...(viewLog === undefined ? {} : { onViewLog: viewLog })} />}
+          {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} imageCount={state.mode === 'custom' && state.customPlan !== null ? countImages(state.customPlan) : 1} onCancel={onCancel} {...(viewLog === undefined ? {} : { onViewLog: viewLog })} normal={state.channel === 'normal'} masks={fields.masks} />}
           {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} failedSheets={state.failedSheets} {...(onKeepWithout === undefined ? {} : { onKeepWithout })} />}
           {state.notice !== null && <p className="generate-panel__notice" role="status">{state.notice}</p>}
           <UnwrapStatusBlock unwrap={state.unwrap} onDismissError={state.clearUnwrap} />
           <div className="generate-panel__actions">
-            {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} />}
-            <IconButton label="Custom setup" icon={<Icon name="gear" />} disabled={state.status === 'running'} onClick={() => { state.setMode('custom'); onSetUpCustom?.(); }} />
+            {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} channel={state.channel} />}
+            {fields.customGear && <IconButton label="Custom setup" icon={<Icon name="gear" />} disabled={state.status === 'running'} onClick={() => { state.setMode('custom'); onSetUpCustom?.(); }} />}
           </div>
         </div>
       </div>

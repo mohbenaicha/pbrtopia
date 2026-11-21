@@ -38,23 +38,20 @@ describe('materialgen/generation R31 R38 order of the parts', () => {
   });
 
   it('R38 every prompt has the tileability text; a single map adds nothing about other maps', () => {
-    expect(prompt(['normal'], one)).toContain(TILEABLE_SENTENCE);
-    expect(prompt(['normal'], one)).not.toContain('Tiling applies to each map separately');
+    expect(prompt(['height'], one)).toContain(TILEABLE_SENTENCE);
+    expect(prompt(['height'], one)).not.toContain('Tiling applies to each map separately');
   });
 
   it('R38 a packed image adds a sentence built from its map names, so no map can be read as blending into another', () => {
-    const two = prompt(['albedo', 'normal'], layoutOf(2, [[1024, 512]]));
+    const two = prompt(['albedo', 'height'], layoutOf(2, [[1024, 512]]));
     expect(two).toContain(TILEABLE_SENTENCE);
     expect(two).toContain(
-      "Tiling applies to each map separately. The albedo map's right edge continues into the albedo map's own left edge, and its bottom edge into its own top edge. The same holds for the normal map. The maps stay completely separate: no colour, relief or detail of one map crosses into the area of another.",
+      "Tiling applies to each map separately. The albedo map's right edge continues into the albedo map's own left edge, and its bottom edge into its own top edge. The same holds for the height map. The maps stay completely separate: no colour, relief or detail of one map crosses into the area of another.",
     );
-    const three = prompt(['albedo', 'normal', 'height'], layoutOf(3, [[1024, 1024]]));
-    expect(three).toContain('The same holds for the normal map and the height map.');
-    expect(three).toContain('crosses into the quadrant of another.');
   });
 
   it('R38 no prompt asks for roughness, metal or an AO map', () => {
-    for (const maps of [['albedo'], ['normal'], ['height'], ['albedo', 'normal', 'height']] as PlanMap[][]) {
+    for (const maps of [['albedo'], ['height'], ['albedo', 'height']] as PlanMap[][]) {
       const text = prompt(maps, maps.length === 1 ? one : layoutOf(maps.length, [[1024, 1024], [1536, 512]])).toLowerCase();
       expect(text).not.toContain('roughness');
       expect(text).not.toContain('metal');
@@ -84,20 +81,17 @@ describe('materialgen/generation R32 R33 R34 R36 what each map asks for', () => 
     expect(text).toContain('greyscale only, no colour, no lighting');
   });
 
-  it('R34 Normal is tangent-space, mostly blue, flat areas RGB 128, 128, 255, relief only, and names the OpenGL +Y up convention', () => {
-    const text = prompt(['normal'], one);
-    expect(text).toContain('tangent-space normal map');
-    expect(text).toContain('OpenGL');
-    expect(text).toContain('+Y up');
-    expect(text).toContain('RGB 128, 128, 255');
-    expect(text).toContain('surface relief only, no lighting, no shadows');
+  it('R34 no prompt asks for a normal map or names tangent space: the Normal is computed from the Height, never asked of the model', () => {
+    for (const text of [prompt(['albedo'], one), prompt(['height'], one, { follower: true }), prompt(['albedo', 'height'], layoutOf(2, [[1024, 512]]), { follower: true })]) {
+      expect(text.toLowerCase()).not.toContain('normal');
+      expect(text).not.toContain('tangent-space');
+      expect(text).not.toContain('OpenGL');
+    }
   });
 
-  it('R36 a follower says the attached image is the albedo of the same material, and Normal and Height follow its features', () => {
-    const normal = prompt(['normal'], one, { follower: true });
-    expect(normal).toContain('attached image is the albedo of the same material');
-    expect(normal).toContain('relief of the normal map follows the features of the albedo');
+  it('R36 a follower says the attached image is the albedo of the same material, and Height follows its features', () => {
     const height = prompt(['height'], one, { follower: true });
+    expect(height).toContain('attached image is the albedo of the same material');
     expect(height).toContain('high and low areas of the height map follow the features of the albedo');
     expect(prompt(['albedo'], one)).not.toContain('attached image');
   });
@@ -105,37 +99,33 @@ describe('materialgen/generation R32 R33 R34 R36 what each map asks for', () => 
 
 describe('materialgen/generation R35 packed images', () => {
   it('R35 two maps: the composite structure, panel wording left to right, no labels', () => {
-    const text = prompt(['albedo', 'normal'], layoutOf(2, [[1024, 512]]));
-    expect(text).toContain('Generate an image comprised of 2 maps of a top-down view of the material, arranged in a grid of 2 columns and 1 row, in reading order from left to right: first albedo map, second normal map.');
+    const text = prompt(['albedo', 'height'], layoutOf(2, [[1024, 512]]));
+    expect(text).toContain('Generate an image comprised of 2 maps of a top-down view of the material, arranged in a grid of 2 columns and 1 row, in reading order from left to right: first albedo map, second height map.');
     expect(text).toContain('Maps have no separators or labels, just the seamless texture maps equal in size.');
     expect(text).toContain('The first map is the albedo map:');
-    expect(text).toContain('The second map is the normal map:');
+    expect(text).toContain('The second map is the height map:');
   });
 
   it('R35 a 1x2 grid reads top to bottom', () => {
     expect(prompt(['albedo', 'height'], layoutOf(2, [[512, 1024]]))).toContain('1 column and 2 rows, in reading order from top to bottom');
   });
 
-  it('R35 2x2 uses quadrant wording and says the remaining space is plain mid grey', () => {
-    const text = prompt(['albedo', 'normal', 'height'], layoutOf(3, [[1024, 1024]]));
-    expect(text).toContain('one map per quadrant: top-left albedo map, top-right normal map, bottom-left height map');
-    expect(text).toContain('The remaining space is plain mid grey.');
+  it('R35 a pack never mentions grey space and never uses quadrant wording: both grids are filled, whatever the canvas', () => {
+    for (const canvases of [[[1024, 512]], [[512, 1024]], [[1024, 1024]]] as Array<Array<[number, number]>>) {
+      const text = prompt(['albedo', 'height'], layoutOf(2, canvases));
+      expect(text).not.toContain('plain mid grey');
+      expect(text).not.toContain('quadrant');
+    }
   });
 
-  it('R35 only an empty cell is mentioned as grey space: a pack with no empty cell never is, whatever the canvas', () => {
-    expect(prompt(['albedo', 'normal', 'height'], layoutOf(3, [[900, 300]]))).not.toContain('plain mid grey');
-    expect(prompt(['albedo', 'normal', 'height'], layoutOf(3, [[1000, 300]]))).not.toContain('plain mid grey');
-  });
-
-  it('R35 R36 a packed follower holding Normal and Height carries both follow sentences once', () => {
-    const text = prompt(['normal', 'height'], layoutOf(2, [[1024, 512]]), { follower: true });
+  it('R35 R36 a packed follower holding Albedo and Height says the attached image is the albedo once and has Height follow it', () => {
+    const text = prompt(['albedo', 'height'], layoutOf(2, [[1024, 512]]), { follower: true });
     expect(text.match(/attached image is the albedo/g)).toHaveLength(1);
-    expect(text).toContain('relief of the normal map');
     expect(text).toContain('height map follow');
   });
 
   it('R35 Diffuse mode names the colour map Diffuse inside a pack', () => {
-    expect(prompt(['albedo', 'normal'], layoutOf(2, [[1024, 512]]), { colorMode: 'diffuse' })).toContain('first diffuse map, second normal map');
+    expect(prompt(['albedo', 'height'], layoutOf(2, [[1024, 512]]), { colorMode: 'diffuse' })).toContain('first diffuse map, second height map');
   });
 });
 

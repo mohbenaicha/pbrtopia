@@ -35,12 +35,74 @@ describe('materialgen/generation R70 persistence of the plan', () => {
     const stored = writePlan(plan) as { images: Array<{ maps: string[] }>; decomposition: unknown };
     const noAlbedo = { ...stored, images: [{ ...stored.images[0]!, maps: [] }, ...stored.images.slice(1)] };
     expect(parseStoredPlan(noAlbedo)).not.toBeNull();
-    const onSecond = { ...stored, images: [{ ...stored.images[0]!, maps: [] }, { ...stored.images[1]!, maps: ['albedo', 'normal'] }, stored.images[2]!] };
-    expect(parseStoredPlan(onSecond)!.images[1]!.maps).toEqual(['albedo', 'normal']);
+    const onSecond = { ...stored, images: [{ ...stored.images[0]!, maps: [] }, { ...stored.images[1]!, maps: ['albedo', 'height'] }] };
+    expect(parseStoredPlan(onSecond)!.images[1]!.maps).toEqual(['albedo', 'height']);
     expect(parseStoredPlan({ images: [], decomposition: stored.decomposition } as never)!.images).toEqual([]);
-    const twice = { ...stored, images: [stored.images[0]!, { ...stored.images[1]!, maps: ['albedo'] }, stored.images[2]!] };
+    const twice = { ...stored, images: [stored.images[0]!, { ...stored.images[1]!, maps: ['albedo'] }] };
     expect(parseStoredPlan(twice)).toBeNull();
     expect(parseStoredPlan({ images: [], decomposition: null })).toBeNull();
+  });
+
+  describe('normal-from-height R2 a stored plan that lists Normal is read with Normal removed', () => {
+    const oldPlan = (): { images: Array<{ maps: string[]; settings: Record<string, unknown> }>; decomposition: unknown } => {
+      const stored = writePlan(plan) as { images: Array<{ maps: string[]; settings: Record<string, unknown> }>; decomposition: unknown };
+      const [albedo, height] = stored.images as [typeof stored.images[number], typeof stored.images[number]];
+      return { ...stored, images: [albedo, { maps: ['normal'], settings: { ...albedo.settings } }, height] }; // the three-image preset of before the change
+    };
+
+    it('an image left with no map is dropped, and the rest of the plan is as stored', () => {
+      const back = parseStoredPlan(oldPlan())!;
+      expect(back.images.map((image) => image.maps)).toEqual([['albedo'], ['height']]);
+      expect(isSamePlan(back, plan)).toBe(true);
+    });
+
+    it('Normal shared with other maps in one image is taken out of that image and the image stays', () => {
+      const stored = oldPlan();
+      stored.images = [{ ...stored.images[0]!, maps: ['albedo', 'normal', 'height'] }];
+      expect(parseStoredPlan(stored)!.images.map((image) => image.maps)).toEqual([['albedo', 'height']]);
+    });
+
+    it('a card the person left empty stays an empty card', () => {
+      const stored = oldPlan();
+      stored.images = [stored.images[0]!, { ...stored.images[1]!, maps: [] }];
+      expect(parseStoredPlan(stored)!.images.map((image) => image.maps)).toEqual([['albedo'], []]);
+    });
+
+    it('an old plan of three cards where none held Normal still reads: the trailing empty card is the one left out', () => {
+      const stored = oldPlan();
+      stored.images = [stored.images[0]!, stored.images[2]!, { ...stored.images[0]!, maps: [] }];
+      expect(parseStoredPlan(stored)!.images.map((image) => image.maps)).toEqual([['albedo'], ['height']]);
+    });
+
+    it('only trailing empty cards are left out: a plan still over two cards with an empty one in the middle does not read', () => {
+      const stored = oldPlan();
+      const [albedo, , height] = stored.images as [typeof stored.images[number], unknown, typeof stored.images[number]];
+      const empty = { ...albedo, maps: [] };
+      stored.images = [albedo, height, empty, empty];
+      expect(parseStoredPlan(stored)!.images.map((image) => image.maps)).toEqual([['albedo'], ['height']]);
+      stored.images = [albedo, empty, height];
+      expect(parseStoredPlan(stored)).toBeNull();
+    });
+
+    it('a plan that held only Normal and no decomposition card reads as nothing, so the panel starts on preset 1', () => {
+      const stored = oldPlan();
+      stored.images = [stored.images[1]!];
+      stored.decomposition = null;
+      expect(parseStoredPlan(stored)).toBeNull();
+    });
+
+    it('a saved setup is cleaned the same way', () => {
+      const rows = [{ name: 'Old full', plan: oldPlan() }];
+      const back = parseSavedSetups(rows as never);
+      expect(back).toHaveLength(1);
+      expect(back[0]!.plan.images.map((image) => image.maps)).toEqual([['albedo'], ['height']]);
+    });
+
+    it('a map name that is not a known map still makes the plan unreadable', () => {
+      const stored = oldPlan();
+      stored.images = [{ ...stored.images[0]!, maps: ['albedo', 'roughness'] }];
+      expect(parseStoredPlan(stored)).toBeNull();
+    });
   });
 
   it('R19 a model id the catalog does not list is kept as written', () => {
@@ -49,7 +111,7 @@ describe('materialgen/generation R70 persistence of the plan', () => {
     expect(parseStoredPlan(stored as never)!.images[1]!.settings.modelId).toBe('gone-model');
   });
 
-  it('R70 more than three images does not read', () => {
+  it('R70 more than two map images does not read', () => {
     const stored = writePlan(plan) as { images: unknown[] };
     expect(parseStoredPlan({ ...stored, images: [...stored.images, stored.images[1]] } as never)).toBeNull();
   });

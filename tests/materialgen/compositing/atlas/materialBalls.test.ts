@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import baseMaterialsFile from '../../../../src/materialgen/data/base-materials.json';
+import baseMaterialsFile from '../../../../src/materialMasks/data/base-materials.json';
 import manifest from '../../../../src/materialgen/compositing/atlas/material_balls.json';
 import { ballCellOf, ballCutOf } from '@mat/compositing/atlas/loadMaterialBalls';
-import { GENERIC, parseBaseMaterials } from '@mat/masks';
+import { GENERIC, parseBaseMaterials } from '@shared/materialMasks';
 
 describe('materialgen/compositing baked ball sheet (R54)', () => {
   it('R54 the manifest lists Generic first, then every table material once, and the grid holds them all', () => {

@@ -15,7 +15,7 @@ describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
   it('R9 a plan whose models are listed and keyed has no problem, and every card has its layout', () => {
     const report = inspectPlan(preset('preset-3'), env());
     expect(report.problem).toBeNull();
-    expect(report.cards).toHaveLength(4);
+    expect(report.cards).toHaveLength(3);
     expect(report.cards.every((card) => card.layout?.ok === true)).toBe(true);
   });
 
@@ -69,9 +69,9 @@ describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
     expect(report.cards[0]!.problem).toBeNull();
   });
 
-  it('R9 R18 a plan with no Albedo when the project has none says Normal, Height and Metal-Roughness need an Albedo, and it is the first problem', () => {
+  it('R9 R18 a plan with no Albedo when the project has none says Height and Metal-Roughness need an Albedo, and it is the first problem', () => {
     const plan = unassignMap(preset('preset-1'), 'albedo');
-    expect(inspectPlan(plan, env({ hasExistingAlbedo: false })).problem).toBe('Normal, Height and Metal-Roughness need an Albedo: generate one or drop one in.');
+    expect(inspectPlan(plan, env({ hasExistingAlbedo: false })).problem).toBe('Height and Metal-Roughness need an Albedo: generate one or drop one in.');
   });
 
   it('R9 R18 the same plan has no problem when the project already has an Albedo', () => {
@@ -91,7 +91,7 @@ describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
   });
 
   it('R6 R13 the card holding Albedo is the lead whichever image it is: with Albedo on Image 2 that card takes the references and Image 1 takes the albedo', () => {
-    const plan = assignMap(preset('preset-1'), 'albedo', 1); // Image 2 holds Albedo and Normal, Image 1 is empty
+    const plan = assignMap(preset('preset-1'), 'albedo', 1); // Image 2 holds Albedo and Height, Image 1 is empty
     const withHeightFirst = assignMap(plan, 'height', 0);
     const report = inspectPlan(withHeightFirst, env({ referenceCount: 40 }));
     expect(report.cards[0]!.problem).toBeNull(); // a follower: no reference limit
@@ -111,7 +111,7 @@ describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
   });
 
   it('R13 an empty card is not a call: it has no layout and no problem even with a missing model', () => {
-    const base = assignMap(preset('preset-1'), 'normal', 0);
+    const base = assignMap(preset('preset-1'), 'height', 0);
     const plan = setImageSettings(base, 1, { provider: 'gemini', modelId: 'gemini-gone', resolutionKey: '1K', quality: null });
     const report = inspectPlan(plan, env());
     expect(report.cards[1]!.problem).toBeNull();
@@ -120,10 +120,10 @@ describe('materialgen/generation R9 R18 R65 R66 keys and models', () => {
 });
 
 describe('materialgen/generation R25 R39 layouts and references', () => {
-  it('R25 three maps on a card whose canvas gives tiles under 256 px are refused with the measure in the message', () => {
-    const packed = assignMap(assignMap(preset('preset-2'), 'normal', 0), 'height', 0);
-    expect(inspectPlan(packed, env()).cards[0]!.layout?.ok).toBe(true); // GPT at 1K packs three maps in tiles well over 256
-    const narrow = { ...KNOWN_MODELS.find((model) => model.id === 'gpt-image-2.5-sunburst')!, id: 'narrow', canvases: { kind: 'list' as const, byResolution: { '1K': [{ width: 600, height: 300 }] } } };
+  it('R25 two maps on a card whose canvas gives tiles under 256 px are refused with the measure in the message', () => {
+    const packed = assignMap(preset('preset-2'), 'height', 0);
+    expect(inspectPlan(packed, env()).cards[0]!.layout?.ok).toBe(true); // GPT at 1K packs two maps in tiles well over 256
+    const narrow = { ...KNOWN_MODELS.find((model) => model.id === 'gpt-image-2.5-sunburst')!, id: 'narrow', canvases: { kind: 'list' as const, byResolution: { '1K': [{ width: 400, height: 200 }] } } };
     const small = inspectPlan(setImageSettings(packed, 0, { provider: 'openai', modelId: 'narrow', resolutionKey: '1K', quality: 'medium' }), env({ catalog: { gemini: full.gemini, openai: [narrow], openrouter: [] } }));
     expect(small.cards[0]!.problem).toBe('Too many maps for this size: tiles would be 200 px. Choose a larger size or move a map to another image.');
     expect(small.problem).toBe(small.cards[0]!.problem);

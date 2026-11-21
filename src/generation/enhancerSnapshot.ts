@@ -59,7 +59,7 @@ export function buildPanelEnhancerKey(state: GenerateState): EnhancerKey | null 
   const atlas = listAtlasSizes(state.maxTextureSize).find((option) => option.key === state.atlasKey);
   if (enhancer === null) return null;
   const enhancerLevel = findCatalogModel(state.catalog, enhancer.provider, enhancer.modelId)?.enhancerLevel ?? null;
-  const common = { enhancer, enhancerLevel, channel: state.channel, prompt: state.prompt, atlasRender: state.atlasRender, tileBorder: state.tileBorder };
+  const common = { enhancer, enhancerLevel, channel: 'albedo' as const, prompt: state.prompt, atlasRender: state.atlasRender, tileBorder: state.tileBorder };
   if (state.mode === 'custom') return buildEnhancerKey({ ...common, atlasSizePx: CUSTOM_OVERVIEW_SIZE_PX, scope: 'object', overviewCameras: (state.customPlan?.sheets ?? []).flatMap((sheet) => sheet.cameras) }); // custom R15: the Atlas size is not used; the plan's cameras are the picture
   return atlas === undefined ? null : buildEnhancerKey({ ...common, atlasSizePx: atlas.sizePx });
 }

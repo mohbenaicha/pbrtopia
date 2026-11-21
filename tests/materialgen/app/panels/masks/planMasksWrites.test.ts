@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { MaskRow, MasksRecord } from '@mat/masks';
+import type { MaskRow, MasksRecord } from '@shared/materialMasks';
 import { planMasksWrites } from '../../../../../src/materialgen/app/panels/masks/planMasksWrites';
 
 const row = (label: number, patch: Partial<MaskRow> = {}): MaskRow => ({

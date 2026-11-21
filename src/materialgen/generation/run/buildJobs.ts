@@ -7,7 +7,7 @@ import type { PlanMap } from '../plan/planTypes';
 import type { ImageJob } from './runTypes';
 
 /** The name the person sees for a planned map: Albedo is Diffuse in the Diffuse colour mode (R32). */
-export const mapDisplayName = (map: PlanMap, colorMode: ColorModeName): string => (map === 'albedo' ? (colorMode === 'diffuse' ? 'Diffuse' : 'Albedo') : map === 'normal' ? 'Normal' : 'Height');
+export const mapDisplayName = (map: PlanMap, colorMode: ColorModeName): string => (map === 'albedo' ? (colorMode === 'diffuse' ? 'Diffuse' : 'Albedo') : 'Height');
 
 /** The map kind a planned map is stored as: the colour slot holds albedo or diffuse by the project's colour mode. */
 export const mapKindOf = (map: PlanMap, colorMode: ColorModeName): MapKind => (map === 'albedo' ? colorMode : map);

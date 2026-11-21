@@ -4,6 +4,7 @@ import type { CameraRig } from './cameraRig';
 import { loadModelAsset, type ModelAsset } from './loadModelAsset';
 import { createFlashOverlay, type FlashOverlay } from './flashOverlay';
 import { createLitLook } from './litLook';
+import { createMaskOverlay, type MaskOverlay, type MaskOverlayState } from './maskOverlay';
 import { createMaterialPictures, type MaterialPictures, type OverrideChannel, type OverridePicture } from './materialPictures';
 import { createMapAdjustUniforms, setMapAdjust } from './mapAdjustUniforms';
 import { createModelSmoothing } from './modelSmoothing';
@@ -36,6 +37,7 @@ interface ModelHost {
   setProjectionMaterial(material: Material | null): void; // replaces the look while set; the shading mode is kept and comes back on clearing
   setFlashMaterial(material: Material | null): void; // laid over the current look as translucent copies of the meshes, for a moment; null takes it away
   setMaterialPicture(materialIndex: number, channel: OverrideChannel, picture: OverridePicture | null): void; // lays a picture over one channel of one material (null takes it off); the viewport owns the bitmap
+  setMaskOverlay(state: MaskOverlayState | null): void; // mask-mode R20: translucent mask colours over the model, in every shading look; null takes them away
   setSettings(patch: Partial<ViewportSettings>): void;
   settings(): ViewportSettings;
   root(): Object3D | undefined; // the shown model, for picking
@@ -53,7 +55,8 @@ export function createModelHost({ scene, rig, invalidate, onFramed, onBounds, se
   const modes = createShadingModes(adjust);
   const litLook = createLitLook(adjust);
   const smoothing = createModelSmoothing();
-  let current: { asset: ModelAsset; overlay: WireframeOverlay; flash: FlashOverlay; pictures: MaterialPictures } | undefined;
+  let current: { asset: ModelAsset; overlay: WireframeOverlay; flash: FlashOverlay; masks: MaskOverlay; pictures: MaterialPictures } | undefined;
+  let maskState: MaskOverlayState | null = null; // kept across models: a reloaded model shows the same masks again
   let projectionMaterial: Material | null = null;
   let geometryLocked = false;
 
@@ -78,15 +81,18 @@ export function createModelHost({ scene, rig, invalidate, onFramed, onBounds, se
     modes.setFlatShading(current.asset.root, settings.flatShading);
     current.overlay.setVisible(false);
     current.overlay.setVisible(settings.wireframe);
+    current.masks.set(null); // its copies share the geometry that was swapped: built again
+    current.masks.set(maskState);
     invalidate();
   };
 
   const unload = (): void => {
     if (!current) return;
-    const { asset, overlay, flash, pictures } = current;
+    const { asset, overlay, flash, masks, pictures } = current;
     current = undefined;
     scene.remove(asset.root);
     flash.dispose();
+    masks.dispose();
     overlay.dispose();
     smoothing.dispose(asset.root);
     litLook.detach(asset.root);
@@ -106,7 +112,9 @@ export function createModelHost({ scene, rig, invalidate, onFramed, onBounds, se
       smoothing.apply(asset.root, settings.smoothAngleDeg);
       const overlay = createWireframeOverlay(asset.root);
       litLook.attach(asset.root);
-      current = { asset, overlay, flash: createFlashOverlay(asset.root), pictures: createMaterialPictures(asset.sourceMaterials, showChangedPictures) };
+      const masks = createMaskOverlay(asset.root);
+      current = { asset, overlay, flash: createFlashOverlay(asset.root), masks, pictures: createMaterialPictures(asset.sourceMaterials, showChangedPictures) };
+      masks.set(maskState);
       scene.add(asset.root);
       overlay.setVisible(settings.wireframe);
       showLook();
@@ -120,10 +128,11 @@ export function createModelHost({ scene, rig, invalidate, onFramed, onBounds, se
     },
     replaceGeometry(replacements) {
       if (!current) return false;
-      const { asset, flash } = current;
+      const { asset, flash, masks } = current;
       const records = replacements.map((replacement) => asset.meshes.find((candidate) => candidate.ordinal === replacement.ordinal));
       if (records.some((record) => record === undefined)) return false;
       flash.show(null); // its copies share the geometry that is about to go
+      masks.set(null); // so do the mask overlay's; showRebuiltGeometry builds them again
       smoothing.cancel();
       smoothing.dispose(asset.root); // forgets the old geometry the creased copies were built from
       replacements.forEach((replacement, i) => {
@@ -159,6 +168,11 @@ export function createModelHost({ scene, rig, invalidate, onFramed, onBounds, se
     },
     setFlashMaterial(material) {
       current?.flash.show(material);
+      invalidate();
+    },
+    setMaskOverlay(state) {
+      maskState = state;
+      current?.masks.set(state);
       invalidate();
     },
     setMaterialPicture(materialIndex, channel, picture) {

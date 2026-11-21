@@ -14,10 +14,10 @@ export function describeAspect(width: number, height: number): string {
   return w <= 32 && h <= 32 ? `${w}:${h}` : `${(width / height).toFixed(2)}:1`;
 }
 
-/** "Image 2 (Normal)": the name an error and the log give an image (R47, R54). */
+/** "Image 2 (Height)": the name an error and the log give an image (R47, R54). */
 export const labelImage = (position: number, mapNames: readonly string[]): string => `Image ${position}${mapNames.length > 0 ? ` (${mapNames.join(', ')})` : ''}`;
 
-/** R47: a message when the returned size does not suit the canvas, else null. The label is the image's, e.g. "Image 2 (Normal)". */
+/** R47: a message when the returned size does not suit the canvas, else null. The label is the image's, e.g. "Image 2 (Height)". */
 export function checkReturnedSize(label: string, layout: PackedLayout, returnedWidth: number, returnedHeight: number): string | null {
   const { canvas } = layout;
   const ratio = returnedWidth / returnedHeight / (canvas.width / canvas.height);

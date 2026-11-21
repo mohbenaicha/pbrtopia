@@ -18,10 +18,15 @@ const choose = (name: string): void => {
 };
 
 describe('materialgen/generation Model settings', () => {
+  it('R1 the Height toggle says the height map is used to generate the normal map automatically', () => {
+    renderSection();
+    expect(describeTooltipOf(screen.getByRole('radio', { name: 'Height' }))).toMatch(/generate the normal map/i);
+  });
+
   it('R13 R15 the Preset comes first, then one toggle per card (each map image, then Metal-Roughness), and one settings group for the chosen card', () => {
     renderSection();
     expect(screen.getByRole('combobox', { name: 'Preset' })).toBeTruthy();
-    expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('aria-label') ?? radio.textContent)).toEqual(['Albedo', 'Normal', 'Height', 'Metal-Roughness']);
+    expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('aria-label') ?? radio.textContent)).toEqual(['Albedo', 'Height', 'Metal-Roughness']);
     expect(screen.getAllByRole('region')).toHaveLength(1);
     expect(screen.getByRole('region', { name: 'Albedo' })).toBeTruthy();
     expect(screen.queryByText(/^Image 1/)).toBeNull(); // no "Image 1: Albedo" line and no card name in the labels
@@ -39,17 +44,17 @@ describe('materialgen/generation Model settings', () => {
   });
 
   describe('R2 R4 app R14a Single map: the tabs pick the map to generate', () => {
-    const singleMap = (maps: 'albedo' | 'normal' | 'height' | 'metal-roughness') => {
+    const singleMap = (maps: 'albedo' | 'height' | 'metal-roughness') => {
       const base = makeGenerationPanel({ presetId: 'single-map', keyed: ['openai'] });
       const settings = base.choice.plan.images[0]!.settings;
       const plan: GenerationPlan = maps === 'metal-roughness' ? { images: [], decomposition: settings } : { images: [{ maps: [maps], settings }], decomposition: null };
       return makeGenerationPanel({ presetId: 'single-map', keyed: ['openai'], plan });
     };
 
-    it('shows the four tabs, the plan\'s map selected, one settings group, and no Metal-Roughness switch', () => {
-      renderSection(singleMap('normal'));
-      expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('aria-label') ?? radio.textContent)).toEqual(['Albedo', 'Normal', 'Height', 'Metal-Roughness']);
-      expect(screen.getByRole('radio', { name: 'Normal' }).getAttribute('aria-checked')).toBe('true');
+    it('shows the three tabs, the plan\'s map selected, one settings group, and no Metal-Roughness switch', () => {
+      renderSection(singleMap('height'));
+      expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('aria-label') ?? radio.textContent)).toEqual(['Albedo', 'Height', 'Metal-Roughness']);
+      expect(screen.getByRole('radio', { name: 'Height' }).getAttribute('aria-checked')).toBe('true');
       expect(screen.getAllByRole('region')).toHaveLength(1);
       expect(screen.getAllByRole('combobox').map((box) => document.getElementById(box.getAttribute('aria-labelledby')!)?.textContent)).toEqual(['Preset', 'Model', 'Resolution', 'Quality']);
       choose('Metal-Roughness');
@@ -73,10 +78,10 @@ describe('materialgen/generation Model settings', () => {
     });
 
     it('the model, resolution and quality are adjustable and change the one card', () => {
-      const generation = renderSection(singleMap('normal'));
+      const generation = renderSection(singleMap('height'));
       fireEvent.click(screen.getByRole('combobox', { name: 'Resolution' }));
       fireEvent.click(screen.getAllByRole('option').find((option) => option.getAttribute('aria-selected') !== 'true')!);
-      expect(lastPlan(generation).images[0]!.maps).toEqual(['normal']);
+      expect(lastPlan(generation).images[0]!.maps).toEqual(['height']);
       expect(lastPlan(generation).images[0]!.settings.resolutionKey).not.toBe(generation.choice.plan.images[0]!.settings.resolutionKey);
     });
   });
@@ -95,8 +100,8 @@ describe('materialgen/generation Model settings', () => {
 
   it('R16 changing the resolution of one card replaces the plan with only that card changed', () => {
     const generation = renderSection();
-    choose('Normal');
-    const card = screen.getByRole('region', { name: 'Normal' });
+    choose('Height');
+    const card = screen.getByRole('region', { name: 'Height' });
     fireEvent.click(within(card).getByRole('combobox', { name: 'Resolution' }));
     const options = screen.getAllByRole('option');
     const target = options.find((option) => option.getAttribute('aria-selected') !== 'true')!;
@@ -104,14 +109,14 @@ describe('materialgen/generation Model settings', () => {
     const next = lastPlan(generation);
     expect(next.images[1]!.settings.resolutionKey).not.toBe(generation.choice.plan.images[1]!.settings.resolutionKey);
     expect(next.images[0]).toEqual(generation.choice.plan.images[0]);
-    expect(next.images[2]).toEqual(generation.choice.plan.images[2]);
+    expect(next.decomposition).toEqual(generation.choice.plan.decomposition);
   });
 
   it('R67 a card whose provider has no key shows its own problem', () => {
     renderSection(makeGenerationPanel({ presetId: 'preset-3', keyed: ['gemini'] }));
     expect(screen.queryByRole('alert')).toBeNull(); // Image 1 is Gemini
-    choose('Normal');
-    expect(within(screen.getByRole('region', { name: 'Normal' })).getByRole('alert').textContent).toBe('Add your OpenAI key in Settings > Keys');
+    choose('Height');
+    expect(within(screen.getByRole('region', { name: 'Height' })).getByRole('alert').textContent).toBe('Add your OpenAI key in Settings > Keys');
   });
 
   it('R15 switching the Metal-Roughness switch off removes the card from the plan', () => {

@@ -1,4 +1,4 @@
-import { startWorkerJob, type WorkerJobHandle } from '@mat/workerjob';
+import { startWorkerJob, type WorkerJobHandle } from '@shared/workerJob';
 import { runPngJob, type PngJobKind, type PngJobs } from './pngJobs';
 
 export interface StartPngJobOptions {

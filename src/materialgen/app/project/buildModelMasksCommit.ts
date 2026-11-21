@@ -1,6 +1,6 @@
 import type { PixelImage } from '@mat/imageops';
 import type { MapsState, MasksCommit } from '@mat/maps';
-import type { MasksBuild } from '@mat/masks';
+import type { MasksBuild } from '@shared/materialMasks';
 
 const UNDO_LABEL = 'Material masks';
 

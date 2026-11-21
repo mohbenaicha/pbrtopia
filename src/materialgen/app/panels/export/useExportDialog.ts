@@ -7,7 +7,7 @@ import {
   type ExportDialogTarget, type ExportJob, type ExportOptions, type ExportPlan, type ExportProgress,
 } from '@mat/export';
 import type { MapsState } from '@mat/maps';
-import { parseMasksRecord } from '@mat/masks';
+import { parseMasksRecord } from '@shared/materialMasks';
 import type { ColorMode, PreviewValues } from '@mat/storage';
 import { APP_ID, APP_VERSION } from '../../appIdentity';
 import { useEmissiveDraft } from './useEmissiveDraft';

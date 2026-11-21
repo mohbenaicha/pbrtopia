@@ -9,15 +9,15 @@ import { ENVIRONMENT, preset } from '../run/runHarness';
 const hint = (plan = preset('preset-1'), size: number | null = 1024) => buildCostHint(inspectPlan(plan, ENVIRONMENT), 'albedo', size, 'gpt-6-luna');
 
 describe('materialgen/generation R62 R63 cost hint', () => {
-  it('R62 the line gives the number of images, the map size and the cost: preset 1 is four Gemini 1K images', () => {
-    expect(hint().summary).toBe('4 images - maps 1024 px - about $0.13');
+  it('R62 the line gives the number of images, the map size and the cost: preset 1 is three Gemini 1K images', () => {
+    expect(hint().summary).toBe('3 images - maps 1024 px - about $0.10');
   });
 
   it('R62 the rows are one per image and one for the describe step, with model, canvas, layout, tile and cost', () => {
     const rows = hint().rows;
-    expect(rows.map((row) => row.label)).toEqual(['Image 1 (Albedo)', 'Image 2 (Normal)', 'Image 3 (Height)', 'Metal-Roughness image', 'Describe step']);
+    expect(rows.map((row) => row.label)).toEqual(['Image 1 (Albedo)', 'Image 2 (Height)', 'Metal-Roughness image', 'Describe step']);
     expect(rows[0]).toMatchObject({ model: 'gemini-nano-banana-2.1', canvas: '1024 x 1024', layout: '1x1', tilePx: 1024, costText: 'about $0.03' });
-    expect(rows[4]).toMatchObject({ costText: 'under $0.01', model: 'gpt-6-luna' });
+    expect(rows[3]).toMatchObject({ costText: 'under $0.01', model: 'gpt-6-luna' });
   });
 
   it('R76 an OpenRouter image has no tabled price, so its row and the total say price unknown', () => {
@@ -29,14 +29,14 @@ describe('materialgen/generation R62 R63 cost hint', () => {
     expect(row).toMatchObject({ model: model.id, costText: 'price unknown' });
   });
 
-  it('R62 the hint follows the plan: packing three maps in one image is one image', () => {
-    const packed = assignMap(assignMap(preset('preset-1'), 'normal', 0), 'height', 0);
+  it('R62 the hint follows the plan: packing both maps in one image is one image fewer', () => {
+    const packed = assignMap(preset('preset-1'), 'height', 0);
     expect(hint(packed).summary.startsWith('2 images')).toBe(true);
   });
 
   it('R62 without the decomposition card there is no describe row and one image fewer', () => {
     const none = hint({ ...preset('preset-1'), decomposition: null });
-    expect(none.summary.startsWith('3 images')).toBe(true);
+    expect(none.summary.startsWith('2 images')).toBe(true);
     expect(none.rows.map((row) => row.label)).not.toContain('Describe step');
   });
 
@@ -73,7 +73,7 @@ describe('materialgen/generation R64 notices', () => {
   });
 
   it('R64 a packed Gemini image is noted as JPEG output', () => {
-    expect(hint(assignMap(preset('preset-1'), 'normal', 0)).notices).toContain('JPEG output');
+    expect(hint(assignMap(preset('preset-1'), 'height', 0)).notices).toContain('JPEG output');
   });
 
   it('R62 with no material size the maps follow the lead tile', () => {
@@ -82,7 +82,7 @@ describe('materialgen/generation R64 notices', () => {
 
   it('R62 a plan with no Albedo says it uses the current Albedo, and a plan with Albedo does not', () => {
     const noAlbedo = unassignMap(preset('preset-2'), 'albedo');
-    expect(hint(noAlbedo).summary).toBe('3 images - maps 1024 px - about $0.04 - uses the current Albedo');
+    expect(hint(noAlbedo).summary).toBe('2 images - maps 1024 px - about $0.03 - uses the current Albedo');
     expect(hint(preset('preset-2')).summary).not.toContain('current Albedo');
     expect(hint({ images: [], decomposition: preset('preset-2').decomposition }, null).summary).toContain('uses the current Albedo');
     expect(hint({ images: [], decomposition: null }).summary).not.toContain('current Albedo');

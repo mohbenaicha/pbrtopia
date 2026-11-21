@@ -53,25 +53,22 @@ describe('materialgen/generation setup draft', () => {
     expect(result.current.plan.images[1]!.settings.provider).toBe('openai');
   });
 
-  it('R11 Albedo moves and unassigns like the others; Normal moves between cards', () => {
+  it('R11 Albedo moves and unassigns like the others; Height moves between cards', () => {
     const { result } = mountDraft();
     act(() => result.current.assign('albedo', 1));
-    expect(result.current.plan.images.map((image) => image.maps)).toEqual([[], ['albedo', 'normal'], ['height']]);
+    expect(result.current.plan.images.map((image) => image.maps)).toEqual([[], ['albedo', 'height']]);
     act(() => result.current.unassign('albedo'));
-    expect(result.current.plan.images.map((image) => image.maps)).toEqual([[], ['normal'], ['height']]);
-    act(() => result.current.assign('normal', 0));
-    expect(result.current.plan.images[0]!.maps).toEqual(['normal']);
+    expect(result.current.plan.images.map((image) => image.maps)).toEqual([[], ['height']]);
+    act(() => result.current.assign('height', 0));
+    expect(result.current.plan.images[0]!.maps).toEqual(['height']);
     expect(result.current.plan.images[1]!.maps).toEqual([]);
   });
 
   it('R13 Image 1 can be removed, and with every card gone a new card and the Include box still start from a model', () => {
     const { result } = mountDraft();
     act(() => result.current.removeCard(0));
-    expect(result.current.plan.images.map((image) => image.maps)).toEqual([['normal'], ['height']]);
-    act(() => {
-      result.current.removeCard(1);
-      result.current.removeCard(0);
-    });
+    expect(result.current.plan.images.map((image) => image.maps)).toEqual([['height']]);
+    act(() => result.current.removeCard(0));
     expect(result.current.plan.images).toEqual([]);
     act(() => result.current.addCard());
     expect(result.current.plan.images).toHaveLength(1);
@@ -85,7 +82,7 @@ describe('materialgen/generation setup draft', () => {
   it('R5 R18 a draft with no map and no Metal-Roughness card has nothing to generate', () => {
     const { result } = mountDraft();
     act(() => result.current.setIncluded(false));
-    for (let index = 0; index < 3; index += 1) act(() => result.current.removeCard(0));
+    for (let index = 0; index < 2; index += 1) act(() => result.current.removeCard(0));
     expect(result.current.report.problem).toBe('Nothing to generate.');
   });
 

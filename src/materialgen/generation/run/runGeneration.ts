@@ -210,4 +210,4 @@ export async function runGeneration(input: RunInput): Promise<RunReport> {
   return { status, message, committed: keptNames, failures, attempts, describeAttempt, checkpoint, packedWarning: packed };
 }
 
-const ORDER = ['Albedo', 'Diffuse', 'Normal', 'Height', 'Metal-Roughness'];
+const ORDER = ['Albedo', 'Diffuse', 'Height', 'Metal-Roughness'];

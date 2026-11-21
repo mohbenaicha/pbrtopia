@@ -43,8 +43,8 @@ describe('migrateMaterialRecord', () => {
     expect(rejected(withSource({ kind: 'dropped', name: `data:image/png;base64,${'A'.repeat(40)}` }))).toBeTruthy();
   });
 
-  it('materialgen/app R26 the custom plan, masks and AO parameters are kept as stored', () => {
-    const record = { ...full(), customPlan: { images: [1] }, masks: { feather: 2 }, aoParams: { radius: 4 } };
+  it('materialgen/app R26 R37a the custom plan, masks, AO and normal parameters are kept as stored', () => {
+    const record = { ...full(), customPlan: { images: [1] }, masks: { feather: 2 }, aoParams: { radius: 4 }, normalParams: { blur: 2, strength: 60 } };
     expect(migrateMaterialRecord(raw(record))).toEqual({ ok: true, value: record });
   });
 
@@ -63,13 +63,14 @@ describe('migrateMaterialRecord', () => {
     expect(rejected({ ...full(), prompt: `data:image/png;base64,${'A'.repeat(200)}` }).message).toMatch(/^Invalid project\./);
   });
 
-  it('materialgen/app R29 image data nested inside customPlan, masks or aoParams is refused too', () => {
+  it('materialgen/app R29 image data nested inside customPlan, masks, aoParams or normalParams is refused too', () => {
     const data = `data:image/png;base64,${'A'.repeat(50)}`;
     const long = 'x'.repeat(100_001);
     const base = full();
     expect(rejected({ ...base, customPlan: { cards: [{ items: [{ label: data }] }] } }).message).toMatch(/^Invalid project\./);
     expect(rejected({ ...base, masks: { components: [{ description: long }] } }).message).toMatch(/^Invalid project\./);
     expect(rejected({ ...base, aoParams: { nested: { deeper: [data] } } }).message).toMatch(/^Invalid project\./);
+    expect(rejected({ ...base, normalParams: { nested: { deeper: [data] } } }).message).toMatch(/^Invalid project\./);
   });
 
   it('materialgen/app R29 a data URI is refused in any letter case, and as a key', () => {

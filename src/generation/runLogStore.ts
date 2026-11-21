@@ -16,6 +16,28 @@ export interface RunLogRecord {
   sheets: RunLogSheet[]; // custom R27: a custom run's snapshots and returned images by sheet; empty for a standard run
   errorMessage: string | null;
   errorDetails: string | null; // the provider's own text, shown as plain text
+  normal?: NormalRunSettings; // normal-map R12: set on a normal-map run's row; its `atlas` is then the albedo picture sent and `prompt` the text sent
+  masks?: MaskRunLog; // mask-generation R13: set on a mask run's row; `prompt` is the user's description of the materials and there is no enhanced prompt
+}
+
+// mask-generation R13: what a mask row shows besides the atlas and the image: the sheet the describe model saw and the components it listed.
+export interface MaskRunLog {
+  sheet: Blob | null; // the labelled sheet, at most the enhancer image size
+  components: MaskLogComponent[];
+}
+
+export interface MaskLogComponent {
+  name: string;
+  description: string;
+  location: string;
+  hex: string; // its palette colour
+}
+
+// normal-map R12: what a normal-map row shows besides the model and the pictures.
+export interface NormalRunSettings {
+  detail: 1 | 2 | 3 | 4;
+  quality: string | null;
+  made?: Blob | null; // the normal map the run built from the height map, at most 1024 px; the row's `atlas` is the upright sheet sent and `imagePreview` the height map returned
 }
 
 // Custom R27: one image of a custom run: what was sent for it and what came back, captioned by its camera names.
@@ -36,14 +58,19 @@ export interface RunLogStart {
   modelLabel: string;
   prompt: string;
   startedAt: number;
+  normal?: NormalRunSettings;
+  masks?: true; // mask-generation R13: the row of a mask run
 }
 
 export interface RunLogActions {
   begin: (start: RunLogStart) => string;
-  resume: (id: string) => boolean; // false when the row is gone
+  resume: (id: string, sent?: Pick<RunLogStart, 'modelLabel' | 'prompt' | 'normal'>) => boolean; // false when the row is gone; `sent` replaces what the retried attempt sends (normal-map R11)
   setAtlas: (id: string, atlas: Blob) => void;
   setEnhancedPrompt: (id: string, text: string) => void;
   setImage: (id: string, preview: Blob) => void;
+  setNormalMade: (id: string, preview: Blob) => void; // normal-map R12
+  setMaskSheet: (id: string, preview: Blob) => void; // mask-generation R13
+  setMaskComponents: (id: string, components: MaskLogComponent[]) => void; // mask-generation R13
   setSheetPicture: (id: string, sheet: { index: number; label: string }, kind: 'snapshot' | 'image', preview: Blob) => void;
   finish: (id: string, outcome: Exclude<RunOutcome, 'running'>, error?: RunLogError) => void;
   remove: (id: string) => void;
@@ -79,19 +106,39 @@ export function createRunLogStore() {
       activeId: null,
       begin: (start) => {
         const id = crypto.randomUUID();
-        const record: RunLogRecord = { id, ...start, outcome: 'running', atlas: null, enhancedPrompt: null, imagePreview: null, sheets: [], errorMessage: null, errorDetails: null };
+        const { masks, ...rest } = start;
+        const record: RunLogRecord = { id, ...rest, outcome: 'running', atlas: null, enhancedPrompt: null, imagePreview: null, sheets: [], errorMessage: null, errorDetails: null, ...(masks === true ? { masks: { sheet: null, components: [] } } : {}) };
         set((state) => ({ records: trimToLimit([record, ...state.records]), activeId: id }));
         return id;
       },
-      resume: (id) => {
+      resume: (id, sent) => {
         if (!get().records.some((record) => record.id === id)) return false;
-        update(id, { outcome: 'running', errorMessage: null, errorDetails: null, imagePreview: null }); // the retried run feeds the parts it reuses in again
+        const resumed = get().records.find((record) => record.id === id);
+        const normal = sent?.normal ?? resumed?.normal;
+        update(id, {
+          outcome: 'running', errorMessage: null, errorDetails: null, imagePreview: null,
+          ...(sent === undefined ? {} : { modelLabel: sent.modelLabel, prompt: sent.prompt }),
+          ...(resumed?.masks === undefined ? {} : { masks: { sheet: null, components: [] } }),
+          ...(normal === undefined ? {} : { normal: { detail: normal.detail, quality: normal.quality } }),
+        }); // the retried run feeds the parts it reuses in again
         set({ activeId: id });
         return true;
       },
       setAtlas: (id, atlas) => update(id, { atlas }),
       setEnhancedPrompt: (id, enhancedPrompt) => update(id, { enhancedPrompt }),
       setImage: (id, imagePreview) => update(id, { imagePreview }),
+      setNormalMade: (id, made) => {
+        const normal = get().records.find((record) => record.id === id)?.normal;
+        if (normal !== undefined) update(id, { normal: { ...normal, made } });
+      },
+      setMaskSheet: (id, sheet) => {
+        const masks = get().records.find((record) => record.id === id)?.masks;
+        if (masks !== undefined) update(id, { masks: { ...masks, sheet } });
+      },
+      setMaskComponents: (id, components) => {
+        const masks = get().records.find((record) => record.id === id)?.masks;
+        if (masks !== undefined) update(id, { masks: { ...masks, components } });
+      },
       setSheetPicture: (id, { index, label }, kind, preview) => {
         const record = get().records.find((candidate) => candidate.id === id);
         if (record === undefined) return;

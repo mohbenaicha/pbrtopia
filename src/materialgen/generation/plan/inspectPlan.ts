@@ -28,7 +28,7 @@ export interface PlanReport {
 }
 
 /** R9: why a plan with no Albedo cannot run in a project that has none. */
-export const NEEDS_ALBEDO_PROBLEM = 'Normal, Height and Metal-Roughness need an Albedo: generate one or drop one in.';
+export const NEEDS_ALBEDO_PROBLEM = 'Height and Metal-Roughness need an Albedo: generate one or drop one in.';
 
 const PROVIDER_NAME: Record<Provider, string> = { gemini: 'Gemini', openai: 'OpenAI', openrouter: 'OpenRouter' };
 

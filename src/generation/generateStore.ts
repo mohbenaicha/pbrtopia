@@ -2,6 +2,8 @@ import { createStore } from 'zustand';
 import type { Provider } from '../keys';
 import { DEFAULT_ATLAS_KEY, listAtlasSizes, type AtlasKey } from './catalog/atlasSizes';
 import { DEFAULT_ATLAS_RENDER, type AtlasRender } from './atlasRender';
+import { describeChannelAvailability, type GenerateChannel } from './channels/describeChannelAvailability';
+import type { NormalDetail } from './normal/detailLevels';
 import type { EnhancerSnapshot } from './enhancerSnapshot';
 import { DEFAULT_IMAGE_MODEL } from './catalog/knownModels';
 import { chooseQualityLevel, optionsForModel } from './catalog/optionsForModel';
@@ -18,7 +20,7 @@ export interface ReferenceImage {
   blob: Blob;
 }
 
-export type RunStep = 'capture' | 'enhance' | 'generate' | 'validate';
+export type RunStep = 'capture' | 'describe' | 'enhance' | 'generate' | 'validate' | 'prepare' | 'derive'; // 'describe' is the mask run's step in the place of 'enhance' (mask-generation R3); 'prepare' and 'derive' are the normal-map run's, around 'generate' (normal-map R11)
 type RunStatus ='idle' | 'running' | 'failed';
 // What the panel shows for a failed run: any ProviderError fits; the flow adds the categories of the steps that are not provider calls.
 export interface RunError {
@@ -47,6 +49,8 @@ interface SceneState {
   readOnly?: boolean;
   setOpen?: boolean;
   setBusy?: boolean;
+  albedoPictureIds?: readonly (string | null)[] | null; // normal-map R2: per material, the generated albedo picture in force (null entry: the model file's own texture or none); null: not known yet
+  sourceIsSquare?: boolean | null; // normal-map R2: whether that one albedo picture is square; null when there is none
 }
 
 /** What the project saves of the panel (R22). */
@@ -64,6 +68,9 @@ export interface SavedPanelSettings {
   mode?: GenerateMode;
   customPlan?: CustomPlanRecord | null;
   customSetups?: NamedPlanRecord[];
+  // normal-map R1, R5: left out, the panel keeps what it has.
+  channel?: GenerateChannel;
+  normalDetail?: NormalDetail;
 }
 
 export type GenerateMode = 'standard' | 'custom';
@@ -71,7 +78,8 @@ export type GenerateMode = 'standard' | 'custom';
 export interface GenerateState {
   prompt: string;
   references: ReferenceImage[];
-  channel: 'albedo';
+  channel: GenerateChannel; // normal-map R1: the map a run makes
+  normalDetail: NormalDetail; // normal-map R5: how much fine relief the normal map asks for
   provider: Provider | null;
   modelId: string | null;
   resolutionKey: ResolutionKey | null; // the output size asked of the model (R4)
@@ -92,6 +100,8 @@ export interface GenerateState {
   readOnly: boolean; // the project is open in another tab (R18)
   setOpen: boolean; // a projection set is open (R18)
   setBusy: boolean; // a set is being entered or left (R18)
+  albedoPictureIds: readonly (string | null)[] | null; // normal-map R2: from the app, with sourceIsSquare; null until the app has listed the materials
+  sourceIsSquare: boolean | null;
   // run state
   status: RunStatus;
   step: RunStep | null;
@@ -114,6 +124,8 @@ export interface GenerateState {
   setTileBorder: (on: boolean) => void;
   setQuality: (level: string) => void;
   setMode: (mode: GenerateMode) => void;
+  setChannel: (channel: GenerateChannel) => void; // normal-map R1, R2: refused when that channel is not available
+  setNormalDetail: (detail: number) => void; // normal-map R5: rounded and kept inside 1..4
   confirmCustomPlan: (plan: CustomPlanRecord) => void;
   saveCustomSetup: (name: string, plan: CustomPlanRecord) => void;
   deleteCustomSetup: (name: string) => void;
@@ -156,6 +168,18 @@ function settleAtlasKey(current: AtlasKey, maxTextureSize: number): AtlasKey {
   return keys.includes(DEFAULT_ATLAS_KEY) ? DEFAULT_ATLAS_KEY : keys[keys.length - 1]!;
 }
 
+type ChannelScene = Pick<GenerateState, 'hasModel' | 'albedoPictureIds' | 'sourceIsSquare'>;
+
+// normal-map R2: whether the channel could be used on this model, leaving a busy app out (a run, a bake or an open set does not unchoose a channel).
+const isChannelAvailable = (channel: GenerateChannel, scene: ChannelScene): boolean =>
+  describeChannelAvailability({ hasModel: scene.hasModel, busy: false, setOpen: false, albedoPictureIds: scene.albedoPictureIds ?? [], sourceIsSquare: scene.sourceIsSquare })[channel].enabled;
+
+// normal-map R3: a chosen channel that became unavailable reads as Albedo. Until the app has listed the model's materials, a choice stays.
+const settleChannel = (channel: GenerateChannel, scene: ChannelScene): GenerateChannel =>
+  channel === 'albedo' || !scene.hasModel || scene.albedoPictureIds === null || isChannelAvailable(channel, scene) ? channel : 'albedo';
+
+const clampDetail = (value: number): NormalDetail => Math.min(4, Math.max(1, Math.round(value))) as NormalDetail;
+
 const IDLE_UNWRAP: UnwrapState = { status: 'idle', fraction: 0, error: null };
 const clamp01 =(value: number): number => Math.min(1, Math.max(0, value));
 
@@ -174,6 +198,7 @@ export function createGenerateStore() {
       prompt: '',
       references: [],
       channel: 'albedo',
+      normalDetail: 2,
       ...NO_SELECTION,
       atlasKey: DEFAULT_ATLAS_KEY,
       atlasRender: DEFAULT_ATLAS_RENDER,
@@ -190,6 +215,8 @@ export function createGenerateStore() {
       readOnly: false,
       setOpen: false,
       setBusy: false,
+      albedoPictureIds: null,
+      sourceIsSquare: null,
       status: 'idle',
       step: null,
       fraction: 0,
@@ -201,6 +228,8 @@ export function createGenerateStore() {
       setPrompt: (prompt) => set({ prompt }),
       restoreSettings: (settings) => {
         set(settings);
+        if (settings.normalDetail !== undefined) set({ normalDetail: clampDetail(settings.normalDetail) });
+        set({ channel: settleChannel(get().channel, get()) });
         resettle({});
       },
       setNotice: (notice) => set({ notice }),
@@ -238,6 +267,12 @@ export function createGenerateStore() {
         if (info !== null && optionsForModel(info, maxTextureSize).qualityLevels.includes(level)) set({ quality: level });
       },
       setMode: (mode) => set((state) => (state.status === 'failed' ? { mode, status: 'idle', step: null, fraction: 0, error: null, failedSheets: [] } : { mode })), // a failed run belongs to the mode it ran in
+      setChannel: (channel) => {
+        const state = get();
+        if (channel === state.channel || (channel !== 'albedo' && !isChannelAvailable(channel, state))) return;
+        set(state.status === 'failed' ? { channel, status: 'idle', step: null, fraction: 0, error: null, failedSheets: [] } : { channel }); // a failed run belongs to the channel it ran in (normal-map R11)
+      },
+      setNormalDetail: (detail) => set({ normalDetail: clampDetail(detail) }),
       confirmCustomPlan: (customPlan) => set({ customPlan }),
       saveCustomSetup: (name, plan) => {
         const { customSetups } = get();
@@ -249,7 +284,8 @@ export function createGenerateStore() {
       setHasKey: (provider, has) => set({ hasKey: { ...get().hasKey, [provider]: has } }),
       setEnhancer: (enhancer) => set({ enhancer }),
       setMaxTextureSize: (maxTextureSize) => resettle({ maxTextureSize }),
-      setSceneState: ({ hasModel, hasUvs, readOnly = false, setOpen = false, setBusy = false }) => set({ hasModel, hasUvs, readOnly, setOpen, setBusy }),
+      setSceneState: ({ hasModel, hasUvs, readOnly = false, setOpen = false, setBusy = false, albedoPictureIds = null, sourceIsSquare = null }) =>
+        set((state) => ({ hasModel, hasUvs, readOnly, setOpen, setBusy, albedoPictureIds, sourceIsSquare, channel: settleChannel(state.channel, { hasModel, albedoPictureIds, sourceIsSquare }) })),
       beginRun: () => set({ status: 'running', step: 'capture', fraction: 0, error: null, failedSheets: [], notice: null }),
       setStep: (step, fraction) => set({ step, fraction: clamp01(fraction) }),
       failRun: (error, failedSheets = []) => set({ status: 'failed', error, failedSheets }),

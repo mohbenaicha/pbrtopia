@@ -1,4 +1,5 @@
 import { unzlibSync, zlibSync } from 'fflate';
+import type { PixelImage } from '@shared/materialMasks';
 import { PNG_SIGNATURE, PngError, readChunks, writeChunk } from './pngChunks';
 import { applyFilters, removeFilters } from './pngFilters';
 
@@ -6,13 +7,7 @@ export { PngError };
 
 // 8-bit RGB, RGBA, grey and indexed PNG files (maps R58, R59); wider and narrower sources are reduced to 8 bits on decode (R35).
 
-/** Interleaved 8-bit pixels: grey (1), RGB (3) or RGBA (4, straight alpha). */
-export interface PixelImage {
-  width: number;
-  height: number;
-  channels: 1 | 3 | 4;
-  data: Uint8Array;
-}
+export type { PixelImage };
 
 /** An 8-bit image of palette indices; `palette` is RGB triplets. */
 export interface IndexedImage {

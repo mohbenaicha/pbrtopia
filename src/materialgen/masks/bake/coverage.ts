@@ -1,5 +1,4 @@
-import type { PixelImage } from '@mat/workerapi';
-import { MAX_FEATHER, blurWrapped } from './bakeMasks';
+import { MAX_FEATHER, blurBox, type PixelImage } from '@shared/materialMasks';
 
 export interface CoverageInput {
   labels: PixelImage; // R8
@@ -33,5 +32,5 @@ export function buildCoverage({ labels, selected, feather, maxFeather = MAX_FEAT
   for (const label of selected) chosen[label & 255] = 255;
   const plane = sampleLabels(labels, side).data.map((label) => chosen[label]!);
   const radius = Math.min(Math.max(Math.round((feather * side) / labels.width), 0), maxFeather);
-  return { width: side, height: side, channels: 1, data: radius === 0 ? plane : blurWrapped(plane, side, side, radius) };
+  return { width: side, height: side, channels: 1, data: radius === 0 ? plane : blurBox(plane, side, side, radius) };
 }

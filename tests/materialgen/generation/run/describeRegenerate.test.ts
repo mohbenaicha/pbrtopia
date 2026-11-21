@@ -14,13 +14,13 @@ describe('materialgen/generation R61 regenerate warning', () => {
   });
 
   it('R61 the warning names the originals of the maps in the plan that exist, in plan order', () => {
-    const names = listMapsToReplace(preset('preset-1'), state(['height', 'albedo', 'normal']), 'albedo');
-    expect(names).toEqual(['Albedo', 'Normal', 'Height']);
-    expect(describeRegenerateWarning(['Albedo', 'Normal'])).toBe('Generating replaces the originals of Albedo, Normal and clears the undo of those maps. Maps you edited are replaced too.');
+    const names = listMapsToReplace(preset('preset-1'), state(['height', 'albedo']), 'albedo');
+    expect(names).toEqual(['Albedo', 'Height']);
+    expect(describeRegenerateWarning(['Albedo', 'Height'])).toBe('Generating replaces the originals of Albedo, Height and clears the undo of those maps. Maps you edited are replaced too.');
   });
 
-  it('R61 a map not in the plan is not touched and not named: Height and Normal with originals stay out of an Albedo-only plan', () => {
-    const albedoOnly = unassignMap(unassignMap({ ...preset('preset-1'), decomposition: null }, 'normal'), 'height');
+  it('R61 a map not in the plan is not touched and not named: Height with an original stays out of an Albedo-only plan, and the computed Normal is never named', () => {
+    const albedoOnly = unassignMap({ ...preset('preset-1'), decomposition: null }, 'height');
     expect(listMapsToReplace(albedoOnly, state(['height', 'normal']), 'albedo')).toEqual([]);
     expect(listMapsToReplace(albedoOnly, state(['height', 'normal', 'albedo']), 'albedo')).toEqual(['Albedo']);
   });

@@ -4,6 +4,7 @@ export { watchPixelRatio } from './pixelRatio';
 export type { ModelAsset, ModelMaterialRecord } from './loadModelAsset';
 export { exportModelWithPictures, type PictureToLayOver } from './exportModelWithPictures';
 export type { OverrideChannel, OverridePicture } from './materialPictures';
+export type { MaskOverlayState } from './maskOverlay';
 export { thumbnailOfFile, type ModelTextureRecord, type TextureChannel } from './modelTextures';
 export type { ShadingMode } from './shadingModes';
 export { createLitLook } from './litLook';

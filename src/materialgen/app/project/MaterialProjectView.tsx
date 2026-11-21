@@ -5,11 +5,11 @@ import { useRevealOnTour } from '@shared/tutorial';
 import { AppShell, TopBar, rememberOpenProject, usePanelWidths, useProjectLock, useStorageWarning } from '@shared/shell';
 import { LoadingOverlay } from '@shared/ui-kit';
 import { LEFT_PANEL_FLOOR } from '@mat/compositing';
-import { parseMasksRecord } from '@mat/masks';
+import { parseMasksRecord } from '@shared/materialMasks';
+import { useMasksPackagePrompt } from '@shared/materialMasks/ui';
 import { PreviewViewport, createPaintBridge, createToolLiveFeed, type PreviewMasks, type PreviewShading, type PreviewThumbnailSink, type PreviewTool, type ToolView } from '@mat/preview';
 import { DEFAULT_PREVIEW_VALUES, type MaterialProjectStore, type PreviewValues } from '@mat/storage';
 import { APP_ID } from '../appIdentity';
-import { useMasksPackagePrompt } from '../masksPackage/useMasksPackagePrompt';
 import { createGpuResizer } from '../imageops/createGpuResizer';
 import { useImageopsSessions } from '../imageops/useImageopsSessions';
 import { ExportSection, exportUnavailableReason } from '../panels/export/ExportSection';
@@ -143,6 +143,8 @@ export function MaterialProjectView({ store, projectId }: { store: MaterialViewS
             sessions={sessions}
             aoParams={record.aoParams}
             onAoParamsChange={(next) => project.edit((current) => ({ ...current, aoParams: next }))}
+            normalParams={record.normalParams}
+            onNormalParamsChange={(next) => project.edit((current) => ({ ...current, normalParams: next }))}
             colorMode={record.colorMode}
             canWrite={canWrite}
             onToolViewChange={setToolView}

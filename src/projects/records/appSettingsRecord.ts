@@ -37,6 +37,7 @@ export interface AppSettingsRecord {
   catalog: CatalogCacheRecord | null;
   viewport: Record<string, unknown>;
   panels: PanelWidthsRecord;
+  maskOverlayOpacity: number; // 0 to 1: how strongly the mask overlay covers the model (mask-mode R18)
 }
 
 export const DEFAULT_APP_SETTINGS: AppSettingsRecord = {
@@ -48,6 +49,7 @@ export const DEFAULT_APP_SETTINGS: AppSettingsRecord = {
   catalog: null,
   viewport: {},
   panels: { leftPx: null, rightPx: null },
+  maskOverlayOpacity: 0.5,
 };
 
 const nonEmptyText = (value: unknown): string | null => (typeof value === 'string' && value !== '' ? value : null);
@@ -74,6 +76,8 @@ function readCatalog(value: unknown): CatalogCacheRecord | null {
 
 const finiteNumberOrNull = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);
 
+const readUnit = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? Math.min(Math.max(value, 0), 1) : null);
+
 function readPanels(value: unknown): PanelWidthsRecord {
   if (!isRawRecord(value)) return { leftPx: null, rightPx: null };
   return { leftPx: finiteNumberOrNull(value['leftPx']), rightPx: finiteNumberOrNull(value['rightPx']) };
@@ -91,5 +95,6 @@ export function readAppSettings(raw: unknown): AppSettingsRecord {
     catalog: readCatalog(stored['catalog']),
     viewport: isRawRecord(stored['viewport']) ? structuredClone(stored['viewport']) : {},
     panels: readPanels(stored['panels']),
+    maskOverlayOpacity: readUnit(stored['maskOverlayOpacity']) ?? DEFAULT_APP_SETTINGS.maskOverlayOpacity,
   };
 }

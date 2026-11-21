@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MapsState } from '@mat/maps';
-import { parseBaseMaterials, type MasksRecord } from '@mat/masks';
+import { parseBaseMaterials, type MasksRecord } from '@shared/materialMasks';
 import { MasksControls } from '../../../../../src/materialgen/app/panels/masks/MasksControls';
 import type { MasksPanelPorts } from '../../../../../src/materialgen/app/panels/masks/useMasksPanel';
 

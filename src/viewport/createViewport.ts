@@ -2,6 +2,7 @@ import type { Box3, Material, OrthographicCamera, PerspectiveCamera, Scene, WebG
 import { captureThumbnail, type ThumbnailSpec } from './captureThumbnail';
 import { createCameraMotion, type CameraMotion } from './cameraMotion';
 import { createMaterialFlash } from './materialFlash';
+import type { MaskOverlayState } from './maskOverlay';
 import type { OverrideChannel, OverridePicture } from './materialPictures';
 import { createSurfacePicker } from './pickSurface';
 import { createViewportHandle, type ViewportHandle } from './viewportHandle';
@@ -29,6 +30,7 @@ export interface Viewport {
   unloadModel(): void;
   setShadingMode(mode: ShadingMode): void; // remembered while a projection material is set
   setMaterialPicture(materialIndex: number, channel: OverrideChannel, picture: OverridePicture | null): void; // lays a picture over one channel of one of the model's materials, null takes it off; the viewport owns the bitmap
+  setMaskOverlay(state: MaskOverlayState | null): void; // mask-mode R20: translucent mask colours over the model in every shading look, display only; null takes them away
   setProjectionMaterial(material: Material | null): void; // replaces the model's look until cleared; the caller owns and disposes the material
   flashMaterial(material: Material): Promise<void>; // shows the material over the model three times, then the normal look; resolves when done
   captureThumbnail(spec?: ThumbnailSpec): Promise<Blob>; // the current view cropped to the thumbnail shape
@@ -132,6 +134,7 @@ function assembleViewport({ core, models, motion, flash, handle, orbit, environm
     setShadingMode: models.setShadingMode,
     setProjectionMaterial: models.setProjectionMaterial,
     setMaterialPicture: models.setMaterialPicture,
+    setMaskOverlay: models.setMaskOverlay,
     flashMaterial: flash.start,
     captureThumbnail(spec) {
       const picture = captureThumbnail(() => grid.drawWithoutGrid(core.drawFrame), core.canvas, spec);

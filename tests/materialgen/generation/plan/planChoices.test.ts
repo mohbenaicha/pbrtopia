@@ -40,7 +40,7 @@ describe('materialgen/generation plan choices', () => {
   });
 
   it('R70 the active plan is the stored one, else the stored preset id, else preset 1', () => {
-    const edited = assignMap(preset('preset-1'), 'normal', 0);
+    const edited = assignMap(preset('preset-1'), 'height', 0);
     expect(readActivePlan({ customPlan: writePlan(edited), presetId: 'preset-2' }, catalog, MAX_TEXTURE)).toEqual(edited);
     expect(readActivePlan({ presetId: 'preset-3' }, catalog, MAX_TEXTURE)).toEqual(preset('preset-3'));
     expect(readActivePlan({ presetId: 'saved:Gone' }, catalog, MAX_TEXTURE)).toEqual(preset('preset-1'));

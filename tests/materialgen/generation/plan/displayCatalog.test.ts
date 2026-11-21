@@ -30,6 +30,6 @@ describe('materialgen/generation display catalog', () => {
     expect(real.problem).toBe('Add an image model key in Settings');
     expect(buildCostHint(real, 'albedo', 1024, null).summary).toMatch(/^0 images/);
     const preview = inspectPlan(plan, { catalog: withKnownModels(EMPTY), hasKey: { gemini: true, openai: true, openrouter: false }, describeProvider: 'gemini', referenceCount: 0, hasExistingAlbedo: true });
-    expect(buildCostHint(preview, 'albedo', 1024, null).summary).toMatch(/^4 images/);
+    expect(buildCostHint(preview, 'albedo', 1024, null).summary).toMatch(/^3 images/);
   });
 });

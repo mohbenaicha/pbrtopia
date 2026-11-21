@@ -216,7 +216,7 @@ describe('materialgen/app left panel (the material)', () => {
     changeSize: vi.fn(),
     download: vi.fn(),
   };
-  const baseProps = { shading: 'lit' as const, onShadingChange: vi.fn(), mapsState: { size: null, maps: {} }, maps: mapsStub, readBlob: async () => null, sessions: { openFilter: vi.fn(), openAo: vi.fn(), geometry: { crop: vi.fn(), mirror: vi.fn(), swap: vi.fn(), seam: vi.fn() } }, aoParams: undefined, onAoParamsChange: vi.fn(), onToolViewChange: vi.fn(), canWrite: true, projectName: 'Bricks', preview: DEFAULT_PREVIEW_VALUES, tiling: { x: 1, y: 1 }, onTilingChange: vi.fn() };
+  const baseProps = { shading: 'lit' as const, onShadingChange: vi.fn(), mapsState: { size: null, maps: {} }, maps: mapsStub, readBlob: async () => null, sessions: { openFilter: vi.fn(), openAo: vi.fn(), openNormal: vi.fn(), geometry: { crop: vi.fn(), mirror: vi.fn(), swap: vi.fn(), seam: vi.fn() } }, aoParams: undefined, onAoParamsChange: vi.fn(), normalParams: undefined, onNormalParamsChange: vi.fn(), onToolViewChange: vi.fn(), canWrite: true, projectName: 'Bricks', preview: DEFAULT_PREVIEW_VALUES, tiling: { x: 1, y: 1 }, onTilingChange: vi.fn() };
 
   const maps = mapsStub;
   const props = baseProps;

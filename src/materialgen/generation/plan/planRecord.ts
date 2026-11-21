@@ -17,19 +17,25 @@ function readSettings(value: unknown, path: string): SheetSettings {
   };
 }
 
+/** Maps a plan saved before the change could hold and no plan can now: read and left out (normal-from-height R2). */
+const REMOVED_PLAN_MAPS = ['normal'] as const;
+
 function readPlan(value: unknown, path: string): GenerationPlan {
   const raw = readObject(value, path);
   const seen = new Set<string>();
-  const images = readList(raw['images'], `${path}.images`, (item, itemPath) => {
+  const entries = readList(raw['images'], `${path}.images`, (item, itemPath) => {
     const image = readObject(item, itemPath);
     const maps = readList(image['maps'], `${itemPath}.maps`, (map, mapPath) => {
-      const name = readChoice(map, mapPath, PLAN_MAPS);
+      const name = readChoice(map, mapPath, [...PLAN_MAPS, ...REMOVED_PLAN_MAPS]);
       if (seen.has(name)) throw new FieldProblem(mapPath);
       seen.add(name);
       return name;
     });
-    return { maps: PLAN_MAPS.filter((name) => maps.includes(name)), settings: readSettings(image['settings'], `${itemPath}.settings`) };
+    const kept = PLAN_MAPS.filter((name) => maps.includes(name));
+    return { image: { maps: kept, settings: readSettings(image['settings'], `${itemPath}.settings`) }, emptiedByRemoval: maps.length > 0 && kept.length === 0 };
   });
+  const images = entries.filter((entry) => !entry.emptiedByRemoval).map((entry) => entry.image); // an image that held only a removed map goes with it; a card left empty by the person stays
+  while (images.length > MAX_MAP_IMAGES && images[images.length - 1]!.maps.length === 0) images.pop(); // a plan saved with three cards (the old limit) keeps its maps; its trailing empty cards go
   if (images.length > MAX_MAP_IMAGES) throw new FieldProblem(`${path}.images`);
   const decomposition = raw['decomposition'] === null ? null : readSettings(raw['decomposition'], `${path}.decomposition`);
   if (decomposition === null && !images.some((image) => image.maps.length > 0)) throw new FieldProblem(`${path}.images`); // R5: nothing to generate

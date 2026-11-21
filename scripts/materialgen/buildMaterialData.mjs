@@ -6,7 +6,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const DIM = 384;
-const [sourceDir, outputDir = 'src/materialgen/data'] = process.argv.slice(2);
+const [sourceDir, outputDir = 'src/materialMasks/data'] = process.argv.slice(2);
 if (sourceDir === undefined) {
   console.error('Usage: node scripts/materialgen/buildMaterialData.mjs <embeddings folder> [output folder]');
   process.exit(1);

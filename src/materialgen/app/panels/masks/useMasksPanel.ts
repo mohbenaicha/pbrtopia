@@ -17,11 +17,10 @@ import {
   type BaseMaterialTable,
   type BakeQueue,
   type MaskRow,
-  type MasksModelControls,
-  type MasksPanelProps,
   type MasksRecord,
-  type RowLabels,
-} from '@mat/masks';
+} from '@shared/materialMasks';
+import type { RowLabels } from '@shared/materialMasks/ui';
+import { startHeightJob, type MasksModelControls, type ModelMasksPanelProps } from '@mat/masks';
 import { planMasksWrites } from './planMasksWrites';
 
 export interface MasksPanelPorts {
@@ -46,7 +45,7 @@ type RowUpdate = (rows: readonly MaskRow[], table: BaseMaterialTable) => MaskRow
  * Masks R50-R54, R58, R59, R79: everything the Material Masks controls do, on top of the maps controller. A change to a row or to the feather goes through
  * the bake queue (one bake at a time, later changes merged); when the labels are not S x S the queue rebuilds them first, in the same commit (R79).
  */
-export function useMasksPanel(ports: MasksPanelPorts): MasksPanelProps {
+export function useMasksPanel(ports: MasksPanelPorts): ModelMasksPanelProps {
   const { state, canWrite } = ports;
   const record = useMemo(() => parseMasksRecord(ports.masksRecord), [ports.masksRecord]);
   const portsRef = useRef(ports);
@@ -137,7 +136,7 @@ export function useMasksPanel(ports: MasksPanelPorts): MasksPanelProps {
               if (base === null) return controller.refuse('The height map cannot be read.'), false;
               const used = relabel === undefined ? labels : relabel.working;
               if (base.width !== used.width || base.height !== used.height) return controller.refuse('The height map is not the size of the masks.'), false;
-              height = { image: await startMaskJob('height', { labels: used, record, base }), offsetBase: baseKey };
+              height = { image: await startHeightJob({ labels: used, record, base }), offsetBase: baseKey };
             } else if (heightMap.offsetBase !== undefined) {
               height = { backTo: heightMap.offsetBase }; // R84: the last offset went back to 0
             }

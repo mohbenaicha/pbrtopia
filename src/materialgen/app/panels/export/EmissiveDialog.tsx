@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RawRecord } from '@shared/projects';
 import { CommitSlider } from '@shared/ui-kit';
 import { MAX_PREVIEW_SIZE, OpDialog, type PixelImage } from '@mat/imageops';
-import { MaskSwatchGrid } from '@mat/masks';
+import { MaskSwatchGrid } from '@shared/materialMasks/ui';
 import { useFilterMaskScope } from '../useFilterMaskScope';
 import { useStoredPicture } from '../useMapPictures';
 import { buildGlowOverlay } from './emissiveGlowOverlay';

@@ -1,0 +1,31 @@
+// The material mask core's public entry (specs/shared/material-masks-core). Worker-safe: no React and no stylesheet is reached from here; the panel
+// and the package dialog are the separate `ui` entry.
+export type { PixelImage } from './imageTypes';
+export { deltaE76, hexToRgb, rgbToLab, type Lab, type Rgb } from './color/lab';
+export { PALETTE, paletteFor, type LabelColour, type PaletteColour } from './palette/palette';
+export { labelByHueRange, toHueEntries, type HueEntry } from './quantise/hueRange';
+export { quantiseToLabels, type QuantisedLabels } from './quantise/quantiseLabels';
+export { MAX_COMPONENTS, MIN_COMPONENTS, parseComponents, type Component, type ParsedComponents } from './describe/parseComponents';
+export { GENERIC, findMaterial, listMaterialOptions, parseBaseMaterials, type BaseMaterial, type BaseMaterialTable, type MaterialOption } from './table/baseMaterials';
+export { decodeFloat16Vectors } from './table/float16';
+export { EMBEDDER_TIMEOUT_MS, keywordMatch, matchBaseMaterials, type Embedder, type MaterialMatch, type MatchKind } from './table/matchMaterials';
+export type { Edges } from './edges';
+export { MAX_FEATHER, bakeMasks, blurBox, type BakeInput, type BakeRow } from './bake/bakeMasks';
+export { DEFAULT_FEATHER, parseMasksRecord, serializeMasksRecord, type MasksRecord, type PaletteEntry } from './record/masksRecord';
+export { parseDescribedComponents, serializeDescribedComponents } from './record/describedComponents';
+export { DEFAULT_MIX, chooseMaterial, hasHeightOffset, hasMix, isRowAtDefaults, makeRow, mixOf, resetAllRows, resetRow, rowsToBake, rowsToHeightOffsets, setRowMix, setRowValue, type MaskRow, type RowMix } from './record/maskRows';
+export { MIX_SENSITIVITY, albedoToGrey } from './bake/colourMixin';
+export { NONE_LABEL, classifyPixelsToPalette, type BackgroundKey } from './quantise/classifyPixelsToPalette';
+export { majorityFilter } from './quantise/labelCleanup';
+export { DEFAULT_COMPONENT_LIMITS, type ComponentLimits } from './describe/parseComponents';
+export { createBakeQueue, type BakeQueue } from './pipeline/createBakeQueue';
+export { bakeCurrentRows, type BakedMaps, type MasksBuild } from './pipeline/bakeCurrentRows';
+export type { StepOutcome } from './model/stepOutcome';
+export { DESCRIBE_INSTRUCTION, buildDescribeText } from './model/describeInstruction';
+export { runDescribeStep } from './model/runDescribeStep';
+export { DEFAULT_FRAMING, buildDecompositionText } from './model/buildDecompositionText';
+export { buildModelMasks } from './model/buildModelMasks';
+export { requantiseModelMasks } from './model/requantiseModelMasks';
+export { startMaskJob, type MaskWorkerLike, type StartMaskJobOptions } from './worker/startMaskJob';
+export { createMasksSteps, type DescribedComponents, type MasksStepDeps, type ModelMasksSteps } from './model/createMasksSteps';
+export { createWorkerEmbedder } from './embed/createWorkerEmbedder';

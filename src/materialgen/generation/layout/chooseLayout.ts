@@ -8,11 +8,10 @@ export interface GridShape {
   rows: number;
 }
 
-/** R21: the grids allowed for k maps, in the order that breaks a tie (R23). There is no grid for more than three maps. */
+/** R21: the grids allowed for k maps, in the order that breaks a tie (R23). There is no grid for more than two maps (the normal map is computed, not packed). */
 const GRIDS_BY_COUNT: Readonly<Record<number, readonly GridShape[]>> = {
   1: [{ cols: 1, rows: 1 }],
   2: [{ cols: 2, rows: 1 }, { cols: 1, rows: 2 }],
-  3: [{ cols: 3, rows: 1 }, { cols: 2, rows: 2 }],
 };
 
 /** One map's cell on the canvas, in canvas pixels. */

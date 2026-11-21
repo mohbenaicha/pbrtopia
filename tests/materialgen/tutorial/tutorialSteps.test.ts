@@ -11,7 +11,7 @@ describe('the tutorial steps (tutorial R3, R9, R13)', () => {
     expect(TUTORIAL_SECTIONS.map((section) => section.id)).toEqual(['generate', 'maps', 'viewport', 'masks', 'shading', 'topbar', 'export', 'projects', 'settings']);
     expect(STEPS.map((entry) => entry.id)).toEqual([
       'generate.prompt', 'generate.ideas', 'generate.references', 'generate.color', 'generate.size', 'generate.model', 'generate.button', 'generate.summary', 'generate.log',
-      'maps.tools', 'maps.cards', 'maps.card-actions', 'maps.occlusion',
+      'maps.tools', 'maps.cards', 'maps.card-actions', 'maps.normal', 'maps.occlusion',
       'viewport.open', 'viewport.environment', 'viewport.material', 'viewport.preview-only',
       'masks.open', 'masks.swatches', 'masks.properties', 'shading.control', 'topbar.actions',
       'export.types', 'export.packing', 'export.parts', 'export.size',
@@ -45,6 +45,10 @@ describe('the tutorial steps (tutorial R3, R9, R13)', () => {
     expect(words('viewport.preview-only')).toMatch(/never change .*export/);
     expect(words('masks.open')).toContain('metal-roughness');
     expect(words('maps.occlusion')).toMatch(/generate/);
+    expect(words('maps.normal')).toMatch(/height map/);
+    expect(words('maps.normal')).toMatch(/generate/);
+    expect(words('maps.cards')).toMatch(/normal.*(height|computed)/);
+    expect(words('generate.button')).toMatch(/normal.*height/);
     expect(words('settings.env')).toContain('never stored');
     expect(words('settings.keys')).toContain('encrypted');
   });
@@ -52,6 +56,7 @@ describe('the tutorial steps (tutorial R3, R9, R13)', () => {
   it('TestR22_the_map_card_steps_show_the_card_buttons_and_the_mask_properties_step_selects_a_swatch', () => {
     const byId = Object.fromEntries(STEPS.map((entry) => [entry.id, entry]));
     expect(byId['maps.card-actions']?.reveal).toContain('map-actions');
+    expect(byId['maps.normal']?.reveal).toContain('map-actions');
     expect(byId['maps.occlusion']?.reveal).toContain('map-actions');
     expect(byId['masks.properties']?.reveal).toEqual(['mask-display', 'mask-select']);
   });

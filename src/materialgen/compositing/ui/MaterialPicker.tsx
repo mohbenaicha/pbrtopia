@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Tooltip } from '@shared/ui-kit';
-import { listMaterialOptions, type BaseMaterial, type BaseMaterialTable } from '@mat/masks';
+import { listMaterialOptions, type BaseMaterial, type BaseMaterialTable } from '@shared/materialMasks';
 import { MaterialBall } from './MaterialBall';
 import { PickerOverlay } from './PickerOverlay';
 

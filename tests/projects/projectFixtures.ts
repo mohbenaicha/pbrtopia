@@ -3,7 +3,7 @@ import type { ProjectRecord } from '../../src/projects/records/projectRecords';
 // A complete version-2 project: a generated-UV mesh, one baked picture applied to a material, generate settings with a reference, and two sets.
 export function sampleProjectRecord(overrides: Partial<ProjectRecord> = {}): ProjectRecord {
   return {
-    schemaVersion: 2,
+    schemaVersion: 4,
     id: '3f0b2f6e-8c2a-4a57-9a43-0d6f3b1f7a11',
     name: 'Skarrik helmet',
     createdAt: '2026-10-18T09:30:00.000Z',
@@ -23,6 +23,7 @@ export function sampleProjectRecord(overrides: Partial<ProjectRecord> = {}): Pro
       prompt: 'weathered green armour with gold trim',
       referenceImages: [{ id: 'ref-1', blobKey: 'refs/ref-1.png', name: 'armour.png', width: 800, height: 600 }],
       channel: 'albedo',
+      normalDetail: 2,
       provider: 'gemini',
       modelId: 'gemini-3-pro-image',
       resolutionKey: '2K',
@@ -49,3 +50,6 @@ export function omit<T extends object, K extends keyof T>(value: T, ...keys: K[]
 
 // The same record as it comes back from storage: plain JSON.
 export const roundTripped = (record: unknown): unknown => JSON.parse(JSON.stringify(record));
+
+/** The set a baked picture came from; undefined for a picture another step made. */
+export const bakeSetId = (picture: { origin: { kind: string; setId?: string } }): string | undefined => (picture.origin.kind === 'bake' ? picture.origin.setId : undefined);

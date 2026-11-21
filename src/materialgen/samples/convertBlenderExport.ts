@@ -1,7 +1,6 @@
 import { MANIFEST_PATH, PROJECT_PATH, blobEntryPath, encodeJsonBytes, isDeflatable, streamZipEntries, type ZipFileEntry } from '@shared/projects';
 import type { MapKind } from '@mat/maps';
-import { DEFAULT_FEATHER, serializeMasksRecord } from '@mat/masks/record/masksRecord';
-import type { MaskRow } from '@mat/masks/record/maskRows';
+import { DEFAULT_FEATHER, serializeMasksRecord, type MaskRow } from '@shared/materialMasks';
 import { DEFAULT_PREVIEW_VALUES } from '@mat/storage/previewValues';
 import { newMaterialRecord, type MapRecord, type MaterialRecord } from '@mat/storage/materialRecord';
 import { THUMBNAIL_ENTRY_KEY, newMaterialManifest } from '@mat/storage/zip/materialManifest';

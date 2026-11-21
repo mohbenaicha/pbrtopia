@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import { useAppBackends } from '@shared/shell';
 import type { DescribeTarget, MasksStepsFactory } from '@mat/generation';
 import type { MapsController, MapsState } from '@mat/maps';
-import { DEFAULT_FEATHER, createMasksSteps, createWorkerEmbedder, parseDescribedComponents, parseMasksRecord, serializeDescribedComponents, serializeMasksRecord } from '@mat/masks';
+import { DEFAULT_FEATHER, createMasksSteps, createWorkerEmbedder, parseDescribedComponents, parseMasksRecord, serializeDescribedComponents, serializeMasksRecord } from '@shared/materialMasks';
 import type { MaterialRecord } from '@mat/storage';
 import { loadBaseMaterials } from '../panels/masks/loadBaseMaterials';
 import { loadMaterialVectors } from '../panels/masks/loadMaterialVectors';

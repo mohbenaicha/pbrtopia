@@ -1,7 +1,8 @@
 import type { MeshRecord, UnwrapReport } from './meshRecord';
 import { FieldProblem, readBlobKey, readChoice, readCount, readDuration, readFlag, readList, readNonEmptyText, readObject, readOptional, readText, readTimestamp, type RawRecord } from './fieldReaders';
 import { readCustomPlan, readCustomSetups } from './customPlanRecords';
-import { readPictures, readSlots } from './pictureRecords';
+import { readPictures, readSlots, type PictureRecord } from './pictureRecords';
+import { readProjectMasks, type ProjectMasksRecord } from './projectMasksRecord';
 import { STORED_PROVIDERS } from './storedProviders';
 import { PROJECT_SCHEMA_VERSION, normalizeProjectName, type GenerateSettingsRecord, type ProjectRecord, type ReferenceImageRecord } from './projectRecords';
 
@@ -43,12 +44,19 @@ function readReferenceImage(value: unknown, path: string): ReferenceImageRecord 
   };
 }
 
+// normal-map R5: a number clamps into 1..4 (rounded); anything else, or an absent value, reads as 2.
+function readNormalDetail(value: unknown): GenerateSettingsRecord['normalDetail'] {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 2;
+  return Math.min(4, Math.max(1, Math.round(value))) as GenerateSettingsRecord['normalDetail'];
+}
+
 function readGenerateSettings(value: unknown, path: string): GenerateSettingsRecord {
   const raw = readObject(value, path);
   return {
     prompt: readText(raw['prompt'], `${path}.prompt`),
     referenceImages: readList(raw['referenceImages'], `${path}.referenceImages`, readReferenceImage),
-    channel: readChoice(raw['channel'], `${path}.channel`, ['albedo'] as const),
+    channel: raw['channel'] === 'normal' || raw['channel'] === 'metal-rough' ? raw['channel'] : 'albedo', // an unknown or older value reads as albedo (normal-map R1)
+    normalDetail: readNormalDetail(raw['normalDetail']),
     provider: readChoice(raw['provider'], `${path}.provider`, STORED_PROVIDERS),
     modelId: readText(raw['modelId'], `${path}.modelId`),
     resolutionKey: readChoice(raw['resolutionKey'], `${path}.resolutionKey`, ['1K', '2K', '2.8K', '4K'] as const),
@@ -67,6 +75,12 @@ function readProjectName(value: unknown): string {
   const name = normalizeProjectName(readText(value, 'name'));
   if (name === null) throw new FieldProblem('name');
   return name;
+}
+
+// mask-mode R22: an owned picture that is no longer in the project (the user deleted it) reads as null, as a slot to a missing picture is ignored.
+function withExistingOwnedPictures(masks: ProjectMasksRecord, pictures: readonly PictureRecord[]): ProjectMasksRecord {
+  const exists = (id: string | null): string | null => (id !== null && pictures.some((picture) => picture.id === id) ? id : null);
+  return { ...masks, roughPictureId: exists(masks.roughPictureId), metalPictureId: exists(masks.metalPictureId) };
 }
 
 // Reads a current-version project from stored JSON. Unknown fields are dropped; a wrong or missing value throws a FieldProblem naming it (slots are the exception: bad ones are ignored).
@@ -91,5 +105,7 @@ export function readProjectRecord(raw: RawRecord): ProjectRecord {
   if (originalModelBlobKey !== undefined) record.originalModelBlobKey = originalModelBlobKey;
   const thumbnailKey = readOptional(raw['thumbnailKey'], (present) => readBlobKey(present, 'thumbnailKey'));
   if (thumbnailKey !== undefined) record.thumbnailKey = thumbnailKey;
+  const masks = readOptional(raw['masks'], (present) => readProjectMasks(present, 'masks'));
+  if (masks !== undefined) record.masks = withExistingOwnedPictures(masks, pictures);
   return record;
 }

@@ -5,7 +5,7 @@ import type { ColorModeName } from '../prompts/buildMapPrompt';
 import { estimateImageCost } from './estimateImageCost';
 
 export interface CostRow {
-  label: string; // "Image 2 (Normal)", "Describe step"
+  label: string; // "Image 2 (Height)", "Describe step"
   model: string;
   canvas: string; // "2048 x 1024", "" for the describe step
   layout: string; // "2x1"

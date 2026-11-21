@@ -10,7 +10,7 @@ import { ANSWER, createHarness, ENVIRONMENT, flush, providerError, preset, type 
 
 afterEach(cleanup);
 
-const albedoOnly = (): GenerationPlan => ({ ...unassignMap(unassignMap(preset('preset-1'), 'normal'), 'height'), decomposition: null });
+const albedoOnly = (): GenerationPlan => ({ ...unassignMap(preset('preset-1'), 'height'), decomposition: null });
 const record: MapRecord = { originalKey: 'o', workingKey: 'w', undoKey: null, width: 1024, height: 1024 };
 const noMaps: MapsState = { size: 1024, maps: {} };
 const keysOk = () => ({ ensureUnlocked: vi.fn(async () => ({ ok: true as const, value: undefined })) });
@@ -197,41 +197,40 @@ describe('materialgen/generation run session', () => {
 
 describe('materialgen/generation R6 R7 R9 R56 a plan with no Albedo works from the existing Albedo', () => {
   const albedo = new Blob(['existing-albedo'], { type: 'image/png' });
-  const normalHeight = (): GenerationPlan => ({ ...unassignMap(preset('preset-2'), 'albedo'), decomposition: null });
+  const heightOnly = (): GenerationPlan => ({ ...unassignMap(preset('preset-2'), 'albedo'), decomposition: null });
 
-  it('R6 R7 Generate reads the existing Albedo once, attaches it to every map image at once, and the plan\'s own Albedo is never asked for', async () => {
+  it('R6 R7 Generate reads the existing Albedo once, attaches it to the map image at once, and the plan\'s own Albedo is never asked for', async () => {
     const read = existingAlbedoOf(albedo);
-    const { result, harness } = mountSession({ plan: normalHeight(), existingAlbedo: read, maps: { size: 1024, maps: { albedo: record } } });
+    const { result, harness } = mountSession({ plan: heightOnly(), existingAlbedo: read, maps: { size: 1024, maps: { albedo: record } } });
     act(() => result.current.generate());
     await settle();
     expect(read).toHaveBeenCalledTimes(1);
-    expect(harness.calls).toHaveLength(2);
+    expect(harness.calls).toHaveLength(1);
     for (const call of harness.calls) expect(call.request.images).toEqual([albedo]);
   });
 
   it('R9 a plan with no Albedo in a project with none starts nothing and says what is missing', async () => {
-    const { result, harness } = mountSession({ plan: normalHeight(), existingAlbedo: existingAlbedoOf(null) });
+    const { result, harness } = mountSession({ plan: heightOnly(), existingAlbedo: existingAlbedoOf(null) });
     act(() => result.current.generate());
     await settle();
     expect(harness.calls).toHaveLength(0);
-    expect(result.current.startError).toBe('Normal, Height and Metal-Roughness need an Albedo: generate one or drop one in.');
+    expect(result.current.startError).toBe('Height and Metal-Roughness need an Albedo: generate one or drop one in.');
     expect(result.current.running).toBe(false);
   });
 
   it('R56 Retry reuses the existing Albedo the run began with, without reading it again', async () => {
     const read = existingAlbedoOf(albedo);
-    const { result, harness } = mountSession({ plan: normalHeight(), existingAlbedo: read });
+    const { result, harness } = mountSession({ plan: heightOnly(), existingAlbedo: read });
     act(() => result.current.generate());
     await settle();
     act(() => harness.calls[0]!.settle({ ok: false, error: providerError('quota') }));
-    act(() => harness.answerCanvas(harness.calls[1]!));
     await settle();
     expect(result.current.canRetry).toBe(true);
     act(() => result.current.retry());
     await settle();
     expect(read).toHaveBeenCalledTimes(1);
-    expect(harness.calls).toHaveLength(3);
-    expect(harness.calls[2]!.request.images).toEqual([albedo]);
+    expect(harness.calls).toHaveLength(2);
+    expect(harness.calls[1]!.request.images).toEqual([albedo]);
   });
 });
 

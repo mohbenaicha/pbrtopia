@@ -4,7 +4,7 @@ import { decodePngOffThread, encodePngBlob, encodeResizedPngBlob, OFF_THREAD_PIX
 import { resampleToSquare } from '../../../../src/materialgen/maps/pixels/resampleToSquare';
 import { runPngJob, type PngJobKind } from '../../../../src/materialgen/maps/png/worker/pngJobs';
 import { startPngJob } from '../../../../src/materialgen/maps/png/worker/startPngJob';
-import type { WorkerJobHandle } from '@mat/workerjob';
+import type { WorkerJobHandle } from '@shared/workerJob';
 
 const picture = (width: number, height: number): PixelImage => {
   const data = new Uint8Array(width * height * 4);

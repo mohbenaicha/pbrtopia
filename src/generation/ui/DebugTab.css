@@ -32,6 +32,39 @@
   font-size: var(--font-size-small);
 }
 
+/* mask-generation R13: the components a mask run found, each with the swatch of its palette colour */
+.run-log-row__components {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.run-log-row__component {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.run-log-row__swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border: 1px solid var(--text-hint);
+  border-radius: 3px;
+}
+
+.run-log-row__component-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--font-size-small);
+  overflow-wrap: anywhere;
+}
+
 .run-log-row__picture {
   display: block;
   max-width: 100%;

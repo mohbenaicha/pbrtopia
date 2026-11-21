@@ -1,6 +1,21 @@
 import { useState } from 'react';
 import { Button, ConfirmDialog } from '@shared/ui-kit';
-import type { MasksModelControls } from './MasksPanel';
+
+/** Masks R64-R68: the model path as the panel sees it; the app binds it to a run of the describe step and the decomposition image. */
+export interface MasksModelControls {
+  /** Why the model actions are off (no vision-text model, no key, no decomposition model), shown as their tooltip; null when they are available. */
+  disabledReason: string | null;
+  running: boolean;
+  /** The failed step, named, or null (R67). */
+  error: string | null;
+  canRetry: boolean;
+  /** The models a re-run uses, for its question (R66). */
+  modelNames: string;
+  onCreate(): void;
+  onRerun(): void;
+  onCancel(): void;
+  onRetry(): void;
+}
 
 interface NoticeProps {
   model: MasksModelControls;

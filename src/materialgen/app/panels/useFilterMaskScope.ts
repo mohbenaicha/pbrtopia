@@ -3,7 +3,8 @@ import type { RawRecord } from '@shared/projects';
 import type { StageOverlay } from '@shared/ui-kit';
 import type { PixelImage } from '@mat/imageops';
 import { readMapPixels } from '@mat/maps';
-import { buildCoverage, paintLabelOverlay, parseMasksRecord, sampleLabels, type MaskRow, type PaletteEntry } from '@mat/masks';
+import { parseMasksRecord, type MaskRow, type PaletteEntry } from '@shared/materialMasks';
+import { buildCoverage, paintLabelOverlay, sampleLabels } from '@mat/masks';
 
 interface FilterMaskScopeInput {
   masksRecord: RawRecord | undefined;
