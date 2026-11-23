@@ -3,7 +3,7 @@ import type { Edges } from '../edges';
 /**
  * Masks R20, material-masks-core R5: one pass of a 3 x 3 majority filter over the labels as they were. The window wraps at the edges by default; with
  * `edges: 'clamp'` a window that leaves the picture repeats the border cell instead. A pixel takes the most frequent label in its window; its own
- * label wins a tie, and a tie between other labels goes to the lowest.
+ * label wins a tie, and a tie between other labels goes to the lowest. A label that is not in the palette (NONE_LABEL) casts no vote and is never written.
  */
 export function majorityFilter(labels: Uint8Array, size: number, count: number, edges: Edges = 'wrap'): Uint8Array {
   const result = new Uint8Array(labels.length);
@@ -20,10 +20,14 @@ export function majorityFilter(labels: Uint8Array, size: number, count: number, 
       for (const row of rows) {
         for (const column of columns) {
           const label = labels[row + column]!;
-          tally[label] = tally[label]! + 1;
+          if (label < count) tally[label] = tally[label]! + 1; // a label outside the palette (NONE_LABEL) casts no vote
         }
       }
       const own = labels[y * size + x]!;
+      if (own >= count) {
+        result[y * size + x] = own; // and is never written
+        continue;
+      }
       let chosen = own;
       let best = tally[own]!;
       for (let label = 0; label < count; label += 1) {

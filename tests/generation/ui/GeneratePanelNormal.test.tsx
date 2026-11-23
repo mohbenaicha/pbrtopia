@@ -18,13 +18,20 @@ const known = (id: string) => {
   return entry;
 };
 
+// The old per-material ids as the image in force: one picture on every material, mixed, or none (textures R24).
+const inForceOf = (ids: readonly (string | null)[] | null) => {
+  if (ids === null) return null;
+  const first = ids[0];
+  if (first === undefined || first === null) return ids.every((id) => id === null) ? ({ kind: 'none' } as const) : ({ kind: 'mixed' } as const);
+  return ids.every((id) => id === first) ? ({ kind: 'picture', id: first } as const) : ({ kind: 'mixed' } as const);
+};
 function setup(ids: (string | null)[] | null = ['a', 'a'], square: boolean | null = true) {
   const store = createGenerateStore();
   const s = store.getState();
   s.setMaxTextureSize(8192);
   s.setCatalog({ gemini: [known('gemini-nano-banana-2.1')], openai: [], openrouter: [] });
   s.setHasKey('gemini', true);
-  s.setSceneState({ hasModel: true, hasUvs: true, albedoPictureIds: ids, sourceIsSquare: square });
+  s.setSceneState({ hasModel: true, hasUvs: true, albedoInForce: inForceOf(ids), sourceIsSquare: square });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
   const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn(), onPreviewAtlas: vi.fn(async () => ({ ok: true as const, value: new Blob(['atlas']) })) };
   render(<GeneratePanel projectId="p1" store={store} logStore={createRunLogStore()} today="2026-10-19" {...props} />);
@@ -93,7 +100,7 @@ describe('GeneratePanel with Normal chosen (normal-map R1 to R5)', () => {
     const { store } = setup();
     choose('Normal');
     expect(screen.getByRole('radio', { name: 'Normal' }).getAttribute('aria-checked')).toBe('true');
-    act(() => store.getState().setSceneState({ hasModel: true, hasUvs: true, albedoPictureIds: [null, null], sourceIsSquare: null }));
+    act(() => store.getState().setSceneState({ hasModel: true, hasUvs: true, albedoInForce: { kind: 'none' }, sourceIsSquare: null }));
     expect(screen.getByRole('radio', { name: 'Albedo' }).getAttribute('aria-checked')).toBe('true');
     expect(screen.getByRole('textbox', { name: 'Prompt' })).toBeTruthy();
     expect(screen.queryByText(/albedo picture|Bake or apply/)).toBeNull(); // the panel says nothing else

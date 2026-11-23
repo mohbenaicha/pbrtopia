@@ -11,7 +11,7 @@ import type { MasksRecord } from '../record/masksRecord';
  * is not here: materialgen registers it from its own `bakeHeight` (material-masks-core R1).
  */
 export interface MaskJobs {
-  bake: { input: { labels: PixelImage; record: MasksRecord; grey?: PixelImage; edges?: Edges }; output: BakedMaps }; // grey: the albedo's, for the Colour mixin (R91)
+  bake: { input: { labels: PixelImage; record: MasksRecord; grey?: PixelImage; edges?: Edges; base?: BakedMaps; keep?: Uint8Array }; output: BakedMaps }; // grey: the albedo's, for the Colour mixin (R91)
   model: { input: ModelMasksInput; output: StepOutcome<MasksBuild> };
   requantise: { input: RequantiseInput; output: StepOutcome<MasksBuild> };
 }
@@ -21,8 +21,8 @@ export type MaskJobKind = keyof MaskJobs;
 export function runMaskJob<K extends MaskJobKind>(kind: K, input: MaskJobs[K]['input']): MaskJobs[K]['output'] {
   switch (kind) {
     case 'bake': {
-      const { labels, record, grey, edges } = input as MaskJobs['bake']['input'];
-      return bakeCurrentRows(labels, record, grey, edges) as MaskJobs[K]['output'];
+      const { labels, record, grey, edges, base, keep } = input as MaskJobs['bake']['input'];
+      return bakeCurrentRows(labels, record, grey, edges, base, keep) as MaskJobs[K]['output'];
     }
     case 'model':
       return buildModelMasks(input as MaskJobs['model']['input']) as MaskJobs[K]['output'];

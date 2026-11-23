@@ -10,6 +10,7 @@ import type { ViewportResult } from './viewportError';
 export interface ModelMeshRecord {
   mesh: Mesh;
   ordinal: number; // index among the model's meshes in traversal order: the key of the hidden marks
+  sourceMaterial: Material | Material[]; // the material(s) the file gave the mesh, kept while the viewport swaps `mesh.material` for a look or the projection material
   full: BufferGeometry; // the geometry with every triangle
   hidden: Uint8Array | undefined; // 1 per hidden triangle of `full`; undefined = none hidden
 }
@@ -74,7 +75,7 @@ export async function loadModelAsset(glb: ArrayBuffer, options: LoadModelAssetOp
     const full = mesh.geometry;
     const hidden = marks.has(ordinal) ? flagsFromRanges(marks.get(ordinal), (full.index ? full.index.count : full.getAttribute('position').count) / 3) : undefined;
     if (hidden) mesh.geometry = removeHiddenTriangles(full, hidden);
-    return { mesh, ordinal, full, hidden };
+    return { mesh, ordinal, sourceMaterial: mesh.material, full, hidden };
   });
   if (records.every((record) => record.hidden !== undefined && record.mesh.geometry.getAttribute('position').count === 0)) {
     return { ok: false, error: { code: 'parse-failed', message: 'Every part of this model is hidden.' } };

@@ -1,5 +1,8 @@
 export type GenerateChannel = 'albedo' | 'normal' | 'metal-rough';
 
+/** textures R24: the albedo image in force across the model: one override picture, one model image, different ones on different materials, or none. */
+export type AlbedoInForce = { kind: 'picture'; id: string } | { kind: 'model'; key: string } | { kind: 'mixed' } | { kind: 'none' };
+
 export interface ChannelAvailability {
   enabled: boolean;
   reason?: string;
@@ -10,7 +13,7 @@ export interface ChannelAvailabilityInput {
   hasModel: boolean;
   busy: boolean; // a run, bake or Generate UV is going
   setOpen: boolean; // a projection set is open
-  albedoPictureIds: readonly (string | null)[]; // per material, the picture in force (null = none or an original texture)
+  albedoInForce: AlbedoInForce; // textures R24: the albedo image across the model's materials
   sourceIsSquare: boolean | null; // null when there is no source albedo
 }
 
@@ -20,12 +23,11 @@ const BUSY = 'Wait for the current task to finish.';
 
 const blocked = (reason: string): ChannelAvailability => ({ enabled: false, reason });
 
-// normal-map R2: Albedo is always on; the generated channels need one generated albedo picture on every material.
+// normal-map R2, textures R24: Albedo is always on; the generated channels need one albedo image on every material, a generated picture or the model's own.
 export function describeChannelAvailability(input: ChannelAvailabilityInput): ChannelAvailabilityMap {
   const albedo: ChannelAvailability = { enabled: true };
   if (input.busy || input.setOpen) return { albedo, normal: blocked(BUSY), 'metal-rough': blocked(BUSY) };
-  const first = input.albedoPictureIds[0];
-  const hasSource = input.hasModel && first !== undefined && first !== null && input.albedoPictureIds.every((id) => id === first);
+  const hasSource = input.hasModel && (input.albedoInForce.kind === 'picture' || input.albedoInForce.kind === 'model');
   if (!hasSource) return { albedo, normal: blocked(NO_ALBEDO), 'metal-rough': blocked(NO_ALBEDO) };
   return { albedo, normal: input.sourceIsSquare === false ? blocked(NOT_SQUARE) : { enabled: true }, 'metal-rough': { enabled: true } };
 }

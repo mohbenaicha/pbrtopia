@@ -16,7 +16,7 @@ export interface MaskOverlay {
   dispose(): void;
 }
 
-export const MAX_PALETTE_ENTRIES = 10;
+export const MAX_PALETTE_ENTRIES = 32; // a record holds up to 32 components (mask-mode R25)
 export const MASK_OVERLAY_RENDER_ORDER = 2; // above the layer flash's 1, so the two never fight for the same pixels
 export const HIGHLIGHT_OPACITY = 0.75;
 

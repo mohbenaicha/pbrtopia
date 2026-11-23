@@ -24,7 +24,7 @@ function setup(describeKey = true) {
   s.setMaxTextureSize(8192);
   s.setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')], openai: [], openrouter: [] });
   s.setHasKey('gemini', describeKey);
-  s.setSceneState({ hasModel: true, hasUvs: true, albedoPictureIds: ['a', 'a'], sourceIsSquare: true });
+  s.setSceneState({ hasModel: true, hasUvs: true, albedoInForce: { kind: 'picture', id: 'a' }, sourceIsSquare: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
   const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn(), onPreviewAtlas: vi.fn(async () => ({ ok: true as const, value: new Blob(['atlas']) })) };
   render(<GeneratePanel projectId="p1" store={store} logStore={createRunLogStore()} today="2026-10-19" {...props} />);

@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { createGenerateStore } from '../../src/generation/generateStore';
 
+// The old per-material ids as the image in force: one picture on every material, mixed, or none (textures R24).
+const inForceOf = (ids: readonly (string | null)[] | null) => {
+  if (ids === null) return null;
+  const first = ids[0];
+  if (first === undefined || first === null) return ids.every((id) => id === null) ? ({ kind: 'none' } as const) : ({ kind: 'mixed' } as const);
+  return ids.every((id) => id === first) ? ({ kind: 'picture', id: first } as const) : ({ kind: 'mixed' } as const);
+};
 const withAlbedo = (ids: (string | null)[] = ['a', 'a'], square: boolean | null = true) => {
   const store = createGenerateStore();
-  store.getState().setSceneState({ hasModel: true, hasUvs: true, albedoPictureIds: ids, sourceIsSquare: square });
+  store.getState().setSceneState({ hasModel: true, hasUvs: true, albedoInForce: inForceOf(ids), sourceIsSquare: square });
   return store;
 };
 
@@ -45,11 +52,11 @@ describe('generateStore: channel and Detail (normal-map R1, R3, R5)', () => {
   it('normal-map R3 falls back to Albedo when the albedo is removed or differs per material', () => {
     const store = withAlbedo();
     store.getState().setChannel('normal');
-    store.getState().setSceneState({ hasModel: true, hasUvs: true, albedoPictureIds: [null, null], sourceIsSquare: null });
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, albedoInForce: { kind: 'none' }, sourceIsSquare: null });
     expect(store.getState().channel).toBe('albedo');
     const split = withAlbedo();
     split.getState().setChannel('metal-rough');
-    split.getState().setSceneState({ hasModel: true, hasUvs: true, albedoPictureIds: ['a', 'b'], sourceIsSquare: true });
+    split.getState().setSceneState({ hasModel: true, hasUvs: true, albedoInForce: { kind: 'mixed' }, sourceIsSquare: true });
     expect(split.getState().channel).toBe('albedo');
   });
 
@@ -58,9 +65,9 @@ describe('generateStore: channel and Detail (normal-map R1, R3, R5)', () => {
     store.getState().setChannel('normal');
     store.getState().beginRun();
     expect(store.getState().channel).toBe('normal');
-    store.getState().setSceneState({ hasModel: true, hasUvs: true, setBusy: true, albedoPictureIds: ['a', 'a'], sourceIsSquare: true });
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, setBusy: true, albedoInForce: { kind: 'picture', id: 'a' }, sourceIsSquare: true });
     expect(store.getState().channel).toBe('normal');
-    store.getState().setSceneState({ hasModel: true, hasUvs: true, setOpen: true, albedoPictureIds: ['a', 'a'], sourceIsSquare: true });
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, setOpen: true, albedoInForce: { kind: 'picture', id: 'a' }, sourceIsSquare: true });
     expect(store.getState().channel).toBe('normal');
   });
 

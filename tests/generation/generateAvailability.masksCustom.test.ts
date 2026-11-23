@@ -18,7 +18,7 @@ function customMaskStore() {
   s.setMaxTextureSize(8192);
   s.setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')], openai: [], openrouter: [] });
   s.setHasKey('gemini', true);
-  s.setSceneState({ hasModel: true, hasUvs: true, albedoPictureIds: ['a', 'a'], sourceIsSquare: true });
+  s.setSceneState({ hasModel: true, hasUvs: true, albedoInForce: { kind: 'picture', id: 'a' }, sourceIsSquare: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
   s.setChannel('metal-rough');
   s.setMode('custom');

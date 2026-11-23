@@ -1,6 +1,6 @@
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, NearestFilter, Raycaster, ShaderMaterial, type DataTexture } from 'three';
 import { describe, expect, it } from 'vitest';
-import { createMaskOverlay, type MaskOverlayState } from '../../src/viewport/maskOverlay';
+import { createMaskOverlay, MAX_PALETTE_ENTRIES, type MaskOverlayState } from '../../src/viewport/maskOverlay';
 
 const PALETTE = [{ hex: '#ff0000' }, { hex: '#00ff00' }, { hex: '#0000ff' }];
 const LABELS = new Uint8Array([0, 1, 2, 1]);
@@ -49,6 +49,16 @@ describe('createMaskOverlay (mask-mode R20)', () => {
     expect(uniforms['uPaletteSize']!.value).toBe(3);
     expect(uniforms['uPalette']!.value[0].toArray()).toEqual([1, 0, 0]);
     expect(uniforms['uPalette']!.value[2].toArray()).toEqual([0, 0, 1]);
+  });
+
+  it('mask-mode R25 the overlay can show the 32 components a record holds, each with its own colour', () => {
+    const { overlay, copies } = setup();
+    const palette = Array.from({ length: 32 }, (_, k) => ({ hex: `#${(k * 8).toString(16).padStart(2, '0')}0000` }));
+    overlay.set(stateOf({ palette }));
+    const uniforms = uniformsOf(copies()[0]!);
+    expect(uniforms['uPaletteSize']!.value).toBe(32);
+    expect(uniforms['uPalette']!.value).toHaveLength(32);
+    expect(MAX_PALETTE_ENTRIES).toBe(32);
   });
 
   it('mask-mode R20 the overlay has its own render order above the layer flash\'s and its own polygon offset, so the two never z-fight', () => {

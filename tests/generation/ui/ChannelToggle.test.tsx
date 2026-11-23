@@ -7,8 +7,8 @@ import { ChannelToggle } from '../../../src/generation/ui/ChannelToggle';
 
 afterEach(cleanup);
 
-const open = describeChannelAvailability({ hasModel: true, busy: false, setOpen: false, albedoPictureIds: ['a', 'a'], sourceIsSquare: true });
-const closed = describeChannelAvailability({ hasModel: true, busy: false, setOpen: false, albedoPictureIds: [null, null], sourceIsSquare: null });
+const open = describeChannelAvailability({ hasModel: true, busy: false, setOpen: false, albedoInForce: { kind: 'picture', id: 'a' }, sourceIsSquare: true });
+const closed = describeChannelAvailability({ hasModel: true, busy: false, setOpen: false, albedoInForce: { kind: 'none' }, sourceIsSquare: null });
 
 function setup(availability: ChannelAvailabilityMap, value: GenerateChannel = 'albedo') {
   const onChange = vi.fn();
@@ -54,13 +54,13 @@ describe('ChannelToggle (normal-map R1, R2)', () => {
   });
 
   it('normal-map R2 a task in progress disables Normal and Metal-Roughness with the wait reason', () => {
-    setup(describeChannelAvailability({ hasModel: true, busy: true, setOpen: false, albedoPictureIds: ['a'], sourceIsSquare: true }), 'normal');
+    setup(describeChannelAvailability({ hasModel: true, busy: true, setOpen: false, albedoInForce: { kind: 'picture', id: 'a' }, sourceIsSquare: true }), 'normal');
     expect((screen.getByRole('radio', { name: 'Normal' }) as HTMLButtonElement).disabled).toBe(true);
     expect(describedBy('Normal')).toContain('Wait for the current task to finish.');
   });
 
   it('normal-map R2 a picture that is not square disables Normal with its reason', () => {
-    setup(describeChannelAvailability({ hasModel: true, busy: false, setOpen: false, albedoPictureIds: ['a'], sourceIsSquare: false }));
+    setup(describeChannelAvailability({ hasModel: true, busy: false, setOpen: false, albedoInForce: { kind: 'picture', id: 'a' }, sourceIsSquare: false }));
     expect(describedBy('Normal')).toContain('Normal maps need a square albedo picture.');
   });
 

@@ -1,4 +1,4 @@
-import { Texture, type Mesh, type MeshStandardMaterial } from 'three';
+import { MeshBasicMaterial, Texture, type Mesh, type MeshStandardMaterial } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { loadModelAsset } from '../../src/viewport/loadModelAsset';
 import { buildGlbFromJsonText, buildTriangleGlb } from './glbBuilder';
@@ -50,6 +50,17 @@ describe('loadModelAsset (projects R9)', () => {
       if ((object as Mesh).isMesh) onMeshes.push((object as Mesh).material);
     });
     expect(result.value.sourceMaterials).toEqual(onMeshes);
+  });
+
+  it('engine R56 each mesh record keeps the materials the file gave it, after the viewport replaces the material on the mesh', async () => {
+    const result = await loadModelAsset(buildTriangleGlb());
+    if (!result.ok) throw new Error('load failed');
+    const record = result.value.meshes[0]!;
+    const own = record.mesh.material;
+    expect(record.sourceMaterial).toBe(own);
+    expect(result.value.sourceMaterials).toContain(own);
+    record.mesh.material = new MeshBasicMaterial(); // the projection material the viewport lays over every mesh
+    expect(record.sourceMaterial).toBe(own);
   });
 
   it('Additional-tests dispose releases the geometry and materials once and can be called twice', async () => {

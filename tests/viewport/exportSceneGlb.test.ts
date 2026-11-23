@@ -18,6 +18,14 @@ describe('extensionsLostOnExport (mesh edit R1)', () => {
   });
 });
 
+describe('FB_ngon_encoding (mesh edit R1, textures R15)', () => {
+  it('mesh edit R1 FB_ngon_encoding, an optional n-gon hint, does not make a save fail', async () => {
+    const source = buildTriangleGlb({ extensionsUsed: ['FB_ngon_encoding'] });
+    expect(extensionsLostOnExport(source)).toEqual([]);
+    expect((await exportSceneGlb(sceneWithOnePlane(), source)).ok).toBe(true);
+  });
+});
+
 describe('exportSceneGlb (mesh edit R25)', () => {
   it('mesh edit R25 writes the scene as a binary glTF', async () => {
     const result = await exportSceneGlb(sceneWithOnePlane(), buildTriangleGlb());

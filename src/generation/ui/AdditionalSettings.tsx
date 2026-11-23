@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Checkbox, Disclosure, Icon, IconButton } from '../../ui-kit';
+import { Checkbox, Disclosure, Icon, IconButton, Toggle } from '../../ui-kit';
 import type { AtlasRender } from '../atlasRender';
 import type { AtlasKey, AtlasSizeOption } from '../catalog/atlasSizes';
 import { AtlasRenderSelect } from './AtlasRenderSelect';
@@ -19,12 +19,14 @@ interface AdditionalSettingsProps {
   onPreview: () => void;
   custom: boolean; // custom R12: no Atlas size and no atlas preview (the sheets are sized per sheet)
   masks?: boolean; // mask-generation R2, R23: the render is fixed to the colour look of a mask atlas and there is no tile border
+  replaceCurrentMasks?: boolean; // mask-mode R25: with masks, the Replace current masks switch
+  onReplaceCurrentMasksChange?: (on: boolean) => void;
 }
 
 // R36: the closed-at-first section under Quality. Atlas size (R16), then Atlas render (R37) with the eye button that previews the atlas (R38), then Tile borders (R40).
 // In Custom (custom R12) Atlas size and the eye are left out; the render and the borders apply to every sheet. For Metal-Roughness (mask-generation R2) the render is
 // fixed and disabled and there is no Tile borders box.
-export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atlasRender, onAtlasRenderChange, tileBorder, onTileBorderChange, previewing, previewBlockedReason, onPreview, custom, masks = false }: AdditionalSettingsProps): React.JSX.Element {
+export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atlasRender, onAtlasRenderChange, tileBorder, onTileBorderChange, previewing, previewBlockedReason, onPreview, custom, masks = false, replaceCurrentMasks = false, onReplaceCurrentMasksChange }: AdditionalSettingsProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   return (
     <Disclosure title="Additional settings" open={open} onOpenChange={setOpen} keepMounted>
@@ -45,6 +47,7 @@ export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atl
             />
           )}
         </div>
+        {masks && onReplaceCurrentMasksChange !== undefined && <Toggle label="Replace current masks" hint="Off: Bake masks adds this run's materials to the current masks. On: Bake masks replaces the current masks." checked={replaceCurrentMasks} onChange={onReplaceCurrentMasksChange} />}
         {!masks && <Checkbox label="Tile borders" hint="Asks the model to make the left and right edges, and the top and bottom, match so the texture tiles." checked={tileBorder} onChange={onTileBorderChange} />}
       </div>
     </Disclosure>

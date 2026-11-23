@@ -17,7 +17,7 @@ function maskStore(patch: { enhancerKey?: boolean; enhancer?: 'settings' | 'auto
   s.setMaxTextureSize(8192);
   s.setCatalog({ gemini: [known('gemini', 'gemini-nano-banana-2.1'), known('gemini', 'gemini-3.8-flash')], openai: [known('openai', 'gpt-6-luna')], openrouter: [] });
   s.setHasKey('gemini', true);
-  s.setSceneState({ hasModel: true, hasUvs: true, albedoPictureIds: ['a', 'a'], sourceIsSquare: true });
+  s.setSceneState({ hasModel: true, hasUvs: true, albedoInForce: { kind: 'picture', id: 'a' }, sourceIsSquare: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
   if (patch.enhancer === 'settings') s.setEnhancer({ provider: 'openai', modelId: 'gpt-6-luna' });
   if (patch.enhancerKey === true) s.setHasKey('openai', true);

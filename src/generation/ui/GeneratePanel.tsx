@@ -83,7 +83,7 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
     hasModel: state.hasModel,
     busy: state.status === 'running' || state.setBusy || state.unwrap.status === 'running',
     setOpen: state.setOpen,
-    albedoPictureIds: state.albedoPictureIds ?? [],
+    albedoInForce: state.albedoInForce ?? { kind: 'none' },
     sourceIsSquare: state.sourceIsSquare,
   });
 
@@ -207,6 +207,8 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
           onPreview={() => void previewAtlas()}
           custom={state.mode === 'custom'}
           masks={fields.masks}
+          replaceCurrentMasks={state.replaceCurrentMasks}
+          onReplaceCurrentMasksChange={state.setReplaceCurrentMasks}
         />}
         <div className="generate-panel__locked" inert={setupLocked}>
           {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} imageCount={state.mode === 'custom' && state.customPlan !== null ? (fields.masks ? state.customPlan.sheets.length : countImages(state.customPlan)) : 1} {...(viewLog === undefined ? {} : { onViewLog: viewLog })} normal={state.channel === 'normal'} masks={fields.masks} />}

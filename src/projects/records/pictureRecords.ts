@@ -17,7 +17,7 @@ export interface PictureRecord {
 // Informational: a bake's set may be deleted later; a generated picture names the picture it was made from (normal-map R10).
 export type PictureOrigin =
   | { kind: 'bake'; setId: string }
-  | { kind: 'generate'; channel: 'normal'; sourcePictureId: string; detail: 1 | 2 | 3 | 4; modelId: string }
+  | { kind: 'generate'; channel: 'normal'; sourcePictureId: string | null; detail: 1 | 2 | 3 | 4; modelId: string }
   | { kind: 'masks'; setId: string }; // the rough and metal pictures a masks bake owns (mask-mode R14)
 
 // One map of one material showing a generated picture instead of the model file's own map. No record means the slot shows the file's picture.
@@ -49,7 +49,7 @@ function readOrigin(origin: Record<string, unknown>, path: string): PictureOrigi
     return {
       kind: 'generate',
       channel: readChoice(origin['channel'], `${path}.channel`, ['normal'] as const),
-      sourcePictureId: readNonEmptyText(origin['sourcePictureId'], `${path}.sourcePictureId`),
+      sourcePictureId: origin['sourcePictureId'] === null ? null : readNonEmptyText(origin['sourcePictureId'], `${path}.sourcePictureId`), // null: the model's own albedo
       detail: readChoice(origin['detail'], `${path}.detail`, [1, 2, 3, 4] as const),
       modelId: readNonEmptyText(origin['modelId'], `${path}.modelId`),
     };

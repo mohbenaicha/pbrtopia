@@ -23,15 +23,15 @@ type Raw = Record<string, unknown>;
 
 const isObject = (value: unknown): value is Raw => value !== null && typeof value === 'object' && !Array.isArray(value);
 const isUnit = (value: unknown): value is number => typeof value === 'number' && value >= 0 && value <= 1;
-const isLabel = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < MAX_COMPONENTS;
+const isLabel = (value: unknown, limit: number): value is number => typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < limit;
 const isText = (value: unknown): value is string => typeof value === 'string';
 const MATCH_KINDS: readonly string[] = ['embedding', 'keyword', 'colour', 'generic'];
 
-function readPalette(value: unknown): PaletteEntry[] | null {
-  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_COMPONENTS) return null;
+function readPalette(value: unknown, limit: number): PaletteEntry[] | null {
+  if (!Array.isArray(value) || value.length === 0 || value.length > limit) return null;
   const palette: PaletteEntry[] = [];
   for (const entry of value) {
-    if (!isObject(entry) || !isLabel(entry['label']) || !isText(entry['hex']) || !isText(entry['name'])) return null;
+    if (!isObject(entry) || !isLabel(entry['label'], limit) || !isText(entry['hex']) || !isText(entry['name'])) return null;
     palette.push({ label: entry['label'], hex: entry['hex'], name: entry['name'] });
   }
   return palette;
@@ -44,8 +44,8 @@ function readMix(value: unknown): RowMix | undefined | null {
   return { on: value['on'], invert: value['invert'], rough: value['rough'], metal: value['metal'] };
 }
 
-function readRow(value: unknown, labels: ReadonlySet<number>): MaskRow | null {
-  if (!isObject(value) || !isLabel(value['label']) || !labels.has(value['label'])) return null;
+function readRow(value: unknown, labels: ReadonlySet<number>, limit: number): MaskRow | null {
+  if (!isObject(value) || !isLabel(value['label'], limit) || !labels.has(value['label'])) return null;
   const texts = ['name', 'description', 'location', 'defaultMaterial', 'material'].every((key) => isText(value[key]));
   if (!texts || !isUnit(value['rough']) || !isUnit(value['metal'])) return null;
   const height = value['height'] === undefined ? 0 : value['height']; // a record from before the height offsets (R88) has none
@@ -62,17 +62,17 @@ function readRow(value: unknown, labels: ReadonlySet<number>): MaskRow | null {
 }
 
 /**
- * Masks R41: the stored record as the panel uses it, or null when nothing usable is stored (then the material has no masks). A record with a
+ * Masks R41: the stored record as the panel uses it, or null when nothing usable is stored (then the material has no masks); `limit` is the most rows (10; a projection masks record passes 32). A record with a
  * bad row, a repeated label or a label the palette lacks is not partly used.
  */
-export function parseMasksRecord(raw: unknown): MasksRecord | null {
+export function parseMasksRecord(raw: unknown, limit: number = MAX_COMPONENTS): MasksRecord | null {
   if (!isObject(raw) || raw['source'] !== 'model') return null;
-  const palette = readPalette(raw['palette']);
+  const palette = readPalette(raw['palette'], limit);
   if (palette === null || !Array.isArray(raw['rows']) || raw['rows'].length === 0) return null;
   const labels = new Set(palette.map((entry) => entry.label));
   const rows: MaskRow[] = [];
   for (const value of raw['rows']) {
-    const row = readRow(value, labels);
+    const row = readRow(value, labels, limit);
     if (row === null || rows.some((other) => other.label === row.label)) return null;
     rows.push(row);
   }

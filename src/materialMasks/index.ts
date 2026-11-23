@@ -3,6 +3,7 @@
 export type { PixelImage } from './imageTypes';
 export { deltaE76, hexToRgb, rgbToLab, type Lab, type Rgb } from './color/lab';
 export { PALETTE, paletteFor, type LabelColour, type PaletteColour } from './palette/palette';
+export { MAX_RECORD_COLOURS, paletteForRecord } from './palette/paletteForRecord';
 export { labelByHueRange, toHueEntries, type HueEntry } from './quantise/hueRange';
 export { quantiseToLabels, type QuantisedLabels } from './quantise/quantiseLabels';
 export { MAX_COMPONENTS, MIN_COMPONENTS, parseComponents, type Component, type ParsedComponents } from './describe/parseComponents';

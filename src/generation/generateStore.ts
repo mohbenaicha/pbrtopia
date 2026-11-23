@@ -2,7 +2,7 @@ import { createStore } from 'zustand';
 import type { Provider } from '../keys';
 import { DEFAULT_ATLAS_KEY, listAtlasSizes, type AtlasKey } from './catalog/atlasSizes';
 import { DEFAULT_ATLAS_RENDER, type AtlasRender } from './atlasRender';
-import { describeChannelAvailability, type GenerateChannel } from './channels/describeChannelAvailability';
+import { describeChannelAvailability, type AlbedoInForce, type GenerateChannel } from './channels/describeChannelAvailability';
 import type { NormalDetail } from './normal/detailLevels';
 import type { EnhancerSnapshot } from './enhancerSnapshot';
 import { DEFAULT_IMAGE_MODEL } from './catalog/knownModels';
@@ -49,7 +49,7 @@ interface SceneState {
   readOnly?: boolean;
   setOpen?: boolean;
   setBusy?: boolean;
-  albedoPictureIds?: readonly (string | null)[] | null; // normal-map R2: per material, the generated albedo picture in force (null entry: the model file's own texture or none); null: not known yet
+  albedoInForce?: AlbedoInForce | null; // normal-map R2, textures R24: the albedo image in force across the model's materials (an override picture, the model's own image, mixed or none); null: not known yet
   sourceIsSquare?: boolean | null; // normal-map R2: whether that one albedo picture is square; null when there is none
 }
 
@@ -100,7 +100,8 @@ export interface GenerateState {
   readOnly: boolean; // the project is open in another tab (R18)
   setOpen: boolean; // a projection set is open (R18)
   setBusy: boolean; // a set is being entered or left (R18)
-  albedoPictureIds: readonly (string | null)[] | null; // normal-map R2: from the app, with sourceIsSquare; null until the app has listed the materials
+  albedoInForce: AlbedoInForce | null; // normal-map R2, textures R24: from the app, with sourceIsSquare; null until the app has listed the materials
+  replaceCurrentMasks: boolean; // mask-mode R25: Bake masks replaces the project's masks record instead of merging; written into the mask set's plan
   sourceIsSquare: boolean | null;
   // run state
   status: RunStatus;
@@ -126,6 +127,7 @@ export interface GenerateState {
   setMode: (mode: GenerateMode) => void;
   setChannel: (channel: GenerateChannel) => void; // normal-map R1, R2: refused when that channel is not available
   setNormalDetail: (detail: number) => void; // normal-map R5: rounded and kept inside 1..4
+  setReplaceCurrentMasks: (on: boolean) => void; // mask-mode R25
   confirmCustomPlan: (plan: CustomPlanRecord) => void;
   saveCustomSetup: (name: string, plan: CustomPlanRecord) => void;
   deleteCustomSetup: (name: string) => void;
@@ -168,15 +170,15 @@ function settleAtlasKey(current: AtlasKey, maxTextureSize: number): AtlasKey {
   return keys.includes(DEFAULT_ATLAS_KEY) ? DEFAULT_ATLAS_KEY : keys[keys.length - 1]!;
 }
 
-type ChannelScene = Pick<GenerateState, 'hasModel' | 'albedoPictureIds' | 'sourceIsSquare'>;
+type ChannelScene = Pick<GenerateState, 'hasModel' | 'albedoInForce' | 'sourceIsSquare'>;
 
 // normal-map R2: whether the channel could be used on this model, leaving a busy app out (a run, a bake or an open set does not unchoose a channel).
 const isChannelAvailable = (channel: GenerateChannel, scene: ChannelScene): boolean =>
-  describeChannelAvailability({ hasModel: scene.hasModel, busy: false, setOpen: false, albedoPictureIds: scene.albedoPictureIds ?? [], sourceIsSquare: scene.sourceIsSquare })[channel].enabled;
+  describeChannelAvailability({ hasModel: scene.hasModel, busy: false, setOpen: false, albedoInForce: scene.albedoInForce ?? { kind: 'none' }, sourceIsSquare: scene.sourceIsSquare })[channel].enabled;
 
 // normal-map R3: a chosen channel that became unavailable reads as Albedo. Until the app has listed the model's materials, a choice stays.
 const settleChannel = (channel: GenerateChannel, scene: ChannelScene): GenerateChannel =>
-  channel === 'albedo' || !scene.hasModel || scene.albedoPictureIds === null || isChannelAvailable(channel, scene) ? channel : 'albedo';
+  channel === 'albedo' || !scene.hasModel || scene.albedoInForce === null || isChannelAvailable(channel, scene) ? channel : 'albedo';
 
 const clampDetail = (value: number): NormalDetail => Math.min(4, Math.max(1, Math.round(value))) as NormalDetail;
 
@@ -215,7 +217,8 @@ export function createGenerateStore() {
       readOnly: false,
       setOpen: false,
       setBusy: false,
-      albedoPictureIds: null,
+      albedoInForce: null,
+      replaceCurrentMasks: false,
       sourceIsSquare: null,
       status: 'idle',
       step: null,
@@ -273,6 +276,7 @@ export function createGenerateStore() {
         set(state.status === 'failed' ? { channel, status: 'idle', step: null, fraction: 0, error: null, failedSheets: [] } : { channel }); // a failed run belongs to the channel it ran in (normal-map R11)
       },
       setNormalDetail: (detail) => set({ normalDetail: clampDetail(detail) }),
+      setReplaceCurrentMasks: (on) => set({ replaceCurrentMasks: on }),
       confirmCustomPlan: (customPlan) => set({ customPlan }),
       saveCustomSetup: (name, plan) => {
         const { customSetups } = get();
@@ -284,8 +288,8 @@ export function createGenerateStore() {
       setHasKey: (provider, has) => set({ hasKey: { ...get().hasKey, [provider]: has } }),
       setEnhancer: (enhancer) => set({ enhancer }),
       setMaxTextureSize: (maxTextureSize) => resettle({ maxTextureSize }),
-      setSceneState: ({ hasModel, hasUvs, readOnly = false, setOpen = false, setBusy = false, albedoPictureIds = null, sourceIsSquare = null }) =>
-        set((state) => ({ hasModel, hasUvs, readOnly, setOpen, setBusy, albedoPictureIds, sourceIsSquare, channel: settleChannel(state.channel, { hasModel, albedoPictureIds, sourceIsSquare }) })),
+      setSceneState: ({ hasModel, hasUvs, readOnly = false, setOpen = false, setBusy = false, albedoInForce = null, sourceIsSquare = null }) =>
+        set((state) => ({ hasModel, hasUvs, readOnly, setOpen, setBusy, albedoInForce, sourceIsSquare, channel: settleChannel(state.channel, { hasModel, albedoInForce, sourceIsSquare }) })),
       beginRun: () => set({ status: 'running', step: 'capture', fraction: 0, error: null, failedSheets: [], notice: null }),
       setStep: (step, fraction) => set({ step, fraction: clamp01(fraction) }),
       failRun: (error, failedSheets = []) => set({ status: 'failed', error, failedSheets }),

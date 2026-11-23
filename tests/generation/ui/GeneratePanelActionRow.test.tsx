@@ -26,7 +26,7 @@ function setup(channel: 'albedo' | 'normal' | 'metal-rough' = 'albedo') {
   s.setMaxTextureSize(8192);
   s.setCatalog({ gemini: [known('gemini-nano-banana-2.1'), known('gemini-3.8-flash')], openai: [], openrouter: [] });
   s.setHasKey('gemini', true);
-  s.setSceneState({ hasModel: true, hasUvs: true, albedoPictureIds: ['a', 'a'], sourceIsSquare: true });
+  s.setSceneState({ hasModel: true, hasUvs: true, albedoInForce: { kind: 'picture', id: 'a' }, sourceIsSquare: true });
   s.selectModel('gemini', 'gemini-nano-banana-2.1');
   const props = { onGenerate: vi.fn(), onGenerateUv: vi.fn(), onCancel: vi.fn(), onRetry: vi.fn(), onPreviewAtlas: vi.fn(), onSetUpCustom: vi.fn() };
   render(<GeneratePanel projectId="p1" store={store} logStore={createRunLogStore()} today="2026-10-19" {...props} />);

@@ -8,6 +8,9 @@ import { readSourceImages, replaceImages } from './sourceImages';
 // Extensions that only change how the numbers are stored: the exporter writes the same model as plain floats.
 const WRITTEN_AS_PLAIN_DATA = ['KHR_mesh_quantization'];
 
+// Optional hints the export leaves out on purpose: FB_ngon_encoding only records which triangles formed an n-gon (the triangles stay in the file), and an edit makes it stale.
+const DROPPED_HINTS = ['FB_ngon_encoding'];
+
 // What three's GLTFExporter writes itself when the scene uses it; any other extension a file declares would be dropped by an export.
 const WRITTEN_BY_EXPORTER = [
   'KHR_texture_transform',
@@ -29,7 +32,7 @@ const WRITTEN_BY_EXPORTER = [
 
 /** The extensions of a file that an export cannot keep (mesh edit R1: such a model cannot be saved after editing). */
 export function extensionsLostOnExport(sourceGlb: ArrayBuffer): string[] {
-  return (extensionsOfGlb(sourceGlb) ?? []).filter((name) => !WRITTEN_BY_EXPORTER.includes(name) && !WRITTEN_AS_PLAIN_DATA.includes(name));
+  return (extensionsOfGlb(sourceGlb) ?? []).filter((name) => !WRITTEN_BY_EXPORTER.includes(name) && !WRITTEN_AS_PLAIN_DATA.includes(name) && !DROPPED_HINTS.includes(name));
 }
 
 /** Pictures stored as JPEG or WebP are written as PNG (textures R15): the exporter keeps a texture's own type unless told otherwise. */
