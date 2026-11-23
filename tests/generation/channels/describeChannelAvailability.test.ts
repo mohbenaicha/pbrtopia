@@ -49,7 +49,7 @@ describe('channel availability', () => {
     expect(channelPanelFields('albedo')).toEqual({ prompt: true, references: true, atlas: true, customGear: true, detail: false, masks: false });
   });
 
-  it('mask-generation R2 the Metal-Roughness panel shows the prompt (as the describe field) and the atlas size, and hides references, the gear and the detail slider', () => {
-    expect(channelPanelFields('metal-rough')).toEqual({ prompt: true, references: false, atlas: true, customGear: false, detail: false, masks: true });
+  it('mask-generation R2 the Metal-Roughness panel shows the prompt (as the describe field) and the atlas size, and the Custom setup gear, and hides references and the detail slider', () => {
+    expect(channelPanelFields('metal-rough')).toEqual({ prompt: true, references: false, atlas: true, customGear: true, detail: false, masks: true });
   });
 });

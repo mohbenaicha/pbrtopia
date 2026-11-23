@@ -40,9 +40,9 @@ export interface ChannelPanelFields {
 }
 
 // normal-map R4: the Normal panel hides everything a projection run needs and shows the Detail slider.
-// mask-generation R2: the Metal-Roughness panel keeps the prompt (as the describe field) and the atlas size, and hides references and the Custom setup gear.
+// mask-generation R2: the Metal-Roughness panel keeps the prompt (as the describe field), the atlas size and the Custom setup gear, and hides references.
 export function channelPanelFields(channel: GenerateChannel): ChannelPanelFields {
   if (channel === 'normal') return { prompt: false, references: false, atlas: false, customGear: false, detail: true, masks: false };
-  if (channel === 'metal-rough') return { prompt: true, references: false, atlas: true, customGear: false, detail: false, masks: true };
+  if (channel === 'metal-rough') return { prompt: true, references: false, atlas: true, customGear: true, detail: false, masks: true };
   return { prompt: true, references: true, atlas: true, customGear: true, detail: false, masks: false };
 }

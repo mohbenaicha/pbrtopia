@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore, type StoreApi } from 'zustand';
-import { Icon, IconButton, Tabs, Tooltip } from '../../ui-kit';
+import { Tabs, Tooltip } from '../../ui-kit';
 import { listAtlasSizes } from '../catalog/atlasSizes';
 import { channelPanelFields, describeChannelAvailability } from '../channels/describeChannelAvailability';
 import { optionsForModel } from '../catalog/optionsForModel';
@@ -15,6 +15,7 @@ import { ChannelToggle } from './ChannelToggle';
 import { DebugTab } from './DebugTab';
 import { DetailSlider } from './DetailSlider';
 import { EnhancedPromptNotice } from './EnhancedPromptNotice';
+import { GenerateActionRow } from './GenerateActionRow';
 import { GenerateButton } from './GenerateButton';
 import { ModelSelect } from './ModelSelect';
 import { ProgressSteps } from './ProgressSteps';
@@ -208,14 +209,20 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
           masks={fields.masks}
         />}
         <div className="generate-panel__locked" inert={setupLocked}>
-          {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} imageCount={state.mode === 'custom' && state.customPlan !== null ? countImages(state.customPlan) : 1} onCancel={onCancel} {...(viewLog === undefined ? {} : { onViewLog: viewLog })} normal={state.channel === 'normal'} masks={fields.masks} />}
+          {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} imageCount={state.mode === 'custom' && state.customPlan !== null ? (fields.masks ? state.customPlan.sheets.length : countImages(state.customPlan)) : 1} {...(viewLog === undefined ? {} : { onViewLog: viewLog })} normal={state.channel === 'normal'} masks={fields.masks} />}
           {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} failedSheets={state.failedSheets} {...(onKeepWithout === undefined ? {} : { onKeepWithout })} />}
           {state.notice !== null && <p className="generate-panel__notice" role="status">{state.notice}</p>}
           <UnwrapStatusBlock unwrap={state.unwrap} onDismissError={state.clearUnwrap} />
-          <div className="generate-panel__actions">
-            {!(state.status === 'running' && state.step !== null) && <GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} channel={state.channel} />}
-            {fields.customGear && <IconButton label="Custom setup" icon={<Icon name="gear" />} disabled={state.status === 'running'} onClick={() => { state.setMode('custom'); onSetUpCustom?.(); }} />}
-          </div>
+          <GenerateActionRow
+            generateButton={<GenerateButton availability={describeGenerateAvailability(state)} onGenerate={onGenerate} onGenerateUv={() => setUvDialogOpen(true)} channel={state.channel} />}
+            running={state.status === 'running'}
+            runStep={state.step}
+            onCancel={onCancel}
+            customGear={fields.customGear}
+            customOn={state.mode === 'custom'}
+            onSetUpCustom={() => { state.setMode('custom'); onSetUpCustom?.(); }}
+            onExitCustom={() => state.setMode('standard')}
+          />
         </div>
       </div>
       <div className="generate-panel__page" role="tabpanel" aria-label="Run log" hidden={tab !== 'debug'} inert={setupLocked}>

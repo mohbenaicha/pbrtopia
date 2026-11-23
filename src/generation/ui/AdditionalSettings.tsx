@@ -18,29 +18,21 @@ interface AdditionalSettingsProps {
   previewBlockedReason: string | null; // why the preview cannot be asked for now, or null
   onPreview: () => void;
   custom: boolean; // custom R12: no Atlas size and no atlas preview (the sheets are sized per sheet)
-  masks?: boolean; // mask-generation R2: only Atlas size; a mask run draws its own unlit atlas without a tile border
+  masks?: boolean; // mask-generation R2, R23: the render is fixed to the colour look of a mask atlas and there is no tile border
 }
 
 // R36: the closed-at-first section under Quality. Atlas size (R16), then Atlas render (R37) with the eye button that previews the atlas (R38), then Tile borders (R40).
-// In Custom (custom R12) Atlas size and the eye are left out; the render and the borders apply to every sheet.
+// In Custom (custom R12) Atlas size and the eye are left out; the render and the borders apply to every sheet. For Metal-Roughness (mask-generation R2) the render is
+// fixed and disabled and there is no Tile borders box.
 export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atlasRender, onAtlasRenderChange, tileBorder, onTileBorderChange, previewing, previewBlockedReason, onPreview, custom, masks = false }: AdditionalSettingsProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
-  if (masks) {
-    return (
-      <Disclosure title="Additional settings" open={open} onOpenChange={setOpen} keepMounted>
-        <div className="additional-settings">
-          <AtlasSizeSelect options={atlasSizes} value={atlasKey} onChange={onAtlasKeyChange} />
-        </div>
-      </Disclosure>
-    );
-  }
   return (
     <Disclosure title="Additional settings" open={open} onOpenChange={setOpen} keepMounted>
       <div className="additional-settings">
         {!custom && <AtlasSizeSelect options={atlasSizes} value={atlasKey} onChange={onAtlasKeyChange} />}
         <div className="additional-settings__render">
           <div className="additional-settings__render-select">
-            <AtlasRenderSelect value={atlasRender} onChange={onAtlasRenderChange} />
+            <AtlasRenderSelect value={atlasRender} onChange={onAtlasRenderChange} masks={masks} />
           </div>
           {!custom && (
             <IconButton
@@ -53,7 +45,7 @@ export function AdditionalSettings({ atlasSizes, atlasKey, onAtlasKeyChange, atl
             />
           )}
         </div>
-        <Checkbox label="Tile borders" hint="Asks the model to make the left and right edges, and the top and bottom, match so the texture tiles." checked={tileBorder} onChange={onTileBorderChange} />
+        {!masks && <Checkbox label="Tile borders" hint="Asks the model to make the left and right edges, and the top and bottom, match so the texture tiles." checked={tileBorder} onChange={onTileBorderChange} />}
       </div>
     </Disclosure>
   );

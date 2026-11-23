@@ -81,13 +81,14 @@
 
 .generate-panel__actions {
   display: flex;
+  flex-wrap: wrap; /* custom R1: too narrow for the whole row, the gear and the X drop to a second row */
   align-items: flex-start;
   gap: var(--space-2);
 }
 
 .generate-button {
   display: flex;
-  flex: 1;
+  flex: 1 0 12rem; /* grows, never shrinks below room for its text (the longest is "Cancel (may still be billed)") */
   flex-direction: column;
   gap: var(--space-1);
 }

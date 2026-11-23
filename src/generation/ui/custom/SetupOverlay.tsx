@@ -28,13 +28,15 @@ export interface SetupOverlayProps {
   onCancel: () => void;
   onSaveSetup: (name: string, plan: CustomPlanRecord) => void;
   onDeleteSetup: (name: string) => void;
+  auxiliary?: boolean; // false from Metal-Roughness (mask-generation R17): no auxiliary card, no "+ auxiliary" in the presets, the aux sheet is not judged; true by default
 }
 
 const PRESETS: readonly { id: PresetName; label: string }[] = [
-  { id: 'default', label: 'Default: 4 images + auxiliary' },
-  { id: 'two-two-two', label: '2-2-2: 3 images of 2 views + auxiliary' },
-  { id: 'three-images', label: '3-3: 2 images of 3 views + auxiliary' },
+  { id: 'default', label: 'Default: 4 images' },
+  { id: 'two-two-two', label: '2-2-2: 3 images of 2 views' },
+  { id: 'three-images', label: '3-3: 2 images of 3 views' },
 ];
+const AUX_PRESETS = PRESETS.map((preset) => ({ ...preset, label: `${preset.label} + auxiliary` }));
 
 const FALLBACK_SETTINGS: SheetSettings = { provider: 'openai', modelId: '', resolutionKey: '1K', quality: null };
 
@@ -42,7 +44,7 @@ const FALLBACK_SETTINGS: SheetSettings = { provider: 'openai', modelId: '', reso
  * Custom R2-R8: the projection app's setup overlay, an adapter over the shared AssignmentOverlay (prep S3 R24). It holds the plan and its edits; the items are the six core
  * cameras, the cards are the sheets, and the fixed card is the auxiliary sheet.
  */
-export function SetupOverlay({ activePlan, snapshots, trims, previewsOf, catalog, hasKey, maxTextureSize, today, savedSetups, onConfirm, onCancel, onSaveSetup, onDeleteSetup }: SetupOverlayProps): React.JSX.Element {
+export function SetupOverlay({ activePlan, snapshots, trims, previewsOf, catalog, hasKey, maxTextureSize, today, savedSetups, onConfirm, onCancel, onSaveSetup, onDeleteSetup, auxiliary = true }: SetupOverlayProps): React.JSX.Element {
   const presetModel = pickPresetModel(catalog, hasKey);
   const [plan, setPlan] = useState<CustomPlanRecord>(() => activePlan ?? (presetModel === null ? { sheets: [], aux: null } : buildPresetPlan('default', presetModel)));
   const [syncSettings, setSyncSettings] = useState(true); // R5: on at first
@@ -60,11 +62,12 @@ export function SetupOverlay({ activePlan, snapshots, trims, previewsOf, catalog
     preview: previews[index] === null || previews[index] === undefined ? null : <SheetPreviewCanvas preview={previews[index]} snapshots={snapshots} trims={trims} />,
     settings: <SheetSettingsFields {...fields} name={`Image ${index + 1}`} settings={sheet.settings} onChange={(settings) => changeSettings(index, settings)} />,
   }));
-  const problem = describePlanProblem(plan, (settings, isLead) => describeSheetProblem({ catalog, hasKey }, settings, isLead));
+  const judged = auxiliary ? plan : { ...plan, aux: null }; // R17: a mask run never uses the aux sheet, so its model cannot block Confirm
+  const problem = describePlanProblem(judged, (settings, isLead) => describeSheetProblem({ catalog, hasKey }, settings, isLead || !auxiliary)); // masks: no reference images, every sheet is a lead
 
   const toolbar = (
     <PlanToolbar
-      presets={PRESETS}
+      presets={auxiliary ? AUX_PRESETS : PRESETS}
       activePreset={presetModel === null ? 'custom' : detectPreset(plan, presetModel)}
       chosenSetup={savedSetups.find((setup) => JSON.stringify(setup.plan) === JSON.stringify(plan))?.name ?? null}
       presetsEnabled={presetModel !== null}
@@ -96,13 +99,15 @@ export function SetupOverlay({ activePlan, snapshots, trims, previewsOf, catalog
       reorderable
       toolbar={toolbar}
       aux={
-        <AuxSheetCard
-          aux={plan.aux}
-          preview={previews[plan.sheets.length] ?? null}
-          fields={fields}
-          onIncludedChange={(included) => setPlan((current) => setAuxIncluded(current, included, defaults))}
-          onSettings={(settings) => changeSettings('aux', settings)}
-        />
+        auxiliary ? (
+          <AuxSheetCard
+            aux={plan.aux}
+            preview={previews[plan.sheets.length] ?? null}
+            fields={fields}
+            onIncludedChange={(included) => setPlan((current) => setAuxIncluded(current, included, defaults))}
+            onSettings={(settings) => changeSettings('aux', settings)}
+          />
+        ) : undefined
       }
       problem={problem}
       onAssign={(camera, sheet) => setPlan((current) => assignCamera(current, camera, sheet))}

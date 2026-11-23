@@ -82,3 +82,15 @@ describe('GenerateButton: custom runs (custom R1)', () => {
     expect(screen.getByText('Set up the custom generation first.')).toBeTruthy();
   });
 });
+
+describe('GenerateButton on Metal-Roughness in Custom (mask-generation R18)', () => {
+  it('mask-generation R18 a custom mask run reads Generate masks (custom) with the image count as its tooltip, and more than 4 images asks first', () => {
+    const onGenerate = vi.fn();
+    render(<GenerateButton availability={{ action: 'generate', enabled: true, reason: null, imageCount: 6 }} onGenerate={onGenerate} onGenerateUv={vi.fn()} channel="metal-rough" />);
+    const button = screen.getByRole('button', { name: 'Generate masks (custom)' });
+    expect(openTooltipTextOf(button)).toBe('Generate masks (custom). 6 images');
+    fireEvent.click(button);
+    expect(onGenerate).not.toHaveBeenCalled();
+    expect(screen.getByText('Generate 6 images?')).toBeTruthy();
+  });
+});

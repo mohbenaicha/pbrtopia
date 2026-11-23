@@ -21,7 +21,7 @@ export function GenerateButton({ availability, onGenerate, onGenerateUv, channel
   const unwrap = availability.action === 'generate-uv';
   const count = availability.imageCount;
   const custom = count !== undefined;
-  const label = unwrap ? 'Generate UV' : channel === 'normal' ? 'Generate normal map' : channel === 'metal-rough' ? 'Generate masks' : custom ? 'Generate (custom)' : 'Generate';
+  const label = unwrap ? 'Generate UV' : channel === 'normal' ? 'Generate normal map' : channel === 'metal-rough' ? (custom ? 'Generate masks (custom)' : 'Generate masks') : custom ? 'Generate (custom)' : 'Generate';
   const click = unwrap ? onGenerateUv : custom && count > CONFIRM_ABOVE ? () => setConfirming(true) : onGenerate;
   return (
     <div className="generate-button">

@@ -81,16 +81,30 @@ function describeNormalAvailability(input: AvailabilityInput, busy: boolean): Ge
 }
 
 // mask-generation R1: a mask run needs a listed image model with its key and a describe model (Settings' enhancer model, else the automatic one) with its key.
+// In Custom (R18) the image models are the plan's sheets', not the panel's.
 function describeMaskAvailability(input: AvailabilityInput, busy: boolean): GenerateAvailability {
+  const custom = input.mode === 'custom';
   const { provider, modelId } = input;
-  if (provider === null || modelId === null) return blocked('generate', 'Choose an image model.');
-  const modelProblem = describeImageModelProblem(input, provider, modelId);
-  if (modelProblem !== null) return blocked('generate', modelProblem);
+  if (!custom) {
+    if (provider === null || modelId === null) return blocked('generate', 'Choose an image model.');
+    const modelProblem = describeImageModelProblem(input, provider, modelId);
+    if (modelProblem !== null) return blocked('generate', modelProblem);
+  }
   const describeModel = pickEnhancerModel(input);
   const problem = describeMaskRunProblem({ channelAvailability: { enabled: true }, describeModel, keyPresent: describeModel !== null && input.hasKey[describeModel.provider] });
   if (problem !== null) return blocked('generate', problem);
+  const customProblem = custom ? describeMaskPlanProblem(input) : null;
+  if (customProblem !== null) return blocked('generate', customProblem);
   if (busy) return blocked('generate', 'A request is already running.');
-  return { action: 'generate', enabled: true, reason: null };
+  return custom ? { action: 'generate', enabled: true, reason: null, imageCount: input.customPlan!.sheets.length } : { action: 'generate', enabled: true, reason: null };
+}
+
+// mask-generation R18: Custom needs a confirmed plan whose every sheet has a camera, a listed, verified model with a key and a canvas. Every sheet is a lead (no
+// reference images) and the aux sheet of a stored plan is not judged (R20).
+function describeMaskPlanProblem(input: AvailabilityInput): string | null {
+  const plan = input.customPlan;
+  if (plan === null) return 'Set up the custom generation first.';
+  return describePlanProblem({ ...plan, aux: null }, (settings) => describeSheetProblem(input, settings, true));
 }
 
 // R8, R20: why the prompt enhancer cannot be used right now, or null.

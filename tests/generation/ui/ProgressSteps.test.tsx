@@ -7,15 +7,14 @@ import { ProgressSteps } from '../../../src/generation/ui/ProgressSteps';
 afterEach(cleanup);
 
 function setup(step: RunStep, fraction = 0, failed = false) {
-  const onCancel = vi.fn();
-  render(<ProgressSteps step={step} fraction={fraction} failed={failed} onCancel={onCancel} />);
+  render(<ProgressSteps step={step} fraction={fraction} failed={failed} />);
   const items = within(screen.getByRole('list', { name: 'Progress' })).getAllByRole('listitem');
-  return { onCancel, items, states: items.map((item) => item.getAttribute('data-state')) };
+  return { items, states: items.map((item) => item.getAttribute('data-state')) };
 }
 
 describe('ProgressSteps: a run of several images (custom R16)', () => {
   const label = (imageCount: number, step: RunStep, fraction: number) => {
-    render(<ProgressSteps step={step} fraction={fraction} failed={false} imageCount={imageCount} onCancel={vi.fn()} />);
+    render(<ProgressSteps step={step} fraction={fraction} failed={false} imageCount={imageCount} />);
     return within(screen.getByRole('list', { name: 'Progress' })).getAllByRole('listitem').map((item) => item.textContent);
   };
 
@@ -34,7 +33,7 @@ describe('ProgressSteps: a run of several images (custom R16)', () => {
 
 describe('ProgressSteps of a normal-map run (normal-map R11)', () => {
   const normalSetup = (step: RunStep, failed = false) => {
-    render(<ProgressSteps step={step} fraction={0.5} failed={failed} normal onCancel={vi.fn()} />);
+    render(<ProgressSteps step={step} fraction={0.5} failed={failed} normal />);
     const items = within(screen.getByRole('list', { name: 'Progress' })).getAllByRole('listitem');
     return { labels: items.map((item) => item.textContent), states: items.map((item) => item.getAttribute('data-state')) };
   };
@@ -96,27 +95,8 @@ describe('ProgressSteps (R10)', () => {
     expect(screen.queryByRole('progressbar')).toBeNull();
   });
 
-  it('R10 Cancel calls onCancel', () => {
-    const { onCancel } = setup('enhance');
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(onCancel).toHaveBeenCalledTimes(1);
-  });
-
-  it('R10 once the image request is sent the Cancel button says the provider may still bill it', () => {
-    setup('generate');
-    expect(screen.getByRole('button', { name: 'Cancel (may still be billed)' })).toBeTruthy();
-  });
-
-  it('R10 before and after the image step the Cancel button makes no billing claim', () => {
-    for (const step of ['capture', 'enhance', 'validate'] as const) {
-      cleanup();
-      setup(step);
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
-    }
-  });
-
-  it('R9 there is no Cancel button once the run has failed', () => {
-    setup('generate', 0, true);
+  it('R10 the step list has no Cancel button: it is the action row\'s (GeneratePanelActionRow tests)', () => {
+    setup('enhance');
     expect(screen.queryByRole('button', { name: /Cancel/ })).toBeNull();
   });
 });
@@ -127,7 +107,7 @@ describe('ProgressSteps: the link to the log row (R27)', () => {
 
   function setupWithLink(step: RunStep, failed = false) {
     const onViewLog = vi.fn();
-    render(<ProgressSteps step={step} fraction={0} failed={failed} onCancel={vi.fn()} onViewLog={onViewLog} />);
+    render(<ProgressSteps step={step} fraction={0} failed={failed} onViewLog={onViewLog} />);
     return { onViewLog };
   }
 

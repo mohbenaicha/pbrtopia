@@ -44,14 +44,39 @@ describe('GeneratePanel with Metal-Roughness chosen (mask-generation R1, R2)', (
     expect(screen.queryByRole('button', { name: 'Generate' })).toBeNull();
   });
 
-  it('mask-generation R2 hides the references, Atlas render, Tile borders, the atlas preview and the Custom setup gear', () => {
+  it('mask-generation R2 hides the references and Tile borders, and shows the Custom setup gear', () => {
     setup();
     fireEvent.click(screen.getByRole('button', { name: 'Additional settings' }));
     expect(screen.queryByLabelText('Add reference images')).toBeNull();
-    expect(screen.queryByRole('combobox', { name: 'Atlas render' })).toBeNull();
     expect(screen.queryByRole('checkbox', { name: 'Tile borders' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Custom setup' })).toBeTruthy();
+  });
+
+  it('mask-generation R2 shows the Atlas render row fixed to Color (unlit albedo) and disabled, and the Preview atlas eye beside it in Standard', () => {
+    const { store } = setup();
+    store.getState().setAtlasRender('wireframe'); // the Albedo channel's choice is neither shown nor changed
+    fireEvent.click(screen.getByRole('button', { name: 'Additional settings' }));
+    const render = screen.getByRole('combobox', { name: 'Atlas render' }) as HTMLButtonElement;
+    expect(render.textContent).toContain('Color (unlit albedo)');
+    expect(render.disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Preview atlas' })).toBeTruthy();
+    expect(store.getState().atlasRender).toBe('wireframe');
+  });
+
+  it('mask-generation R2 in Custom the render row stays, with no Preview atlas eye and no Atlas size', () => {
+    const { store } = setup();
+    act(() => store.getState().setMode('custom'));
+    fireEvent.click(screen.getByRole('button', { name: 'Additional settings' }));
+    expect(screen.getByRole('combobox', { name: 'Atlas render' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Preview atlas' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Custom setup' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'Atlas size' })).toBeNull();
+  });
+
+  it('mask-generation R23 the eye of Metal-Roughness asks the app for the preview', async () => {
+    const { props } = setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Additional settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Preview atlas' }));
+    await vi.waitFor(() => expect(props.onPreviewAtlas).toHaveBeenCalledTimes(1));
   });
 
   it('mask-generation R2 the describe field is the prompt of the store, and a saved tile border is not changed by choosing masks', () => {
