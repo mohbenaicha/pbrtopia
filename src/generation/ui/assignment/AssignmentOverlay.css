@@ -410,6 +410,20 @@
   gap: var(--space-2);
 }
 
+/* custom R51: the Include checkbox and the Preview atlas button share one row; the button stays at the card's right edge */
+.setup-card__aux-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.setup-card__message {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--font-size-small);
+}
+
 .setup-add-tile {
   display: flex;
   flex-direction: column;

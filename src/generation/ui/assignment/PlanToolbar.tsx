@@ -24,6 +24,7 @@ interface PlanToolbarProps<Plan> {
   onLoad: (setup: ToolbarSetup<Plan>) => void;
   onDelete: (name: string) => void;
   onSave: (name: string) => void;
+  extraControl?: React.ReactNode; // one more labelled control between the preset and Sync settings (custom R52: Atlas render)
 }
 
 const PRESET_PREFIX = 'preset:';
@@ -33,7 +34,7 @@ const SAVED_PREFIX = 'saved:';
  * Custom R2, R4, R5, R6, generation R10, R17, R20: Save setup (a floppy-disc icon button opening a dialog asking for a name, and a confirm before it replaces a setup of that name),
  * the Layout preset dropdown (the presets, then the saved setups), the Delete setup button for a chosen saved setup, and the Sync settings switch. It never reads a plan's content.
  */
-export function PlanToolbar<Plan>({ presets, activePreset, chosenSetup, presetsEnabled, savedSetups, syncSettings, namePlaceholder, onSyncSettingsChange, onPreset, onLoad, onDelete, onSave }: PlanToolbarProps<Plan>): React.JSX.Element {
+export function PlanToolbar<Plan>({ presets, activePreset, chosenSetup, presetsEnabled, savedSetups, syncSettings, namePlaceholder, onSyncSettingsChange, onPreset, onLoad, onDelete, onSave, extraControl }: PlanToolbarProps<Plan>): React.JSX.Element {
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState('');
   const [replacing, setReplacing] = useState<string | null>(null);
@@ -74,6 +75,7 @@ export function PlanToolbar<Plan>({ presets, activePreset, chosenSetup, presetsE
         <Select label="Layout preset" title="A saved arrangement of which views go on which images." options={options} value={value} onChange={choose} />
         {chosenSetup !== null && <IconButton label="Delete setup" icon={<Icon name="trash" />} onClick={() => onDelete(chosenSetup)} />}
       </span>
+      {extraControl !== undefined && <span className="setup-toolbar__preset">{extraControl}</span>}
       <span className="setup-toolbar__sync">
         <Toggle label="Sync settings" hint="Gives every image the same model, resolution and quality." checked={syncSettings} onChange={onSyncSettingsChange} />
       </span>

@@ -41,6 +41,8 @@ export function setupOverlay(patch: Partial<SetupOverlayProps> = {}) {
     onCancel: vi.fn(),
     onSaveSetup: vi.fn(),
     onDeleteSetup: vi.fn(),
+    atlasRender: 'grey',
+    onAtlasRenderChange: vi.fn(),
     ...patch,
   };
   const view = render(<SetupOverlay {...props} />);
