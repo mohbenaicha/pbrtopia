@@ -61,7 +61,7 @@ describe('shared/materialgen-prep R17 text-only requests', () => {
     const headers = calls[0]?.init.headers as Record<string, string>;
     expect(headers['content-type']).toBe('application/json');
     expect(headers['Authorization']).toBe(`Bearer ${ctx.apiKey}`);
-    expect(JSON.parse(String(calls[0]?.init.body))).toEqual({ model: 'gpt-image-2.5-sunburst', prompt: 'weathered steel', size: '2048x2048', quality: 'medium', output_format: 'png' });
+    expect(JSON.parse(String(calls[0]?.init.body))).toEqual({ model: 'gpt-image-2.5-sunburst', prompt: 'weathered steel', size: '2048x2048', quality: 'medium', output_format: 'png', moderation: 'low' });
   });
 
   it('R17 OpenAI generations carry complexity for a 2.6 model and leave quality out when the model has none', async () => {

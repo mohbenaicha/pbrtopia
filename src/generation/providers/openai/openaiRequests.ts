@@ -50,6 +50,7 @@ function settingFields(input: OpenAiImageSettings): Result<Record<string, string
   if (input.quality !== null) fields['quality'] = input.quality;
   if (input.complexity !== undefined) fields['complexity'] = input.complexity;
   fields['output_format'] = 'png';
+  fields['moderation'] = 'low';
   return { ok: true, value: fields };
 }
 

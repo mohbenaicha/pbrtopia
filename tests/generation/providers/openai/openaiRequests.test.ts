@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ResolutionKey } from '../../../../src/generation/catalog/modelTypes';
 import {
   buildOpenAiEnhanceBody,
+  buildOpenAiGenerationBody,
   buildOpenAiImageForm,
   IMAGE_FIELD,
   OPENAI_EDITS_URL,
@@ -59,6 +60,15 @@ describe('buildOpenAiImageForm (R7)', () => {
 
   it('R5 leaves quality out when the model has no levels', () => {
     expect(formOf({ quality: null }).has('quality')).toBe(false);
+  });
+
+  it('R7 sends moderation low on every image call, not a user setting', () => {
+    expect(formOf().get('moderation')).toBe('low');
+  });
+
+  it('R17 the text-to-image JSON body also carries moderation low', () => {
+    const result = buildOpenAiGenerationBody({ model: 'gpt-image-2.6-sunburst', prompt: 'weathered steel', resolutionKey: '1K', sizePx: 1024, quality: 'low' });
+    expect(result).toMatchObject({ ok: true, value: { moderation: 'low' } });
   });
 
   it('R7 sends the atlas first and the references after it, in order, under the one image field', async () => {
