@@ -42,6 +42,13 @@ describe('RunErrorBlock: Keep without (custom R29)', () => {
     expect(screen.queryByRole('button', { name: /Keep without/ })).toBeNull();
   });
 
+  it('mask-generation R22 with the first image not required (masks), Keep without is offered when image 1 failed: "Keep without images 1, 3"', () => {
+    const onKeepWithout = vi.fn();
+    render(<RunErrorBlock error={server} onRetry={vi.fn()} failedSheets={[0, 2]} onKeepWithout={onKeepWithout} firstImageRequired={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Keep without images 1, 3' }));
+    expect(onKeepWithout).toHaveBeenCalledTimes(1);
+  });
+
   it('custom R29 it is offered also when the error cannot be retried', () => {
     setupKeep([1], { category: 'moderation', retryable: false, message: 'Blocked.' });
     expect(screen.getByRole('button', { name: 'Keep without image 2' })).toBeTruthy();

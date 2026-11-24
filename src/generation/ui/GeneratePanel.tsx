@@ -212,7 +212,7 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
         />}
         <div className="generate-panel__locked" inert={setupLocked}>
           {state.step !== null && state.status !== 'idle' && <ProgressSteps step={state.step} fraction={state.fraction} failed={state.status === 'failed'} imageCount={state.mode === 'custom' && state.customPlan !== null ? (fields.masks ? state.customPlan.sheets.length : countImages(state.customPlan)) : 1} {...(viewLog === undefined ? {} : { onViewLog: viewLog })} normal={state.channel === 'normal'} masks={fields.masks} />}
-          {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} failedSheets={state.failedSheets} {...(onKeepWithout === undefined ? {} : { onKeepWithout })} />}
+          {state.status === 'failed' && state.error !== null && state.error.category !== 'aborted' && <RunErrorBlock error={state.error} onRetry={onRetry} failedSheets={state.failedSheets} firstImageRequired={!fields.masks} {...(onKeepWithout === undefined ? {} : { onKeepWithout })} />}
           {state.notice !== null && <p className="generate-panel__notice" role="status">{state.notice}</p>}
           <UnwrapStatusBlock unwrap={state.unwrap} onDismissError={state.clearUnwrap} />
           <GenerateActionRow
