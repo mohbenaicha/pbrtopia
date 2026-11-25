@@ -20,10 +20,30 @@ export const MASK_DESCRIBE_INSTRUCTION = [
 export const MASK_DECOMPOSITION_FRAMING =
   'Repaint every perspective in this image as a flat colour map: one flat colour per material, using only these colours, with no gradients, no outlines, no shading and no text. Keep the exact silhouette, position and size of every perspective, and keep the grey background exactly as it is.';
 
-/** mask-generation R7: the instruction, then the user's prompt after a blank line when there is one. */
-export function buildMaskDescribeText(userPrompt: string): string {
+/** A row of the project's masks record, as the describe text lists it (mask-generation R24). */
+export interface ExistingMaterial {
+  id: string; // the row's component id (mask-mode R27)
+  name: string;
+  description: string;
+  material: string; // the row's base material (`defaultMaterial`)
+}
+
+const EXISTING_HEADING = 'Materials already described on this object:';
+const EXISTING_RULES =
+  'Some of these may be on parts that are hidden and not shown in the image. If a part you can see is made of one of these materials, return it with exactly that name. Add new components only for parts not covered. Do not return listed materials you cannot see.';
+
+function buildExistingMaterialsBlock(existing: ReadonlyArray<ExistingMaterial>): string {
+  const lines = existing.map((row) => `- "${row.name}"${row.description === '' ? '' : ` (${row.description})`}, material ${row.material}`);
+  return [EXISTING_HEADING, ...lines, EXISTING_RULES].join('\n');
+}
+
+/** mask-generation R7, R24: the instruction, the existing-materials block when the project has masks, then the user's prompt after a blank line when there is one. */
+export function buildMaskDescribeText(userPrompt: string, existing: ReadonlyArray<ExistingMaterial> = []): string {
   const prompt = userPrompt.trim();
-  return prompt === '' ? MASK_DESCRIBE_INSTRUCTION : `${MASK_DESCRIBE_INSTRUCTION}\n\n${prompt}`;
+  const parts = [MASK_DESCRIBE_INSTRUCTION];
+  if (existing.length > 0) parts.push(buildExistingMaterialsBlock(existing));
+  if (prompt !== '') parts.push(prompt);
+  return parts.join('\n\n');
 }
 
 /** mask-generation R9: the mask core's decomposition under the projection framing (component k is painted with palette entry k), then the shape-keeping sentence. No user text. */
