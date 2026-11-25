@@ -1,7 +1,8 @@
 import type { Edges } from '../edges';
 import type { PixelImage } from '../imageTypes';
-import { bakeMasks } from '../bake/bakeMasks';
-import { dilateGutter } from '../bake/dilateGutter';
+import { bakeMasks, bakeNamedMasks } from '../bake/bakeMasks';
+import type { MapName } from '../bake/diffBakedRows';
+import { dilateGutter, dilateGutterPlanes } from '../bake/dilateGutter';
 import { rowsToBake } from '../record/maskRows';
 import type { MasksRecord } from '../record/masksRecord';
 
@@ -21,6 +22,18 @@ export interface MasksBuild {
 export function bakeCurrentRows(labels: PixelImage, record: MasksRecord, grey?: PixelImage, edges?: Edges, base?: BakedMaps, keep?: Uint8Array, coverage?: Uint8Array): BakedMaps {
   const baked = bakeBaseRows(labels, record, grey, edges, base, keep);
   return coverage === undefined ? baked : dilateGutter(baked, coverage); // mask-mode R28: the gutter is recomputed from this bake's result
+}
+
+/**
+ * Mask-bake-session R4: `bakeCurrentRows` for the named maps only. Each named map equals that map of the full bake; a map not named is not computed and not returned, so the
+ * caller keeps the bytes it has (mask-mode R14).
+ */
+export function bakeChangedMaps(labels: PixelImage, record: MasksRecord, maps: readonly MapName[], grey?: PixelImage, edges?: Edges, base?: BakedMaps, keep?: Uint8Array, coverage?: Uint8Array): Partial<BakedMaps> {
+  const baked = bakeNamedMasks({ labels, rows: rowsToBake(record.rows), feather: record.feather, ...(grey === undefined ? {} : { grey }), ...(edges === undefined ? {} : { edges }), ...(base === undefined ? {} : { base }), ...(keep === undefined ? {} : { keep }) }, maps);
+  if (coverage === undefined) return baked;
+  const names = maps.filter((which) => baked[which] !== undefined);
+  const filled = dilateGutterPlanes(names.map((which) => baked[which]!), coverage);
+  return Object.fromEntries(names.map((which, index) => [which, filled[index]!]));
 }
 
 function bakeBaseRows(labels: PixelImage, record: MasksRecord, grey?: PixelImage, edges?: Edges, base?: BakedMaps, keep?: Uint8Array): BakedMaps {

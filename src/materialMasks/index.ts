@@ -20,7 +20,8 @@ export { NONE_LABEL, classifyPixelsToPalette, type BackgroundKey } from './quant
 export { majorityFilter } from './quantise/labelCleanup';
 export { DEFAULT_COMPONENT_LIMITS, type ComponentLimits } from './describe/parseComponents';
 export { createBakeQueue, type BakeQueue } from './pipeline/createBakeQueue';
-export { bakeCurrentRows, type BakedMaps, type MasksBuild } from './pipeline/bakeCurrentRows';
+export { bakeChangedMaps, bakeCurrentRows, type BakedMaps, type MasksBuild } from './pipeline/bakeCurrentRows';
+export { findChangedMaps, type BakedFrom, type ChangedBake, type MapName } from './bake/diffBakedRows';
 export { dilateGutter, gutterReach } from './bake/dilateGutter';
 export type { StepOutcome } from './model/stepOutcome';
 export { DESCRIBE_INSTRUCTION, buildDescribeText } from './model/describeInstruction';

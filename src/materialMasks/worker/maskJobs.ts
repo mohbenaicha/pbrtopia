@@ -3,7 +3,8 @@ import type { PixelImage } from '../imageTypes';
 import { buildModelMasks, type ModelMasksInput } from '../model/buildModelMasks';
 import { requantiseModelMasks, type RequantiseInput } from '../model/requantiseModelMasks';
 import type { StepOutcome } from '../model/stepOutcome';
-import { bakeCurrentRows, type BakedMaps, type MasksBuild } from '../pipeline/bakeCurrentRows';
+import type { MapName } from '../bake/diffBakedRows';
+import { bakeChangedMaps, bakeCurrentRows, type BakedMaps, type MasksBuild } from '../pipeline/bakeCurrentRows';
 import type { MasksRecord } from '../record/masksRecord';
 
 /**
@@ -12,6 +13,8 @@ import type { MasksRecord } from '../record/masksRecord';
  */
 export interface MaskJobs {
   bake: { input: { labels: PixelImage; record: MasksRecord; grey?: PixelImage; edges?: Edges; base?: BakedMaps; keep?: Uint8Array; coverage?: Uint8Array }; output: BakedMaps }; // grey: the albedo's, for the Colour mixin (R91)
+  /** Mask-bake-session R4: the bake of the named maps only (an edit's changed maps); the shared `bake` job above is unchanged. */
+  bakeMaps: { input: { labels: PixelImage; record: MasksRecord; maps: MapName[]; grey?: PixelImage; edges?: Edges; base?: BakedMaps; keep?: Uint8Array; coverage?: Uint8Array }; output: Partial<BakedMaps> };
   model: { input: ModelMasksInput; output: StepOutcome<MasksBuild> };
   requantise: { input: RequantiseInput; output: StepOutcome<MasksBuild> };
 }
@@ -23,6 +26,10 @@ export function runMaskJob<K extends MaskJobKind>(kind: K, input: MaskJobs[K]['i
     case 'bake': {
       const { labels, record, grey, edges, base, keep, coverage } = input as MaskJobs['bake']['input'];
       return bakeCurrentRows(labels, record, grey, edges, base, keep, coverage) as MaskJobs[K]['output'];
+    }
+    case 'bakeMaps': {
+      const { labels, record, maps, grey, edges, base, keep, coverage } = input as MaskJobs['bakeMaps']['input'];
+      return bakeChangedMaps(labels, record, maps, grey, edges, base, keep, coverage) as MaskJobs[K]['output'];
     }
     case 'model':
       return buildModelMasks(input as MaskJobs['model']['input']) as MaskJobs[K]['output'];

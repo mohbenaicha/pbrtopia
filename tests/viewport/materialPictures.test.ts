@@ -273,6 +273,17 @@ describe('replaceBitmap (normal-reauthor R12, R20)', () => {
     expect(first.normalMap).not.toBe(otherTexture);
   });
 
+  it('mask-bake-session R10 a replacement of another size lets go of the GPU texture so it is allocated anew, and one of the same size does not', () => {
+    const { first, pictures } = twoMaterials();
+    pictures.set(0, 'normal', { id: 'n1', bitmap: bitmap() });
+    const disposed = vi.fn();
+    (first.normalMap as Texture).addEventListener('dispose', disposed);
+    pictures.replaceBitmap('n1', bitmap());
+    expect(disposed).not.toHaveBeenCalled();
+    pictures.replaceBitmap('n1', { width: 8, height: 8, close: vi.fn() } as unknown as ImageBitmap);
+    expect(disposed).toHaveBeenCalledTimes(1);
+  });
+
   it('normal-reauthor R12 the later release closes the replacement bitmap once and not the old one again', () => {
     const { pictures } = twoMaterials();
     const before = bitmap();

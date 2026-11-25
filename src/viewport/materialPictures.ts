@@ -153,6 +153,7 @@ export function createMaterialPictures(materials: readonly Material[], onChanged
       if (!entry) return false;
       const old = entry.texture.image as ImageBitmap;
       if (old === bitmap) return true;
+      if (old.width !== bitmap.width || old.height !== bitmap.height) entry.texture.dispose(); // another size needs new GPU storage (mask-bake-session R10)
       entry.texture.image = bitmap;
       entry.texture.needsUpdate = true;
       if (!isInUse(old)) closeBitmap(old);
