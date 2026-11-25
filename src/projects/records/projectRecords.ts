@@ -1,12 +1,13 @@
 import type { MeshRecord } from './meshRecord';
 import type { CustomPlanStoredRecord, NamedPlanStoredRecord } from './customPlanRecords';
+import type { NormalRecipeRecord } from './normalRecipeRecord';
 import type { PictureRecord, SlotRecord } from './pictureRecords';
 import type { ProjectMasksRecord } from './projectMasksRecord';
 import type { StoredProvider } from './storedProviders';
 
 // The version of the set and settings records. The project record has its own, below: it moved to 2 with pictures and slots (specs/app/textures).
 export const CURRENT_SCHEMA_VERSION = 1;
-export const PROJECT_SCHEMA_VERSION = 5; // 3: channel union and normalDetail (generation/normal-map R14); 4: the masks record and the masks picture origin (projection/mask-mode R22); 5: 32 components with ids, a null source albedo (mask-mode R22, no data change)
+export const PROJECT_SCHEMA_VERSION = 6; // 3: channel union and normalDetail (generation/normal-map R14); 4: the masks record and the masks picture origin (projection/mask-mode R22); 5: 32 components with ids, a null source albedo (mask-mode R22, no data change); 6: normalRecipes (generation/normal-reauthor R19)
 export const MAX_PROJECT_NAME_LENGTH = 120;
 
 export interface ReferenceImageRecord {
@@ -50,6 +51,7 @@ export interface ProjectRecord {
   slots: SlotRecord[]; // overrides only
   generate: GenerateSettingsRecord;
   masks?: ProjectMasksRecord; // the project's one set of material masks; absent until a mask set is baked
+  normalRecipes?: NormalRecipeRecord[]; // one per generated normal picture that has a recipe; absent until the first one (normal-reauthor R19)
   setIds: string[]; // newest last
   activeSetId?: string; // the set last open in projection mode
   thumbnailKey?: string;

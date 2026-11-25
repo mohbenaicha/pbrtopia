@@ -3,7 +3,7 @@ import type { ProjectRecord } from '../../src/projects/records/projectRecords';
 // A complete version-2 project: a generated-UV mesh, one baked picture applied to a material, generate settings with a reference, and two sets.
 export function sampleProjectRecord(overrides: Partial<ProjectRecord> = {}): ProjectRecord {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     id: '3f0b2f6e-8c2a-4a57-9a43-0d6f3b1f7a11',
     name: 'Skarrik helmet',
     createdAt: '2026-10-18T09:30:00.000Z',

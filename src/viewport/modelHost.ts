@@ -36,6 +36,7 @@ interface ModelHost {
   setShadingMode(mode: ShadingMode): void;
   setProjectionMaterial(material: Material | null): void; // replaces the look while set; the shading mode is kept and comes back on clearing
   setFlashMaterial(material: Material | null): void; // laid over the current look as translucent copies of the meshes, for a moment; null takes it away
+  replacePictureBitmap(pictureId: string, bitmap: ImageBitmap): boolean; // normal-reauthor R12: new pixels for a picture already shown; false (bitmap not taken) when it is not shown
   setMaterialPicture(materialIndex: number, channel: OverrideChannel, picture: OverridePicture | null): void; // lays a picture over one channel of one material (null takes it off); the viewport owns the bitmap
   setMaskOverlay(state: MaskOverlayState | null): void; // mask-mode R20: translucent mask colours over the model, in every shading look; null takes them away
   setSettings(patch: Partial<ViewportSettings>): void;
@@ -179,6 +180,7 @@ export function createModelHost({ scene, rig, invalidate, onFramed, onBounds, se
       if (current) current.pictures.set(materialIndex, channel, picture);
       else picture?.bitmap.close(); // no model to show it on
     },
+    replacePictureBitmap: (pictureId, bitmap) => current?.pictures.replaceBitmap(pictureId, bitmap) ?? false,
     root: () => current?.asset.root,
     asset: () => current?.asset,
     refreshGeometry: showRebuiltGeometry,

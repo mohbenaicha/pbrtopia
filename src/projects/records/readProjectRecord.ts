@@ -1,6 +1,7 @@
 import type { MeshRecord, UnwrapReport } from './meshRecord';
 import { FieldProblem, readBlobKey, readChoice, readCount, readDuration, readFlag, readList, readNonEmptyText, readObject, readOptional, readText, readTimestamp, type RawRecord } from './fieldReaders';
 import { readCustomPlan, readCustomSetups } from './customPlanRecords';
+import { readNormalRecipes } from './normalRecipeRecord';
 import { readPictures, readSlots, type PictureRecord } from './pictureRecords';
 import { readProjectMasks, type ProjectMasksRecord } from './projectMasksRecord';
 import { STORED_PROVIDERS } from './storedProviders';
@@ -107,5 +108,7 @@ export function readProjectRecord(raw: RawRecord): ProjectRecord {
   if (thumbnailKey !== undefined) record.thumbnailKey = thumbnailKey;
   const masks = readOptional(raw['masks'], (present) => readProjectMasks(present, 'masks'));
   if (masks !== undefined) record.masks = withExistingOwnedPictures(masks, pictures);
+  const normalRecipes = readNormalRecipes(raw['normalRecipes'], 'normalRecipes', pictures);
+  if (normalRecipes.length > 0) record.normalRecipes = normalRecipes;
   return record;
 }

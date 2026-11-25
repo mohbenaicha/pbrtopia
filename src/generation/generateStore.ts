@@ -49,6 +49,7 @@ interface SceneState {
   readOnly?: boolean;
   setOpen?: boolean;
   setBusy?: boolean;
+  normalPanelOpen?: boolean; // normal-reauthor R3: the normal map's panel is open
   albedoInForce?: AlbedoInForce | null; // normal-map R2, textures R24: the albedo image in force across the model's materials (an override picture, the model's own image, mixed or none); null: not known yet
   sourceIsSquare?: boolean | null; // normal-map R2: whether that one albedo picture is square; null when there is none
 }
@@ -100,6 +101,7 @@ export interface GenerateState {
   readOnly: boolean; // the project is open in another tab (R18)
   setOpen: boolean; // a projection set is open (R18)
   setBusy: boolean; // a set is being entered or left (R18)
+  normalPanelOpen: boolean; // normal-reauthor R3
   albedoInForce: AlbedoInForce | null; // normal-map R2, textures R24: from the app, with sourceIsSquare; null until the app has listed the materials
   replaceCurrentMasks: boolean; // mask-mode R25: Bake masks replaces the project's masks record instead of merging; written into the mask set's plan
   sourceIsSquare: boolean | null;
@@ -217,6 +219,7 @@ export function createGenerateStore() {
       readOnly: false,
       setOpen: false,
       setBusy: false,
+      normalPanelOpen: false,
       albedoInForce: null,
       replaceCurrentMasks: false,
       sourceIsSquare: null,
@@ -288,8 +291,8 @@ export function createGenerateStore() {
       setHasKey: (provider, has) => set({ hasKey: { ...get().hasKey, [provider]: has } }),
       setEnhancer: (enhancer) => set({ enhancer }),
       setMaxTextureSize: (maxTextureSize) => resettle({ maxTextureSize }),
-      setSceneState: ({ hasModel, hasUvs, readOnly = false, setOpen = false, setBusy = false, albedoInForce = null, sourceIsSquare = null }) =>
-        set((state) => ({ hasModel, hasUvs, readOnly, setOpen, setBusy, albedoInForce, sourceIsSquare, channel: settleChannel(state.channel, { hasModel, albedoInForce, sourceIsSquare }) })),
+      setSceneState: ({ hasModel, hasUvs, readOnly = false, setOpen = false, setBusy = false, normalPanelOpen = false, albedoInForce = null, sourceIsSquare = null }) =>
+        set((state) => ({ hasModel, hasUvs, readOnly, setOpen, setBusy, normalPanelOpen, albedoInForce, sourceIsSquare, channel: settleChannel(state.channel, { hasModel, albedoInForce, sourceIsSquare }) })),
       beginRun: () => set({ status: 'running', step: 'capture', fraction: 0, error: null, failedSheets: [], notice: null }),
       setStep: (step, fraction) => set({ step, fraction: clamp01(fraction) }),
       failRun: (error, failedSheets = []) => set({ status: 'failed', error, failedSheets }),

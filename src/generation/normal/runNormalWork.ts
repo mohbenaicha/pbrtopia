@@ -1,3 +1,4 @@
+import type { ReauthorParams } from '../../normalRecipe/reauthorParams';
 import type { RunError } from '../generateStore';
 import type { Result } from '../providers/providerTypes';
 import type { NormalWorkRequest, NormalWorkResponse } from './handleNormalWork';
@@ -15,6 +16,8 @@ export interface NormalWorkerLike {
 export interface NormalWork {
   prepare: (source: PixelPicture, mesh: UvMesh, signal: AbortSignal) => Promise<Result<UprightSheet, RunError>>;
   finish: (height: PixelPicture, sheet: UprightSheet, signal: AbortSignal) => Promise<PixelPicture>;
+  /** normal-reauthor R17: the normals as the picture a new run stores (the base at the given params). */
+  reauthor: (base: PixelPicture, mesh: UvMesh, params: ReauthorParams, signal: AbortSignal) => Promise<PixelPicture>;
 }
 
 const abortError = (signal: AbortSignal): unknown => signal.reason ?? new DOMException('Aborted', 'AbortError');
@@ -73,6 +76,11 @@ export function createNormalWork(createWorker: () => NormalWorkerLike): NormalWo
       const response = await ask(createWorker, { kind: 'finish', height, sheet: withoutSheetPixels(sheet) }, signal);
       if (response.kind !== 'finish') throw new Error('The island worker answered the wrong request.');
       return response.normals;
+    },
+    reauthor: async (base, mesh, params, signal) => {
+      const response = await ask(createWorker, { kind: 'reauthor', base, mesh, params }, signal);
+      if (response.kind !== 'reauthor') throw new Error('The island worker answered the wrong request.');
+      return response.pixels;
     },
   };
 }

@@ -32,6 +32,15 @@ describe('materialgen/masks bakeCurrentRows', () => {
     expect(new Set(bakeCurrentRows(halves(), edited).rough.data)).toEqual(new Set([Math.round(0.25 * 255)]));
   });
 
+  it('mask-mode R28 with an island coverage the gutter beside the island takes the island\'s values, within reach only; without one the bake is as before', () => {
+    const coverage = new Uint8Array(64);
+    for (let row = 0; row < 8; row += 1) coverage.fill(1, row * 8, row * 8 + 4); // the left half is island
+    const dilated = bakeCurrentRows(halves(), record(0), undefined, undefined, undefined, undefined, coverage); // reach at S = 8 is 1 texel
+    expect([dilated.rough.data[4], dilated.metal.data[4]]).toEqual([Math.round(0.8 * 255), 0]); // column 4 was the plate, now the wall's
+    expect(dilated.rough.data[5]).toBe(Math.round(0.3 * 255)); // beyond reach
+    expect(bakeCurrentRows(halves(), record(0)).rough.data[4]).toBe(Math.round(0.3 * 255));
+  });
+
   it('R91 a row with the colour mixin on takes the albedo grey it is given into its roughness; without the grey the rows bake as before', () => {
     const grey: PixelImage = { width: 8, height: 8, channels: 1, data: Uint8Array.from({ length: 64 }, (_, index) => (index % 2 === 0 ? 100 : 200)) };
     const mixed: MasksRecord = { ...record(0), rows: record(0).rows.map((row) => ({ ...row, rough: 0.5, mix: { on: true, invert: false, rough: 1, metal: 0 } })) };

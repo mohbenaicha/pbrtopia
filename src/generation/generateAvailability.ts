@@ -8,7 +8,7 @@ import type { SheetSettings } from './custom/planTypes';
 import { findCatalogModel, type EnhancerChoice, type GenerateState } from './generateStore';
 import { describeMaskRunProblem } from './masks/describeMaskRunProblem';
 
-type AvailabilityInput =Pick<GenerateState, 'hasModel' | 'hasUvs' | 'readOnly' | 'setOpen' | 'setBusy' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status' | 'unwrap' | 'mode' | 'customPlan' | 'references'> & Partial<Pick<GenerateState, 'channel'>>;
+type AvailabilityInput =Pick<GenerateState, 'hasModel' | 'hasUvs' | 'readOnly' | 'setOpen' | 'setBusy' | 'normalPanelOpen' | 'provider' | 'modelId' | 'catalog' | 'hasKey' | 'enhancer' | 'status' | 'unwrap' | 'mode' | 'customPlan' | 'references'> & Partial<Pick<GenerateState, 'channel'>>;
 
 export interface GenerateAvailability {
   action: 'generate' | 'generate-uv';
@@ -49,6 +49,7 @@ export function describeGenerateAvailability(input: AvailabilityInput): Generate
   if (!input.hasModel) return blocked('generate', 'Load a 3D model first.');
   if (input.readOnly) return blocked(action, 'This project is open in another tab.');
   if (input.setOpen) return blocked(action, 'Exit projection mode first.');
+  if (input.normalPanelOpen) return blocked(action, 'Close the normal panel first.'); // normal-reauthor R3
   if (input.setBusy) return blocked(action, 'Wait for the current task to finish.');
   // The unwrap sets hasUvs before the viewport shows the new model, so the button stays blocked until the whole unwrap is over.
   if (input.unwrap.status === 'running') return blocked(action, 'UVs are being generated.');

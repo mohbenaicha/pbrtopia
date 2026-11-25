@@ -228,3 +228,59 @@ describe('colour spaces', () => {
     expect(material.normalMap!.colorSpace).toBe(NoColorSpace); // data maps carry no colour space tag, as the glTF loader leaves them
   });
 });
+
+describe('replaceBitmap (normal-reauthor R12, R20)', () => {
+  it('normal-reauthor R12 swaps the image of the texture a picture is shown with, in place: same texture, old bitmap closed once, new one kept open, linear and unflipped', () => {
+    const { first, onChanged, pictures } = twoMaterials();
+    const before = bitmap();
+    pictures.set(0, 'normal', { id: 'n1', bitmap: before });
+    const texture = first.normalMap as Texture;
+    const version = texture.version;
+    onChanged.mockClear();
+    const after = bitmap();
+    expect(pictures.replaceBitmap('n1', after)).toBe(true);
+    expect(first.normalMap).toBe(texture);
+    expect(texture.image).toBe(after);
+    expect(texture.version).toBeGreaterThan(version);
+    expect(texture.colorSpace).toBe(NoColorSpace);
+    expect(texture.flipY).toBe(false);
+    expect(before.close).toHaveBeenCalledTimes(1);
+    expect(after.close).not.toHaveBeenCalled();
+    expect(onChanged).toHaveBeenCalledTimes(1);
+  });
+
+  it('normal-reauthor R12 a picture no slot shows is refused and the new bitmap stays with the caller', () => {
+    const { pictures, onChanged } = twoMaterials();
+    const orphan = bitmap();
+    expect(pictures.replaceBitmap('missing', orphan)).toBe(false);
+    expect(orphan.close).not.toHaveBeenCalled();
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
+  it('normal-reauthor I8 a slot that shows another picture keeps its texture, its image and its bitmap when a picture is replaced', () => {
+    const { first, second, pictures } = twoMaterials();
+    const mine = bitmap();
+    const other = bitmap();
+    pictures.set(0, 'normal', { id: 'n1', bitmap: mine });
+    pictures.set(1, 'normal', { id: 'n2', bitmap: other });
+    const otherTexture = second.normalMap as Texture;
+    const otherVersion = otherTexture.version;
+    expect(pictures.replaceBitmap('n1', bitmap())).toBe(true);
+    expect(second.normalMap).toBe(otherTexture);
+    expect(otherTexture.image).toBe(other);
+    expect(otherTexture.version).toBe(otherVersion);
+    expect(other.close).not.toHaveBeenCalled();
+    expect(first.normalMap).not.toBe(otherTexture);
+  });
+
+  it('normal-reauthor R12 the later release closes the replacement bitmap once and not the old one again', () => {
+    const { pictures } = twoMaterials();
+    const before = bitmap();
+    pictures.set(0, 'normal', { id: 'n1', bitmap: before });
+    const after = bitmap();
+    pictures.replaceBitmap('n1', after);
+    pictures.release();
+    expect(after.close).toHaveBeenCalledTimes(1);
+    expect(before.close).toHaveBeenCalledTimes(1);
+  });
+});

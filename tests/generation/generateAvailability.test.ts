@@ -279,3 +279,25 @@ describe('describeGenerateAvailability: custom plan models (custom R7, R13)', ()
     expect(outcome).toEqual({ added: 2, refused: 1 });
   });
 });
+
+describe('normal panel open (normal-reauthor R3)', () => {
+  it('normal-reauthor R3 an open normal panel disables Generate and Generate UV with "Close the normal panel first."', () => {
+    const store = createGenerateStore();
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, normalPanelOpen: true });
+    expect(describeGenerateAvailability(store.getState())).toEqual({ action: 'generate', enabled: false, reason: 'Close the normal panel first.' });
+    store.getState().setSceneState({ hasModel: true, hasUvs: false, normalPanelOpen: true });
+    expect(describeGenerateAvailability(store.getState())).toEqual({ action: 'generate-uv', enabled: false, reason: 'Close the normal panel first.' });
+  });
+
+  it('normal-reauthor R3 read-only and an open set come first, a busy set after, and a closed panel changes nothing', () => {
+    const store = createGenerateStore();
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, readOnly: true, normalPanelOpen: true });
+    expect(describeGenerateAvailability(store.getState()).reason).toBe('This project is open in another tab.');
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, setOpen: true, normalPanelOpen: true });
+    expect(describeGenerateAvailability(store.getState()).reason).toBe('Exit projection mode first.');
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, setBusy: true, normalPanelOpen: true });
+    expect(describeGenerateAvailability(store.getState()).reason).toBe('Close the normal panel first.');
+    store.getState().setSceneState({ hasModel: true, hasUvs: true, setBusy: true });
+    expect(describeGenerateAvailability(store.getState()).reason).toBe('Wait for the current task to finish.');
+  });
+});

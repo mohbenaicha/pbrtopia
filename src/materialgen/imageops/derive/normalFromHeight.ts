@@ -1,5 +1,6 @@
 import type { EditValues } from '../filters/editControls';
 import type { PixelImage } from '../gpu/pixelFormats';
+import { blurWrapped } from './blurWrapped';
 
 // Normal-from-height R5: the normal map of a height map, as a tiling texture (every neighbour wraps at the picture's edges).
 
@@ -16,41 +17,6 @@ function readHeight(image: PixelImage): Float32Array {
   const out = new Float32Array(count);
   for (let i = 0, from = 0; i < count; i += 1, from += image.channels) out[i] = image.data[from]! / 255;
   return out;
-}
-
-function buildGaussianKernel(sigma: number): Float32Array {
-  const radius = Math.max(1, Math.ceil(sigma * 3));
-  const kernel = new Float32Array(radius * 2 + 1);
-  let sum = 0;
-  for (let i = -radius; i <= radius; i += 1) {
-    const weight = Math.exp(-(i * i) / (2 * sigma * sigma));
-    kernel[i + radius] = weight;
-    sum += weight;
-  }
-  for (let i = 0; i < kernel.length; i += 1) kernel[i] = kernel[i]! / sum;
-  return kernel;
-}
-
-function blurWrapped(values: Float32Array, side: number, sigma: number): Float32Array {
-  const kernel = buildGaussianKernel(sigma);
-  const radius = (kernel.length - 1) / 2;
-  const across = new Float32Array(values.length);
-  const result = new Float32Array(values.length);
-  for (let y = 0; y < side; y += 1) {
-    for (let x = 0; x < side; x += 1) {
-      let sum = 0;
-      for (let k = -radius; k <= radius; k += 1) sum += kernel[k + radius]! * values[y * side + wrap(x + k, side)]!;
-      across[y * side + x] = sum;
-    }
-  }
-  for (let y = 0; y < side; y += 1) {
-    for (let x = 0; x < side; x += 1) {
-      let sum = 0;
-      for (let k = -radius; k <= radius; k += 1) sum += kernel[k + radius]! * across[wrap(y + k, side) * side + x]!;
-      result[y * side + x] = sum;
-    }
-  }
-  return result;
 }
 
 /**

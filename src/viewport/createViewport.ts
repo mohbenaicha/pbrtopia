@@ -29,6 +29,7 @@ export interface Viewport {
   loadModelAsset(glb: ArrayBuffer): Promise<ViewportResult<ModelAsset>>; // replaces the shown model; on failure the old one stays
   unloadModel(): void;
   setShadingMode(mode: ShadingMode): void; // remembered while a projection material is set
+  replacePictureBitmap(pictureId: string, bitmap: ImageBitmap): boolean; // normal-reauthor R12: new pixels for a picture already shown; false (bitmap not taken) when it is not shown
   setMaterialPicture(materialIndex: number, channel: OverrideChannel, picture: OverridePicture | null): void; // lays a picture over one channel of one of the model's materials, null takes it off; the viewport owns the bitmap
   setMaskOverlay(state: MaskOverlayState | null): void; // mask-mode R20: translucent mask colours over the model in every shading look, display only; null takes them away
   setProjectionMaterial(material: Material | null): void; // replaces the model's look until cleared; the caller owns and disposes the material
@@ -133,6 +134,7 @@ function assembleViewport({ core, models, motion, flash, handle, orbit, environm
     unloadModel: models.unload,
     setShadingMode: models.setShadingMode,
     setProjectionMaterial: models.setProjectionMaterial,
+    replacePictureBitmap: models.replacePictureBitmap,
     setMaterialPicture: models.setMaterialPicture,
     setMaskOverlay: models.setMaskOverlay,
     flashMaterial: flash.start,

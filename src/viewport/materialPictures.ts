@@ -9,6 +9,8 @@ export interface OverridePicture {
 
 export interface MaterialPictures {
   set(materialIndex: number, channel: OverrideChannel, picture: OverridePicture | null): void; // null puts the file's own map and factor back
+  /** normal-reauthor R12: swaps the image of the texture a shown picture uses, keeping the texture and its slots. False when no slot shows it: the bitmap then stays with the caller. */
+  replaceBitmap(pictureId: string, bitmap: ImageBitmap): boolean;
   release(): void; // puts every original back and frees what the overrides made
 }
 
@@ -145,6 +147,17 @@ export function createMaterialPictures(materials: readonly Material[], onChanged
       overrides.set(key, { pictureId: picture.id, original, material, slot });
       if (current) letGo(current.pictureId);
       onChanged();
+    },
+    replaceBitmap(pictureId, bitmap) {
+      const entry = held.get(pictureId);
+      if (!entry) return false;
+      const old = entry.texture.image as ImageBitmap;
+      if (old === bitmap) return true;
+      entry.texture.image = bitmap;
+      entry.texture.needsUpdate = true;
+      if (!isInUse(old)) closeBitmap(old);
+      onChanged();
+      return true;
     },
     release() {
       overrides.forEach((override) => {
