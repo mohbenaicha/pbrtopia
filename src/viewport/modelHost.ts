@@ -5,7 +5,7 @@ import { loadModelAsset, type ModelAsset } from './loadModelAsset';
 import { createFlashOverlay, type FlashOverlay } from './flashOverlay';
 import { createLitLook } from './litLook';
 import { createMaskOverlay, type MaskOverlay, type MaskOverlayState } from './maskOverlay';
-import { createMaterialPictures, type MaterialPictures, type OverrideChannel, type OverridePicture } from './materialPictures';
+import { createMaterialPictures, type GpuPatcher, type GreyRect, type MaterialPictures, type OverrideChannel, type OverridePicture } from './materialPictures';
 import { createMapAdjustUniforms, setMapAdjust } from './mapAdjustUniforms';
 import { createModelSmoothing } from './modelSmoothing';
 import { createShadingModes, type ShadingMode } from './shadingModes';
@@ -37,6 +37,7 @@ interface ModelHost {
   setProjectionMaterial(material: Material | null): void; // replaces the look while set; the shading mode is kept and comes back on clearing
   setFlashMaterial(material: Material | null): void; // laid over the current look as translucent copies of the meshes, for a moment; null takes it away
   replacePictureBitmap(pictureId: string, bitmap: ImageBitmap): boolean; // normal-reauthor R12: new pixels for a picture already shown; false (bitmap not taken) when it is not shown
+  patchPictureRects(pictureId: string, size: number, rects: readonly GreyRect[], renderer: GpuPatcher): boolean; // mask-bake-session R10: new grey texels for a picture already shown; false (nothing written) when it cannot be patched
   setMaterialPicture(materialIndex: number, channel: OverrideChannel, picture: OverridePicture | null): void; // lays a picture over one channel of one material (null takes it off); the viewport owns the bitmap
   setMaskOverlay(state: MaskOverlayState | null): void; // mask-mode R20: translucent mask colours over the model, in every shading look; null takes them away
   setSettings(patch: Partial<ViewportSettings>): void;
@@ -181,6 +182,7 @@ export function createModelHost({ scene, rig, invalidate, onFramed, onBounds, se
       else picture?.bitmap.close(); // no model to show it on
     },
     replacePictureBitmap: (pictureId, bitmap) => current?.pictures.replaceBitmap(pictureId, bitmap) ?? false,
+    patchPictureRects: (pictureId, size, rects, renderer) => current?.pictures.patchRects(pictureId, size, rects, renderer) ?? false,
     root: () => current?.asset.root,
     asset: () => current?.asset,
     refreshGeometry: showRebuiltGeometry,

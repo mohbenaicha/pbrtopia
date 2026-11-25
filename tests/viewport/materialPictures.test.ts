@@ -295,3 +295,37 @@ describe('replaceBitmap (normal-reauthor R12, R20)', () => {
     expect(before.close).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('patchRects (mask-bake-session R10)', () => {
+  const fakeRenderer = (drawn: boolean) => {
+    const copies: Array<{ rgba: number[]; width: number; height: number; x: number; y: number; target: Texture }> = [];
+    return {
+      copies,
+      properties: { get: () => (drawn ? { __webglTexture: {} } : {}) },
+      copyTextureToTexture: vi.fn((source: DataTexture, target: Texture, _region: unknown, at: { x: number; y: number }) => {
+        copies.push({ rgba: Array.from(source.image.data as Uint8Array), width: source.image.width, height: source.image.height, x: at.x, y: at.y, target });
+      }),
+    };
+  };
+  const rect = { x0: 1, y0: 2, x1: 3, y1: 3, bytes: Uint8Array.of(7, 9) };
+
+  it('mask-bake-session R10 each rectangle is written as grey RGBA at its place into the texture the picture uses', () => {
+    const { first, pictures } = twoMaterials();
+    pictures.set(0, 'rough', { id: 'p1', bitmap: bitmap() });
+    const renderer = fakeRenderer(true);
+    expect(pictures.patchRects('p1', 4, [rect], renderer as never)).toBe(true);
+    expect(renderer.copies).toEqual([{ rgba: [7, 7, 7, 255, 9, 9, 9, 255], width: 2, height: 1, x: 1, y: 2, target: first.roughnessMap }]);
+  });
+
+  it('mask-bake-session R10 it answers false and writes nothing for an unknown picture, another size, or a texture never drawn', () => {
+    const { pictures } = twoMaterials();
+    pictures.set(0, 'rough', { id: 'p1', bitmap: bitmap() });
+    const renderer = fakeRenderer(true);
+    expect(pictures.patchRects('nope', 4, [rect], renderer as never)).toBe(false);
+    expect(pictures.patchRects('p1', 8, [rect], renderer as never)).toBe(false);
+    const undrawn = fakeRenderer(false);
+    expect(pictures.patchRects('p1', 4, [rect], undrawn as never)).toBe(false);
+    expect(renderer.copyTextureToTexture).not.toHaveBeenCalled();
+    expect(undrawn.copyTextureToTexture).not.toHaveBeenCalled();
+  });
+});

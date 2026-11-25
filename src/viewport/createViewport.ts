@@ -3,7 +3,7 @@ import { captureThumbnail, type ThumbnailSpec } from './captureThumbnail';
 import { createCameraMotion, type CameraMotion } from './cameraMotion';
 import { createMaterialFlash } from './materialFlash';
 import type { MaskOverlayState } from './maskOverlay';
-import type { OverrideChannel, OverridePicture } from './materialPictures';
+import type { GreyRect, OverrideChannel, OverridePicture } from './materialPictures';
 import { createSurfacePicker } from './pickSurface';
 import { createViewportHandle, type ViewportHandle } from './viewportHandle';
 import type { CameraRig, Projection, ViewAxis } from './cameraRig';
@@ -29,6 +29,7 @@ export interface Viewport {
   loadModelAsset(glb: ArrayBuffer): Promise<ViewportResult<ModelAsset>>; // replaces the shown model; on failure the old one stays
   unloadModel(): void;
   setShadingMode(mode: ShadingMode): void; // remembered while a projection material is set
+  patchPictureRects(pictureId: string, size: number, rects: readonly GreyRect[]): boolean; // mask-bake-session R10: writes grey rectangles into a picture already shown; false when it cannot (the caller then replaces the whole bitmap)
   replacePictureBitmap(pictureId: string, bitmap: ImageBitmap): boolean; // normal-reauthor R12: new pixels for a picture already shown; false (bitmap not taken) when it is not shown
   setMaterialPicture(materialIndex: number, channel: OverrideChannel, picture: OverridePicture | null): void; // lays a picture over one channel of one of the model's materials, null takes it off; the viewport owns the bitmap
   setMaskOverlay(state: MaskOverlayState | null): void; // mask-mode R20: translucent mask colours over the model in every shading look, display only; null takes them away
@@ -135,6 +136,7 @@ function assembleViewport({ core, models, motion, flash, handle, orbit, environm
     setShadingMode: models.setShadingMode,
     setProjectionMaterial: models.setProjectionMaterial,
     replacePictureBitmap: models.replacePictureBitmap,
+    patchPictureRects: (pictureId, size, rects) => models.patchPictureRects(pictureId, size, rects, core.renderer),
     setMaterialPicture: models.setMaterialPicture,
     setMaskOverlay: models.setMaskOverlay,
     flashMaterial: flash.start,

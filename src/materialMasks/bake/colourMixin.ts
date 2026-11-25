@@ -20,7 +20,16 @@ export function albedoToGrey(image: PixelImage): PixelImage {
 }
 
 /** The row a label reads from: a label with no row uses the first, as the table lookup does (masks R42). */
-const rowOfLabel = (label: number, rowCount: number): number => (label < rowCount ? label : 0);
+export const rowOfLabel = (label: number, rowCount: number): number => (label < rowCount ? label : 0);
+
+/** Masks R91: each row's grain gain for one map (0 for a row without the mixin); null when no row has any, so the map is not grained at all. */
+export function grainGains(mixes: ReadonlyArray<BakeMix | undefined>, which: 'rough' | 'metal'): number[] | null {
+  if (mixes.every((mix) => mix === undefined || mix[which] === 0)) return null;
+  return mixes.map((mix) => (mix === undefined ? 0 : mix[which] * MIX_SENSITIVITY * (mix.invert ? -1 : 1)));
+}
+
+/** Masks R91: one baked byte after the grain of its row (`gain` from `grainGains`, the texel's grey and the row's mean grey). */
+export const grainedByte = (baked: number, gain: number, grey: number, mean: number): number => Math.min(Math.max(Math.round(baked + gain * (grey - mean)), 0), 255);
 
 /** Masks R91: the mean of the albedo grey over the pixels of each row's label, for the rows that have the mixin (the others stay 0). One pass, O(N). */
 export function meanGreyPerRow(labels: PixelImage, grey: PixelImage, mixes: ReadonlyArray<BakeMix | undefined>): Float64Array {
@@ -40,13 +49,13 @@ export function meanGreyPerRow(labels: PixelImage, grey: PixelImage, mixes: Read
  * picks the roughness or the metal amount. One pass, O(N), and a map with every amount at 0 is returned untouched.
  */
 export function addGrain(baked: Uint8Array, labels: PixelImage, grey: PixelImage, mixes: ReadonlyArray<BakeMix | undefined>, means: Float64Array, which: 'rough' | 'metal'): Uint8Array {
-  if (mixes.every((mix) => mix === undefined || mix[which] === 0)) return baked;
-  const gains = mixes.map((mix) => (mix === undefined ? 0 : mix[which] * MIX_SENSITIVITY * (mix.invert ? -1 : 1)));
+  const gains = grainGains(mixes, which);
+  if (gains === null) return baked;
   for (let index = 0; index < baked.length; index += 1) {
     const row = rowOfLabel(labels.data[index]!, mixes.length);
     const gain = gains[row]!;
     if (gain === 0) continue;
-    baked[index] = Math.min(Math.max(Math.round(baked[index]! + gain * (grey.data[index]! - means[row]!)), 0), 255);
+    baked[index] = grainedByte(baked[index]!, gain, grey.data[index]!, means[row]!);
   }
   return baked;
 }

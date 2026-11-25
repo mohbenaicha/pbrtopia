@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { findChangedMaps, rowsToBake, type BakeRow, type MapName, type PixelImage } from '../../../src/materialMasks';
 import { bakeNamedMasks } from '../../../src/materialMasks/bake/bakeMasks';
 import { dilateGutterPlanes } from '../../../src/materialMasks/bake/dilateGutter';
+import { applyMapResult, type MapResult } from '../../../src/materialMasks/bake/mapResult';
 import { BakeSessionState } from '../../../src/materialMasks/worker/bakeSessionState';
 import { rasterizeIslandCoverage } from '../../../src/uvCoverage/rasterizeIslandCoverage';
 import { greyPlane, labelIslandGrid, makeIslandMesh, makeRecord, seededRandom } from '../../support/maskBakeFixtures';
 
 const SIDE = 192; // gutter reach 3
-const TILE = 32;
 const ROWS = 4;
+
+/** What the page does with a reply: the new map from its previous one and the reply (mask-bake-session R6). */
+const shownAfter = (previous: Uint8Array, result: MapResult | undefined): Uint8Array => applyMapResult(previous, SIDE, result!);
 
 const image = (data: Uint8Array): PixelImage => ({ width: SIDE, height: SIDE, channels: 1, data });
 const randomPlane = (random: () => number): Uint8Array => Uint8Array.from({ length: SIDE * SIDE }, () => Math.floor(random() * 256));
@@ -51,7 +54,7 @@ function scene(seed: number) {
 
 /** A session started from copies, as the page's start message moves them. */
 const openState = (labels: Uint8Array, maps: { rough: Uint8Array; metal: Uint8Array }, coverage: Uint8Array | undefined): BakeSessionState =>
-  new BakeSessionState({ size: SIDE, labels: labels.slice(), maps: { rough: maps.rough.slice(), metal: maps.metal.slice() }, ...(coverage === undefined ? {} : { coverage: coverage.slice() }) }, { tile: TILE });
+  new BakeSessionState({ size: SIDE, labels: labels.slice(), maps: { rough: maps.rough.slice(), metal: maps.metal.slice() }, ...(coverage === undefined ? {} : { coverage: coverage.slice() }) });
 
 /** What a full bake gives for the named maps from the maps as they are now: the reference of mask-bake-session R1. */
 function fullBake(labels: Uint8Array, rows: BakeRow[], feather: number, grey: Uint8Array | null, coverage: Uint8Array | undefined, maps: { rough: Uint8Array; metal: Uint8Array }, named: MapName[]) {
@@ -77,9 +80,11 @@ const STEPS: Step[] = [
   },
 ];
 
-function runSequence(seed: number, tile = TILE): { regionEdits: number } {
-  const { random, labels, coverage, maps, grey, rows: startRows } = scene(seed);
-  const state = new BakeSessionState({ size: SIDE, labels: labels.slice(), maps: { rough: maps.rough.slice(), metal: maps.metal.slice() }, coverage, ...(seed % 2 === 0 ? { grey: grey.slice() } : {}) }, { tile });
+function runSequence(seed: number, withCoverage = true): { regionEdits: number } {
+  const { random, labels, coverage: sceneCoverage, maps, grey, rows: startRows } = scene(seed);
+  const coverage = withCoverage ? sceneCoverage : undefined;
+  const state = new BakeSessionState({ size: SIDE, labels: labels.slice(), maps: { rough: maps.rough.slice(), metal: maps.metal.slice() }, ...(coverage === undefined ? {} : { coverage }), ...(seed % 2 === 0 ? { grey: grey.slice() } : {}) });
+  const shown: { rough: Uint8Array; metal: Uint8Array } = { rough: maps.rough.slice(), metal: maps.metal.slice() }; // the page's maps, built from the replies only
   let greyNow: Uint8Array | null = seed % 2 === 0 ? grey : null;
   let rows = startRows;
   let feather = 1;
@@ -101,7 +106,11 @@ function runSequence(seed: number, tile = TILE): { regionEdits: number } {
     expect(Object.keys(got).sort()).toEqual([...changed.maps].sort());
     const want = fullBake(labels, rows, feather, greyNow, coverage, reference, changed.maps);
     for (const which of changed.maps) {
-      expect(Array.from(got[which]!), `seed ${seed} step ${step} ${which}`).toEqual(Array.from(want[which]!));
+      const before = shown[which];
+      const kept = before.slice();
+      shown[which] = shownAfter(before, got[which]);
+      expect(before, 'the previous map is not changed').toEqual(kept);
+      expect(Array.from(shown[which]), `seed ${seed} step ${step} ${which}`).toEqual(Array.from(want[which]!));
       reference[which] = want[which]!;
     }
     if (state.lastEdit().path === 'region') regionEdits += 1;
@@ -116,6 +125,12 @@ describe('BakeSessionState (mask-bake-session R1, R5, R7, R9)', () => {
     expect(regionEdits).toBeGreaterThan(10); // the dirty-region path was exercised, not only the full one
   }, 120000);
 
+  it('mask-bake-session R1 R7 the same over 12 sequences with no coverage (no gutter): the region edit equals the full bake', () => {
+    let regionEdits = 0;
+    for (let seed = 1; seed <= 12; seed += 1) regionEdits += runSequence(seed, false).regionEdits;
+    expect(regionEdits).toBeGreaterThan(4);
+  }, 120000);
+
   it('mask-bake-session R7 R9 at feather 0 (no blur growth) a region edit still refills the gutter beside a changed island across a tile edge, equal to the full bake', () => {
     for (const feather of [0, 4]) {
       for (const seed of [1, 3, 5, 7, 9, 11]) {
@@ -125,14 +140,15 @@ describe('BakeSessionState (mask-bake-session R1, R5, R7, R9)', () => {
         let rows = startRows;
         const first = state.edit({ rows, feather, maps: ['rough'], changedLabels: 'all' });
         reference.rough = fullBake(labels, rows, feather, null, coverage, reference, ['rough']).rough!;
-        expect(Array.from(first.rough!)).toEqual(Array.from(reference.rough));
+        let shown = shownAfter(maps.rough, first.rough);
+        expect(Array.from(shown)).toEqual(Array.from(reference.rough));
         for (let edit = 0; edit < 5; edit += 1) {
           const at = label(random);
           rows = setRow(rows, at, { rough: Math.round(random() * 100) / 100 });
-          const got = state.edit({ rows, feather, maps: ['rough'], changedLabels: [at] }).rough!;
+          shown = shownAfter(shown, state.edit({ rows, feather, maps: ['rough'], changedLabels: [at] }).rough);
           expect(state.lastEdit().path).toBe('region');
           reference.rough = fullBake(labels, rows, feather, null, coverage, reference, ['rough']).rough!;
-          expect(Array.from(got), `feather ${feather} seed ${seed} edit ${edit}`).toEqual(Array.from(reference.rough));
+          expect(Array.from(shown), `feather ${feather} seed ${seed} edit ${edit}`).toEqual(Array.from(reference.rough));
         }
       }
     }
@@ -180,11 +196,44 @@ describe('BakeSessionState (mask-bake-session R1, R5, R7, R9)', () => {
     const { labels, coverage, maps, rows } = scene(7);
     const state = openState(labels, maps, coverage);
     const first = state.edit({ rows, feather: 1, maps: ['rough'], changedLabels: 'all' }).rough!;
-    const kept = first.slice();
-    first.fill(0);
+    expect(first.kind).toBe('whole'); // a bake of every texel replies the whole map
+    const kept = shownAfter(maps.rough, first).slice();
+    if (first.kind === 'whole') first.bytes.fill(0);
     const again = state.edit({ rows: setRow(rows, 1, { rough: 0.77 }), feather: 1, maps: ['rough'], changedLabels: [1] }).rough!;
     const want = fullBake(labels, setRow(rows, 1, { rough: 0.77 }), 1, null, coverage, { rough: kept, metal: maps.metal }, ['rough']).rough!;
-    expect(Array.from(again)).toEqual(Array.from(want));
+    expect(Array.from(shownAfter(kept, again))).toEqual(Array.from(want)); // the session kept its own map, not the zeroed reply
+  });
+
+  it('mask-bake-session R6 a region reply names rectangles of at most 64 x 64 whose bytes are the session map there, and nothing outside them changes', () => {
+    const { labels, coverage, maps, rows } = scene(2);
+    const state = openState(labels, maps, coverage);
+    const first = shownAfter(maps.rough, state.edit({ rows, feather: 1, maps: ['rough'], changedLabels: 'all' }).rough);
+    const edited = setRow(rows, 1, { rough: 0.123 });
+    const reply = state.edit({ rows: edited, feather: 1, maps: ['rough'], changedLabels: [1] }).rough!;
+    expect(reply.kind).toBe('rects');
+    if (reply.kind !== 'rects') return;
+    expect(reply.rects.length).toBeGreaterThan(0);
+    const inside = new Uint8Array(SIDE * SIDE);
+    for (const rect of reply.rects) {
+      expect(rect.x1 - rect.x0).toBeGreaterThan(0);
+      expect(rect.y1 - rect.y0).toBeGreaterThan(0);
+      expect(rect.x1 - rect.x0).toBeLessThanOrEqual(64);
+      expect(rect.y1 - rect.y0).toBeLessThanOrEqual(64);
+      expect(rect.bytes.length).toBe((rect.x1 - rect.x0) * (rect.y1 - rect.y0));
+      for (let y = rect.y0; y < rect.y1; y += 1) for (let x = rect.x0; x < rect.x1; x += 1) inside[y * SIDE + x] = 1;
+    }
+    const now = shownAfter(first, reply);
+    for (let index = 0; index < now.length; index += 1) if (inside[index] === 0) expect(now[index]).toBe(first[index]);
+  });
+
+  it('mask-bake-session R7 with one label changed, the texels recomputed are the label and its feather reach, not whole tiles', () => {
+    const { labels, coverage, maps, rows } = scene(2);
+    const state = openState(labels, maps, coverage);
+    state.edit({ rows, feather: 1, maps: ['rough'], changedLabels: 'all' });
+    state.edit({ rows: setRow(rows, 1, { rough: 0.5 }), feather: 1, maps: ['rough'], changedLabels: [1] });
+    const own = labels.filter((value) => value === 1).length;
+    expect(state.lastEdit().path).toBe('region');
+    expect(state.lastEdit().share * SIDE * SIDE).toBeLessThan(own * 1.6); // the label's texels plus a one-texel ring
   });
 
   it('mask-bake-session R1 a session with no coverage gives the full bake with no gutter fill', () => {
@@ -192,7 +241,7 @@ describe('BakeSessionState (mask-bake-session R1, R5, R7, R9)', () => {
     const state = openState(labels, maps, undefined);
     const got = state.edit({ rows, feather: 2, maps: ['rough', 'metal'], changedLabels: 'all' });
     const want = fullBake(labels, rows, 2, null, undefined, maps, ['rough', 'metal']);
-    expect(Array.from(got.rough!)).toEqual(Array.from(want.rough!));
-    expect(Array.from(got.metal!)).toEqual(Array.from(want.metal!));
+    expect(Array.from(shownAfter(maps.rough, got.rough))).toEqual(Array.from(want.rough!));
+    expect(Array.from(shownAfter(maps.metal, got.metal))).toEqual(Array.from(want.metal!));
   });
 });
