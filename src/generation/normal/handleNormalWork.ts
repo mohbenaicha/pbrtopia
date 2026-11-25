@@ -1,22 +1,25 @@
-import { clampReauthorParams } from '../../normalRecipe/clampReauthorParams';
-import type { ReauthorParams } from '../../normalRecipe/reauthorParams';
+import { DEFAULT_PARAMS } from '../../normalRecipe/reauthorParams';
 import type { RunError } from '../generateStore';
-import { reauthorNormal } from './reauthor/reauthorNormal';
+import { buildOwnerMap } from './height/buildOwnerMap';
+import { readSheetHeight } from './height/readSheetHeight';
+import { smoothHeight } from './height/smoothHeight';
+import { unpackHeight } from './height/unpackHeight';
+import { reauthorFromHeight } from './reauthor/reauthorFromHeight';
 import type { Result } from '../providers/providerTypes';
 import { buildUprightSheet } from './buildUprightSheet';
-import { deriveNormals } from './deriveNormals';
-import { unpackNormals } from './unpackNormals';
 import type { PixelPicture, UprightSheet, UvMesh } from './uprightTypes';
 
 export type NormalWorkRequest =
   | { kind: 'prepare'; source: PixelPicture; mesh: UvMesh }
-  | { kind: 'finish'; height: PixelPicture; sheet: UprightSheet }
-  | { kind: 'reauthor'; base: PixelPicture; mesh: UvMesh; params: ReauthorParams }; // normal-reauthor R17: the picture a new run stores
-export type NormalWorkResponse = { kind: 'prepare'; result: Result<UprightSheet, RunError> } | { kind: 'finish'; normals: PixelPicture } | { kind: 'reauthor'; pixels: PixelPicture };
+  | { kind: 'finish'; height: PixelPicture; sheet: UprightSheet; mesh: UvMesh };
+export type NormalWorkResponse =
+  | { kind: 'prepare'; result: Result<UprightSheet, RunError> }
+  | { kind: 'finish'; baseHeight: PixelPicture; normal: PixelPicture }; // normal-height-edit R12: the height as stored and the normal made from it at DEFAULT_PARAMS
 
-/** normal-map R20: what the worker does for one request; a pure function of the request, so the worker and the tests share it. */
+/** normal-map R20, normal-height-edit R12: what the worker does for one request; a pure function of the request, so the worker and the tests share it. */
 export function handleNormalWork(request: NormalWorkRequest): NormalWorkResponse {
   if (request.kind === 'prepare') return { kind: 'prepare', result: buildUprightSheet(request.source, request.mesh) };
-  if (request.kind === 'reauthor') return { kind: 'reauthor', pixels: reauthorNormal(request.base, request.mesh, clampReauthorParams(request.params)) };
-  return { kind: 'finish', normals: unpackNormals(deriveNormals(request.height, request.sheet), request.sheet) };
+  const owner = buildOwnerMap(request.mesh, request.sheet.picture.side);
+  const baseHeight = unpackHeight(readSheetHeight(request.height), request.sheet, owner);
+  return { kind: 'finish', baseHeight, normal: reauthorFromHeight(smoothHeight(baseHeight, owner), request.mesh, DEFAULT_PARAMS) };
 }

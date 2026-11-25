@@ -12,7 +12,13 @@ export type MigrationSteps = Readonly<Record<number, MigrationStep>>; // keyed b
 // 3 -> 4 (mask-mode R22): the masks record is optional and absent in an older project, so it needs no change either.
 // 4 -> 5 (mask-mode R22): the masks record gains componentIds, which the reader derives for an older record, so the stored record needs no change.
 // 5 -> 6 (normal-reauthor R19): normalRecipes is optional and absent in an older project, so it needs no change either.
-const PROJECT_MIGRATION_STEPS: MigrationSteps = { 2: (record) => record, 3: (record) => record, 4: (record) => record, 5: (record) => record };
+// 6 -> 7 (normal-height-edit R14): every stored recipe is a base normal, so it gets baseKind 'normal' (its sharpness reads as 0).
+const markRecipesAsNormal = (record: RawRecord): RawRecord => {
+  const recipes = record['normalRecipes'];
+  if (!Array.isArray(recipes)) return record;
+  return { ...record, normalRecipes: recipes.map((recipe) => (isRawRecord(recipe) ? { ...recipe, baseKind: 'normal' } : recipe)) };
+};
+const PROJECT_MIGRATION_STEPS: MigrationSteps = { 2: (record) => record, 3: (record) => record, 4: (record) => record, 5: (record) => record, 6: markRecipesAsNormal };
 export const OLDEST_READABLE_PROJECT_VERSION = 2;
 export const SCHEMA_TOO_OLD_MESSAGE = 'This project was made by an older version of the app and cannot be opened. Delete it.';
 

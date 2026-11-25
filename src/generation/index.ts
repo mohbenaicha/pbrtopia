@@ -49,8 +49,6 @@ export { listCanvases, type Canvas, type CanvasRule } from './catalog/canvasRule
 export { channelPanelFields, describeChannelAvailability, type ChannelAvailabilityInput, type ChannelAvailabilityMap, type GenerateChannel } from './channels/describeChannelAvailability';
 export { buildNormalPrompt, DETAIL_LEVELS, NORMAL_PROGRESS_LABELS, type NormalDetail } from './normal/detailLevels';
 export { buildUprightSheet } from './normal/buildUprightSheet';
-export { deriveNormals } from './normal/deriveNormals';
-export { unpackNormals } from './normal/unpackNormals';
 export type { IslandPiece, PixelPicture, UprightSheet, UvMesh } from './normal/uprightTypes';
 export type { AuxSheetPlan, CoreSheetPlan, CustomPlanRecord, NamedPlanRecord, SheetSettings } from './custom/planTypes';
 export { CORE_CAMERA_COUNT, CORE_CAMERA_NAMES, MAX_CORE_SHEETS } from './custom/planTypes';

@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { handleNormalWork } from '../../../src/generation/normal/handleNormalWork';
 import { createNormalWork, type NormalWorkerLike } from '../../../src/generation/normal/runNormalWork';
 import { buildUprightSheet } from '../../../src/generation/normal/buildUprightSheet';
-import { deriveNormals } from '../../../src/generation/normal/deriveNormals';
-import { unpackNormals } from '../../../src/generation/normal/unpackNormals';
 import type { PixelPicture } from '../../../src/generation/normal/uprightTypes';
 import { quadMesh, solidPicture } from './meshFixtures';
 
@@ -38,9 +36,11 @@ describe('runNormalWork', () => {
     const prepared = await work.prepare(SOURCE, MESH, new AbortController().signal);
     if (!direct.ok || !prepared.ok) throw new Error('expected sheets');
     expect(Array.from(prepared.value.picture.rgba)).toEqual(Array.from(direct.value.picture.rgba));
-    const height = flatHeight();
-    const normals = await work.finish(height, prepared.value, new AbortController().signal);
-    expect(Array.from(normals.rgba)).toEqual(Array.from(unpackNormals(deriveNormals(height, direct.value), direct.value).rgba));
+    const made = await work.finish(flatHeight(), prepared.value, MESH, new AbortController().signal);
+    const response = handleNormalWork({ kind: 'finish', height: flatHeight(), sheet: direct.value, mesh: MESH });
+    if (response.kind !== 'finish') throw new Error('wrong answer');
+    expect(Array.from(made.normal.rgba)).toEqual(Array.from(response.normal.rgba));
+    expect(Array.from(made.baseHeight.rgba)).toEqual(Array.from(response.baseHeight.rgba));
   });
 
   it('normal-map R15 a refusal of the sheet comes back as the result, not as a throw', async () => {
@@ -101,19 +101,19 @@ describe('runNormalWork', () => {
     const work = createNormalWork(() => worker);
     const built = buildUprightSheet(SOURCE, MESH);
     if (!built.ok) throw new Error('expected a sheet');
-    const normals = await work.finish(flatHeight(), built.value, new AbortController().signal);
+    await work.finish(flatHeight(), built.value, MESH, new AbortController().signal);
     const sent = posted[0]!;
     if (sent.kind !== 'finish') throw new Error('expected a finish request');
     expect(sent.sheet.picture.side).toBe(64);
     expect(sent.sheet.picture.rgba.length).toBe(0);
-    expect(Array.from(normals.rgba)).toEqual(Array.from(unpackNormals(deriveNormals(flatHeight(), built.value), built.value).rgba));
+    expect(sent.mesh).toBe(MESH);
   });
 
   it('normal-map R11 a worker that crashes rejects with its message and is ended', async () => {
     const worker = new FakeWorker();
     worker.postMessage = () => queueMicrotask(() => worker.onerror?.({ message: 'out of memory' }));
     const work = createNormalWork(() => worker);
-    await expect(work.finish(flatHeight(), (buildUprightSheet(SOURCE, MESH) as { ok: true; value: never }).value, new AbortController().signal)).rejects.toThrow('out of memory');
+    await expect(work.finish(flatHeight(), (buildUprightSheet(SOURCE, MESH) as { ok: true; value: never }).value, MESH, new AbortController().signal)).rejects.toThrow('out of memory');
     expect(worker.terminated).toBe(true);
   });
 });

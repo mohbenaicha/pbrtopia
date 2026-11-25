@@ -6,24 +6,36 @@ import type { PictureRecord } from './pictureRecords';
 /** The recipe of one generated normal map: the base it is re-authored from and the settings that make the stored picture (normal-reauthor R19). */
 export interface NormalRecipeRecord {
   pictureId: string; // a generated normal picture of the project; at most one recipe per picture
-  baseBlobKey: string; // normals/<id>.png: the picture as the model returned it, upright, never rewritten
+  baseBlobKey: string; // normals/<id>.png: the base the picture is re-authored from, upright, never rewritten
+  baseKind: NormalBaseKind; // normal-height-edit R13: 'height' is a grey height picture, 'normal' a base normal (older pictures: three sliders only)
   params: ReauthorParams;
   createdAt: string; // ISO time
 }
+
+export type NormalBaseKind = 'height' | 'normal';
 
 export const NORMALS_PREFIX = 'normals/';
 
 export const normalBaseBlobKey = (baseId: string): string => `${NORMALS_PREFIX}${baseId}.png`;
 
+function readBaseKind(value: unknown, path: string): NormalBaseKind {
+  if (value === undefined || value === 'normal') return 'normal'; // R14: a missing kind is an older recipe
+  if (value === 'height') return 'height';
+  throw new FieldProblem(path);
+}
+
 function readNormalRecipe(value: unknown, path: string): NormalRecipeRecord {
   const raw = readObject(value, path);
   const baseBlobKey = readBlobKey(raw['baseBlobKey'], `${path}.baseBlobKey`);
   if (!baseBlobKey.startsWith(NORMALS_PREFIX)) throw new FieldProblem(`${path}.baseBlobKey`);
-  const params = readObject(raw['params'], `${path}.params`);
+  const baseKind = readBaseKind(raw['baseKind'], `${path}.baseKind`);
+  const params = clampReauthorParams(readObject(raw['params'], `${path}.params`));
   return {
     pictureId: readNonEmptyText(raw['pictureId'], `${path}.pictureId`),
     baseBlobKey,
-    params: clampReauthorParams(params),
+    baseKind,
+    params: baseKind === 'normal' ? { ...params, sharpness: 0 } : params, // R13: a recipe without a height has no Sharpness
+
     createdAt: readTimestamp(raw['createdAt'], `${path}.createdAt`),
   };
 }

@@ -4,6 +4,7 @@ export interface ReauthorParams {
   slopeDeg: number; // integer 5..80
   seamRadius: number; // 0..16 step 0.5, texels at 1024
   seamFlatten: number; // integer percent 0..100
+  sharpness: number; // normal-height-edit R9: 0..2 in steps of 0.05, stored rounded to 2 decimals; always 0 for a recipe without a height
 }
 
 export const SLOPE_DEG_MIN = 5;
@@ -12,8 +13,11 @@ export const SEAM_RADIUS_MAX = 16;
 export const SEAM_RADIUS_STEP = 0.5;
 export const SEAM_FLATTEN_MAX = 100;
 
-export const DEFAULT_PARAMS: ReauthorParams = { slopeDeg: 45, seamRadius: 4, seamFlatten: 100 }; // a new generation (R17)
-export const ADOPTED_PARAMS: ReauthorParams = { slopeDeg: 45, seamRadius: 4, seamFlatten: 0 }; // an older picture (R16)
+export const SHARPNESS_MAX = 2;
+export const SHARPNESS_STEP = 0.05;
+
+export const DEFAULT_PARAMS: ReauthorParams = { slopeDeg: 45, seamRadius: 4, seamFlatten: 100, sharpness: 0 }; // a new generation (R17; normal-height-edit R10)
+export const ADOPTED_PARAMS: ReauthorParams = { slopeDeg: 45, seamRadius: 4, seamFlatten: 0, sharpness: 0 }; // an older picture (R16)
 
 export const FILL_REACH_AT_1024 = 16; // R8: texels, scaled by side / 1024
 export const PANEL_MAX_SIDE = 2048; // R2 row 7
@@ -41,7 +45,7 @@ const TAN_TABLE: readonly number[] = [
   4.331475874284157, 4.704630109478451, 5.144554015970307, 5.671281819617707,
 ];
 
-export const isSameParams = (a: ReauthorParams, b: ReauthorParams): boolean => a.slopeDeg === b.slopeDeg && a.seamRadius === b.seamRadius && a.seamFlatten === b.seamFlatten;
+export const isSameParams = (a: ReauthorParams, b: ReauthorParams): boolean => a.slopeDeg === b.slopeDeg && a.seamRadius === b.seamRadius && a.seamFlatten === b.seamFlatten && a.sharpness === b.sharpness;
 
 /** tan(slopeDeg) / tan(45): the factor of R5. slopeDeg is an integer in range. */
 export function slopeFactor(slopeDeg: number): number {

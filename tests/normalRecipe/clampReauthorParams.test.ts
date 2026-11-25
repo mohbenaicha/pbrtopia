@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { clampReauthorParams } from '../../src/normalRecipe/clampReauthorParams';
-import { ADOPTED_PARAMS, DEFAULT_PARAMS } from '../../src/normalRecipe/reauthorParams';
+import { ADOPTED_PARAMS, DEFAULT_PARAMS, isSameParams } from '../../src/normalRecipe/reauthorParams';
 
 describe('clampReauthorParams', () => {
-  it('normal-reauthor R4 the defaults are 45, 4 and 100 percent; an adopted picture starts with flatten 0', () => {
-    expect(DEFAULT_PARAMS).toEqual({ slopeDeg: 45, seamRadius: 4, seamFlatten: 100 });
-    expect(ADOPTED_PARAMS).toEqual({ slopeDeg: 45, seamRadius: 4, seamFlatten: 0 });
+  it('normal-height-edit R10 the defaults are 45, 4, 100 percent and Sharpness 0; an adopted picture starts with flatten 0', () => {
+    expect(DEFAULT_PARAMS).toEqual({ slopeDeg: 45, seamRadius: 4, seamFlatten: 100, sharpness: 0 });
+    expect(ADOPTED_PARAMS).toEqual({ slopeDeg: 45, seamRadius: 4, seamFlatten: 0, sharpness: 0 });
+  });
+
+  it.each([
+    [-1, 0], [0, 0], [0.02, 0], [0.04, 0.05], [0.05, 0.05], [0.12, 0.1], [0.15, 0.15], [1, 1], [1.95, 1.95], [2, 2], [2.04, 2], [3, 2],
+  ])('normal-height-edit R9 sharpness %s becomes %s (the stored number is the decimal shown)', (given, expected) => {
+    expect(clampReauthorParams({ sharpness: given }).sharpness).toBe(expected);
+  });
+
+  it('normal-height-edit R9 isSameParams sees a sharpness change', () => {
+    expect(isSameParams(DEFAULT_PARAMS, { ...DEFAULT_PARAMS })).toBe(true);
+    expect(isSameParams(DEFAULT_PARAMS, { ...DEFAULT_PARAMS, sharpness: 0.05 })).toBe(false);
   });
 
   it.each([
@@ -29,7 +40,7 @@ describe('clampReauthorParams', () => {
   it.each([[Number.NaN], [Number.POSITIVE_INFINITY], ['12'], [null], [undefined], [{}]])(
     'normal-reauthor R4 a value that is not a finite number (%s) takes the default of its field',
     (given) => {
-      expect(clampReauthorParams({ slopeDeg: given, seamRadius: given, seamFlatten: given })).toEqual(DEFAULT_PARAMS);
+      expect(clampReauthorParams({ slopeDeg: given, seamRadius: given, seamFlatten: given, sharpness: given })).toEqual(DEFAULT_PARAMS);
     },
   );
 

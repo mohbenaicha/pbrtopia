@@ -7,7 +7,7 @@ import type { StoredProvider } from './storedProviders';
 
 // The version of the set and settings records. The project record has its own, below: it moved to 2 with pictures and slots (specs/app/textures).
 export const CURRENT_SCHEMA_VERSION = 1;
-export const PROJECT_SCHEMA_VERSION = 6; // 3: channel union and normalDetail (generation/normal-map R14); 4: the masks record and the masks picture origin (projection/mask-mode R22); 5: 32 components with ids, a null source albedo (mask-mode R22, no data change); 6: normalRecipes (generation/normal-reauthor R19)
+export const PROJECT_SCHEMA_VERSION = 7; // 7: recipes gain baseKind and sharpness (generation/normal-height-edit R14); 3: channel union and normalDetail (generation/normal-map R14); 4: the masks record and the masks picture origin (projection/mask-mode R22); 5: 32 components with ids, a null source albedo (mask-mode R22, no data change); 6: normalRecipes (generation/normal-reauthor R19)
 export const MAX_PROJECT_NAME_LENGTH = 120;
 
 export interface ReferenceImageRecord {

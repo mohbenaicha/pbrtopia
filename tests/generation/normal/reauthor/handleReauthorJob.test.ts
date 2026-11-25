@@ -20,12 +20,13 @@ describe('handleReauthorJob', () => {
     // a side too large to allocate makes the first buffer throw; the answer must still be a message, not an exception
     const response = handleReauthorJob({ kind: 'reauthor', jobId: 3, base: { side: 1e9, rgba: new Uint8ClampedArray(4) }, mesh, params: DEFAULT_PARAMS });
     expect(response.kind).toBe('failed');
+    if (response.kind !== 'failed') return;
     expect(response.jobId).toBe(3);
-    if (response.kind === 'failed') expect(response.message.length).toBeGreaterThan(0);
+    expect(response.message.length).toBeGreaterThan(0);
   });
 
   it('normal-reauthor R15 params that are not clamped are clamped before use, so a stale message cannot crash the worker', () => {
-    const response = handleReauthorJob({ kind: 'reauthor', jobId: 1, base, mesh, params: { slopeDeg: 500, seamRadius: -3, seamFlatten: Number.NaN } });
+    const response = handleReauthorJob({ kind: 'reauthor', jobId: 1, base, mesh, params: { slopeDeg: 500, seamRadius: -3, seamFlatten: Number.NaN, sharpness: 0 } });
     expect(response.kind).toBe('reauthor');
   });
 });

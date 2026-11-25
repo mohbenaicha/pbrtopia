@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const PURE = ['findIslands', 'measureUpTurn', 'rasterizeIslandMask', 'packPieces', 'readTexelBilinear', 'isUvInsidePicture', 'buildUprightSheet', 'deriveNormals', 'unpackNormals', 'uprightTypes'];
+const PURE = ['findIslands', 'measureUpTurn', 'rasterizeIslandMask', 'packPieces', 'readTexelBilinear', 'isUvInsidePicture', 'buildUprightSheet', 'uprightTypes'];
 const read = (name: string): string => readFileSync(`src/generation/normal/${name}.ts`, 'utf8');
 
 describe('the island and height-to-normal functions are pure (normal-map R20)', () => {

@@ -13,7 +13,7 @@ describe('reauthorNormal', () => {
   const base = solidPicture(SIDE, tilt);
 
   it('normal-reauthor R10 slope 45 and no flatten give the base back inside the islands, within one level', () => {
-    for (const params of [{ slopeDeg: 45, seamRadius: 0, seamFlatten: 100 }, { slopeDeg: 45, seamRadius: 16, seamFlatten: 0 }]) {
+    for (const params of [{ slopeDeg: 45, seamRadius: 0, seamFlatten: 100, sharpness: 0 }, { slopeDeg: 45, seamRadius: 16, seamFlatten: 0, sharpness: 0 }]) {
       const result = reauthorNormal(base, mesh, params);
       for (const [column, row] of [[100, 100], [150, 150], [200, 60], [330, 100], [400, 180]]) expect(maxDifference(texelAt(result, column!, row!), tilt)).toBeLessThanOrEqual(1);
     }
@@ -22,7 +22,7 @@ describe('reauthorNormal', () => {
   it('normal-reauthor R5 a texel tilted 45 degrees comes out tilted slopeDeg degrees', () => {
     const forty5 = solidPicture(SIDE, encodeNormal(1, 0, 1));
     for (const degrees of [10, 30, 60, 80]) {
-      const [r, g, b] = texelAt(reauthorNormal(forty5, mesh, { slopeDeg: degrees, seamRadius: 0, seamFlatten: 0 }), 150, 150) as [number, number, number];
+      const [r, g, b] = texelAt(reauthorNormal(forty5, mesh, { slopeDeg: degrees, seamRadius: 0, seamFlatten: 0, sharpness: 0 }), 150, 150) as [number, number, number];
       const x = (r - 128) / 127;
       const y = (g - 128) / 127;
       const z = (b - 128) / 127;
@@ -33,11 +33,11 @@ describe('reauthorNormal', () => {
 
   it('normal-reauthor R5 a flat base stays flat at every slope strength', () => {
     const flat = solidPicture(SIDE, FLAT);
-    for (const degrees of [5, 80]) expect(texelAt(reauthorNormal(flat, mesh, { slopeDeg: degrees, seamRadius: 16, seamFlatten: 100 }), 150, 150)).toEqual(FLAT);
+    for (const degrees of [5, 80]) expect(texelAt(reauthorNormal(flat, mesh, { slopeDeg: degrees, seamRadius: 16, seamFlatten: 100, sharpness: 0 }), 150, 150)).toEqual(FLAT);
   });
 
   it('normal-reauthor R6 at 100 percent both sides of a seam are flat at the seam and untouched beyond the radius', () => {
-    const result = reauthorNormal(base, mesh, { slopeDeg: 45, seamRadius: 16, seamFlatten: 100 });
+    const result = reauthorNormal(base, mesh, { slopeDeg: 45, seamRadius: 16, seamFlatten: 100, sharpness: 0 });
     // A's seam is u = 0.4 (column 204.8), B's is u = 0.6 (column 307.2); rows 60..200 are inside both islands
     expect(maxDifference(texelAt(result, 204, 120), FLAT)).toBeLessThanOrEqual(3);
     expect(maxDifference(texelAt(result, 307, 120), FLAT)).toBeLessThanOrEqual(3);
@@ -46,7 +46,7 @@ describe('reauthorNormal', () => {
   });
 
   it('normal-reauthor R6 a lower flatten keeps the same fraction of slope on both sides', () => {
-    const result = reauthorNormal(base, mesh, { slopeDeg: 45, seamRadius: 16, seamFlatten: 50 });
+    const result = reauthorNormal(base, mesh, { slopeDeg: 45, seamRadius: 16, seamFlatten: 50, sharpness: 0 });
     const slopeOf = (column: number): number => {
       const [r, , b] = texelAt(result, column, 120) as [number, number, number];
       return (r - 128) / (b - 128);
@@ -79,10 +79,10 @@ describe('reauthorNormal', () => {
   });
 
   it('normal-reauthor R9 a later release of the same params returns byte-identical pixels whatever was computed in between', () => {
-    const params = { slopeDeg: 60, seamRadius: 8, seamFlatten: 70 };
+    const params = { slopeDeg: 60, seamRadius: 8, seamFlatten: 70, sharpness: 0 };
     const first = reauthorNormal(base, mesh, params);
     reauthorNormal(base, mesh, DEFAULT_PARAMS);
-    reauthorNormal(base, mesh, { slopeDeg: 10, seamRadius: 0, seamFlatten: 0 });
+    reauthorNormal(base, mesh, { slopeDeg: 10, seamRadius: 0, seamFlatten: 0, sharpness: 0 });
     expect(Array.from(reauthorNormal(base, mesh, params).rgba)).toEqual(Array.from(first.rgba));
   });
 
@@ -97,7 +97,7 @@ describe('reauthorNormal', () => {
     for (let run = 0; run < 20; run += 1) {
       const randomBase: PixelPicture = solidPicture(side, FLAT);
       for (let at = 0; at < side * side; at += 1) randomBase.rgba.set(encodeNormal(random() * 2 - 1, random() * 2 - 1, 0.2 + random()), at * 4);
-      const params = { slopeDeg: 5 + Math.floor(random() * 76), seamRadius: Math.round(random() * 32) / 2, seamFlatten: Math.floor(random() * 101) };
+      const params = { slopeDeg: 5 + Math.floor(random() * 76), seamRadius: Math.round(random() * 32) / 2, seamFlatten: Math.floor(random() * 101), sharpness: 0 };
       const result = reauthorNormal(randomBase, twoWallsWithSeam(), params);
       for (let at = 0; at < side * side; at += 1) {
         const x = (result.rgba[at * 4]! - 128) / 127;
@@ -118,7 +118,7 @@ describe('reauthorNormal', () => {
       for (let row = 0; row < side; row += 1) ramp.rgba.set(encodeNormal(x, 0, Math.sqrt(1 - x * x)), (row * side + column) * 4);
     }
     const levelsAt = (slopeDeg: number): number[] => {
-      const result = reauthorNormal(ramp, wall(0, [0, 0, 1, 1]), { slopeDeg, seamRadius: 0, seamFlatten: 0 });
+      const result = reauthorNormal(ramp, wall(0, [0, 0, 1, 1]), { slopeDeg, seamRadius: 0, seamFlatten: 0, sharpness: 0 });
       return Array.from({ length: side }, (_, column) => texelAt(result, column, 64)[0]!);
     };
     for (const slopeDeg of [75, 80]) {
@@ -139,7 +139,7 @@ describe('reauthorNormal', () => {
   });
 
   it('normal-reauthor R6 a mesh with no seams only gets the slope and the outside fill', () => {
-    const result = reauthorNormal(base, wall(0, [0.1, 0.1, 0.4, 0.4]), { slopeDeg: 45, seamRadius: 16, seamFlatten: 100 });
+    const result = reauthorNormal(base, wall(0, [0.1, 0.1, 0.4, 0.4]), { slopeDeg: 45, seamRadius: 16, seamFlatten: 100, sharpness: 0 });
     expect(maxDifference(texelAt(result, 204, 120), tilt)).toBeLessThanOrEqual(1);
   });
 });

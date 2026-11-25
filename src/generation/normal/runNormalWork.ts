@@ -1,4 +1,3 @@
-import type { ReauthorParams } from '../../normalRecipe/reauthorParams';
 import type { RunError } from '../generateStore';
 import type { Result } from '../providers/providerTypes';
 import type { NormalWorkRequest, NormalWorkResponse } from './handleNormalWork';
@@ -15,9 +14,8 @@ export interface NormalWorkerLike {
 /** What the run needs from the pixel work: build the sheet, then turn the height map into normals in the albedo's layout. */
 export interface NormalWork {
   prepare: (source: PixelPicture, mesh: UvMesh, signal: AbortSignal) => Promise<Result<UprightSheet, RunError>>;
-  finish: (height: PixelPicture, sheet: UprightSheet, signal: AbortSignal) => Promise<PixelPicture>;
-  /** normal-reauthor R17: the normals as the picture a new run stores (the base at the given params). */
-  reauthor: (base: PixelPicture, mesh: UvMesh, params: ReauthorParams, signal: AbortSignal) => Promise<PixelPicture>;
+  /** normal-height-edit R12: the returned height in the albedo's layout (the base a recipe keeps) and the normal made from it at the default params (the picture a run stores). */
+  finish: (height: PixelPicture, sheet: UprightSheet, mesh: UvMesh, signal: AbortSignal) => Promise<{ baseHeight: PixelPicture; normal: PixelPicture }>;
 }
 
 const abortError = (signal: AbortSignal): unknown => signal.reason ?? new DOMException('Aborted', 'AbortError');
@@ -72,15 +70,10 @@ export function createNormalWork(createWorker: () => NormalWorkerLike): NormalWo
       if (response.kind !== 'prepare') throw new Error('The island worker answered the wrong request.');
       return response.result;
     },
-    finish: async (height, sheet, signal) => {
-      const response = await ask(createWorker, { kind: 'finish', height, sheet: withoutSheetPixels(sheet) }, signal);
+    finish: async (height, sheet, mesh, signal) => {
+      const response = await ask(createWorker, { kind: 'finish', height, sheet: withoutSheetPixels(sheet), mesh }, signal);
       if (response.kind !== 'finish') throw new Error('The island worker answered the wrong request.');
-      return response.normals;
-    },
-    reauthor: async (base, mesh, params, signal) => {
-      const response = await ask(createWorker, { kind: 'reauthor', base, mesh, params }, signal);
-      if (response.kind !== 'reauthor') throw new Error('The island worker answered the wrong request.');
-      return response.pixels;
+      return { baseHeight: response.baseHeight, normal: response.normal };
     },
   };
 }
