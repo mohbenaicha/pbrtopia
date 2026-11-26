@@ -182,6 +182,8 @@ export function GeneratePanel({ projectId, onGenerate, onGenerateUv, onCancel, o
               notice={notice}
               onFiles={(files) => void addFiles(files)}
               onRemove={state.removeReference}
+              onEdit={state.replaceReference}
+              onRestore={state.restoreReference}
             />
           )}
           <ChannelToggle value={state.channel} availability={channelAvailability} onChange={state.setChannel} disabled={state.status === 'running'} />

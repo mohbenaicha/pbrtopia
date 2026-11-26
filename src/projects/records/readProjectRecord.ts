@@ -36,13 +36,19 @@ function readMesh(value: unknown, path: string): MeshRecord {
 
 function readReferenceImage(value: unknown, path: string): ReferenceImageRecord {
   const raw = readObject(value, path);
-  return {
+  const record: ReferenceImageRecord = {
     id: readNonEmptyText(raw['id'], `${path}.id`),
     blobKey: readBlobKey(raw['blobKey'], `${path}.blobKey`),
     name: readText(raw['name'], `${path}.name`),
     width: readCount(raw['width'], `${path}.width`, 1),
     height: readCount(raw['height'], `${path}.height`, 1),
   };
+  if (raw['originalBlobKey'] !== undefined) { // reference-editor R17: an edited picture keeps its original; a record without these reads as pristine
+    record.originalBlobKey = readBlobKey(raw['originalBlobKey'], `${path}.originalBlobKey`);
+    record.originalWidth = readCount(raw['originalWidth'], `${path}.originalWidth`, 1);
+    record.originalHeight = readCount(raw['originalHeight'], `${path}.originalHeight`, 1);
+  }
+  return record;
 }
 
 // normal-map R5: a number clamps into 1..4 (rounded); anything else, or an absent value, reads as 2.

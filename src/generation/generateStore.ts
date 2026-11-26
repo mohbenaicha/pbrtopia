@@ -18,7 +18,12 @@ export interface ReferenceImage {
   width: number;
   height: number;
   blob: Blob;
+  /** reference-editor R3: the picture the user uploaded, kept while this reference is edited; absent = pristine. */
+  original?: { blob: Blob; mime: string; width: number; height: number };
 }
+
+/** The result of the reference editor (reference-editor R18). */
+export interface ReferenceEdit { blob: Blob; width: number; height: number }
 
 export type RunStep = 'capture' | 'describe' | 'enhance' | 'generate' | 'validate' | 'prepare' | 'derive'; // 'describe' is the mask run's step in the place of 'enhance' (mask-generation R3); 'prepare' and 'derive' are the normal-map run's, around 'generate' (normal-map R11)
 type RunStatus ='idle' | 'running' | 'failed';
@@ -120,6 +125,10 @@ export interface GenerateState {
   setEnhancerSnapshot: (snapshot: EnhancerSnapshot | null) => void;
   addReferences: (images: ReferenceImage[]) => { added: number; refused: number };
   removeReference: (id: string) => void;
+  /** reference-editor R18: swaps the picture in place (same id, name and position); keeps the first original, or takes the current picture as it. Unknown id: no-op. */
+  replaceReference: (id: string, edit: ReferenceEdit) => void;
+  /** reference-editor R2: puts the original back and drops it. Pristine or unknown id: no-op. */
+  restoreReference: (id: string) => void;
   selectModel: (provider: Provider, modelId: string) => void;
   setResolution: (key: ResolutionKey) => void;
   setAtlasKey: (key: AtlasKey) => void;
@@ -252,6 +261,30 @@ export function createGenerateStore() {
         return { added: accepted.length, refused: fresh.length - accepted.length };
       },
       removeReference: (id) => set({ references: get().references.filter((reference) => reference.id !== id) }),
+      replaceReference: (id, edit) => {
+        const { references } = get();
+        if (!references.some((reference) => reference.id === id)) return;
+        set({
+          references: references.map((reference) => (reference.id !== id ? reference : {
+            ...reference,
+            blob: edit.blob,
+            width: edit.width,
+            height: edit.height,
+            original: reference.original ?? { blob: reference.blob, mime: reference.blob.type, width: reference.width, height: reference.height },
+          })),
+        });
+      },
+      restoreReference: (id) => {
+        const { references } = get();
+        if (!references.some((reference) => reference.id === id && reference.original !== undefined)) return;
+        set({
+          references: references.map((reference) => {
+            if (reference.id !== id || reference.original === undefined) return reference;
+            const { original, ...rest } = reference;
+            return { ...rest, blob: original.blob, width: original.width, height: original.height };
+          }),
+        });
+      },
       selectModel: (provider, modelId) => {
         const { catalog, maxTextureSize } = get();
         if (findModel(catalog, provider, modelId) === null) return;

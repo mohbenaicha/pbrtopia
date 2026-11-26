@@ -16,6 +16,10 @@ export interface ReferenceImageRecord {
   name: string;
   width: number;
   height: number;
+  /** reference-editor R17: present (all three together) when the picture was edited; the file holds the bytes the user uploaded. */
+  originalBlobKey?: string;
+  originalWidth?: number;
+  originalHeight?: number;
 }
 
 export type GenerateChannelValue = 'albedo' | 'normal' | 'metal-rough';

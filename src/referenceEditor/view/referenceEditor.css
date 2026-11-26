@@ -1,0 +1,97 @@
+/* The editor takes the whole window (less a margin): the Dialog's large size only caps its height. */
+.ui-dialog:has(.reference-editor) {
+  width: 96vw;
+  height: 92vh;
+}
+
+.ui-dialog:has(.reference-editor) .ui-dialog__body {
+  flex: 1;
+  min-height: 0;
+}
+
+.reference-editor {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  min-height: 0;
+}
+
+/* Each group of related controls sits on its own raised strip, with clear space between strips; the view controls go to the right edge. */
+.reference-editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2, 8px) var(--space-4, 20px);
+}
+
+.reference-editor__group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: 4px var(--space-2, 8px);
+  border-radius: var(--radius-dialog, 8px);
+  background: var(--bg-input);
+}
+
+.reference-editor__group--brush {
+  gap: var(--space-3, 12px);
+}
+
+.reference-editor__group--view {
+  margin-left: auto;
+}
+
+.reference-editor__colour {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reference-editor__brush {
+  min-width: 200px;
+}
+
+.reference-editor__stage {
+  position: relative;
+  flex: 1;
+  min-height: 240px;
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+  background: repeating-conic-gradient(var(--bg-hover) 0% 25%, var(--bg-input) 0% 50%) 0 0 / 16px 16px;
+}
+
+.reference-editor__canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.reference-editor__canvas--overlay {
+  pointer-events: none;
+}
+
+/* The brush preview: a ring the size of the brush, white with a black edge so it shows on any picture. */
+.reference-editor__ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  border: 1px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px black;
+  pointer-events: none;
+}
+
+.reference-editor__ghost[hidden] {
+  display: none;
+}
+
+.reference-editor__message {
+  margin: 0;
+  color: var(--error);
+  font-size: var(--font-size-small);
+}

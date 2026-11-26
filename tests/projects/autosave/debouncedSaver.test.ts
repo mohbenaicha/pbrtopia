@@ -12,6 +12,24 @@ afterEach(() => {
 
 const ok: StoreResult<void> = { ok: true, value: undefined };
 
+describe('createDebouncedSaver with pictures (reference-editor D15)', () => {
+  it('R17 a value that holds a different Blob is written again, the very same Blob is not', async () => {
+    const write = vi.fn(async (): Promise<StoreResult<void>> => ok);
+    const saver = createDebouncedSaver<unknown>({ write });
+    const first = new Blob(['one']);
+    saver.queue('k', { picture: first, width: 4 });
+    await saver.flush();
+    saver.queue('k', { picture: new Blob(['two']), width: 4 });
+    await saver.flush();
+    saver.queue('k', { picture: first, width: 4 });
+    await saver.flush();
+    expect(write).toHaveBeenCalledTimes(3);
+    saver.queue('k', { picture: first, width: 4 });
+    await saver.flush();
+    expect(write).toHaveBeenCalledTimes(3);
+  });
+});
+
 function setup(options: { results?: StoreResult<void>[] } = {}) {
   const writes: SaveEntry<unknown>[][] = [];
   const results = options.results ?? [];

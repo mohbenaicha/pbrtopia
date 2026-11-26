@@ -21,10 +21,11 @@ export interface DebouncedSaver<T> {
 
 const DEFAULT_DELAY_MS = 1500;
 
-// Plain values (objects, arrays, numbers, strings, booleans, null) and typed arrays, compared by content.
+// Plain values (objects, arrays, numbers, strings, booleans, null) and typed arrays, compared by content; a Blob only by identity (it has no own keys to compare, so two different pictures would read as equal).
 function isSameValue(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;
   if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
+  if (typeof Blob !== 'undefined' && (a instanceof Blob || b instanceof Blob)) return false;
   if (ArrayBuffer.isView(a) || ArrayBuffer.isView(b)) {
     if (!ArrayBuffer.isView(a) || !ArrayBuffer.isView(b) || a.constructor !== b.constructor || a.byteLength !== b.byteLength) return false;
     const bytesA = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);

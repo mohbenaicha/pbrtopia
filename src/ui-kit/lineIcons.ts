@@ -48,6 +48,11 @@ export const LINE_ICON_PATHS = {
   // The splat painter (compositing R1): a brush; and a shape's Invert (R5): a disc half filled.
   brush: ['M20 4l-9 9', 'M9.5 12.5c-2.2 0-3.5 1.6-3.5 3.5 0 1.5-.8 2.6-2 3.2 4.2.6 8.5-.4 8.5-4.2 0-1-.7-2.5-3-2.5z'],
   invert: ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M12 3.5v17', 'M12 3.5a8.5 8.5 0 0 1 0 17z'],
+  // The image editor's view and fill tools (reference-editor R5, R11): a magnifier with a plus or a minus, four corner brackets, a paint bucket with a drop.
+  'zoom-in': ['M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13z', 'M15.3 15.3L20 20', 'M8 10.5h5', 'M10.5 8v5'],
+  'zoom-out': ['M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13z', 'M15.3 15.3L20 20', 'M8 10.5h5'],
+  fit: ['M4 9V5a1 1 0 0 1 1-1h4', 'M15 4h4a1 1 0 0 1 1 1v4', 'M20 15v4a1 1 0 0 1-1 1h-4', 'M9 20H5a1 1 0 0 1-1-1v-4'],
+  fill: ['M4.5 12.5L11.5 5.5l7 7-6.4 6.4a1.5 1.5 0 0 1-2.1 0l-4.5-4.3a1.5 1.5 0 0 1 0-2.1z', 'M4.5 12.5h14', 'M20.5 16c0 1.1-.9 2.2-.9 2.2s-.9-1.1-.9-2.2a.9.9 0 0 1 1.8 0z'],
   // The random-range dice (compositing R50): a die seen from a corner, three faces, a pip on the top and on each side.
   dice: ['M12 2.8l7.8 4.5v9.4L12 21.2l-7.8-4.5V7.3z', 'M4.2 7.3L12 11.8l7.8-4.5', 'M12 11.8v9.4', 'M12 7.3h.01', 'M6.6 12.3h.01', 'M9.7 16.2h.01', 'M14.2 12.3h.01', 'M15.9 14.25h.01', 'M17.6 16.2h.01'],
   occlusion: ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M12 3.5v17', 'M12 8a4 4 0 0 1 0 8'],
