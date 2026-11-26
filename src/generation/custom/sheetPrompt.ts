@@ -1,5 +1,6 @@
 import { IMAGE_CLOSING, IMAGE_OPENING, describeReferences } from '../prompts/framePrompt';
 import type { MapRecipe } from '../prompts/mapRecipes';
+import { describeViewMarks } from '../prompts/viewMarksWording';
 import { CORE_CAMERA_NAMES } from './planTypes';
 
 // Custom generation R14, R27: the wording that is specific to a sheet.
@@ -52,12 +53,12 @@ interface SheetImagePromptParts {
   tiles: TilePlacement[];
 }
 
-// R14: opening, references note (the user's, or the lead image's), tile note, recipe text before, description, recipe text after,
-// closing; each trimmed, empty ones left out.
+// R14: opening, view marks note (core sheets only, snapshot-orientation R7), references note (the user's, or the lead image's),
+// tile note, recipe text before, description, recipe text after, closing; each trimmed, empty ones left out.
 export function buildSheetImagePrompt({ recipe, description, referenceCount, leadCameras, aux, tiles }: SheetImagePromptParts): string {
   const referenceNote = leadCameras ? describeLeadReference(leadCameras) : describeReferences(referenceCount);
   const tileNote = aux ? 'The tiles in the image are extra viewpoints of the same object.' : describeTiles(tiles);
-  return [IMAGE_OPENING, referenceNote, tileNote, recipe.textBefore, description, recipe.textAfter, IMAGE_CLOSING]
+  return [IMAGE_OPENING, aux ? '' : describeViewMarks(), referenceNote,tileNote, recipe.textBefore, description, recipe.textAfter, IMAGE_CLOSING]
     .map((part) => part.trim())
     .filter((part) => part !== '')
     .join('\n\n');

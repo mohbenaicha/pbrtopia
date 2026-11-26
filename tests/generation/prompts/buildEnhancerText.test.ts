@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { buildEnhancerText } from '../../../src/generation/prompts/buildEnhancerText';
 import { ENHANCER_INSTRUCTION } from '../../../src/generation/prompts/framePrompt';
 import { recipeForChannel } from '../../../src/generation/prompts/mapRecipes';
+import { IGNORE_VIEW_MARKS } from '../../../src/generation/prompts/viewMarksWording';
 
 const recipe = recipeForChannel('albedo');
-const head = `${ENHANCER_INSTRUCTION}\n\n${recipe.enhancerFocus}`;
+const head = `${ENHANCER_INSTRUCTION} ${IGNORE_VIEW_MARKS}\n\n${recipe.enhancerFocus}`;
 
 describe('buildEnhancerText', () => {
   it('R33 the shared instruction, the recipe focus, then the user\'s prompt under its label', () => {
@@ -41,7 +42,7 @@ describe('buildEnhancerText: the atlas render (R39)', () => {
   it('R39 the viewport render puts its own focus in the request, and not the grey one', () => {
     const viewport = recipeForChannel('albedo', 'viewport');
     const text = buildEnhancerText(viewport, 'a rusty robot');
-    expect(text).toBe(`${ENHANCER_INSTRUCTION}\n\n${viewport.enhancerFocus}\n\nUser prompt:\na rusty robot`);
+    expect(text).toBe(`${ENHANCER_INSTRUCTION} ${IGNORE_VIEW_MARKS}\n\n${viewport.enhancerFocus}\n\nUser prompt:\na rusty robot`);
     expect(text).not.toContain(recipeForChannel('albedo', 'grey').enhancerFocus);
   });
 });
